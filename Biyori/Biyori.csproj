@@ -68,11 +68,22 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Components\LeftNavigation\LeftNavigationControl.xaml.cs">
+      <DependentUpon>LeftNavigationControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Lib\WPF\MarginSetter.cs" />
     <Compile Include="Lib\WPF\Spacing.cs" />
     <Compile Include="Settings\SettingsWindow.xaml.cs">
       <DependentUpon>SettingsWindow.xaml</DependentUpon>
     </Compile>
+    <Page Include="Components\LeftNavigation\LeftNavigationControl.styles.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Components\LeftNavigation\LeftNavigationControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Lib\Languages\en-us.lang.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -142,6 +153,11 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="FodyWeavers.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Frames\AnimeList\" />
+    <Folder Include="Frames\NowPlaying\" />
+    <Folder Include="Frames\TorrentList\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

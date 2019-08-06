@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:Biyori.Settings"
         mc:Ignorable="d"
         ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
         Title="Settings" Height="531" Width="755">
     <Window.Resources>
         <ResourceDictionary Source="pack://application:,,,/Settings/SettingsWindow.dictionary.xaml" />

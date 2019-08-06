@@ -5,7 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Biyori"
         xmlns:wpf="clr-namespace:Biyori.Lib.WPF"
+        xmlns:leftNav="clr-namespace:Biyori.Components.LeftNavigation"
         xmlns:adorners="http://gu.se/Adorners"
+        WindowStartupLocation="CenterScreen"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" MinHeight="450" Width="800" MinWidth="800">
     <Window.Resources>
@@ -18,35 +20,39 @@
             <ColumnDefinition Width="200px" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="48px" />
+            <RowDefinition Height="36px" />
             <RowDefinition Height="*" />
             <RowDefinition Height="28px" />
         </Grid.RowDefinitions>
-        <Grid Grid.Row="1" Grid.Column="0" Background="#efefef">
-            <TextBlock>Now Playing, ...</TextBlock>
-        </Grid>
+        <Border Style="{StaticResource leftNav}" Grid.Row="1" Grid.Column="0">
+            <Grid>
+                <leftNav:LeftNavigationControl />
+            </Grid>
+        </Border>
         <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" wpf:MarginSetter.Margin="4, 0" wpf:MarginSetter.LastItemMargin="4, 0, 0, 0">
-                <Button HorizontalAlignment="Left" VerticalAlignment="Center" Padding="8">Sync</Button>
+                <Button HorizontalAlignment="Left" VerticalAlignment="Center" Padding="6">Sync</Button>
                 <Grid>
                     <Separator Background="LightGray" Margin="0, 14" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" VerticalAlignment="Stretch"></Separator>
                 </Grid>
-                <Button HorizontalAlignment="Left" VerticalAlignment="Center" Padding="8">Folders</Button>
-                <Button HorizontalAlignment="Left" VerticalAlignment="Center" Padding="8">Sources</Button>
+                <Button HorizontalAlignment="Left" VerticalAlignment="Center" Padding="6">Folders</Button>
+                <Button HorizontalAlignment="Left" VerticalAlignment="Center" Padding="6">Sources</Button>
                 <Grid>
                     <Separator Background="LightGray" Margin="0, 14" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" VerticalAlignment="Stretch"></Separator>
                 </Grid>
-                <Button Click="onSettingsClick" HorizontalAlignment="Left" VerticalAlignment="Center" Padding="8">Settings</Button>
+                <Button Click="onSettingsClick" HorizontalAlignment="Left" VerticalAlignment="Center" Padding="6">Settings</Button>
             </StackPanel>
         </Grid>
         <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2">
-            <ListBox></ListBox>
+            <Frame></Frame>
         </Grid>
-        <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3">
-            <StatusBar>
-                <StatusBarItem Content="status"/>
-            </StatusBar>
-        </Grid>
+        <Border Style="{StaticResource statusBarNav}" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3">
+            <Grid>
+                <StatusBar>
+                    <StatusBarItem Content="status"/>
+                </StatusBar>
+            </Grid>
+        </Border>
         <Grid Grid.Row="0" Grid.Column="2">
             <TextBox MaxLines="1" Height="24" Margin="8, 0" VerticalAlignment="Center" HorizontalAlignment="Stretch" Padding="4, 0" VerticalContentAlignment="Center" adorners:Watermark.Text="{StaticResource searchPlaceholder}"
             adorners:Watermark.TextStyle="{StaticResource TextboxPlaceholderStyle}"

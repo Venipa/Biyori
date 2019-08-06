@@ -1,7 +1,15 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Biyori">
-    <Style x:Name="menu_seperator" TargetType="StackPanel">
-        
+    <SolidColorBrush Color="#cccccc" x:Key="NavBorderColor" />
+    <Style x:Key="leftNav" TargetType="Border">
+        <Setter Property="BorderThickness" Value="0, 1, 1, 0" />
+        <Setter Property="BorderBrush" Value="{StaticResource NavBorderColor}" />
+        <Setter Property="Background" Value="#efefef" />
+    </Style>
+    <Style x:Key="statusBarNav" TargetType="Border">
+        <Setter Property="BorderThickness" Value="0, 1, 0, 0" />
+        <Setter Property="BorderBrush" Value="{StaticResource NavBorderColor}" />
+        <Setter Property="Background" Value="#efefef" />
     </Style>
 </ResourceDictionary>

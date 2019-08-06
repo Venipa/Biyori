@@ -1,0 +1,26 @@
+﻿<UserControl x:Class="Biyori.Components.LeftNavigation.LeftNavigationControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Biyori.Components.LeftNavigation"
+             xmlns:lib="clr-namespace:Biyori.Lib.WPF"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="200">
+    <UserControl.Resources>
+        <ResourceDictionary Source="pack://application:,,,/Components/LeftNavigation/LeftNavigationControl.styles.xaml" />
+    </UserControl.Resources>
+    <Grid>
+        <ListBox>
+            <ListBoxItem Content="Now Playing"/>
+            <Separator Background="#2f000000" />
+            <ListBoxItem Content="Anime List"/>
+            <ListBoxItem Content="History"/>
+            <ListBoxItem Content="Statistics"/>
+            <Separator Background="#2f000000"/>
+            <ListBoxItem Content="Search"/>
+            <ListBoxItem Content="Seasons"/>
+            <ListBoxItem Content="Torrents"/>
+        </ListBox>
+    </Grid>
+</UserControl>
