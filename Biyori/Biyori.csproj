@@ -77,6 +77,9 @@
     <Compile Include="Settings\Frames\SettingsPage-Accounts.xaml.cs">
       <DependentUpon>SettingsPage-Accounts.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Settings\Frames\SettingsPage-Application.xaml.cs">
+      <DependentUpon>SettingsPage-Application.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Settings\Frames\SettingsPage-General.xaml.cs">
       <DependentUpon>SettingsPage-General.xaml</DependentUpon>
     </Compile>
@@ -128,6 +131,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="Settings\Frames\SettingsPage-Accounts.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Settings\Frames\SettingsPage-Application.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

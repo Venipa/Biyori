@@ -29,7 +29,8 @@ namespace Biyori.Settings
             this.SettingRoutes.Select(x => new ListBoxItem()
             {
                 Tag = x.key,
-                Content = x.pageName
+                Content = x.pageName,
+                IsEnabled = x.isEnabled
             }).ToList().ForEach(x => settingsNav.Items.Add(x));
         }
 

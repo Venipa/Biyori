@@ -15,13 +15,13 @@ using System.Windows.Shapes;
 
 namespace Biyori.Settings.Frames
 {
-    [SettingsRoute("accounts", "Accounts", false)]
+    [SettingsRoute("application", "Application", true)]
     /// <summary>
-    /// Interaction logic for SettingsPage_Accounts.xaml
+    /// Interaction logic for SettingsPage_Application.xaml
     /// </summary>
-    public partial class SettingsPage_Accounts : Page
+    public partial class SettingsPage_Application : Page
     {
-        public SettingsPage_Accounts()
+        public SettingsPage_Application()
         {
             InitializeComponent();
         }
