@@ -3,7 +3,7 @@
                     xmlns:local="clr-namespace:Biyori">
     <SolidColorBrush Color="#cccccc" x:Key="NavBorderColor" />
     <Style x:Key="leftNav" TargetType="Border">
-        <Setter Property="BorderThickness" Value="0, 1, 1, 0" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="BorderBrush" Value="{StaticResource NavBorderColor}" />
         <Setter Property="Background" Value="#efefef" />
     </Style>
@@ -12,4 +12,6 @@
         <Setter Property="BorderBrush" Value="{StaticResource NavBorderColor}" />
         <Setter Property="Background" Value="#efefef" />
     </Style>
+    <DropShadowEffect x:Key="ShadowStyle" BlurRadius="8" ShadowDepth="-4" Color="#444444"></DropShadowEffect>
+
 </ResourceDictionary>

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,24 +13,17 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace Biyori
+namespace Biyori.Settings.Frames
 {
+    [SettingsRoute("accounts", "Accounts", true)]
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for SettingsPage_Accounts.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class SettingsPage_Accounts : Page
     {
-        public MainWindow()
+        public SettingsPage_Accounts()
         {
             InitializeComponent();
-            this.Title = Assembly.GetExecutingAssembly()?.GetName()?.Name ?? "Biyori";
-        }
-
-        private void onSettingsClick(object sender, RoutedEventArgs e)
-        {
-            var settingsWindow = new Settings.SettingsWindow();
-            settingsWindow.Owner = this;
-            settingsWindow.ShowDialog();
         }
     }
 }

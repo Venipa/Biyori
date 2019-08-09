@@ -4,10 +4,15 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Biyori.Settings"
+        xmlns:wpf="clr-namespace:Biyori.Lib.WPF"
+        xmlns:controls="clr-namespace:Biyori.Lib.Controls"
         mc:Ignorable="d"
+        Name="root"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
-        Title="Settings" Height="531" Width="755">
+        Title="Settings" Height="531" Width="755"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        >
     <Window.Resources>
         <ResourceDictionary Source="pack://application:,,,/Settings/SettingsWindow.dictionary.xaml" />
     </Window.Resources>
@@ -21,16 +26,30 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="3*"/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0" Grid.Row="1">
-            <ListBox Margin="10">
-                <ListBoxItem Content="Services" />
-                <ListBoxItem Content="Library" />
-                <ListBoxItem Content="Application" />
-                <ListBoxItem Content="Recognition" />
-                <ListBoxItem Content="Sharing" />
-                <ListBoxItem Content="Torrents" />
-                <ListBoxItem Content="Advanced" />
-            </ListBox>
+        <Grid Grid.Column="0" Grid.Row="1" Margin="10, 10, 0, 10">
+            <controls:CardControl>
+                <ListBox Margin="0, 8" x:Name="settingsNav" BorderThickness="0" wpf:MarginSetter.Margin="0, 8">
+                    <ListBoxItem Content="Services" Tag="services" />
+                    <ListBoxItem Content="Library" Tag="library" />
+                    <ListBoxItem Content="Application" Tag="app" />
+                    <ListBoxItem Content="Recognition" Tag="recognition" />
+                    <ListBoxItem Content="Sharing" Tag="sharing" />
+                    <ListBoxItem Content="Torrents" Tag="torrents" />
+                    <ListBoxItem Content="Advanced" Tag="advanced" />
+                </ListBox>
+            </controls:CardControl>
+        </Grid>
+        <Grid Grid.Column="1" Grid.Row="1" Margin="10">
+            <controls:CardControl>
+                <Grid>
+                    <Frame x:Name="settingsFrame" NavigationUIVisibility="Hidden"  />
+                </Grid>
+            </controls:CardControl>
+        </Grid>
+        <Grid Grid.Column="1" Grid.Row="2">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" wpf:MarginSetter.Margin="8, 0" Margin="8, 0">
+                <Button Style="{StaticResource NavButtons}" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Save Changes"></Button>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>

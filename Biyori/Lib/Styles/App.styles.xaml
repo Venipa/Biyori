@@ -6,4 +6,8 @@
         <Setter Property="FontStyle" Value="Italic" />
         <Setter Property="FontSize" Value="12" />
     </Style>
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="pack://application:,,,/Lib/Styles/Buttons.styles.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/Lib/Controls/CardControl.style.xaml" />
+    </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>
