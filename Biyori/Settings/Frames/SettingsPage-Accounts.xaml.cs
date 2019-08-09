@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -25,5 +26,31 @@ namespace Biyori.Settings.Frames
         {
             InitializeComponent();
         }
+    }
+    [SettingsSection("account", true)]
+    public class AccountSettings
+    {
+        [JsonProperty("enable_sync")]
+        public bool SyncEnabled { get; set; }
+        [JsonProperty("accounts")]
+        public List<AccountInfo> Accounts { get; set; }
+        [JsonProperty("current_account_type")]
+        public AccountEndpoints CurrentAccountType { get; set; }
+        [JsonProperty("current_account")]
+        public AccountInfo CurrentAccount { get; set; }
+    }
+    public class AccountInfo
+    {
+        [JsonProperty("email")]
+        public string EmailAddress { get; set; }
+        [JsonProperty("username")]
+        public string Username { get; set; }
+        [JsonProperty("password")]
+        public string Password { get; set; }
+    }
+    public enum AccountEndpoints
+    {
+        Kitsu,
+        Anilist
     }
 }

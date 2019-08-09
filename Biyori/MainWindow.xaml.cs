@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Abp.Configuration;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -25,6 +26,11 @@ namespace Biyori
         {
             InitializeComponent();
             this.Title = Assembly.GetExecutingAssembly()?.GetName()?.Name ?? "Biyori";
+        }
+        protected override void OnInitialized(EventArgs e)
+        {
+            base.OnInitialized(e);
+            new Settings.SettingsProvider();
         }
 
         private void onSettingsClick(object sender, RoutedEventArgs e)
