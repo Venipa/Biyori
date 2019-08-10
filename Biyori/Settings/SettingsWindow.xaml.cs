@@ -1,5 +1,8 @@
-﻿using System;
+﻿using Biyori.Settings.Frames;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -33,11 +36,25 @@ namespace Biyori.Settings
                 IsEnabled = x.isEnabled
             }).ToList().ForEach(x => settingsNav.Items.Add(x));
         }
+        protected override void OnInitialized(EventArgs e)
+        {
+            base.OnInitialized(e);
+            var sp = App.ServiceProvider.GetProvider<SettingsProvider>();
+            var accountConfig = sp.GetConfig<AccountSettings>();
+            accountConfig.Accounts.Add(new AccountInfo()
+            {
+                Username = "test",
+                Password = "testPassword",
+                EmailAddress = "test@biyori.moe"
+            });
+            sp.UpdateConfig(accountConfig);
+            Debug.WriteLine(JsonConvert.SerializeObject(sp.GetConfig<AccountSettings>()));
+        }
 
         private void SettingsNav_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var item = e.AddedItems[0] as ListBoxItem;
-            if (item != null & item.Tag != null && this.TryGetRoute(item.Tag?.ToString()?.ToLower(), out var page))
+            if (item != null && item.IsEnabled && item.Tag != null && this.TryGetRoute(item.Tag?.ToString()?.ToLower(), out var page))
             {
                 settingsFrame.Navigate(new Uri(page.RelativeRoute));
             }
@@ -67,12 +84,17 @@ namespace Biyori.Settings
                 this.Close();
             }
         }
+
+        private void SaveChange_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class SettingsRouteAttribute : Attribute
     {
-        public SettingsRouteAttribute(string key, string pageName, bool isEnabled)
+        public SettingsRouteAttribute(string key, string pageName, bool isEnabled = true)
         {
             this.key = key;
             this.pageName = pageName;

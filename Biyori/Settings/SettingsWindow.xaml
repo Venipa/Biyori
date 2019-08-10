@@ -48,7 +48,7 @@
         </Grid>
         <Grid Grid.Column="1" Grid.Row="2">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" wpf:MarginSetter.Margin="8, 0" Margin="8, 0">
-                <Button Style="{StaticResource NavButtons}" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Save Changes"></Button>
+                <Button Style="{StaticResource NavButtons}" Click="SaveChange_Click" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Save Changes"></Button>
             </StackPanel>
         </Grid>
     </Grid>

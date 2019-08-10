@@ -4,11 +4,30 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:Biyori.Settings.Frames"
-      mc:Ignorable="d" 
+      mc:Ignorable="d"
+      x:Name="root"
       d:DesignHeight="450" d:DesignWidth="800"
       Title="SettingsPage_Accounts">
 
-    <Grid>
-        <TextBlock>Accounts Page Works!</TextBlock>
+    <Grid Margin="10" DataContext="{Binding ElementName=root}">
+        <TabControl>
+            <TabItem Header="General" IsSelected="True">
+                <ListBox ItemsSource="{Binding Path=accountInfo}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock>
+                                    <Run Text="("/>
+                                    <Run Text="{Binding Path=TypeString, Mode=OneWay}" FontWeight="Bold" />
+                                    <Run Text=")"/>
+                                    <TextBlock Margin="4,0,0,0" Text="{Binding Path=Username}" FontWeight="Bold" />
+                                </TextBlock>
+                                <TextBlock Text="{Binding Path=EmailAddress}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Page>

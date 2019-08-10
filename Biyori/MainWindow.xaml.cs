@@ -30,7 +30,6 @@ namespace Biyori
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
-            new Settings.SettingsProvider();
         }
 
         private void onSettingsClick(object sender, RoutedEventArgs e)

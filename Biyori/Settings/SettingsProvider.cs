@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using PropertyChanged;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,17 +10,29 @@ using System.Threading.Tasks;
 
 namespace Biyori.Settings
 {
-    public class SettingsProvider
+    [AddINotifyPropertyChangedInterface]
+    [ServiceProviderParse("settings", InitializeOnStartup = true)]
+    public class SettingsProvider : ServiceProviderBase
     {
         private string configPath { get => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config"); }
         private string settingsPath { get => Path.Combine(configPath, "settings.json"); }
+        private List<SettingsBase> Settings { get; set; } = new List<SettingsBase>();
+
         public SettingsProvider()
         {
             if (!Directory.Exists(this.configPath))
             {
                 Directory.CreateDirectory(this.configPath);
+            }
+            if (!File.Exists(this.settingsPath))
+            {
                 initializeConfig();
             }
+            this.Settings.AddRange(
+                Assembly.GetEntryAssembly().GetTypes()
+                    .Where(x => x.GetCustomAttributes<SettingsSectionAttribute>().Count() > 0)
+                    .Select(x => Activator.CreateInstance(x) as SettingsBase));
+
         }
         private void initializeConfig()
         {
@@ -35,7 +48,17 @@ namespace Biyori.Settings
             });
             File.WriteAllText(this.settingsPath, JsonConvert.SerializeObject(sections, Formatting.Indented));
         }
+        public T GetConfig<T>() where T : SettingsBase
+        {
+            return this.Settings.FirstOrDefault(x => x.GetType() == typeof(T)) as T;
+        }
+        public void UpdateConfig<T>(T settings) where T : SettingsBase
+        {
+            var itemIndex = this.Settings.FindIndex(x => x.GetType() == typeof(T));
+            this.Settings[itemIndex] = settings;
+        }
     }
+    public abstract class SettingsBase { }
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class SettingsSectionAttribute : Attribute
     {

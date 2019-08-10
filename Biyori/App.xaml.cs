@@ -13,5 +13,11 @@ namespace Biyori
     /// </summary>
     public partial class App : Application
     {
+        public readonly static ServiceProvider ServiceProvider = new ServiceProvider();
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+            ServiceProvider.ScanCurrent();
+        }
     }
 }
