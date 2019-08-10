@@ -8,62 +8,46 @@
         <Setter Property="Padding" Value="8, 6" />
         <!--<Setter Property="FocusVisualStyle" Value="{StaticResource MyFocusVisual}" />-->
         <Setter Property="Background" Value="#fafafa"/>
+        <Setter Property="BorderBrush" Value="#e0e0e0"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="ClipToBounds" Value="False"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <ControlTemplate.Resources>
-
-
-                        <Storyboard x:Key="GlowOn">
-                            <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" 
-                            Storyboard.TargetName="border"
-                          Storyboard.TargetProperty="(Effect).Opacity">
-                                <SplineDoubleKeyFrame KeyTime="0:0:0.3" Value=".8"/>
-                            </DoubleAnimationUsingKeyFrames>
-                        </Storyboard>
-                        <Storyboard x:Key="GlowOff">
-                            <DoubleAnimationUsingKeyFrames BeginTime="00:00:00"
-                            Storyboard.TargetName="border"
-                          Storyboard.TargetProperty="(Effect).Opacity">
-                                <SplineDoubleKeyFrame KeyTime="0:0:0.3" Value=".4"/>
-                            </DoubleAnimationUsingKeyFrames>
-                        </Storyboard>
                         <Storyboard x:Key="JellyClick">
                             <DoubleAnimationUsingKeyFrames BeginTime="00:00:00"
                             Storyboard.TargetName="border"
                           Storyboard.TargetProperty="(RenderTransform).ScaleX">
-                                <SplineDoubleKeyFrame KeyTime="0:0:0.3" Value=".925"/>
+                                <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value=".9125"/>
                             </DoubleAnimationUsingKeyFrames>
                             <DoubleAnimationUsingKeyFrames BeginTime="00:00:00"
                             Storyboard.TargetName="border"
                           Storyboard.TargetProperty="(RenderTransform).ScaleY">
-                                <SplineDoubleKeyFrame KeyTime="0:0:0.3" Value=".925"/>
+                                <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value=".9125"/>
                             </DoubleAnimationUsingKeyFrames>
                         </Storyboard>
                         <Storyboard x:Key="JellyClickOff">
                             <DoubleAnimationUsingKeyFrames BeginTime="00:00:00"
                             Storyboard.TargetName="border"
                           Storyboard.TargetProperty="(RenderTransform).ScaleX">
-                                <SplineDoubleKeyFrame KeyTime="0:0:0.15" Value="1"/>
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.15" Value="1"/>
                             </DoubleAnimationUsingKeyFrames>
                             <DoubleAnimationUsingKeyFrames BeginTime="00:00:00"
                             Storyboard.TargetName="border"
                           Storyboard.TargetProperty="(RenderTransform).ScaleY">
-                                <SplineDoubleKeyFrame KeyTime="0:0:0.15" Value="1"/>
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.15" Value="1"/>
                             </DoubleAnimationUsingKeyFrames>
                         </Storyboard>
                     </ControlTemplate.Resources>
-                    <Grid Margin="{TemplateBinding Margin}">
-                        <Border Name="border" 
-        				BorderThickness="0"
-                            Margin="{TemplateBinding Margin}"
-        				Padding="{TemplateBinding Padding}" 
-        				BorderBrush="DarkGray" 
-        				CornerRadius="2"
-        				Background="{TemplateBinding Background}">
-                            <Border.Effect>
-                                <DropShadowEffect x:Name="shadow" RenderingBias="Quality" Direction="90" BlurRadius="4" ShadowDepth="0" Color="#000" Opacity=".4" />
-                            </Border.Effect>
+                    <Grid Margin="{TemplateBinding Margin}" UseLayoutRounding="True" SnapsToDevicePixels="True" ClipToBounds="False">
+                        <Border Name="border"
+                                UseLayoutRounding="True"
+        				        BorderThickness="{TemplateBinding BorderThickness}"
+        				        BorderBrush="{TemplateBinding BorderBrush}" 
+        				        CornerRadius="2"
+        				        Padding="{TemplateBinding Padding}"
+        				        Background="{TemplateBinding Background}">
                             <Border.Resources>
                             </Border.Resources>
                             <Border.RenderTransformOrigin>
@@ -72,38 +56,36 @@
                             <Border.RenderTransform>
                                 <ScaleTransform ScaleX="1" ScaleY="1" RenderOptions.BitmapScalingMode="NearestNeighbor" />
                             </Border.RenderTransform>
-                            <Grid>
-                                <ContentPresenter HorizontalAlignment="Center" 
+                            <ContentPresenter TextOptions.TextFormattingMode="Display" HorizontalAlignment="Center" 
                                     VerticalAlignment="Center" Name="content"/>
-                            </Grid>
                         </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="#fff" />
-                            <Trigger.EnterActions>
-                                <BeginStoryboard Storyboard="{StaticResource GlowOn}" />
-                            </Trigger.EnterActions>
-                            <Trigger.ExitActions>
-                                <BeginStoryboard Storyboard="{StaticResource GlowOff}" />
-                            </Trigger.ExitActions>
+                            <Setter Property="Cursor" Value="Hand" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Trigger.EnterActions>
-                                <BeginStoryboard Storyboard="{StaticResource GlowOn}" />
                                 <BeginStoryboard Storyboard="{StaticResource JellyClick}" />
                             </Trigger.EnterActions>
                             <Trigger.ExitActions>
-                                <BeginStoryboard Storyboard="{StaticResource GlowOff}" />
                                 <BeginStoryboard Storyboard="{StaticResource JellyClickOff}" />
                             </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsDefaulted" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard Storyboard="{StaticResource JellyClick}" />
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard Storyboard="{StaticResource JellyClickOff}" />
+                            </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsFocused" Value="True">
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Background" Value="#ddd" />
+                            <Setter Property="Background" Value="#ccc" />
+                            <Setter Property="BorderBrush" Value="#aaa" />
                         </Trigger>
 
                     </ControlTemplate.Triggers>

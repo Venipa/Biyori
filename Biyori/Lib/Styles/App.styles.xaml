@@ -6,8 +6,19 @@
         <Setter Property="FontStyle" Value="Italic" />
         <Setter Property="FontSize" Value="12" />
     </Style>
+    <Style TargetType="Window">
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased" />
+        <Setter Property="TextOptions.TextHintingMode" Value="Auto" />
+    </Style>
+    <Style TargetType="Button">
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased" />
+        <Setter Property="TextOptions.TextHintingMode" Value="Auto" />
+    </Style>
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="pack://application:,,,/Lib/Styles/Buttons.styles.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/Lib/Styles/TabControl.styles.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Lib/Controls/CardControl.style.xaml" />
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

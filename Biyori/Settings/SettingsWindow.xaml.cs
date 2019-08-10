@@ -41,12 +41,17 @@ namespace Biyori.Settings
             base.OnInitialized(e);
             var sp = App.ServiceProvider.GetProvider<SettingsProvider>();
             var accountConfig = sp.GetConfig<AccountSettings>();
-            accountConfig.Accounts.Add(new AccountInfo()
+#if DEBUG
+            if (accountConfig.Accounts.Count == 0)
             {
-                Username = "test",
-                Password = "testPassword",
-                EmailAddress = "test@biyori.moe"
-            });
+                accountConfig.Accounts.Add(new AccountInfo()
+                {
+                    Username = "test",
+                    Password = "testPassword",
+                    EmailAddress = "test@biyori.moe"
+                });
+            }
+#endif
             sp.UpdateConfig(accountConfig);
             Debug.WriteLine(JsonConvert.SerializeObject(sp.GetConfig<AccountSettings>()));
         }

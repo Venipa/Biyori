@@ -3,14 +3,16 @@
                     xmlns:local="clr-namespace:Biyori.Lib.Controls">
 
     <Style TargetType="{x:Type local:CardControl}">
+        <Setter Property="Focusable" Value="False"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:CardControl}">
-                    <Grid ClipToBounds="False">
-                        <Border Padding="{TemplateBinding Padding}">
+                    <Grid ClipToBounds="False" Focusable="False">
+                        <Border Padding="{TemplateBinding Padding}" Focusable="False">
                             <Border.Style>
 
                                 <Style TargetType="Border">
+                                    <Setter Property="Focusable" Value="False"/>
                                     <Setter Property="Padding" Value="10"/>
                                     <Setter Property="Background" Value="#ffffff" />
                                     <Setter Property="CornerRadius" Value="6"/>
@@ -23,8 +25,8 @@
                                     </Setter>
                                 </Style>
                             </Border.Style>
-                            <Grid>
-                                <ContentControl Content="{TemplateBinding Content}"></ContentControl>
+                            <Grid Focusable="False">
+                                <ContentControl Focusable="False" Content="{TemplateBinding Content}"></ContentControl>
                             </Grid>
                         </Border>
                     </Grid>
