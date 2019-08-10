@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using PropertyChanged;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,22 +18,33 @@ namespace Biyori.Settings
     {
         private string configPath { get => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config"); }
         private string settingsPath { get => Path.Combine(configPath, "settings.json"); }
-        private List<SettingsBase> Settings { get; set; } = new List<SettingsBase>();
+        private ConcurrentDictionary<string, SettingsBase> Settings { get; set; } = new ConcurrentDictionary<string, SettingsBase>();
 
         public SettingsProvider()
         {
+            bool initialConfig = false;
             if (!Directory.Exists(this.configPath))
             {
                 Directory.CreateDirectory(this.configPath);
             }
             if (!File.Exists(this.settingsPath))
             {
+                initialConfig = true;
                 initializeConfig();
             }
-            this.Settings.AddRange(
-                Assembly.GetEntryAssembly().GetTypes()
+            Assembly.GetEntryAssembly().GetTypes()
                     .Where(x => x.GetCustomAttributes<SettingsSectionAttribute>().Count() > 0)
-                    .Select(x => Activator.CreateInstance(x) as SettingsBase));
+                    .Select(x => Activator.CreateInstance(x) as SettingsBase).ToList().ForEach(x =>
+                    {
+                        this.Settings.AddOrUpdate(
+                            x.GetType().GetCustomAttribute<SettingsSectionAttribute>()?.name,
+                            key => x,
+                            (key, oldSettings) => oldSettings = x);
+                    });
+            if (!initialConfig)
+            {
+                this.LoadSettings().Wait();
+            }
 
         }
         private void initializeConfig()
@@ -50,12 +63,52 @@ namespace Biyori.Settings
         }
         public T GetConfig<T>() where T : SettingsBase
         {
-            return this.Settings.FirstOrDefault(x => x.GetType() == typeof(T)) as T;
+            return this.Settings.FirstOrDefault(x => x.Value.GetType() == typeof(T)).Value as T;
         }
-        public void UpdateConfig<T>(T settings) where T : SettingsBase
+        public void UpdateConfig<T>(T settings, bool saveToFile = false) where T : SettingsBase
         {
-            var itemIndex = this.Settings.FindIndex(x => x.GetType() == typeof(T));
-            this.Settings[itemIndex] = settings;
+            this.Settings.AddOrUpdate(
+                settings.GetType().GetCustomAttribute<SettingsSectionAttribute>()?.name,
+                key => settings,
+                (key, oldSettings) => oldSettings = settings);
+            if (saveToFile)
+            {
+                this.SaveSettings();
+            }
+        }
+        public async Task LoadSettings()
+        {
+            var settingsIn = File.ReadAllText(this.settingsPath);
+            var settings = JsonConvert.DeserializeObject<Dictionary<string, object>>(settingsIn);
+
+            var availableSettings = Assembly.GetEntryAssembly().GetTypes()
+                    .Where(x => x.GetCustomAttributes<SettingsSectionAttribute>().Count() > 0);
+            settings.ToList().ForEach(x =>
+            {
+                if (this.Settings.ContainsKey(x.Key))
+                {
+                    var avSetting = availableSettings.FirstOrDefault(y => y.GetCustomAttribute<SettingsSectionAttribute>()?.name == x.Key);
+                    if (avSetting != null)
+                    {
+                        var obj = (x.Value as JObject).ToObject(avSetting);
+                        this.Settings.AddOrUpdate(x.Key, key => obj as SettingsBase, (key, oldSetting) => oldSetting = obj as SettingsBase);
+                    }
+                }
+            });
+        }
+        public async Task SaveSettings()
+        {
+            try
+            {
+                File.WriteAllText(this.settingsPath, JsonConvert.SerializeObject(this.Settings, Formatting.Indented));
+            }
+            catch (Exception ex)
+            {
+                if (!(ex is FileNotFoundException || ex is DirectoryNotFoundException))
+                {
+                    throw ex;
+                }
+            }
         }
     }
     public abstract class SettingsBase { }

@@ -24,6 +24,7 @@ namespace Biyori.Settings
     public partial class SettingsWindow : Window
     {
         public IEnumerable<SettingsRouteAttribute> SettingRoutes { get => Assembly.GetEntryAssembly().GetTypes().Where(x => x.GetCustomAttributes<SettingsRouteAttribute>().Count() > 0).Select(x => x.GetCustomAttribute<SettingsRouteAttribute>()); }
+        public SettingsProvider settingsProvider { get; private set; }
         public SettingsWindow()
         {
             InitializeComponent();
@@ -39,10 +40,9 @@ namespace Biyori.Settings
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
-            var sp = App.ServiceProvider.GetProvider<SettingsProvider>();
-            var accountConfig = sp.GetConfig<AccountSettings>();
-#if DEBUG
-            if (accountConfig.Accounts.Count == 0)
+            this.settingsProvider = App.ServiceProvider.GetProvider<SettingsProvider>();
+            var accountConfig = this.settingsProvider.GetConfig<AccountSettings>();
+            if (Debugger.IsAttached && accountConfig.Accounts.Count == 0)
             {
                 accountConfig.Accounts.Add(new AccountInfo()
                 {
@@ -51,9 +51,8 @@ namespace Biyori.Settings
                     EmailAddress = "test@biyori.moe"
                 });
             }
-#endif
-            sp.UpdateConfig(accountConfig);
-            Debug.WriteLine(JsonConvert.SerializeObject(sp.GetConfig<AccountSettings>()));
+            this.settingsProvider.UpdateConfig(accountConfig);
+            Debug.WriteLine(JsonConvert.SerializeObject(this.settingsProvider.GetConfig<AccountSettings>()));
         }
 
         private void SettingsNav_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -92,6 +91,7 @@ namespace Biyori.Settings
 
         private void SaveChange_Click(object sender, RoutedEventArgs e)
         {
+            this.settingsProvider.SaveSettings().Wait();
             this.Close();
         }
     }

@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace Biyori
 {
-    public class ServiceProvider
+    public class ServiceProviderCollector
     {
         private List<ServiceProviderBase> serviceProviders { get; set; }
-        public ServiceProvider()
+        public ServiceProviderCollector()
         {
             this.serviceProviders = new List<ServiceProviderBase>();
         }
