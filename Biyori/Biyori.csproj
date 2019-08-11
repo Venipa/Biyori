@@ -200,6 +200,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="API\Kitsu\Kitsu.cs" />
+    <Compile Include="API\Kitsu\KitsuPaginationModel.cs" />
     <Compile Include="Components\LeftNavigation\LeftNavigationControl.xaml.cs">
       <DependentUpon>LeftNavigationControl.xaml</DependentUpon>
     </Compile>
