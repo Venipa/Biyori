@@ -1,7 +1,9 @@
 ﻿using Biyori.Settings.Frames;
 using Newtonsoft.Json;
+using PropertyChanged;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -21,22 +23,27 @@ namespace Biyori.Settings
     /// <summary>
     /// Interaction logic for SettingsWindow.xaml
     /// </summary>
-    public partial class SettingsWindow : Window
+    public partial class SettingsWindow : Window, INotifyPropertyChanged
     {
         public IEnumerable<SettingsRouteAttribute> SettingRoutes { get => Assembly.GetEntryAssembly().GetTypes().Where(x => x.GetCustomAttributes<SettingsRouteAttribute>().Count() > 0).Select(x => x.GetCustomAttribute<SettingsRouteAttribute>()); }
         public SettingsProviderService settingsProvider { get; private set; }
+        public string SelectedItemName { get => (this.settingsNav?.SelectedItem as ListBoxItem)?.Content.ToString() ?? "-"; }
         public SettingsWindow()
         {
             InitializeComponent();
             settingsNav.SelectionChanged += SettingsNav_SelectionChanged;
             settingsNav.Items.Clear();
-            this.SettingRoutes.Select(x => new ListBoxItem()
+            this.SettingRoutes.Select((x, i) => new ListBoxItem()
             {
                 Tag = x.key,
                 Content = x.pageName,
-                IsEnabled = x.isEnabled
+                IsEnabled = x.isEnabled,
+                IsSelected = i == 0
             }).ToList().ForEach(x => settingsNav.Items.Add(x));
         }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
@@ -60,6 +67,7 @@ namespace Biyori.Settings
             var item = e.AddedItems[0] as ListBoxItem;
             if (item != null && item.IsEnabled && item.Tag != null && this.TryGetRoute(item.Tag?.ToString()?.ToLower(), out var page))
             {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("SelectedItemName"));
                 settingsFrame.Navigate(new Uri(page.RelativeRoute));
             }
         }

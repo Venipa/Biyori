@@ -3,8 +3,9 @@
                     xmlns:local="clr-namespace:Biyori.Lib.Styles">
     <Style x:Key="TextboxPlaceholderStyle" TargetType="TextBlock">
         <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="FontStyle" Value="Italic" />
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontStyle" Value="Normal" />
+        <Setter Property="Opacity" Value=".65"/>
+        <Setter Property="FontSize" Value="11" />
     </Style>
     <Style TargetType="Window">
         <Setter Property="TextOptions.TextFormattingMode" Value="Display" />

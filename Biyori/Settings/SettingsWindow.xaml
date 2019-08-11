@@ -16,7 +16,7 @@
     <Window.Resources>
         <ResourceDictionary Source="pack://application:,,,/Settings/SettingsWindow.dictionary.xaml" />
     </Window.Resources>
-    <Grid>
+    <Grid DataContext="{Binding ElementName=root}">
         <Grid.RowDefinitions>
             <RowDefinition Height="48px"/>
             <RowDefinition Height="*"/>
@@ -38,6 +38,12 @@
                     <ListBoxItem Content="Advanced" Tag="advanced" />
                 </ListBox>
             </controls:CardControl>
+        </Grid>
+        <Grid Grid.Column="0" Grid.Row="0">
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0">
+                <TextBlock FontSize="20" Text="Settings" />
+                <TextBlock HorizontalAlignment="Left" FontSize="12" Text="{Binding Path=SelectedItemName, Mode=OneWay}" />
+            </StackPanel>
         </Grid>
         <Grid Grid.Column="1" Grid.Row="1" Margin="10">
             <controls:CardControl>

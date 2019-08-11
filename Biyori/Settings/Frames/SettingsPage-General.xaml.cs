@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PropertyChanged;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,7 @@ using System.Windows.Shapes;
 
 namespace Biyori.Settings.Frames
 {
+    [AddINotifyPropertyChangedInterface]
     [SettingsRoute("services", "Services", true)]
     /// <summary>
     /// Interaction logic for SettingsPage_General.xaml

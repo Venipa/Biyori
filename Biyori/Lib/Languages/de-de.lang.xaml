@@ -1,0 +1,12 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib"
+                    xmlns:local="clr-namespace:Biyori.Lib.Languages">
+    <system:String x:Key="LangKey">de-de</system:String>
+    <system:String x:Key="ImageUrl">pack://application:,,,/Lib/Languages/Images/Flags/de.png</system:String>
+    <system:String x:Key="Name">Deutsch</system:String>
+    <system:String x:Key="Name_Simplified">Deutschland</system:String>
+    <system:String x:Key="ShortName">DE</system:String>
+    <system:String x:Key="languageSelect">Sprache auswählen</system:String>
+    <system:String x:Key="searchPlaceholder">Suche Anime in deiner Liste oder Kitsu</system:String>
+</ResourceDictionary>

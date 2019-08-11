@@ -4,11 +4,30 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:Biyori.Settings.Frames"
-      mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
+      mc:Ignorable="d"
+      d:DesignHeight="300" d:DesignWidth="400"
+      Name="root"
       Title="SettingsPage_Application">
 
-    <Grid>
-        
+    <Grid DataContext="{Binding ElementName=root}" Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="32"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Orientation="Vertical"  HorizontalAlignment="Stretch" VerticalAlignment="Top">
+            <Label Content="{DynamicResource languageSelect}"/>
+            <ComboBox SelectedItem="{Binding Path=selectedLanguage}" ItemsSource="{Binding Path=languages, Mode=OneWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                            <TextBlock Text="{Binding Path=DisplayName}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </StackPanel>
+        <Grid Grid.Row="1">
+            <Button Style="{StaticResource NavButtons}" x:Name="applyChanges" Click="ApplyChanges_Click" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Apply Changes" />
+        </Grid>
     </Grid>
 </Page>
