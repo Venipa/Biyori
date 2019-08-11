@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -53,7 +54,8 @@ namespace Biyori
         public void ScanCurrent() => ScanAssembly(Assembly.GetEntryAssembly());
         public void ScanAssembly(Assembly assembly)
         {
-            var providers = assembly.GetTypes().Where(x => x.GetCustomAttributes<ServiceProviderParseAttribute>().Count() > 0);
+            var providers = assembly.GetTypes().Where(x => x.GetCustomAttributes<ServiceProviderParseAttribute>().Count() > 0)
+                .OrderByDescending(x => x.GetCustomAttribute<ServiceProviderParseAttribute>()?.PriotizeOrderNumber);
             var provderInstances = providers.Select(x =>
             {
                 var attr = x.GetCustomAttribute<ServiceProviderParseAttribute>();
@@ -67,10 +69,12 @@ namespace Biyori
             this.AddOrUpdateRange(provderInstances);
         }
     }
-    public abstract class ServiceProviderBase
+    public class ServiceProviderBase
     {
-        private void OnInitialize()
+        public virtual void OnInitialize()
         {
+            Debug.WriteLine(String.Format("[{0}] Initializing, PrioID: {1}", this.GetType().Name,
+                this.GetType().GetCustomAttribute<ServiceProviderParseAttribute>()?.PriotizeOrderNumber ?? 0));
         }
     }
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
@@ -80,7 +84,7 @@ namespace Biyori
         {
             Name = name;
         }
-
+        public int PriotizeOrderNumber { get; set; } = 0;
         public string Name { get; set; }
         public bool InitializeOnStartup { get; set; } = false;
     }

@@ -84,8 +84,7 @@
                         <Trigger Property="IsFocused" Value="True">
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Background" Value="#ccc" />
-                            <Setter Property="BorderBrush" Value="#aaa" />
+                            <Setter Property="Opacity" Value=".65" />
                         </Trigger>
 
                     </ControlTemplate.Triggers>

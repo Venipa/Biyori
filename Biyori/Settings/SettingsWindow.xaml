@@ -47,8 +47,10 @@
             </controls:CardControl>
         </Grid>
         <Grid Grid.Column="1" Grid.Row="2">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" wpf:MarginSetter.Margin="8, 0" Margin="8, 0">
-                <Button Style="{StaticResource NavButtons}" Click="SaveChange_Click" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Save Changes"></Button>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" IsEnabled="{Binding Path=ApplyChangeStatus, Mode=OneWay}" wpf:MarginSetter.Margin="0,0,4,0" Margin="8, 0">
+                <Button x:Name="saveChange" Padding="16,6" Style="{StaticResource NavButtons}" Click="SaveChange_Click" HorizontalAlignment="Right" VerticalAlignment="Center" Content="OK"></Button>
+                <Button x:Name="closeWindow" Padding="16,6" Style="{StaticResource NavButtons}" Click="CloseWindow_Click" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Cancel"></Button>
+                <Button x:Name="applyChange" Padding="16,6" Style="{StaticResource NavButtons}" Click="ApplyChange_Click" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Apply"></Button>
             </StackPanel>
         </Grid>
     </Grid>

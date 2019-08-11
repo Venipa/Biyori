@@ -4,6 +4,7 @@ using PropertyChanged;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -13,14 +14,14 @@ using System.Threading.Tasks;
 namespace Biyori.Settings
 {
     [AddINotifyPropertyChangedInterface]
-    [ServiceProviderParse("settings", InitializeOnStartup = true)]
-    public class SettingsProvider : ServiceProviderBase
+    [ServiceProviderParse("settings", InitializeOnStartup = true, PriotizeOrderNumber = 999)]
+    public class SettingsProviderService : ServiceProviderBase
     {
         private string configPath { get => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config"); }
         private string settingsPath { get => Path.Combine(configPath, "settings.json"); }
         private ConcurrentDictionary<string, SettingsBase> Settings { get; set; } = new ConcurrentDictionary<string, SettingsBase>();
 
-        public SettingsProvider()
+        public SettingsProviderService()
         {
             bool initialConfig = false;
             if (!Directory.Exists(this.configPath))
@@ -109,6 +110,11 @@ namespace Biyori.Settings
                     throw ex;
                 }
             }
+        }
+
+        public override void OnInitialize()
+        {
+            base.OnInitialize();
         }
     }
     public abstract class SettingsBase { }

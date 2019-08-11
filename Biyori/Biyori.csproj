@@ -203,6 +203,7 @@
     <Compile Include="Lib\WPF\MarginSetter.cs" />
     <Compile Include="Lib\WPF\Spacing.cs" />
     <Compile Include="ServiceProvider.cs" />
+    <Compile Include="Services\Sync\SyncService.cs" />
     <Compile Include="Settings\Frames\SettingsPage-Accounts.xaml.cs">
       <DependentUpon>SettingsPage-Accounts.xaml</DependentUpon>
     </Compile>

@@ -24,7 +24,7 @@ namespace Biyori.Settings
     public partial class SettingsWindow : Window
     {
         public IEnumerable<SettingsRouteAttribute> SettingRoutes { get => Assembly.GetEntryAssembly().GetTypes().Where(x => x.GetCustomAttributes<SettingsRouteAttribute>().Count() > 0).Select(x => x.GetCustomAttribute<SettingsRouteAttribute>()); }
-        public SettingsProvider settingsProvider { get; private set; }
+        public SettingsProviderService settingsProvider { get; private set; }
         public SettingsWindow()
         {
             InitializeComponent();
@@ -40,7 +40,7 @@ namespace Biyori.Settings
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
-            this.settingsProvider = App.ServiceProvider.GetProvider<SettingsProvider>();
+            this.settingsProvider = App.ServiceProvider.GetProvider<SettingsProviderService>();
             var accountConfig = this.settingsProvider.GetConfig<AccountSettings>();
             if (Debugger.IsAttached && accountConfig.Accounts.Count == 0)
             {
@@ -89,10 +89,36 @@ namespace Biyori.Settings
             }
         }
 
+        public bool ApplyChangeStatus { get; set; } = true;
         private void SaveChange_Click(object sender, RoutedEventArgs e)
         {
-            this.settingsProvider.SaveSettings().Wait();
-            this.Close();
+            Dispatcher.BeginInvoke((Action)(() =>
+            {
+                this.ApplyChangeStatus = false;
+                this.settingsProvider.SaveSettings().Wait();
+                this.ApplyChangeStatus = true;
+                this.Close();
+            }));
+        }
+
+        private void CloseWindow_Click(object sender, RoutedEventArgs e)
+        {
+            Dispatcher.BeginInvoke((Action)(() =>
+            {
+                this.ApplyChangeStatus = false;
+                this.settingsProvider.LoadSettings().Wait();
+                this.ApplyChangeStatus = true;
+                this.Close();
+            }));
+        }
+        private void ApplyChange_Click(object sender, RoutedEventArgs e)
+        {
+            Dispatcher.BeginInvoke((Action)(() =>
+            {
+                this.ApplyChangeStatus = false;
+                this.settingsProvider.SaveSettings().Wait();
+                this.ApplyChangeStatus = true;
+            }));
         }
     }
 

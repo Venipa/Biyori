@@ -26,22 +26,20 @@ namespace Biyori.Settings.Frames
     /// </summary>
     public partial class SettingsPage_Accounts : Page
     {
-        private SettingsProvider settingsProvider { get => App.ServiceProvider.GetProvider<SettingsProvider>(); }
+        private SettingsProviderService settingsProvider { get => App.ServiceProvider.GetProvider<SettingsProviderService>(); }
         private AccountSettings accountSettings { get => this.settingsProvider.GetConfig<AccountSettings>(); }
         private List<AccountInfo> _accountInfo { get => this.settingsProvider.GetConfig<AccountSettings>()?.Accounts; }
         public List<AccountInfo> accountInfo { get; set; } = new List<AccountInfo>();
-        [AlsoNotifyFor("selectedAccountShow")]
-        public AccountInfo selectedAccount { get => this.accountSettings.CurrentAccount; set {
-                var s = this.accountSettings;
-                s.CurrentAccount = value;
-                this.settingsProvider.UpdateConfig<AccountSettings>(s);
-            } }
+        [AlsoNotifyFor("selectedAccountShow", "DataChanged")]
+        public AccountInfo selectedAccount { get; set; }
         public Visibility selectedAccountShow { get => this.selectedAccount != null ? Visibility.Visible : Visibility.Hidden; }
+        public bool DataChanged { get => this.selectedAccount?.ProfileHash != this.accountSettings.CurrentAccount?.ProfileHash; }
         public SettingsPage_Accounts()
         {
             InitializeComponent();
             this.accountInfo.Clear();
             this.accountInfo = _accountInfo;
+            this.selectedAccount = this.accountSettings.CurrentAccount;
         }
 
         private void AccountSelection_Click(object sender, RoutedEventArgs e)
@@ -49,6 +47,14 @@ namespace Biyori.Settings.Frames
             Dispatcher.BeginInvoke((Action)(() =>
             {
                 this.selectedAccount = (sender as Button)?.DataContext as AccountInfo;
+            }));
+        }
+        private void AccountSelection_Save(object sender, RoutedEventArgs e)
+        {
+            Dispatcher.BeginInvoke((Action)(() =>
+            {
+                this.accountSettings.CurrentAccount = this.selectedAccount;
+                this.settingsProvider.UpdateConfig(this.accountSettings);
             }));
         }
     }
@@ -74,6 +80,8 @@ namespace Biyori.Settings.Frames
         public AccountEndpoints Type { get; set; } = AccountEndpoints.Kitsu;
         [JsonIgnore]
         public string TypeString { get => this.Type.ToString(); }
+        [JsonIgnore]
+        public string ProfileHash { get => this.Username?.GetHashCode().ToString("X8"); }
     }
     public enum AccountEndpoints
     {
