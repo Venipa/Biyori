@@ -10,7 +10,7 @@ namespace Biyori.API.Kitsu
 
     public class Kitsu
     {
-        private const string BaseURL = "https://kitsu.io/api/edge";
+        public static readonly string BaseURL = "https://kitsu.io/api/edge";
         private RestClient getClient()
         {
             var client = new RestClient(BaseURL);
@@ -31,7 +31,6 @@ namespace Biyori.API.Kitsu
         /// <param name="Password">Password or API Key</param>
         public void InitializeUserClient(string loginUser, string Password)
         {
-
         }
         public async Task<KitsuPaginationModel<KitsuDataModel>> GetAnimeByBulkId(params int[] animeId)
         {
