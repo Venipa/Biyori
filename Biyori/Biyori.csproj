@@ -211,6 +211,7 @@
     <Compile Include="Lib\Languages\Languages.xaml.cs">
       <DependentUpon>Languages.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Lib\Util\Object.Extensions.cs" />
     <Compile Include="Lib\WPF\MarginSetter.cs" />
     <Compile Include="Lib\WPF\Spacing.cs" />
     <Compile Include="ServiceProvider.cs" />
