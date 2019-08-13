@@ -11,6 +11,7 @@
         <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
         <Setter Property="TextOptions.TextRenderingMode" Value="Aliased" />
         <Setter Property="TextOptions.TextHintingMode" Value="Auto" />
+        <Setter Property="FontFamily" Value="Bahnschrift"/>
     </Style>
     <Style TargetType="Button">
         <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
@@ -18,6 +19,7 @@
         <Setter Property="TextOptions.TextHintingMode" Value="Auto" />
     </Style>
     <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="pack://application:,,,/Lib/Styles/Icons.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Lib/Styles/Buttons.styles.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Lib/Styles/TabControl.styles.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Lib/Controls/CardControl.style.xaml" />

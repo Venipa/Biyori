@@ -12,12 +12,32 @@
     </UserControl.Resources>
     <Grid>
         <ListBox>
+            <ListBox.Resources>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <Button Margin="2" Style="{StaticResource NavButtons}">
+                                    <TextBlock><ContentPresenter /></TextBlock>
+                                </Button>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.Resources>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <DockPanel>
+                        <Button Margin="4" Style="{StaticResource NavButtons}">
+                            <TextBlock><ContentPresenter /></TextBlock>
+                        </Button>
+                    </DockPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
             <ListBoxItem Content="Now Playing"/>
-            <Separator Background="#2f000000" />
             <ListBoxItem Content="Anime List"/>
             <ListBoxItem Content="History"/>
             <ListBoxItem Content="Statistics"/>
-            <Separator Background="#2f000000"/>
             <ListBoxItem Content="Search"/>
             <ListBoxItem Content="Seasons"/>
             <ListBoxItem Content="Torrents"/>

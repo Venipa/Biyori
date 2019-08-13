@@ -31,16 +31,31 @@
         </Border>
         <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="8,0,0,0" wpf:MarginSetter.Margin="2, 0" wpf:MarginSetter.LastItemMargin="2, 0, 0, 0">
-                <Button Style="{StaticResource NavButtons}" HorizontalAlignment="Left" VerticalAlignment="Center">Sync</Button>
+                <Button Style="{StaticResource NavButtons}"
+                        ToolTip="Refresh / Sync Library"
+                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <ContentControl Content="{StaticResource syncIcon}"/>
+                </Button>
                 <Grid>
                     <Separator Background="LightGray" Margin="0, 14" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" VerticalAlignment="Stretch"></Separator>
                 </Grid>
-                <Button Style="{StaticResource NavButtons}" HorizontalAlignment="Left" VerticalAlignment="Center">Folders</Button>
-                <Button Style="{StaticResource NavButtons}" HorizontalAlignment="Left" VerticalAlignment="Center">Sources</Button>
-                <Grid>
-                    <Separator Background="LightGray" Margin="0, 14" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" VerticalAlignment="Stretch"></Separator>
-                </Grid>
-                <Button Style="{StaticResource NavButtons}" Click="onSettingsClick" HorizontalAlignment="Left" VerticalAlignment="Center">Settings</Button>
+                <Button Style="{StaticResource NavButtons}"
+                        ToolTip="Open watched Folders"
+                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl VerticalAlignment="Center" Content="{StaticResource folderIcon}" Margin="0,0,4,0" />
+                        <TextBlock VerticalAlignment="Center" Text="Folders" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource NavButtons}"
+                        ToolTip="Settings"
+                        Click="onSettingsClick" HorizontalAlignment="Left" VerticalAlignment="Center">
+
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl VerticalAlignment="Center" Content="{StaticResource settingsIcon}" Margin="0,0,4,0" />
+                        <TextBlock VerticalAlignment="Center" Text="Settings" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </Grid>
         <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2">
