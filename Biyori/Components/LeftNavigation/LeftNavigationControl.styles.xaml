@@ -7,9 +7,72 @@
     </Style>
     <Style TargetType="ListBox">
         <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0,0,1,0"/>
+        <Setter Property="BorderBrush" Value="{StaticResource NavBorderColor}"/>
     </Style>
+    <SolidColorBrush x:Key="LeftNavMouseOn" Color="CadetBlue" Opacity=".85"/>
+    <SolidColorBrush x:Key="LeftNavMouseOff" Color="#0f000000" />
     <Style TargetType="ListBoxItem">
-        <Setter Property="Padding" Value="3px" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="BorderThickness" Value="4,0,0,0"/>
+        <Setter Property="BorderBrush" Value="{StaticResource LeftNavMouseOff}"/>
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="Background" Value="#0f000000"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <ControlTemplate.Resources>
+                        <Storyboard x:Key="JellyClick">
+                            <DoubleAnimationUsingKeyFrames BeginTime="00:00:00"
+                            Storyboard.TargetName="border"
+                          Storyboard.TargetProperty="(RenderTransform).ScaleX">
+                                <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value=".9125"/>
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames BeginTime="00:00:00"
+                            Storyboard.TargetName="border"
+                          Storyboard.TargetProperty="(RenderTransform).ScaleY">
+                                <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value=".9125"/>
+                            </DoubleAnimationUsingKeyFrames>
+                        </Storyboard>
+                        <Storyboard x:Key="JellyClickOff">
+                            <DoubleAnimationUsingKeyFrames BeginTime="00:00:00"
+                            Storyboard.TargetName="border"
+                          Storyboard.TargetProperty="(RenderTransform).ScaleX">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.15" Value="1"/>
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames BeginTime="00:00:00"
+                            Storyboard.TargetName="border"
+                          Storyboard.TargetProperty="(RenderTransform).ScaleY">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.15" Value="1"/>
+                            </DoubleAnimationUsingKeyFrames>
+                        </Storyboard>
+                    </ControlTemplate.Resources>
+                    <Border Name="border" Padding="{TemplateBinding Padding}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}">
+                        <Border.RenderTransformOrigin>
+                            <Point X=".5" Y=".5" />
+                        </Border.RenderTransformOrigin>
+                        <Border.RenderTransform>
+                            <ScaleTransform ScaleX="1" ScaleY="1" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                        </Border.RenderTransform>
+                        <ContentPresenter TextOptions.TextFormattingMode="Display" Name="content" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#1f000000" />
+                            <Setter Property="Cursor" Value="Hand" />
+                            <Setter Property="BorderBrush" Value="{StaticResource LeftNavMouseOn}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#1f000000" />
+                            <Setter Property="BorderBrush" Value="{StaticResource LeftNavMouseOn}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value=".65" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 </ResourceDictionary>

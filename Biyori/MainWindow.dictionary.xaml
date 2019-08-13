@@ -1,7 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Biyori">
-    <SolidColorBrush Color="#cccccc" x:Key="NavBorderColor" />
     <Style x:Key="leftNav" TargetType="Border">
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="BorderBrush" Value="{StaticResource NavBorderColor}" />

@@ -1,6 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Biyori.Lib.Styles">
+    <SolidColorBrush Color="#cccccc" x:Key="NavBorderColor" />
     <Style x:Key="TextboxPlaceholderStyle" TargetType="TextBlock">
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="FontStyle" Value="Normal" />
