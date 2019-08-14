@@ -9,6 +9,7 @@
         xmlns:adorners="http://gu.se/Adorners"
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d"
+        Icon="pack://application:,,,/Assets/Logo/appIcon.ico"
         Title="MainWindow" Height="450" MinHeight="450" Width="800" MinWidth="800">
     <Window.Resources>
         <ResourceDictionary Source="pack://application:,,,/MainWindow.dictionary.xaml" />

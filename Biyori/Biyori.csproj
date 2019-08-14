@@ -38,6 +38,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Assets\Logo\appIcon.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Abp, Version=4.8.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Abp.4.8.1\lib\netstandard2.0\Abp.dll</HintPath>
@@ -512,6 +515,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Lib\Languages\Images\Flags\de.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Logo\appIcon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Logo\appIcon.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

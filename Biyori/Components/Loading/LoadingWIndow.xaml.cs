@@ -33,6 +33,8 @@ namespace Biyori.Components.Loading
 
             Dispatcher.BeginInvoke((Action)(() =>
             {
+                // For now just waiting
+                Task.Delay(1000).Wait();
                 this.Hide();
                 new MainWindow().Show();
                 this.Close();

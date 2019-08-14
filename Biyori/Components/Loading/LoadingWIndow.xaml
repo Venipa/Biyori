@@ -25,7 +25,7 @@
                 <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <Image
                     RenderOptions.BitmapScalingMode="HighQuality"
-                    VerticalAlignment="Center" Height="300" HorizontalAlignment="Center" Margin="0,0,24,0" Source="pack://application:,,,/Assets/logo_image.png"/>
+                    VerticalAlignment="Center" Height="260" HorizontalAlignment="Center" Margin="0,0,16,0" Source="pack://application:,,,/Assets/Logo/appIcon.png"/>
                     <StackPanel Orientation="Vertical" VerticalAlignment="Center" Width="200">
                         <TextBlock Text="Biyori" HorizontalAlignment="Center" FontSize="32" Opacity=".8" />
                         <Separator Width="86" Margin="0, 12" Opacity=".5" />

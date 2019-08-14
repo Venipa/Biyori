@@ -13,6 +13,7 @@
         <Setter Property="TextOptions.TextRenderingMode" Value="Aliased" />
         <Setter Property="TextOptions.TextHintingMode" Value="Auto" />
         <Setter Property="FontFamily" Value="Bahnschrift"/>
+        <Setter Property="Icon" Value="pack://application:,,,/Assets/Logo/appIcon.ico"/>
     </Style>
     <Style TargetType="Button">
         <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
