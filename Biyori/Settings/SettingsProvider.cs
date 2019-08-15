@@ -20,10 +20,11 @@ namespace Biyori.Settings
         private string configPath { get => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config"); }
         private string settingsPath { get => Path.Combine(configPath, "settings.json"); }
         private ConcurrentDictionary<string, SettingsBase> Settings { get; set; } = new ConcurrentDictionary<string, SettingsBase>();
-
+        private bool initialConfig { get; set; } = false;
+        private bool startConfig { get; set; } = true;
         public SettingsProviderService()
         {
-            bool initialConfig = false;
+            initialConfig = false;
             if (!Directory.Exists(this.configPath))
             {
                 Directory.CreateDirectory(this.configPath);
@@ -42,10 +43,6 @@ namespace Biyori.Settings
                             key => x,
                             (key, oldSettings) => oldSettings = x);
                     });
-            if (!initialConfig)
-            {
-                this.LoadSettings().Wait();
-            }
 
         }
         private void initializeConfig()
@@ -68,8 +65,13 @@ namespace Biyori.Settings
         }
         public void UpdateConfig<T>(T settings, bool saveToFile = false) where T : SettingsBase
         {
+            var name = settings.GetType().GetCustomAttribute<SettingsSectionAttribute>()?.name;
+            if (name == null)
+            {
+                throw new ArgumentNullException(name, "settings name is null");
+            }
             this.Settings.AddOrUpdate(
-                settings.GetType().GetCustomAttribute<SettingsSectionAttribute>()?.name,
+                name,
                 key => settings,
                 (key, oldSettings) => oldSettings = settings);
             if (saveToFile)
@@ -92,6 +94,14 @@ namespace Biyori.Settings
                     if (avSetting != null)
                     {
                         var obj = (x.Value as JObject).ToObject(avSetting);
+                        if (obj != null)
+                        {
+                            if (startConfig)
+                            {
+                                obj.GetType().GetMethod("OnInitConfig")?.Invoke(obj, new object[] { this });
+                            }
+                            obj.GetType().GetMethod("OnLoadConfig")?.Invoke(obj, new object[] { this });
+                        }
                         this.Settings.AddOrUpdate(x.Key, key => obj as SettingsBase, (key, oldSetting) => oldSetting = obj as SettingsBase);
                     }
                 }
@@ -111,13 +121,22 @@ namespace Biyori.Settings
                 }
             }
         }
-
-        public override void OnInitialize()
+        public override void OnInitialize(ServiceProviderCollector provider)
         {
-            base.OnInitialize();
+            base.OnInitialize(provider);
+
+            if (!initialConfig)
+            {
+                this.LoadSettings().Wait();
+            }
+            startConfig = false;
         }
     }
-    public abstract class SettingsBase { }
+    public abstract class SettingsBase
+    {
+        public virtual void OnLoadConfig(SettingsProviderService provider) { }
+        public virtual void OnInitConfig(SettingsProviderService provider) { }
+    }
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class SettingsSectionAttribute : Attribute
     {

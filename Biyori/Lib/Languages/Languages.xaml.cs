@@ -14,6 +14,7 @@ namespace Biyori.Lib.Languages
     public partial class Languages : ResourceDictionary
     {
         public static ApplicationLanguage DefaultAppLanguage { get; set; }
+        public static List<ApplicationLanguage> AvailableLanguages { get; private set; }
         public Languages()
         {
         }
@@ -23,22 +24,17 @@ namespace Biyori.Lib.Languages
         }
         public void Initialize()
         {
-            var provider = App.ServiceProvider.GetProvider<SettingsProviderService>();
-            var appConfig = provider.GetConfig<ApplicationSettings>();
-            var selectedLanguageResource = appConfig?.SelectedLanguage?.Name != null &&
-                this.MergedDictionaries.Where(x => x.Contains("LangKey") && x["LangKey"].ToString() == appConfig.SelectedLanguage.Name).Count() > 0 ?
-                this.getLanguageResource(appConfig.SelectedLanguage.Name) :
-                this.getLanguageResource("en-us");
-            var selectedLanguage = new ApplicationLanguage()
-            {
-                ImageUrl = selectedLanguageResource["ImageUrl"]?.ToString(),
-                DisplayName = selectedLanguageResource["DisplayName"]?.ToString(),
-                Name = selectedLanguageResource["LangKey"]?.ToString(),
-            };
-            appConfig.Languages.AddRange(this.getLanguages());
-            provider.UpdateConfig(appConfig, true);
+            Languages.AvailableLanguages = this.getLanguages().ToList();
+            Languages.DefaultAppLanguage = Languages.AvailableLanguages.FirstOrDefault(x => x.Name == "en-us");
+            this.setLanguage(Languages.DefaultAppLanguage);
+            
+        }
+        public void setLanguage(ApplicationLanguage selectedLanguage)
+        {
+            var items = this.MergedDictionaries.ToList();
             this.MergedDictionaries.Clear();
-            this.MergedDictionaries.Add(selectedLanguageResource);
+            items.Where(x => x["LangKey"]?.ToString() != selectedLanguage.Name).ToList().ForEach(x => this.MergedDictionaries.Add(x));
+            this.MergedDictionaries.Add(items.FirstOrDefault(x => x["LangKey"]?.ToString() == selectedLanguage.Name));
         }
 
         private ApplicationLanguage getDefaultLanguage()
@@ -54,7 +50,7 @@ namespace Biyori.Lib.Languages
             var lang = new ApplicationLanguage()
             {
                 ImageUrl = resource["ImageUrl"]?.ToString(),
-                DisplayName = resource["DisplayName"]?.ToString(),
+                DisplayName = resource["Name"]?.ToString(),
                 Name = resource["LangKey"]?.ToString(),
             };
             return lang;

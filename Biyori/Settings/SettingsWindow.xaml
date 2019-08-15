@@ -39,10 +39,21 @@
                 </ListBox>
             </controls:CardControl>
         </Grid>
-        <Grid Grid.Column="0" Grid.Row="0">
-            <StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0">
-                <TextBlock FontSize="20" Text="Settings" />
-                <TextBlock HorizontalAlignment="Left" FontSize="12" Text="{Binding Path=SelectedItemName, Mode=OneWay}" />
+        <Grid Grid.Column="0" Grid.Row="0" ClipToBounds="False" UseLayoutRounding="True">
+            <StackPanel Orientation="Horizontal" ClipToBounds="False" UseLayoutRounding="True">
+
+                <Image
+                    Margin="10,4,4,4"
+                    RenderOptions.BitmapScalingMode="HighQuality"
+                    VerticalAlignment="Center" HorizontalAlignment="Center" Source="pack://application:,,,/Assets/Logo/appIcon.png">
+                    <Image.Effect>
+                        <DropShadowEffect ShadowDepth="0" BlurRadius="8" Opacity=".25"></DropShadowEffect>
+                    </Image.Effect>
+                </Image>
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0">
+                    <TextBlock FontSize="20" Text="Settings" />
+                    <TextBlock HorizontalAlignment="Left" FontSize="12" Text="{Binding Path=SelectedItemName, Mode=OneWay}" />
+                </StackPanel>
             </StackPanel>
         </Grid>
         <Grid Grid.Column="1" Grid.Row="1" Margin="10">

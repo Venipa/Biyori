@@ -21,9 +21,9 @@ namespace Biyori.Services.Sync
         private string animeImagePath { get => Path.Combine(this.dataPath, "images"); }
         private string animeCoverPath { get => Path.Combine(this.dataPath, "covers"); }
         private string animeDbPath { get => Path.Combine(this.dataPath, "anime.db"); }
-        public override void OnInitialize()
+        public override void OnInitialize(ServiceProviderCollector provider)
         {
-            base.OnInitialize();
+            base.OnInitialize(provider);
             Debug.WriteLine(this.profilePath);
         }
     }

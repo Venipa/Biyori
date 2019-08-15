@@ -21,17 +21,20 @@ namespace Biyori
         public static readonly ServiceProviderCollector ServiceProvider = new ServiceProviderCollector();
         public App() : base()
         {
-            App.ServiceProvider.ScanCurrent();
         }
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-
-
+            var wnd = new LoadingWindow();
+            wnd.Show();
             var languageInstance = Lib.Languages.Languages.Instance();
             languageInstance.Initialize();
-            Debug.WriteLine("Currently active Language: " + App.ServiceProvider.GetProvider<SettingsProviderService>()?.GetConfig<ApplicationSettings>()?.SelectedLanguage.DisplayName);
-            new LoadingWIndow().Show();
+            App.ServiceProvider.ScanCurrent();
+            var settingsProvider = App.ServiceProvider.GetProvider<SettingsProviderService>();
+            Debug.WriteLine("Currently active Language: " + settingsProvider?.GetConfig<ApplicationSettings>()?.SelectedLanguage.DisplayName);
+            wnd.Hide();
+            new MainWindow().Show();
+            wnd.Close();
         }
 
     }

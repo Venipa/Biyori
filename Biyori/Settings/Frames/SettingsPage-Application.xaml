@@ -16,7 +16,9 @@
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Orientation="Vertical"  HorizontalAlignment="Stretch" VerticalAlignment="Top">
             <Label Content="{DynamicResource languageSelect}"/>
-            <ComboBox SelectedItem="{Binding Path=selectedLanguage}" ItemsSource="{Binding Path=languages, Mode=OneWay}">
+            <ComboBox Name="languageComboBox"
+                      SelectedItem="{Binding Path=selectedLanguage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      ItemsSource="{Binding Path=languages, Mode=OneWay}">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
@@ -27,7 +29,7 @@
             </ComboBox>
         </StackPanel>
         <Grid Grid.Row="1">
-            <Button Style="{StaticResource NavButtons}" x:Name="applyChanges" Click="ApplyChanges_Click" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Apply Changes" />
+            <!--<Button Style="{StaticResource NavButtons}" x:Name="applyChanges" Click="ApplyChanges_Click" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Apply Changes" />-->
         </Grid>
     </Grid>
 </Page>

@@ -62,7 +62,7 @@ namespace Biyori
                 var instance = Activator.CreateInstance(x);
                 if (attr.InitializeOnStartup)
                 {
-                    instance.GetType().GetMethod("OnInitialize")?.Invoke(instance, new object[] { });
+                    instance.GetType().GetMethod("OnInitialize")?.Invoke(instance, new object[] { this });
                 }
                 return instance as ServiceProviderBase;
             });
@@ -71,7 +71,7 @@ namespace Biyori
     }
     public class ServiceProviderBase
     {
-        public virtual void OnInitialize()
+        public virtual void OnInitialize(ServiceProviderCollector provider)
         {
             Debug.WriteLine(String.Format("[{0}] Initializing, PrioID: {1}", this.GetType().Name,
                 this.GetType().GetCustomAttribute<ServiceProviderParseAttribute>()?.PriotizeOrderNumber ?? 0));

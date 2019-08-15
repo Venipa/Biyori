@@ -18,9 +18,9 @@ namespace Biyori.Components.Loading
     /// <summary>
     /// Interaction logic for LoadingWIndow.xaml
     /// </summary>
-    public partial class LoadingWIndow : Window
+    public partial class LoadingWindow : Window
     {
-        public LoadingWIndow()
+        public LoadingWindow()
         {
             InitializeComponent();
         }
@@ -28,22 +28,16 @@ namespace Biyori.Components.Loading
         {
             base.OnInitialized(e);
 
-            //var languageInstance = Lib.Languages.Languages.Instance();
-            //languageInstance.Initialize();
-
-            Dispatcher.BeginInvoke((Action)(() =>
-            {
-                // For now just waiting
-                Task.Delay(1000).Wait();
-                this.Hide();
-                new MainWindow().Show();
-                this.Close();
-            }));
         }
         private void Grid_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton == MouseButton.Left)
                 this.DragMove();
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
         }
     }
 }

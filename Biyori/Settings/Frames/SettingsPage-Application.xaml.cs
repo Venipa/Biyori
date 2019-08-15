@@ -28,20 +28,29 @@ namespace Biyori.Settings.Frames
         private SettingsProviderService settingsProvider { get; set; }
         [AlsoNotifyFor("selectedLanguage")]
         private ApplicationSettings appSettings { get; set; }
-        public List<ApplicationLanguage> languages { get; set; } = new List<ApplicationLanguage>();
+        public List<ApplicationLanguage> languages { get => appSettings?.Languages; }
         public ApplicationLanguage selectedLanguage { get => appSettings.SelectedLanguage; set => appSettings.SelectedLanguage = value; }
+        public int selectedLanguageIndex { get => appSettings?.Languages?.IndexOf(appSettings.SelectedLanguage) ?? -1; }
         public SettingsPage_Application()
         {
             this.settingsProvider = App.ServiceProvider.GetProvider<SettingsProviderService>();
             this.appSettings = this.settingsProvider.GetConfig<ApplicationSettings>();
-            this.languages.Clear();
-            this.languages.AddRange(appSettings.Languages);
             InitializeComponent();
+            var currentLangKey = appSettings?.SelectedLanguage?.Name;
             Debug.WriteLine(appSettings.Languages.Count());
+            Debug.WriteLine(appSettings.SelectedLanguage?.DisplayName);
+
+            if (currentLangKey != null)
+            {
+                this.languageComboBox.SelectedIndex = selectedLanguageIndex;
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
-        public void PropertyChange(string propName) => this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
+        public void PropertyChange(string propName)
+        {
+            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
+        }
 
         private void ApplyChanges_Click(object sender, RoutedEventArgs e)
         {
@@ -52,13 +61,21 @@ namespace Biyori.Settings.Frames
             }));
         }
     }
+    [AddINotifyPropertyChangedInterface]
     [SettingsSection("application", true)]
     public class ApplicationSettings : SettingsBase
     {
         [JsonProperty("languages"), JsonIgnore]
         public List<ApplicationLanguage> Languages { get; set; } = new List<ApplicationLanguage>();
         [JsonProperty("selected_language")]
-        public ApplicationLanguage SelectedLanguage { get; set; } = Biyori.Lib.Languages.Languages.DefaultAppLanguage;
+        public ApplicationLanguage SelectedLanguage { get; set; }
+        public override void OnLoadConfig(SettingsProviderService provider)
+        {
+            base.OnLoadConfig(provider);
+            Languages = Biyori.Lib.Languages.Languages.AvailableLanguages;
+            SelectedLanguage = this.Languages.FirstOrDefault(x => x.Name == this.SelectedLanguage?.Name) ?? Biyori.Lib.Languages.Languages.DefaultAppLanguage;
+            Lib.Languages.Languages.Instance()?.setLanguage(SelectedLanguage);
+        }
     }
     public class ApplicationLanguage
     {
