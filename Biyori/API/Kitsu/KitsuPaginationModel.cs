@@ -25,7 +25,7 @@ namespace Biyori.API.Kitsu
         [JsonIgnore]
         public int CurrentPage { get => Pages == 0 ? 1 : Offset / Limit; }
         [JsonProperty("data")]
-        public IEnumerable<T> Data { get; set; } = new List<T>();
+        public List<T> Data { get; set; } = new List<T>();
         [JsonProperty("links")]
         public KitsuLinkModel Links { get; set; }
 
@@ -74,7 +74,16 @@ namespace Biyori.API.Kitsu
             return client;
         }
     }
-    public class KitsuDataModel { }
+    public class KitsuDataModel
+    {
+        [JsonProperty("id", Required = Required.DisallowNull)]
+        public int Id { get; set; }
+        [JsonProperty("type")]
+        public string Type { get; set; }
+        [JsonProperty("Attributes")]
+        public KitsuAttributeModel Attributes { get; set; }
+    }
+    
     public class KitsuMetaModel
     {
         [JsonProperty("count")]

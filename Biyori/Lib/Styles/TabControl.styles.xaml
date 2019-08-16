@@ -25,6 +25,11 @@
                             <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource TabItemBorderColor}" />
                             <Setter TargetName="Border" Property="Background" Value="{StaticResource TabItemBackground}" />
                         </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Border" Property="Opacity" Value=".65" />
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource TabItemBorderColor}" />
+                            <Setter TargetName="Border" Property="Background" Value="{StaticResource TabItemBackground}" />
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

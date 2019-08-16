@@ -51,7 +51,7 @@ namespace Biyori.API.Kitsu
                 .AddQueryParameter("page[limit]", "1")
                 .AddQueryParameter("filter[id]", animeId.ToString());
             var client = this.getClient();
-            var response = await client.ExecuteTaskAsync<KitsuPaginationModel<KitsuDataModel>>(rr);
+            var response = client.ExecuteTaskAsync<KitsuPaginationModel<KitsuDataModel>>(rr).Result;
             return response.Data?.Data?.FirstOrDefault();
         }
         public async Task<KitsuPaginationModel<KitsuDataModel>> SearchByTitle(string searchQuery, int perPage = 10)

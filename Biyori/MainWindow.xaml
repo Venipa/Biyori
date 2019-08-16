@@ -57,6 +57,12 @@
                         <TextBlock VerticalAlignment="Center" Text="Settings" />
                     </StackPanel>
                 </Button>
+                <Button x:Name="_test_showAnimeDialog" Style="{StaticResource NavButtons}" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl VerticalAlignment="Center" Content="{StaticResource syncIcon}" Margin="0,0,4,0" />
+                        <TextBlock VerticalAlignment="Center" Text="Test Anime Dialog" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </Grid>
         <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2">

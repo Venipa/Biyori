@@ -212,7 +212,11 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="API\Kitsu\Kitsu.cs" />
+    <Compile Include="API\Kitsu\KitsuModels.cs" />
     <Compile Include="API\Kitsu\KitsuPaginationModel.cs" />
+    <Compile Include="Components\AnimeDialog\AnimeInfoWindow.xaml.cs">
+      <DependentUpon>AnimeInfoWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Components\LeftNavigation\LeftNavigationControl.xaml.cs">
       <DependentUpon>LeftNavigationControl.xaml</DependentUpon>
     </Compile>
@@ -227,10 +231,13 @@
       <DependentUpon>Languages.xaml</DependentUpon>
     </Compile>
     <Compile Include="Lib\Styles\Styles.cs" />
+    <Compile Include="Lib\Util\Bitmap.Extensions.cs" />
     <Compile Include="Lib\Util\Object.Extensions.cs" />
     <Compile Include="Lib\WPF\MarginSetter.cs" />
     <Compile Include="Lib\WPF\Spacing.cs" />
     <Compile Include="ServiceProvider.cs" />
+    <Compile Include="Services\Anime\AnimeModel.cs" />
+    <Compile Include="Services\Anime\AnimeService.cs" />
     <Compile Include="Services\Sync\SyncService.cs" />
     <Compile Include="Settings\Frames\SettingsPage-Accounts.xaml.cs">
       <DependentUpon>SettingsPage-Accounts.xaml</DependentUpon>
@@ -401,6 +408,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Components\AnimeDialog\AnimeInfoWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Components\LeftNavigation\LeftNavigationControl.styles.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -542,6 +553,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Logo\appIcon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\image-not-found.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

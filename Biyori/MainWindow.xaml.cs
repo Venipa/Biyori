@@ -1,4 +1,5 @@
 ﻿using Abp.Configuration;
+using Biyori.Components.AnimeDialog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,12 +27,19 @@ namespace Biyori
         {
             InitializeComponent();
             this.Title = Assembly.GetExecutingAssembly()?.GetName()?.Name ?? "Biyori";
+            _test_showAnimeDialog.Click += onTestAnimeClick;
         }
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
         }
 
+        private void onTestAnimeClick(object sender, RoutedEventArgs e)
+        {
+            var wnd = new AnimeInfoWindow(42068);
+            wnd.Owner = this;
+            wnd.ShowDialog();
+        }
         private void onSettingsClick(object sender, RoutedEventArgs e)
         {
             var settingsWindow = new Settings.SettingsWindow();
