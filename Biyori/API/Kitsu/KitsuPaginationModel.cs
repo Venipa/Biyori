@@ -88,6 +88,8 @@ namespace Biyori.API.Kitsu
     {
         [JsonProperty("count")]
         public int Count { get; set; } = 0;
+        [JsonProperty("statusCounts")]
+        public KitsuLibraryStatus StatusCounts { get; set; }
     }
     public class KitsuLinkModel
     {

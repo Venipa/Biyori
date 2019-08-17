@@ -116,4 +116,17 @@ namespace Biyori.API.Kitsu
         [JsonProperty("height")]
         public int Height { get; set; }
     }
+    public class KitsuLibraryStatus
+    {
+        [JsonProperty("current")]
+        public int Current { get; set; } = 0;
+        [JsonProperty("completed")]
+        public int Completed { get; set; } = 0;
+        [JsonProperty("dropped")]
+        public int Dropped { get; set; } = 0;
+        [JsonProperty("onHold")]
+        public int OnHold { get; set; } = 0;
+        [JsonProperty("planned")]
+        public int Planned { get; set; } = 0;
+    }
 }

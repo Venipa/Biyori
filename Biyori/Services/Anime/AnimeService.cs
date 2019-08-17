@@ -1,6 +1,8 @@
 ﻿using Biyori.API.Kitsu;
 using Biyori.Lib.Util;
 using Biyori.Services.Sync;
+using Biyori.Settings;
+using Biyori.Settings.Frames;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
@@ -41,6 +43,12 @@ namespace Biyori.Services.Anime
                         .DeserializeObject(this.AnimeItems.GetType()) as ConcurrentDictionary<int, KitsuDataModel>;
                     Debug.WriteLine($"Loaded {this.AnimeItems.Count} Anime Items");
                 } catch(JsonReaderException) { }
+            }
+            var accountConfig = App.ServiceProvider.GetProvider<SettingsProviderService>()?.GetConfig<AccountSettings>();
+            if (accountConfig?.LastSyncAt == null || (DateTime.Now - accountConfig?.LastSyncAt).Value.TotalHours > 12)
+            {
+                Debug.WriteLine("Downloading Library Entries...");
+                // TODO
             }
             Application.Current.Exit += Current_Exit;
         }

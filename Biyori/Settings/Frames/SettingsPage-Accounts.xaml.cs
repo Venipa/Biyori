@@ -63,6 +63,8 @@ namespace Biyori.Settings.Frames
     {
         [JsonProperty("enable_sync")]
         public bool SyncEnabled { get; set; } = false;
+        [JsonProperty("last_sync")]
+        public DateTime LastSyncAt { get; set; }
         [JsonProperty("accounts")]
         public List<AccountInfo> Accounts { get; set; } = new List<AccountInfo>();
         [JsonProperty("current_account")]

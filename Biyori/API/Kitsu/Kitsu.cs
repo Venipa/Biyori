@@ -63,5 +63,31 @@ namespace Biyori.API.Kitsu
             var response = await client.ExecuteTaskAsync<KitsuPaginationModel<KitsuDataModel>>(rr);
             return response.Data;
         }
+        public const int LIBRARY_MAX_PAGESIZE = 500;
+        public async Task<KitsuPaginationModel<KitsuDataModel>> GetLibraryEntries(int userId, int perPage = LIBRARY_MAX_PAGESIZE)
+        {
+            if (perPage < 0 || perPage > 500)
+                throw new ArgumentException($"Argument must be inbetween 0 and {LIBRARY_MAX_PAGESIZE}", "perPage");
+
+            var rr = new RestRequest("anime", Method.GET)
+                .AddQueryParameter("page[limit]", perPage.ToString())
+                .AddQueryParameter("filter[kind]", "anime")
+                .AddQueryParameter("filter[userId]", userId.ToString());
+            var client = this.getClient();
+            var response = await client.ExecuteTaskAsync<KitsuPaginationModel<KitsuDataModel>>(rr);
+            if (response.IsSuccessful && response.Data != null &&
+                response.Data?.Count > 0 && response.Data.Meta?.Count > 500 &&
+                response.Data.Links?.NextPage != null)
+            {
+                var next = await response.Data.NextPage();
+                while(next.Data.Count > 0)
+                {
+                    response.Data.Data.AddRange(next.Data);
+                    if (next?.Links?.NextPage != null)
+                        next = await next.NextPage();
+                }
+            }
+            return response.Data;
+        }
     }
 }
