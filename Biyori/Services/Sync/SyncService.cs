@@ -20,7 +20,7 @@ namespace Biyori.Services.Sync
             .GetConfig<AccountSettings>()?.CurrentAccount?.ProfileHash ?? "default"); }
         public string animeImagePath { get => Path.Combine(this.dataPath, "images"); }
         public string animeCoverPath { get => Path.Combine(this.dataPath, "covers"); }
-        private string animeDbPath { get => Path.Combine(this.dataPath, "anime-db.json"); }
+        public string animeDbPath { get => Path.Combine(this.dataPath, "anime-db.json"); }
         public override void OnInitialize(ServiceProviderCollector provider)
         {
             base.OnInitialize(provider);

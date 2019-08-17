@@ -1,8 +1,11 @@
 ﻿using Biyori.API.Kitsu;
+using Biyori.Lib.Util;
 using Biyori.Services.Sync;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -29,13 +32,25 @@ namespace Biyori.Services.Anime
         public override void OnInitialize(ServiceProviderCollector provider)
         {
             base.OnInitialize(provider);
+            if (File.Exists(this.SyncProvider.animeDbPath))
+            {
+                try
+                {
+                    Debug.WriteLine("Loading Cached Anime Items...");
+                    this.AnimeItems = File.ReadAllText(this.SyncProvider.animeDbPath)
+                        .DeserializeObject(this.AnimeItems.GetType()) as ConcurrentDictionary<int, KitsuDataModel>;
+                    Debug.WriteLine($"Loaded {this.AnimeItems.Count} Anime Items");
+                } catch(JsonReaderException) { }
+            }
             Application.Current.Exit += Current_Exit;
         }
 
         private void Current_Exit(object sender, ExitEventArgs e)
         {
-            //this.AnimeCovers.ToList().ForEach(x => x.Value?.Close());
-            //this.AnimePosters.ToList().ForEach(x => x.Value?.Close());
+            // Save Items to JSON
+            File.WriteAllText(this.SyncProvider.animeDbPath, this.AnimeItems.SerializeObject(Formatting.Indented));
+
+            this.AnimeItems = null;
             this.AnimePosters = null;
             this.AnimeCovers = null;
         }

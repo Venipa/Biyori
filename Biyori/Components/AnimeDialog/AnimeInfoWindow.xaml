@@ -35,6 +35,15 @@
                 </Rectangle.Fill>
             </Rectangle>
         </Grid>
+        <Grid Grid.Row="1">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom"
+                        Margin="10,0,0,8"
+                        m:MarginSetter.Margin="0,0,4,0">
+                <Button Visibility="{Binding HasVideo}" x:Name="youtubeButton" Click="YoutubeButton_Click" Style="{StaticResource NavButtons}">
+                    YouTube
+                </Button>
+            </StackPanel>
+        </Grid>
         <Grid Grid.Row="2" Grid.Column="0" Margin="10,0,0,10" UseLayoutRounding="True">
             <Image Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.5" x:Name="imagePoster"
                Source="{Binding posterImage, Mode=OneWay, FallbackValue={StaticResource defaultImageSource}}">

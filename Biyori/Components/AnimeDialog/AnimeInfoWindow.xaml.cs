@@ -4,6 +4,7 @@ using Biyori.Services.Anime;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -27,6 +28,7 @@ namespace Biyori.Components.AnimeDialog
         public string posterImage { get => this.Anime != null ? this.AnimeProvider?.getAnimePoster(this.Anime.Id) : null; }
         public string coverImage { get => this.Anime != null ? this.AnimeProvider?.getAnimeCover(this.Anime.Id) : null; }
         public string AnimeTitle { get => this.Anime?.Attributes?.getTitle() ?? "No Title defined"; }
+        public Visibility HasVideo { get => this.Anime?.Attributes?.YoutubeVideoId != null ? Visibility.Visible : Visibility.Collapsed; }
 
         public KitsuDataModel Anime { get; private set; }
         public int animeId { get; private set; }
@@ -50,6 +52,14 @@ namespace Biyori.Components.AnimeDialog
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
+        }
+
+        private void YoutubeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.Anime?.Attributes?.YoutubeVideoId != null)
+            {
+                Process.Start($"https://youtu.be/{this.Anime.Attributes.YoutubeVideoId}");
+            }
         }
     }
 }
