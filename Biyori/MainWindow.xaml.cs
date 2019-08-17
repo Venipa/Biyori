@@ -1,5 +1,4 @@
-﻿using Abp.Configuration;
-using Biyori.Components.AnimeDialog;
+﻿using Biyori.Components.AnimeDialog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
