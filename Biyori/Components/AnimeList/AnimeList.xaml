@@ -1,0 +1,48 @@
+﻿<UserControl x:Class="Biyori.Components.AnimeList.AnimeList"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Biyori.Components.AnimeList"
+             mc:Ignorable="d" 
+             Name="root"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid DataContext="{Binding ElementName=root}">
+        <TabControl>
+            <TabItem Header="Currenlty Watching" Name="_currentlyWatching">
+                <DataGrid ItemsSource="{Binding Path=AnimeLibrarySource}" Margin="4" BorderThickness="0" Background="Transparent">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="" x:Name="dg_status" Width="16" CanUserResize="False"/>
+                        <DataGridTextColumn Header="Anime Title" x:Name="dg_title" MinWidth="200" Width="280"/>
+                        <DataGridTextColumn Header="Progress" x:Name="dg_progress" MinWidth="100" Width="200" CanUserResize="False"/>
+                        <DataGridTextColumn Header="Score" x:Name="dg_score" Width="50" CanUserReorder="False"/>
+                        <DataGridTextColumn Header="Type" x:Name="dg_type" Width="50" CanUserResize="False"/>
+                        <DataGridTextColumn Header="Season" x:Name="dg_season" Width="100" CanUserResize="False" />
+                        <DataGridTextColumn Header="Last updated" x:Name="dg_last_update" Width="150"/>
+                    </DataGrid.Columns>
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate></ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </DataGrid.RowStyle>
+                </DataGrid>
+            </TabItem>
+            <TabItem Header="Completed" Name="_currentlyWatchingTab">
+
+            </TabItem>
+            <TabItem Header="Dropped" Name="_droppedTab">
+
+            </TabItem>
+            <TabItem Header="Plan to Watch" Name="_platToWatchTab">
+
+            </TabItem>
+            <TabItem Header="On Hold" Name="_onHoldTab">
+
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

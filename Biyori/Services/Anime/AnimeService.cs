@@ -21,13 +21,17 @@ namespace Biyori.Services.Anime
     [ServiceProviderParse("animeStore", InitializeOnStartup = true)]
     public class AnimeService : ServiceProviderBase
     {
+        public ConcurrentDictionary<int, KitsuLibraryModel> AnimeLibrary { get; private set; }
         public ConcurrentDictionary<int, KitsuDataModel> AnimeItems { get; private set; }
         public ConcurrentDictionary<int, string> AnimeCovers { get; private set; }
         public ConcurrentDictionary<int, string> AnimePosters { get; private set; }
         public SyncProviderService SyncProvider { get => App.ServiceProvider.GetProvider<SyncProviderService>(); }
+        public Kitsu Client { get; private set; }
         public AnimeService()
         {
+            this.Client = new Kitsu();
             this.AnimeItems = new ConcurrentDictionary<int, KitsuDataModel>();
+            this.AnimeLibrary = new ConcurrentDictionary<int, KitsuLibraryModel>();
             this.AnimeCovers = new ConcurrentDictionary<int, string>();
             this.AnimePosters = new ConcurrentDictionary<int, string>();
         }
@@ -42,12 +46,45 @@ namespace Biyori.Services.Anime
                     this.AnimeItems = File.ReadAllText(this.SyncProvider.animeDbPath)
                         .DeserializeObject(this.AnimeItems.GetType()) as ConcurrentDictionary<int, KitsuDataModel>;
                     Debug.WriteLine($"Loaded {this.AnimeItems.Count} Anime Items");
-                } catch(JsonReaderException) { }
+                }
+                catch (JsonReaderException) { }
+            }
+            if (File.Exists(this.SyncProvider.libraryDbPath))
+            {
+                try
+                {
+                    Debug.WriteLine("Loading Cached Anime Items...");
+                    this.AnimeLibrary = File.ReadAllText(this.SyncProvider.libraryDbPath)
+                        .DeserializeObject(this.AnimeLibrary.GetType()) as ConcurrentDictionary<int, KitsuLibraryModel>;
+                    Debug.WriteLine($"Loaded {this.AnimeLibrary.Count} Library Items");
+                }
+                catch (JsonReaderException) { }
             }
             var accountConfig = App.ServiceProvider.GetProvider<SettingsProviderService>()?.GetConfig<AccountSettings>();
+            if (this.Client.InitializeUserClient(accountConfig.CurrentAccount.Username, accountConfig.CurrentAccount.Password))
+            {
+                accountConfig.CurrentAccount.User = this.Client.GetCurrentUser().Result;
+            }
+            else
+            {
+                throw new Exception("Could not Login, Wrong User/Password?");
+            }
             if (accountConfig?.LastSyncAt == null || (DateTime.Now - accountConfig?.LastSyncAt).Value.TotalHours > 12)
             {
+                DateTime? checkSince = null;
+                if (File.Exists(SyncProvider.libraryDbPath))
+                {
+                    checkSince = DateTime.Now.AddDays(-1);
+                }
+
                 Debug.WriteLine("Downloading Library Entries...");
+                var entries = this.Client.GetLibraryEntries(accountConfig.CurrentAccount.User.Id, checkSince).Result;
+                Debug.WriteLine("Adding/Updating Library Entries...");
+                entries.Where(x => x.AnimeId != null).ToList()?.ForEach(x =>
+                {
+                    this.AnimeLibrary.AddOrUpdate(x.Id, (animeId) => x, (animeId, oldAnimeitem) => oldAnimeitem = x);
+                });
+                Debug.WriteLine($"Added {this.AnimeLibrary.Count} Library Entries");
                 // TODO
             }
             Application.Current.Exit += Current_Exit;
@@ -56,9 +93,18 @@ namespace Biyori.Services.Anime
         private void Current_Exit(object sender, ExitEventArgs e)
         {
             // Save Items to JSON
-            File.WriteAllText(this.SyncProvider.animeDbPath, this.AnimeItems.SerializeObject(Formatting.Indented));
+            Task.WaitAll(
+                Task.Run((Action)(() =>
+                {
+                    File.WriteAllText(this.SyncProvider.libraryDbPath, this.AnimeLibrary.SerializeObject(Formatting.Indented));
+                })),
+                Task.Run((Action)(() =>
+                {
+                    File.WriteAllText(this.SyncProvider.animeDbPath, this.AnimeItems.SerializeObject(Formatting.Indented));
+                })));
 
             this.AnimeItems = null;
+            this.AnimeLibrary = null;
             this.AnimePosters = null;
             this.AnimeCovers = null;
         }
@@ -111,8 +157,7 @@ namespace Biyori.Services.Anime
         {
             var anime = this.AnimeItems.GetOrAdd(id, (animeId) =>
             {
-                var client = new Kitsu();
-                var data = client.GetAnimeById(animeId).Result;
+                var data = this.Client.GetAnimeById(animeId).Result;
                 if (data?.Attributes?.Synopsis != null)
                 {
                     var replc = new Regex(@"$\n$\n");

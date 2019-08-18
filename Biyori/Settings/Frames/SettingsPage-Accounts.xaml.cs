@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Biyori.API.Kitsu;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using PropertyChanged;
 using System;
@@ -72,6 +73,8 @@ namespace Biyori.Settings.Frames
     }
     public class AccountInfo
     {
+        [JsonIgnore]
+        public KitsuUserModel User { get; set; }
         [JsonProperty("email")]
         public string EmailAddress { get; set; }
         [JsonProperty("username")]

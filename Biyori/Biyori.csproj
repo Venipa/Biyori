@@ -194,8 +194,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="API\Kitsu\Kitsu.cs" />
+    <Compile Include="API\Kitsu\KitsuLibraryModel.cs" />
     <Compile Include="API\Kitsu\KitsuModels.cs" />
     <Compile Include="API\Kitsu\KitsuPaginationModel.cs" />
+    <Compile Include="API\Kitsu\KitsuUserModel.cs" />
     <Compile Include="Components\AnimeDialog\AnimeInfoWindow.xaml.cs">
       <DependentUpon>AnimeInfoWindow.xaml</DependentUpon>
     </Compile>
@@ -214,6 +216,7 @@
     </Compile>
     <Compile Include="Lib\Styles\Styles.cs" />
     <Compile Include="Lib\Util\Bitmap.Extensions.cs" />
+    <Compile Include="Lib\Util\Newtonsoft.Extensions.cs" />
     <Compile Include="Lib\Util\Object.Extensions.cs" />
     <Compile Include="Lib\WPF\MarginSetter.cs" />
     <Compile Include="Lib\WPF\Spacing.cs" />

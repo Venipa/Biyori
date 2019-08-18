@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Biyori.API.Kitsu
 {
-    public class KitsuPaginationModel<T> where T : KitsuDataModel
+    public class KitsuPaginationModel<T> where T : KitsuDataBase
     {
         [JsonProperty("meta")]
         public KitsuMetaModel Meta { get; set; }
@@ -29,41 +29,37 @@ namespace Biyori.API.Kitsu
         [JsonProperty("links")]
         public KitsuLinkModel Links { get; set; }
 
-        public async Task<KitsuPaginationModel<T>> NextPage()
+        public RestRequest NextPage()
         {
             if (this.Links?.NextPage == null)
                 return null;
 
-            var client = this.getClient();
-            var rr = new RestRequest(new Uri(this.Links.NextPage, UriKind.Absolute));
-            return (await client.ExecuteTaskAsync<KitsuPaginationModel<T>>(rr))?.Data;
+            var rr = new RestRequest(new Uri(this.Links.NextPage, UriKind.Absolute), Method.GET);
+            return rr;
         }
-        public async Task<KitsuPaginationModel<T>> PreviousPage()
+        public RestRequest PreviousPage()
         {
             if (this.Links?.PreviousPage == null)
                 return null;
 
-            var client = this.getClient();
             var rr = new RestRequest(new Uri(this.Links.PreviousPage, UriKind.Absolute));
-            return (await client.ExecuteTaskAsync<KitsuPaginationModel<T>>(rr))?.Data;
+            return rr;
         }
-        public async Task<KitsuPaginationModel<T>> FirstPage()
+        public RestRequest FirstPage()
         {
             if (this.Links?.FirstPage == null)
                 return null;
 
-            var client = this.getClient();
             var rr = new RestRequest(new Uri(this.Links.FirstPage, UriKind.Absolute));
-            return (await client.ExecuteTaskAsync<KitsuPaginationModel<T>>(rr))?.Data;
+            return rr;
         }
-        public async Task<KitsuPaginationModel<T>> LastPage()
+        public RestRequest LastPage()
         {
             if (this.Links?.LastPage == null)
                 return null;
 
-            var client = this.getClient();
             var rr = new RestRequest(new Uri(this.Links.LastPage, UriKind.Absolute));
-            return (await client.ExecuteTaskAsync<KitsuPaginationModel<T>>(rr))?.Data;
+            return rr;
         }
         private RestClient getClient()
         {
@@ -74,7 +70,7 @@ namespace Biyori.API.Kitsu
             return client;
         }
     }
-    public class KitsuDataModel
+    public class KitsuDataModel : KitsuDataBase
     {
         [JsonProperty("id", Required = Required.DisallowNull)]
         public int Id { get; set; }
@@ -83,6 +79,7 @@ namespace Biyori.API.Kitsu
         [JsonProperty("Attributes")]
         public KitsuAttributeModel Attributes { get; set; }
     }
+    public class KitsuDataBase { }
     
     public class KitsuMetaModel
     {
