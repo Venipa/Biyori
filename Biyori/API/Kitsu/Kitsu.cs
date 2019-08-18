@@ -60,6 +60,7 @@ namespace Biyori.API.Kitsu
             throw new NotImplementedException();
             var client = this.getClient(false);
         }
+        public const int FETCH_BULK_ANIME_MAX = 20;
         public async Task<KitsuPaginationModel<KitsuDataModel>> GetAnimeByBulkId(params int[] animeId)
         {
             if (animeId.Length == 0)
@@ -67,7 +68,7 @@ namespace Biyori.API.Kitsu
                 return null;
             }
             var rr = new RestRequest("anime", Method.GET)
-                .AddQueryParameter("page[limit]", "20")
+                .AddQueryParameter("page[limit]", FETCH_BULK_ANIME_MAX.ToString())
                 .AddQueryParameter("filter[id]", string.Join(",", animeId.Distinct().Select(x => x.ToString())));
             var client = this.getClient();
             var response = client.Execute<KitsuPaginationModel<KitsuDataModel>>(rr);

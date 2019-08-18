@@ -87,6 +87,15 @@ namespace Biyori.Services.Anime
                 Debug.WriteLine($"Added {this.AnimeLibrary.Count} Library Entries");
                 // TODO
             }
+            var missingAnimeItems = this.AnimeLibrary.Where(x => !this.AnimeItems.ContainsKey((int)x.Value.AnimeId)).Select(x => (int)x.Value.AnimeId).ToList();
+            if (missingAnimeItems.Count() > 0)
+            {
+                missingAnimeItems.ChunckBy(Kitsu.FETCH_BULK_ANIME_MAX).Select(x => this.Client.GetAnimeByBulkId(x.ToArray()).Result?.Data).ToList().SelectMany(item => item).ToList().ForEach(x =>
+                {
+                    this.AnimeItems.AddOrUpdate(x.Id, x, (id, anime) => anime = x);
+                });
+                this.saveAnimeItems();
+            }
             Application.Current.Exit += Current_Exit;
         }
 
@@ -96,17 +105,25 @@ namespace Biyori.Services.Anime
             Task.WaitAll(
                 Task.Run((Action)(() =>
                 {
-                    File.WriteAllText(this.SyncProvider.libraryDbPath, this.AnimeLibrary.SerializeObject(Formatting.Indented));
+                    this.saveLibraryItems();
                 })),
                 Task.Run((Action)(() =>
                 {
-                    File.WriteAllText(this.SyncProvider.animeDbPath, this.AnimeItems.SerializeObject(Formatting.Indented));
+                    this.saveAnimeItems();
                 })));
 
             this.AnimeItems = null;
             this.AnimeLibrary = null;
             this.AnimePosters = null;
             this.AnimeCovers = null;
+        }
+        private void saveLibraryItems()
+        {
+            File.WriteAllText(this.SyncProvider.libraryDbPath, this.AnimeLibrary.SerializeObject(Formatting.Indented));
+        }
+        private void saveAnimeItems()
+        {
+            File.WriteAllText(this.SyncProvider.animeDbPath, this.AnimeItems.SerializeObject(Formatting.Indented));
         }
         public string getAnimePoster(int id)
         {

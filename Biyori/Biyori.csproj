@@ -201,6 +201,9 @@
     <Compile Include="Components\AnimeDialog\AnimeInfoWindow.xaml.cs">
       <DependentUpon>AnimeInfoWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Components\AnimeList\AnimeList.xaml.cs">
+      <DependentUpon>AnimeList.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Components\LeftNavigation\LeftNavigationControl.xaml.cs">
       <DependentUpon>LeftNavigationControl.xaml</DependentUpon>
     </Compile>
@@ -397,6 +400,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Components\AnimeList\AnimeList.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Components\LeftNavigation\LeftNavigationControl.styles.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -523,6 +530,7 @@
     <Folder Include="Frames\AnimeList\" />
     <Folder Include="Frames\NowPlaying\" />
     <Folder Include="Frames\TorrentList\" />
+    <Folder Include="Lib\Converters\" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Lib\Languages\Images\Flags\us.png" />

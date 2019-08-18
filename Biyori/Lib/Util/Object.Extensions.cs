@@ -13,5 +13,13 @@ namespace Biyori.Lib.Util
             => obj == null ? default(T) : obj.GetType().GetProperty(propName).GetValue(obj).ToType<T>();
         public static void SetPropValue<T>(this object obj, string propName, T value)
             => obj?.GetType().GetProperty(propName).SetValue(obj, value);
+
+        public static List<List<T>> ChunckBy<T>(this List<T> items, int sliceSize = 30)
+        {
+            List<List<T>> list = new List<List<T>>();
+            for (int i = 0; i < items.Count; i += sliceSize)
+                list.Add(items.GetRange(i, Math.Min(sliceSize, items.Count - i)));
+            return list;
+        }
     }
 }

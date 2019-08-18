@@ -1,6 +1,9 @@
-﻿using Biyori.Components.AnimeDialog;
+﻿using Biyori.API.Kitsu;
+using Biyori.Components.AnimeDialog;
+using Biyori.Services.Anime;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -20,14 +23,19 @@ namespace Biyori
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        private AnimeService animeService { get; set; }
         public MainWindow()
         {
+            this.animeService = App.ServiceProvider.GetProvider<AnimeService>();
             InitializeComponent();
             this.Title = Assembly.GetExecutingAssembly()?.GetName()?.Name ?? "Biyori";
             _test_showAnimeDialog.Click += onTestAnimeClick;
         }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
@@ -44,6 +52,11 @@ namespace Biyori
             var settingsWindow = new Settings.SettingsWindow();
             settingsWindow.Owner = this;
             settingsWindow.ShowDialog();
+        }
+        public void InvokePropertyChanged(string propName) => this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
+
+        private void SyncButton_Click(object sender, RoutedEventArgs e)
+        {
         }
     }
 }

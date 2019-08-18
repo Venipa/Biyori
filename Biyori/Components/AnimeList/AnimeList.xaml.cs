@@ -1,6 +1,9 @@
 ﻿using Biyori.API.Kitsu;
+using Biyori.Services.Anime;
+using PropertyChanged;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,24 +22,48 @@ namespace Biyori.Components.AnimeList
     /// <summary>
     /// Interaction logic for AnimeList.xaml
     /// </summary>
-    public partial class AnimeList : UserControl
+    public partial class AnimeList : UserControl, INotifyPropertyChanged
     {
+        public AnimeService AnimeService { get; set; }
         public AnimeList()
         {
+            this.AnimeService = App.ServiceProvider.GetProvider<AnimeService>();
             InitializeComponent();
+            this.Loaded += (s, e) =>
+            {
+
+                this.AnimeLibrary = AnimeLibrarySource.Select(x =>
+                {
+                    var anime = this.AnimeService.getAnime((int)x.AnimeId);
+                    var lib = new LibraryDisplayDataModel(x)
+                    {
+                        Progress = x.Attributes.Progress,
+                        LastChangedAt = x.Attributes.ProgressedAt,
+                        Title = anime.Attributes.getTitle(),
+                        Rating = anime.Attributes.AverageRating
+                    };
+                    return lib;
+                }).ToList();
+            };
         }
+        public List<LibraryDisplayDataModel> AnimeLibrary { get; set; } = new List<LibraryDisplayDataModel>();
+        public List<KitsuLibraryModel> AnimeLibrarySource { get => this.AnimeService?.AnimeLibrary?.Values.ToList(); }
 
-
-        public List<KitsuLibraryModel> AnimeLibrarySource
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void InvokePropertyChanged(string propName) => this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
+    }
+    public class LibraryDisplayDataModel
+    {
+        public LibraryDisplayDataModel(KitsuLibraryModel data)
         {
-            get { return (List<KitsuLibraryModel>)GetValue(AnimeLibrarySourceProperty); }
-            set { SetValue(AnimeLibrarySourceProperty, value); }
+            this.Id = (int)data.AnimeId;
+            this.LibraryId = data.Id;
         }
-
-        // Using a DependencyProperty as the backing store for MyProperty.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty AnimeLibrarySourceProperty =
-            DependencyProperty.Register("AnimeLibrarySource", typeof(List<KitsuLibraryModel>), typeof(AnimeList), new PropertyMetadata(new List<KitsuLibraryModel>()));
-
-
+        public int Id { get; private set; }
+        public int LibraryId { get; private set; }
+        public string Title { get; set; }
+        public string Rating { get; set; }
+        public int Progress { get; set; }
+        public DateTime LastChangedAt { get; set; }
     }
 }

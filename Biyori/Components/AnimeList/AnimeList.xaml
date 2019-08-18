@@ -10,25 +10,22 @@
     <Grid DataContext="{Binding ElementName=root}">
         <TabControl>
             <TabItem Header="Currenlty Watching" Name="_currentlyWatching">
-                <DataGrid ItemsSource="{Binding Path=AnimeLibrarySource}" Margin="4" BorderThickness="0" Background="Transparent">
+                <DataGrid ItemsSource="{Binding Path=AnimeLibrary, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" AutoGenerateColumns="False" Margin="4" BorderThickness="0" Background="Transparent">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="" x:Name="dg_status" Width="16" CanUserResize="False"/>
-                        <DataGridTextColumn Header="Anime Title" x:Name="dg_title" MinWidth="200" Width="280"/>
-                        <DataGridTextColumn Header="Progress" x:Name="dg_progress" MinWidth="100" Width="200" CanUserResize="False"/>
-                        <DataGridTextColumn Header="Score" x:Name="dg_score" Width="50" CanUserReorder="False"/>
-                        <DataGridTextColumn Header="Type" x:Name="dg_type" Width="50" CanUserResize="False"/>
-                        <DataGridTextColumn Header="Season" x:Name="dg_season" Width="100" CanUserResize="False" />
-                        <DataGridTextColumn Header="Last updated" x:Name="dg_last_update" Width="150"/>
+                        <DataGridTextColumn Header="" Width="16" CanUserResize="False"/>
+                        <DataGridTextColumn Header="Anime Title" MinWidth="160" Width="200" Binding="{Binding Title}"/>
+                        <DataGridTemplateColumn Header="Progress" MinWidth="100" Width="200" CanUserResize="False">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ProgressBar Value="{Binding Progress}" Minimum="0" IsIndeterminate="False" Maximum="{Binding Progress}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Score" Width="50" CanUserReorder="False" Binding="{Binding Rating}"/>
+                        <DataGridTextColumn Header="Type" Width="50" CanUserResize="False"/>
+                        <DataGridTextColumn Header="Season" Width="100" CanUserResize="False" />
+                        <DataGridTextColumn Header="Last updated" Width="150"/>
                     </DataGrid.Columns>
-                    <DataGrid.RowStyle>
-                        <Style TargetType="DataGridRow">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate></ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </DataGrid.RowStyle>
                 </DataGrid>
             </TabItem>
             <TabItem Header="Completed" Name="_currentlyWatchingTab">
