@@ -2,6 +2,15 @@
 
 # Biyori - A management app for your preferred Anime List Host
 
+![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/Venipa/Biyori/master?label=Code%20Quality%20-%20%23master)
+![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/Venipa/Biyori/dev?label=Code%20Quality%20-%20%23dev)
+
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Venipa/Biyori)
+
+![GitHub followers](https://img.shields.io/github/followers/Venipa?label=Follow&style=social)
+![GitHub stars](https://img.shields.io/github/stars/Venipa/Biyori?style=social)
+![GitHub forks](https://img.shields.io/github/forks/Venipa/Biyori?label=Fork&style=social)
+
 This repository/app is licensed ([GPLv3](https://github.com/Venipa/biyori/blob/master/LICENSE.md))
 
 
