@@ -218,9 +218,11 @@
       <DependentUpon>Languages.xaml</DependentUpon>
     </Compile>
     <Compile Include="Lib\Styles\Styles.cs" />
+    <Compile Include="Lib\Util\AsyncRelayCommand.cs" />
     <Compile Include="Lib\Util\Bitmap.Extensions.cs" />
     <Compile Include="Lib\Util\Newtonsoft.Extensions.cs" />
     <Compile Include="Lib\Util\Object.Extensions.cs" />
+    <Compile Include="Lib\Util\ThreadDispatcher.cs" />
     <Compile Include="Lib\WPF\MarginSetter.cs" />
     <Compile Include="Lib\WPF\Spacing.cs" />
     <Compile Include="ServiceProvider.cs" />

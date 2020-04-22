@@ -27,7 +27,7 @@ namespace Biyori.Components.AnimeDialog
     {
         public string posterImage { get => this.Anime != null ? this.AnimeProvider?.getAnimePoster(this.Anime.Id) : null; }
         public string coverImage { get => this.Anime != null ? this.AnimeProvider?.getAnimeCover(this.Anime.Id) : null; }
-        public string AnimeTitle { get => this.Anime?.Attributes?.getTitle() ?? "No Title defined"; }
+        public string AnimeTitle { get => this.Anime?.Attributes?.getTitle("en_jp") ?? this.Anime?.Attributes?.getTitle("en_en") ?? "No Title defined"; }
         public Visibility HasVideo { get => this.Anime?.Attributes?.YoutubeVideoId != null ? Visibility.Visible : Visibility.Collapsed; }
 
         public KitsuDataModel Anime { get; private set; }
@@ -45,6 +45,11 @@ namespace Biyori.Components.AnimeDialog
                 return;
             }
             InitializeComponent();
+            this.DataContext = this;
+            this.PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Escape) this.Close();
+            };
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -52,6 +57,7 @@ namespace Biyori.Components.AnimeDialog
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
+            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AnimeTitle"));
         }
 
         private void YoutubeButton_Click(object sender, RoutedEventArgs e)

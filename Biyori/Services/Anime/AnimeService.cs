@@ -96,10 +96,10 @@ namespace Biyori.Services.Anime
                 });
                 this.saveAnimeItems();
             }
-            Application.Current.Exit += Current_Exit;
         }
 
-        private void Current_Exit(object sender, ExitEventArgs e)
+        private void Current_Exit(object sender, ExitEventArgs e) => this.onExit();
+        public void onExit()
         {
             // Save Items to JSON
             Task.WaitAll(
