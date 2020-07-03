@@ -40,22 +40,8 @@ jobs:
     - name: Build project # This would actually build your project, using zip for an example artifact
       run: |
         zip -r release.zip -j Biyori/bin/Release/*.dll Biyori/bin/Release/*.exe README.md LICENSE.md
-    - name: Create a Release
-      id: create-release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2
       with:
-        tag_name: release - ${{ github.sha }}
-        release_name: Pre Release - ${{ github.sha }}
-        draft: false
-        prerelease: true
-    - name: Upload a Release Asset
-      uses: actions/upload-release-asset@v1.0.2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./release.zip
-        asset_name: release-${{ steps.create_release.outputs.id }}.zip
-        asset_content_type: application/zip
+        # A file, directory or wildcard pattern that describes what to upload
+        path: ./release.zip
