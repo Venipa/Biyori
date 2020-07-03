@@ -14,6 +14,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 using System.Windows;
 
 namespace Biyori.Services.Anime
@@ -127,22 +128,39 @@ namespace Biyori.Services.Anime
         }
         public string getAnimePoster(int id)
         {
-            return this.AnimePosters.GetOrAdd(id, (animeId) =>
+            return this.AnimePosters.FirstOrDefault(x => x.Key == id).Value;
+        }
+        public Task<string> downloadAnimePoster(int id)
+        {
+            return Task.Run(() =>
             {
-                var anime = this.getAnime(animeId);
-                var filePath = Path.Combine(SyncProvider.animeImagePath, anime.Id.ToString());
-                var imageUrl = anime.Attributes.getLargestPosterThumb();
-                if (imageUrl == null)
+                return this.AnimePosters.GetOrAdd(id, (animeId) =>
                 {
-                    return null;
-                }
-                if (File.Exists(filePath))
-                {
+                    var anime = this.getAnime(animeId);
+                    var filePath = Path.Combine(SyncProvider.animeImagePath, anime.Id.ToString());
+                    var imageUrl = anime.Attributes.getLargestPosterThumb();
+                    if (imageUrl == null)
+                    {
+                        return null;
+                    }
+                    if (File.Exists(filePath))
+                    {
+                        return filePath;
+                    }
+                    var wc = new WebClient();
+                    try
+                    {
+                        wc.DownloadFile(imageUrl, filePath);
+                    }
+                    catch (WebException wex)
+                    {
+                        if (new HttpStatusCode[] { HttpStatusCode.NotFound, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.BadGateway }.Contains(((HttpWebResponse)wex.Response).StatusCode))
+                        {
+                            return null;
+                        }
+                    }
                     return filePath;
-                }
-                var wc = new WebClient();
-                wc.DownloadFile(imageUrl, filePath);
-                return filePath;
+                });
             });
         }
         private Stream returnStream(Stream stream)
@@ -152,22 +170,39 @@ namespace Biyori.Services.Anime
         }
         public string getAnimeCover(int id)
         {
-            return this.AnimeCovers.GetOrAdd(id, (animeId) =>
+            return this.AnimeCovers.FirstOrDefault(x => x.Key == id).Value;
+        }
+        public Task<string> downloadAnimeCover(int id)
+        {
+            return Task.Run(async () =>
             {
-                var anime = this.getAnime(animeId);
-                var filePath = Path.Combine(SyncProvider.animeCoverPath, anime.Id.ToString());
-                var imageUrl = anime.Attributes.getLargestCoverThumb();
-                if (imageUrl == null)
+                return this.AnimeCovers.GetOrAdd(id, (animeId) =>
                 {
-                    return null;
-                }
-                if (File.Exists(filePath))
-                {
+                    var anime = this.getAnime(animeId);
+                    var filePath = Path.Combine(SyncProvider.animeCoverPath, anime.Id.ToString());
+                    var imageUrl = anime.Attributes.getLargestCoverThumb();
+                    if (imageUrl == null)
+                    {
+                        return null;
+                    }
+                    if (File.Exists(filePath))
+                    {
+                        return filePath;
+                    }
+                    var wc = new WebClient();
+                    try
+                    {
+                        wc.DownloadFile(imageUrl, filePath);
+                    }
+                    catch (WebException wex)
+                    {
+                        if (new HttpStatusCode[] { HttpStatusCode.NotFound, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.BadGateway }.Contains(((HttpWebResponse)wex.Response).StatusCode))
+                        {
+                            return null;
+                        }
+                    }
                     return filePath;
-                }
-                var wc = new WebClient();
-                wc.DownloadFile(imageUrl, filePath);
-                return filePath;
+                });
             });
         }
         public KitsuDataModel getAnime(int id)

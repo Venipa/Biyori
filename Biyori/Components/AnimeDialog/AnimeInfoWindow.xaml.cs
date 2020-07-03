@@ -25,8 +25,8 @@ namespace Biyori.Components.AnimeDialog
     /// </summary>
     public partial class AnimeInfoWindow : Window, INotifyPropertyChanged
     {
-        public string posterImage { get => this.Anime != null ? this.AnimeProvider?.getAnimePoster(this.Anime.Id) : null; }
-        public string coverImage { get => this.Anime != null ? this.AnimeProvider?.getAnimeCover(this.Anime.Id) : null; }
+        public string posterImage { get; private set; }
+        public string coverImage { get; private set; }
         public string AnimeTitle { get => this.Anime?.Attributes?.getTitle("en_jp") ?? this.Anime?.Attributes?.getTitle("en_en") ?? "No Title defined"; }
         public Visibility HasVideo { get => this.Anime?.Attributes?.YoutubeVideoId != null ? Visibility.Visible : Visibility.Collapsed; }
 
@@ -50,6 +50,23 @@ namespace Biyori.Components.AnimeDialog
             {
                 if (e.Key == Key.Escape) this.Close();
             };
+            this.posterImage = this.AnimeProvider.getAnimePoster(this.Anime.Id);
+            this.coverImage = this.AnimeProvider.getAnimeCover(this.Anime.Id);
+            if (posterImage == null)
+            {
+                Dispatcher.BeginInvoke((Action)(async () =>
+                {
+                    this.posterImage = await this.AnimeProvider.downloadAnimePoster(this.Anime.Id);
+                }));
+            }
+            if (coverImage == null)
+            {
+                Dispatcher.BeginInvoke((Action)(async () =>
+                {
+                    this.coverImage = await this.AnimeProvider.downloadAnimeCover(this.Anime.Id);
+                }));
+            }
+            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("coverImage"));
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -66,6 +83,11 @@ namespace Biyori.Components.AnimeDialog
             {
                 Process.Start($"https://youtu.be/{this.Anime.Attributes.YoutubeVideoId}");
             }
+        }
+
+        private void onReadMoreClick(object sender, MouseButtonEventArgs e)
+        {
+            Process.Start($"https://kitsu.io/anime/{this.Anime.Id}");
         }
     }
 }

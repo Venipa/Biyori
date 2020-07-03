@@ -10,21 +10,27 @@
     <Grid DataContext="{Binding ElementName=root}">
         <TabControl>
             <TabItem Header="Currenlty Watching" Name="_currentlyWatching">
-                <DataGrid ItemsSource="{Binding Path=AnimeLibrary, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" AutoGenerateColumns="False" Margin="4" BorderThickness="0" Background="Transparent">
+                <DataGrid ItemsSource="{Binding Path=AnimeLibrary, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedAnimeItem, Mode=TwoWay}" AutoGenerateColumns="False" Margin="4" BorderThickness="0" Background="Transparent">
+                    <DataGrid.ContextMenu>
+                        <ContextMenu StaysOpen="True" DataContext="{Binding PlacementTarget, RelativeSource={RelativeSource Self}}">
+                            <MenuItem Header="Information" Click="itemOpenInfoDialog"></MenuItem>
+                            <MenuItem Header="Edit..."></MenuItem>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="" Width="16" CanUserResize="False"/>
-                        <DataGridTextColumn Header="Anime Title" MinWidth="160" Width="200" Binding="{Binding Title}"/>
-                        <DataGridTemplateColumn Header="Progress" MinWidth="100" Width="200" CanUserResize="False">
+                        <DataGridTextColumn Header="Anime Title" MinWidth="160" Width="200" IsReadOnly="True" Binding="{Binding Title}"/>
+                        <DataGridTemplateColumn Header="Progress" MinWidth="100" Width="200" CanUserResize="False" IsReadOnly="True">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ProgressBar Value="{Binding Progress}" Minimum="0" IsIndeterminate="False" Maximum="{Binding Progress}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Score" Width="50" CanUserReorder="False" Binding="{Binding Rating}"/>
-                        <DataGridTextColumn Header="Type" Width="50" CanUserResize="False"/>
-                        <DataGridTextColumn Header="Season" Width="100" CanUserResize="False" />
-                        <DataGridTextColumn Header="Last updated" Width="150"/>
+                        <DataGridTextColumn Header="Score" Width="50" CanUserReorder="False" Binding="{Binding Rating}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Type" Width="50" CanUserResize="False" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Season" Width="100" CanUserResize="False" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Last updated" Width="150" IsReadOnly="True"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>

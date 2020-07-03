@@ -5,6 +5,10 @@ VisualStudioVersion = 16.0.29025.244
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biyori", "Biyori\Biyori.csproj", "{1330DC29-71F4-4633-91BB-3F493AB4E133}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biyori.Core", "Biyori.Core\Biyori.Core.csproj", "{94EDE9AE-77AC-46D2-80C5-CDB2B1764605}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biyori.AnimeVFParser", "Biyori.AnimeVFParser\Biyori.AnimeVFParser.csproj", "{784413AA-8018-43F6-845E-3FC9E00A7AB3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{1330DC29-71F4-4633-91BB-3F493AB4E133}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1330DC29-71F4-4633-91BB-3F493AB4E133}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1330DC29-71F4-4633-91BB-3F493AB4E133}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94EDE9AE-77AC-46D2-80C5-CDB2B1764605}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94EDE9AE-77AC-46D2-80C5-CDB2B1764605}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94EDE9AE-77AC-46D2-80C5-CDB2B1764605}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94EDE9AE-77AC-46D2-80C5-CDB2B1764605}.Release|Any CPU.Build.0 = Release|Any CPU
+		{784413AA-8018-43F6-845E-3FC9E00A7AB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{784413AA-8018-43F6-845E-3FC9E00A7AB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{784413AA-8018-43F6-845E-3FC9E00A7AB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{784413AA-8018-43F6-845E-3FC9E00A7AB3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
