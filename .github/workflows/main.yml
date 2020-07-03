@@ -42,6 +42,8 @@ jobs:
         zip -r release.zip -j Biyori/bin/Release/*.dll Biyori/bin/Release/*.exe README.md LICENSE.md
     - name: Create a Release
       uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
         release_name: Pre Release ${{ github.ref }}
