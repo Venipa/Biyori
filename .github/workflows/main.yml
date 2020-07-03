@@ -32,6 +32,7 @@ jobs:
     - name: Build
       run: msbuild Biyori.sln -p:Configuration=Release
     - name: Build Artifact
+      shell: cmd
       run: |
         mkdir release
         copy /B Biyori\bin\Release\*.dll release
