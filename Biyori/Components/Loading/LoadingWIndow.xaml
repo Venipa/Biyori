@@ -12,9 +12,6 @@
         ResizeMode="NoResize"
         Title="Loading Biyori..." Height="420" Width="680">
     <Grid Margin="18" PreviewMouseDown="Grid_PreviewMouseDown">
-        <Button Name="closeButton" Click="CloseButton_Click" Style="{StaticResource NavButtons}" Panel.ZIndex="9" HorizontalAlignment="Right" Padding="5,4" VerticalAlignment="Top" Margin="8">
-            <ContentControl VerticalAlignment="Center" Content="{StaticResource closeIcon}" />
-        </Button>
         <Border BorderThickness="1" BorderBrush="#ddd" Background="#fff" CornerRadius="6">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="12" ShadowDepth="0" Direction="0" Color="#000" Opacity=".55" />
@@ -48,7 +45,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Orientation="Horizontal">
-                        <ProgressBar Style="{StaticResource darkProgress}" Height="8" Width="80" Margin="0, 10" IsIndeterminate="False" Value="100"  />
+                        <ProgressBar Style="{StaticResource darkProgress}" Background="#1f000000" Foreground="#000000" Height="8" Width="80" Margin="0, 10" IsIndeterminate="False" Value="100"  />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
                         <TextBlock Text="{DynamicResource Name}" VerticalAlignment="Center"/>

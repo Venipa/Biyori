@@ -1,0 +1,3 @@
+[submodule "Biyori.AnimeVFParser"]
+	path = Biyori.AnimeVFParser
+	url = git@github.com:Venipa/Biyori.AnimeVFParser.git

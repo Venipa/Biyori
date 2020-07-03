@@ -214,13 +214,20 @@
       <DependentUpon>LoadingWIndow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Lib\Controls\CardControl.cs" />
+    <Compile Include="Lib\Converters\ActualSizePropertyProxy.cs" />
+    <Compile Include="Lib\Converters\NullImageConverter.cs" />
+    <Compile Include="Lib\Converters\RectangleConverter.cs" />
+    <Compile Include="Lib\Converters\SizeBindings.cs" />
     <Compile Include="Lib\Languages\Languages.xaml.cs">
       <DependentUpon>Languages.xaml</DependentUpon>
     </Compile>
     <Compile Include="Lib\Styles\Styles.cs" />
+    <Compile Include="Lib\Util\AsyncRelayCommand.cs" />
     <Compile Include="Lib\Util\Bitmap.Extensions.cs" />
+    <Compile Include="Lib\Util\MyVisualTreeHelper.cs" />
     <Compile Include="Lib\Util\Newtonsoft.Extensions.cs" />
     <Compile Include="Lib\Util\Object.Extensions.cs" />
+    <Compile Include="Lib\Util\ThreadDispatcher.cs" />
     <Compile Include="Lib\WPF\MarginSetter.cs" />
     <Compile Include="Lib\WPF\Spacing.cs" />
     <Compile Include="ServiceProvider.cs" />
@@ -530,13 +537,9 @@
     <Folder Include="Frames\AnimeList\" />
     <Folder Include="Frames\NowPlaying\" />
     <Folder Include="Frames\TorrentList\" />
-    <Folder Include="Lib\Converters\" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Lib\Languages\Images\Flags\us.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Assets\logo_image.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Lib\Languages\Images\Flags\de.png" />
@@ -549,6 +552,16 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\image-not-found.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Biyori.AnimeVFParser\Biyori.AnimeVFParser.csproj">
+      <Project>{784413aa-8018-43f6-845e-3fc9e00a7ab3}</Project>
+      <Name>Biyori.AnimeVFParser</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Biyori.Core\Biyori.Core.csproj">
+      <Project>{94ede9ae-77ac-46d2-80c5-cdb2b1764605}</Project>
+      <Name>Biyori.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

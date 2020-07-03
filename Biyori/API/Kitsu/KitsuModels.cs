@@ -11,9 +11,10 @@ namespace Biyori.API.Kitsu
     {
         [JsonProperty("canonicalTitle")]
         public string Title { get; set; }
-        public string getTitle()
+        public string getTitle(string langKey = null)
         {
-            return this.Title ?? this.Titles?.FirstOrDefault(x => x.Key.StartsWith("en")).Value ?? this.Titles?.FirstOrDefault(x => x.Key.Contains("jp")).Value;
+            if (langKey != null) return this.Titles?.FirstOrDefault(x => x.Key.ToLower() == langKey.ToLower()).Value;
+            return this.Title ?? this.Titles?.FirstOrDefault(x => x.Key.StartsWith("en_jp") || x.Key.StartsWith("en")).Value ?? this.Titles?.FirstOrDefault(x => x.Key.Contains("jp")).Value;
         }
         [JsonProperty("titles")]
         public Dictionary<string, string> Titles { get; set; } = new Dictionary<string, string>();

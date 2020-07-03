@@ -1,4 +1,6 @@
 ﻿using Biyori.API.Kitsu;
+using Biyori.Components.AnimeDialog;
+using Biyori.Lib.Util;
 using Biyori.Services.Anime;
 using PropertyChanged;
 using System;
@@ -47,10 +49,23 @@ namespace Biyori.Components.AnimeList
             };
         }
         public List<LibraryDisplayDataModel> AnimeLibrary { get; set; } = new List<LibraryDisplayDataModel>();
+        public LibraryDisplayDataModel SelectedAnimeItem { get; set; }
         public List<KitsuLibraryModel> AnimeLibrarySource { get => this.AnimeService?.AnimeLibrary?.Values.ToList(); }
 
         public event PropertyChangedEventHandler PropertyChanged;
         public void InvokePropertyChanged(string propName) => this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
+
+        private void itemOpenInfoDialog(object sender, RoutedEventArgs e)
+        {
+            if (e.Handled)
+                return;
+            if (this.SelectedAnimeItem?.Id == null)
+                return;
+            Dispatcher.BeginInvoke((Action)(async () =>
+            {
+                new AnimeInfoWindow(this.SelectedAnimeItem.Id) { Owner = MyVisualTreeHelper.FindParent<Window>(this), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            }));
+        }
     }
     public class LibraryDisplayDataModel
     {

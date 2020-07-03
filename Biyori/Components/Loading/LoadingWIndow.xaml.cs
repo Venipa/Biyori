@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Biyori.Lib.Util;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,11 +34,6 @@ namespace Biyori.Components.Loading
         {
             if (e.ChangedButton == MouseButton.Left)
                 this.DragMove();
-        }
-
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            Application.Current.Shutdown();
         }
     }
 }
