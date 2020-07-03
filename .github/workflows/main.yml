@@ -33,7 +33,7 @@ jobs:
       run: msbuild Biyori.sln -p:Configuration=Release
     - name: Build project # This would actually build your project, using zip for an example artifact
       run: |
-        zip -r release.zip -j Biyori/bin/Debug/*.dll Biyori/bin/Debug/*.exe README.md LICENSE.md
+        zip -r release.zip -j Biyori/bin/Release/*.dll Biyori/bin/Release/*.exe README.md LICENSE.md
     - name: Create a Release
       uses: actions/create-release@v1
       with:
