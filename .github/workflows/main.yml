@@ -34,10 +34,10 @@ jobs:
     - name: Build Artifact
       run: |
         mkdir release
-        cp /B Biyori\bin\Release\*.dll release
-        cp /B Biyori\bin\Release\*.exe release
-        cp README.md release
-        cp LICENSE.md release
+        copy /B Biyori\bin\Release\*.dll release
+        copy /B Biyori\bin\Release\*.exe release
+        copy README.md release
+        copy LICENSE.md release
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2
       with:
