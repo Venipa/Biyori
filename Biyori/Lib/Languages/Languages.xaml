@@ -1,9 +1,0 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    x:Class="Biyori.Lib.Languages.Languages"
-                    xmlns:local="clr-namespace:Biyori.Lib.Languages">
-    <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="pack://application:,,,/Lib/Languages/de-de.lang.xaml" />
-        <ResourceDictionary Source="pack://application:,,,/Lib/Languages/en-us.lang.xaml" />
-    </ResourceDictionary.MergedDictionaries>
-</ResourceDictionary>

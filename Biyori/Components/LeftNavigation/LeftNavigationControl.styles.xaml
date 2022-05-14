@@ -7,18 +7,18 @@
     </Style>
     <Style TargetType="ListBox">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0,0,1,0"/>
+        <Setter Property="BorderThickness" Value="0,0,0,0"/>
         <Setter Property="BorderBrush" Value="{StaticResource NavBorderColor}"/>
     </Style>
     <SolidColorBrush x:Key="LeftNavMouseOn" Color="CadetBlue" Opacity=".85"/>
     <SolidColorBrush x:Key="LeftNavMouseOff" Color="#0f000000" />
     <Style TargetType="ListBoxItem">
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Padding" Value="8,6"/>
-        <Setter Property="BorderThickness" Value="4,0,0,0"/>
-        <Setter Property="BorderBrush" Value="{StaticResource LeftNavMouseOff}"/>
+        <Setter Property="Padding" Value="16,12"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="BorderBrush" Value="#1f000000"/>
         <Setter Property="OverridesDefaultStyle" Value="True"/>
-        <Setter Property="Background" Value="#0f000000"/>
+        <Setter Property="Background" Value="#00000000"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">

@@ -1,9 +1,13 @@
 ﻿using Biyori.API.Kitsu;
 using Biyori.Components.AnimeDialog;
+using Biyori.Components.LeftNavigation;
+using Biyori.Services;
 using Biyori.Services.Anime;
+using Gu.Wpf.Adorners;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -26,6 +30,16 @@ namespace Biyori
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private AnimeService animeService { get; set; }
+        public LeftNavTab SelectedTab { get; set; }
+        public LeftNavTab[] Tabs { get; set; } = new LeftNavTab[]
+             {
+                new LeftNavTab() { Name = "Now Playing" },
+                new LeftNavTab() { Name = "Anime List" },
+                new LeftNavTab() { Name = "History" },
+                new LeftNavTab() { Name = "Search" },
+                new LeftNavTab() { Name = "Seasons" },
+                new LeftNavTab() { Name = "Torrents" },
+             };
         public MainWindow()
         {
             this.animeService = App.ServiceProvider.GetProvider<AnimeService>();
@@ -39,6 +53,20 @@ namespace Biyori
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
+            App.ServiceProvider.GetProvider<AppService>().LoadingStatus.ValueChange += onLoadingStatusChange;
+            this.SelectedTab = this.Tabs.First();
+        }
+        protected override void OnDeactivated(EventArgs e)
+        {
+            base.OnDeactivated(e);
+            App.ServiceProvider.GetProvider<AppService>().LoadingStatus.ValueChange -= onLoadingStatusChange;
+        }
+        private void onLoadingStatusChange(object sender, string e)
+        {
+            Dispatcher.BeginInvoke((Action)(() =>
+            {
+                statusLabel.SetText(e);
+            }));
         }
 
         private void onTestAnimeClick(object sender, RoutedEventArgs e)
@@ -57,6 +85,11 @@ namespace Biyori
 
         private void SyncButton_Click(object sender, RoutedEventArgs e)
         {
+        }
+
+        private void onTabChange(object sender, LeftNavTab e)
+        {
+            Debug.WriteLine("Tab Selected: " + e.Name);
         }
     }
 }

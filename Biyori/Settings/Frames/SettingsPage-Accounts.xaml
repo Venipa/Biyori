@@ -4,7 +4,7 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:Biyori.Settings.Frames"
-      xmlns:wpf="clr-namespace:Biyori.Lib.WPF"
+      xmlns:wpf="clr-namespace:Biyori.Core.WPF;assembly=Biyori.Core"
       mc:Ignorable="d"
       x:Name="root"
       d:DesignHeight="450" d:DesignWidth="800"

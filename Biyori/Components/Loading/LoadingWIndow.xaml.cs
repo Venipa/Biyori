@@ -1,6 +1,8 @@
-﻿using Biyori.Lib.Util;
+﻿using Biyori.Core.Util;
+using Biyori.Services;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,17 +21,35 @@ namespace Biyori.Components.Loading
     /// <summary>
     /// Interaction logic for LoadingWIndow.xaml
     /// </summary>
-    public partial class LoadingWindow : Window
+    public partial class LoadingWindow : Window, INotifyPropertyChanged
     {
+        public PropertyQueueBase<string> LoadingStatus { get => App.ServiceProvider.GetProvider<AppService>()?.LoadingStatus; }
         public LoadingWindow()
         {
             InitializeComponent();
         }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
+            this.LoadingStatus.ValueChange += onLoadingStatusChange;
 
         }
+        protected override void OnDeactivated(EventArgs e)
+        {
+            base.OnDeactivated(e);
+            this.LoadingStatus.ValueChange -= this.onLoadingStatusChange;
+        }
+        private void onLoadingStatusChange(object sender, string e)
+        {
+            Dispatcher.BeginInvoke((Action)(() =>
+            {
+                loadingTextElement.Text = e;
+            }));
+        }
+
         private void Grid_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton == MouseButton.Left)

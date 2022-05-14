@@ -39,7 +39,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Assets\Logo\appIcon.ico</ApplicationIcon>
+    <ApplicationIcon>appIcon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Costura, Version=4.0.0.0, Culture=neutral, PublicKeyToken=9919ef960d84173d, processorArchitecture=MSIL">
@@ -213,26 +213,10 @@
     <Compile Include="Components\Loading\LoadingWIndow.xaml.cs">
       <DependentUpon>LoadingWIndow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Lib\Controls\CardControl.cs" />
-    <Compile Include="Lib\Converters\ActualSizePropertyProxy.cs" />
-    <Compile Include="Lib\Converters\NullImageConverter.cs" />
-    <Compile Include="Lib\Converters\RectangleConverter.cs" />
-    <Compile Include="Lib\Converters\SizeBindings.cs" />
-    <Compile Include="Lib\Languages\Languages.xaml.cs">
-      <DependentUpon>Languages.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Lib\Styles\Styles.cs" />
-    <Compile Include="Lib\Util\AsyncRelayCommand.cs" />
-    <Compile Include="Lib\Util\Bitmap.Extensions.cs" />
-    <Compile Include="Lib\Util\MyVisualTreeHelper.cs" />
-    <Compile Include="Lib\Util\Newtonsoft.Extensions.cs" />
-    <Compile Include="Lib\Util\Object.Extensions.cs" />
-    <Compile Include="Lib\Util\ThreadDispatcher.cs" />
-    <Compile Include="Lib\WPF\MarginSetter.cs" />
-    <Compile Include="Lib\WPF\Spacing.cs" />
     <Compile Include="ServiceProvider.cs" />
     <Compile Include="Services\Anime\AnimeModel.cs" />
     <Compile Include="Services\Anime\AnimeService.cs" />
+    <Compile Include="Services\AppService.cs" />
     <Compile Include="Services\Sync\SyncService.cs" />
     <Compile Include="Settings\Frames\SettingsPage-Accounts.xaml.cs">
       <DependentUpon>SettingsPage-Accounts.xaml</DependentUpon>
@@ -247,162 +231,6 @@
     <Compile Include="Settings\SettingsWindow.xaml.cs">
       <DependentUpon>SettingsWindow.xaml</DependentUpon>
     </Compile>
-    <Page Include="Assets\Icons\AddFile_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\AddtoFavorites_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\AddUser_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\AddWebApplication_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Add_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Application_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Bug_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\ButtonClick_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\ClearBookmark_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Close_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Close_red_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Close_White_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\DeleteFolder_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\DeleteUser_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Folder_grey_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Monaco_Settings_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Next_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\OpenfileDialog_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\OpenFile_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\OpenFolder_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\OpenWeb_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Open_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Package_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Previous_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Redo_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Refresh_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Remove_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Rename_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Resize_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Restart_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Run_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Save_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Settings_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\Synchronize_Ramp_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\User_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\user_16xMD.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\User_7x_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\User_cyan_7x_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Assets\Icons\User_purple_16x.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="Components\AnimeDialog\AnimeInfoWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -424,42 +252,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Components\Loading\LoadingWIndow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Lib\Controls\CardControl.style.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Lib\Languages\de-de.lang.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Lib\Languages\en-us.lang.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Lib\Languages\Languages.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Lib\Styles\App.styles.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Lib\Styles\Buttons.styles.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Lib\Styles\Icons.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Lib\Styles\Progress.styles.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Lib\Styles\TabControl.styles.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -539,21 +331,6 @@
     <Folder Include="Frames\TorrentList\" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Lib\Languages\Images\Flags\us.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Lib\Languages\Images\Flags\de.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Assets\Logo\appIcon.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Assets\Logo\appIcon.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Assets\image-not-found.png" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Biyori.AnimeVFParser\Biyori.AnimeVFParser.csproj">
       <Project>{784413aa-8018-43f6-845e-3fc9e00a7ab3}</Project>
       <Name>Biyori.AnimeVFParser</Name>
@@ -562,6 +339,9 @@
       <Project>{94ede9ae-77ac-46d2-80c5-cdb2b1764605}</Project>
       <Name>Biyori.Core</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="appIcon.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

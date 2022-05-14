@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using Biyori.Core.Common;
+using Biyori.Core.Languages;
+using Newtonsoft.Json;
 using PropertyChanged;
 using System;
 using System.Collections.Generic;
@@ -67,27 +69,16 @@ namespace Biyori.Settings.Frames
     {
         [JsonProperty("languages"), JsonIgnore]
         public List<ApplicationLanguage> Languages { get; set; } = new List<ApplicationLanguage>();
+        [JsonProperty("theme")]
+        public Themes Theme = Themes.None;
         [JsonProperty("selected_language")]
         public ApplicationLanguage SelectedLanguage { get; set; }
         public override void OnLoadConfig(SettingsProviderService provider)
         {
             base.OnLoadConfig(provider);
-            Languages = Biyori.Lib.Languages.Languages.AvailableLanguages;
-            SelectedLanguage = this.Languages.FirstOrDefault(x => x.Name == this.SelectedLanguage?.Name) ?? Biyori.Lib.Languages.Languages.DefaultAppLanguage;
-            Lib.Languages.Languages.Instance()?.setLanguage(SelectedLanguage);
+            Languages = Core.Languages.Languages.AvailableLanguages;
+            SelectedLanguage = this.Languages.FirstOrDefault(x => x.Name == this.SelectedLanguage?.Name) ?? Biyori.Core.Languages.Languages.DefaultAppLanguage;
+            Core.Languages.Languages.Instance?.setLanguage(SelectedLanguage);
         }
-    }
-    public class ApplicationLanguage
-    {
-        [JsonIgnore]
-        public bool HasImage { get => ImageUrl != null; }
-        [JsonIgnore]
-        public string ImageUrl { get; set; }
-        [JsonIgnore]
-        public Uri ImageUri { get => ImageUrl != null ? new Uri(ImageUrl) : null; }
-        [JsonIgnore]
-        public string DisplayName { get; set; }
-        [JsonProperty("lang_key")]
-        public string Name { get; set; }
     }
 }

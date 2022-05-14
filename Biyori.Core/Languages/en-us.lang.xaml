@@ -1,0 +1,12 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib"
+                    xmlns:local="clr-namespace:Biyori.Core.Languages">
+    <system:String x:Key="LangKey">en-us</system:String>
+    <system:String x:Key="ImageUrl">pack://application:,,,/Lib/Languages/Images/Flags/us.png</system:String>
+    <system:String x:Key="Name">English (United States)</system:String>
+    <system:String x:Key="Name_Simplified">English</system:String>
+    <system:String x:Key="ShortName">EN</system:String>
+    <system:String x:Key="languageSelect">Select Language</system:String>
+    <system:String x:Key="searchPlaceholder">Filter list or search Kitsu</system:String>
+</ResourceDictionary>

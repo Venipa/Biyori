@@ -1,5 +1,5 @@
 ﻿using Biyori.API.Kitsu;
-using Biyori.Lib.Util;
+using Biyori.Core.Util;
 using Biyori.Services.Sync;
 using Biyori.Settings;
 using Biyori.Settings.Frames;

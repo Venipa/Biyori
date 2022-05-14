@@ -34,7 +34,7 @@
                     <StackPanel Orientation="Vertical" VerticalAlignment="Center" Width="200">
                         <TextBlock Text="Biyori" HorizontalAlignment="Center" FontSize="32" Opacity=".8" />
                         <Separator Width="82" Margin="16, 6" Opacity=".5"/>
-                        <TextBlock FontSize="12" Opacity=".8" Text="Loading..." HorizontalAlignment="Center"/>
+                        <TextBlock FontSize="12" Opacity=".8" Text="Loading..." x:Name="loadingTextElement" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </StackPanel>
                 <Separator Grid.Row="1" VerticalAlignment="Top" Margin="20,0" Opacity=".5" />

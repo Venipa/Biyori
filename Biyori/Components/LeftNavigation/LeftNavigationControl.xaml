@@ -4,21 +4,19 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Biyori.Components.LeftNavigation"
-             xmlns:lib="clr-namespace:Biyori.Lib.WPF"
+             xmlns:lib="clr-namespace:Biyori.Core.WPF"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="200">
+             d:DesignHeight="450" d:DesignWidth="200" DataContext="{Binding RelativeSource={RelativeSource Self}}">
     <UserControl.Resources>
         <ResourceDictionary Source="pack://application:,,,/Components/LeftNavigation/LeftNavigationControl.styles.xaml" />
     </UserControl.Resources>
     <Grid>
-        <ListBox>
-            <ListBoxItem Content="Now Playing"/>
-            <ListBoxItem Content="Anime List"/>
-            <ListBoxItem Content="History"/>
-            <ListBoxItem Content="Statistics"/>
-            <ListBoxItem Content="Search"/>
-            <ListBoxItem Content="Seasons"/>
-            <ListBoxItem Content="Torrents"/>
+        <ListBox SelectedItem="{Binding SelectedTab, Mode=TwoWay}" ItemsSource="{Binding Tabs, Mode=OneWay}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Path=Name}"></TextBlock>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
         </ListBox>
     </Grid>
 </UserControl>

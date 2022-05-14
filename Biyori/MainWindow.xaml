@@ -4,14 +4,14 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Biyori"
-        xmlns:wpf="clr-namespace:Biyori.Lib.WPF"
+        xmlns:wpf="clr-namespace:Biyori.Core.WPF;assembly=Biyori.Core"
         xmlns:leftNav="clr-namespace:Biyori.Components.LeftNavigation"
         xmlns:adorners="http://gu.se/Adorners"
         xmlns:animelist="clr-namespace:Biyori.Components.AnimeList"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResizeWithGrip"
         mc:Ignorable="d"
-        Icon="pack://application:,,,/Assets/Logo/appIcon.ico"
+        Icon="pack://application:,,,/Biyori.Core;component/Assets/Logo/appIcon.ico"
         Title="MainWindow" Height="550" MinHeight="450" Width="900" MinWidth="800">
     <Window.Resources>
         <ResourceDictionary Source="pack://application:,,,/MainWindow.dictionary.xaml" />
@@ -29,7 +29,7 @@
         </Grid.RowDefinitions>
         <Border Style="{StaticResource leftNav}" Grid.Row="1" Grid.Column="0">
             <Grid>
-                <leftNav:LeftNavigationControl />
+                <leftNav:LeftNavigationControl SelectedTab="{Binding SelectedTab}" SelectedTabChange="onTabChange" Tabs="{Binding Tabs}" />
             </Grid>
         </Border>
         <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
@@ -72,7 +72,7 @@
         <Border Style="{StaticResource statusBarNav}" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3">
             <Grid>
                 <StatusBar>
-                    <StatusBarItem Content="status"/>
+                    <StatusBarItem x:Name="statusLabel"/>
                 </StatusBar>
             </Grid>
         </Border>

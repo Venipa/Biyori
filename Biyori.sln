@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29025.244
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biyori", "Biyori\Biyori.csproj", "{1330DC29-71F4-4633-91BB-3F493AB4E133}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biyori.Core", "Biyori.Core\Biyori.Core.csproj", "{94EDE9AE-77AC-46D2-80C5-CDB2B1764605}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biyori.AnimeVFParser", "Biyori.AnimeVFParser\Biyori.AnimeVFParser.csproj", "{784413AA-8018-43F6-845E-3FC9E00A7AB3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Biyori.AnimeVFParser", "Biyori.AnimeVFParser\Biyori.AnimeVFParser.csproj", "{784413AA-8018-43F6-845E-3FC9E00A7AB3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

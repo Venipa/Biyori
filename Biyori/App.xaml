@@ -2,12 +2,13 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Biyori"
-             xmlns:languages="clr-namespace:Biyori.Lib.Languages">
+             xmlns:languages="clr-namespace:Biyori.Core.Languages;assembly=Biyori.Core">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/Lib/Styles/App.styles.xaml" />
-                <languages:Languages Source="pack://application:,,,/Lib/Languages/Languages.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Biyori.Core;component/Styles/App.styles.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Biyori.Core;component/Styles/Components.xaml" />
+                <languages:Languages Source="pack://application:,,,/Biyori.Core;component/Languages/Languages.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

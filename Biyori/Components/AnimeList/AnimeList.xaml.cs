@@ -1,6 +1,6 @@
 ﻿using Biyori.API.Kitsu;
 using Biyori.Components.AnimeDialog;
-using Biyori.Lib.Util;
+using Biyori.Core.Util;
 using Biyori.Services.Anime;
 using PropertyChanged;
 using System;

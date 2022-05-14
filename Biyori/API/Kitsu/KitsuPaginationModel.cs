@@ -1,4 +1,4 @@
-﻿using Biyori.Lib.Util;
+﻿using Biyori.Core.Util;
 using Newtonsoft.Json;
 using RestSharp;
 using RestSharp.Extensions;
