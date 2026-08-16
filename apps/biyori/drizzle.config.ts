@@ -5,6 +5,6 @@ export default defineConfig({
 	schema: "./src/main/db/schema.ts",
 	dialect: "sqlite",
 	dbCredentials: {
-		url: "file:./data/biyori.sqlite",
+		url: "file:./data/biyori.db",
 	},
 });
