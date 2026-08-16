@@ -1,18 +1,18 @@
+import type { AppSettingsInput } from "@/lib/schemas/app-settings";
+import { FormCheckbox } from "@/mainview/components/form-checkbox";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/mainview/components/ui/field";
+import { Input } from "@/mainview/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { useId } from "react";
 import { useFormContext } from "react-hook-form";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/mainview/components/ui/tabs";
-import { FormCheckbox } from "@/mainview/components/form-checkbox";
-import { Input } from "@/mainview/components/ui/input";
-import {
-	Field,
-	FieldError,
-	FieldGroup,
-	FieldLabel,
-	FieldSet,
-	FieldLegend,
-	FieldDescription,
-} from "@/mainview/components/ui/field";
-import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 
 export function SharingPanel() {
 	const presenceId = useId();
@@ -40,7 +40,7 @@ export function SharingPanel() {
 						<FieldLabel htmlFor={clientId}>Application ID</FieldLabel>
 						<Input
 							id={clientId}
-							placeholder="DISCORD_CLIENT_ID or paste here"
+							placeholder="VITE_DISCORD_CLIENT_ID or paste here"
 							{...form.register("discordApplicationId")}
 						/>
 						<FieldError errors={[form.formState.errors.discordApplicationId]} />

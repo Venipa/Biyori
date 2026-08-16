@@ -2,6 +2,10 @@ import { shell } from "electron";
 
 const AUTHORIZE_BASE = "https://anilist.co/api/v2/oauth/authorize";
 const DEFAULT_EXPIRES_IN_SECONDS = 365 * 24 * 60 * 60;
+const ANILIST_CLIENT_ID = import.meta.env.VITE_ANILIST_CLIENT_ID;
+if (!ANILIST_CLIENT_ID) {
+	throw new Error("VITE_ANILIST_CLIENT_ID is not set");
+}
 
 let loginError: string | null = null;
 
@@ -18,7 +22,7 @@ export function setAnilistLoginError(message: string): void {
 }
 
 export function getAnilistClientId(): string {
-	return process.env.ANILIST_CLIENT_ID?.trim() ?? "";
+	return ANILIST_CLIENT_ID;
 }
 
 export function buildAuthorizeUrl(clientId: string): string {
@@ -30,9 +34,6 @@ export function buildAuthorizeUrl(clientId: string): string {
 
 export function openAnilistLogin(): { opened: true } {
 	const clientId = getAnilistClientId();
-	if (!clientId) {
-		throw new Error("ANILIST_CLIENT_ID is not set");
-	}
 	const url = buildAuthorizeUrl(clientId);
 	void shell.openExternal(url);
 	return { opened: true as const };

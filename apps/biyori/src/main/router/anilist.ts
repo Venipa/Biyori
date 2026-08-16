@@ -2,44 +2,44 @@ import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { AnilistApiError } from "../anilist/client";
-import {
-	clearAnilistLoginError,
-	expiresAtFromToken,
-	getAnilistClientId,
-	getAnilistLoginError,
-	normalizeAnilistToken,
-	openAnilistLogin,
-	setAnilistLoginError,
-} from "../anilist/oauth";
-import {
-	clearAnilistAuth,
-	readAnilistAuth,
-	toPublicStatus,
-	writeAnilistAuth,
-} from "../anilist/store";
-import {
-	fetchSeasonMedia,
-	fetchViewer,
-	saveMediaListEntry,
-	searchAniListMedia,
-	upsertMediaList,
-} from "../anilist/sync";
-import { anime, listEntry } from "../db/schema";
-import {
-	abortAniListSync,
-	getSyncSnapshot,
-	requestAniListSync,
-	subscribeSyncStatus,
-} from "../sync";
-import { t } from "../trpc";
-import { loadAppSettings } from "../settings";
-import { enqueueUpdate } from "../track/queue";
-import { animeListEntrySchema } from "../../lib/schemas/anime-list-entry";
 import { anilistSearchSchema } from "../../lib/schemas/anilist-search";
 import { anilistTokenSchema } from "../../lib/schemas/anilist-token";
+import { animeListEntrySchema } from "../../lib/schemas/anime-list-entry";
 import { listStatusSchema } from "../../shared/list";
+import { AnilistApiError } from "../anilist/client";
 import { toAnilistStatus } from "../anilist/map";
+import {
+  clearAnilistLoginError,
+  expiresAtFromToken,
+  getAnilistClientId,
+  getAnilistLoginError,
+  normalizeAnilistToken,
+  openAnilistLogin,
+  setAnilistLoginError,
+} from "../anilist/oauth";
+import {
+  clearAnilistAuth,
+  readAnilistAuth,
+  toPublicStatus,
+  writeAnilistAuth,
+} from "../anilist/store";
+import {
+  fetchSeasonMedia,
+  fetchViewer,
+  saveMediaListEntry,
+  searchAniListMedia,
+  upsertMediaList,
+} from "../anilist/sync";
+import { anime, listEntry } from "../db/schema";
+import { loadAppSettings } from "../settings";
+import {
+  abortAniListSync,
+  getSyncSnapshot,
+  requestAniListSync,
+  subscribeSyncStatus,
+} from "../sync";
+import { enqueueUpdate } from "../track/queue";
+import { t } from "../trpc";
 
 function mapAnilistError(error: unknown): never {
 	if (error instanceof TRPCError) {
@@ -86,7 +86,7 @@ export const anilistRouter = t.router({
 		if (!getAnilistClientId()) {
 			throw new TRPCError({
 				code: "BAD_REQUEST",
-				message: "ANILIST_CLIENT_ID is not set",
+				message: "VITE_ANILIST_CLIENT_ID is not set",
 			});
 		}
 		clearAnilistLoginError();

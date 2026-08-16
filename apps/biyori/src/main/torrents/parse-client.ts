@@ -1,6 +1,6 @@
 import { createWorker, type WorkerClient } from "@biyori/worker";
-import workerPath from "./parse-worker?modulePath";
 import type { TorrentParseWorker } from "./parse-worker";
+import workerPath from "./parse-worker?modulePath";
 
 let client: WorkerClient<TorrentParseWorker> | null = null;
 
