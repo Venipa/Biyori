@@ -1,5 +1,5 @@
 import { desktopRpc } from "@/desktop-rpc";
-import { useTheme } from "@/lib/hooks/use-theme";
+import { useTheme } from "@/mainview/lib/hooks/use-theme";
 import {
   Menubar,
   MenubarCheckboxItem,

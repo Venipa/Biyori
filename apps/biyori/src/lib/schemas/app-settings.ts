@@ -123,7 +123,26 @@ export const appSettingsSchema = z.object({
 
 export type AppSettingsInput = z.input<typeof appSettingsSchema>;
 export type AppSettings = z.output<typeof appSettingsSchema>;
-export const appSettingsPatchSchema = appSettingsSchema.partial();
+
+function optionalPatchField(schema: z.ZodType): z.ZodType {
+	if (
+		schema.def.type === "default" &&
+		"removeDefault" in schema &&
+		typeof schema.removeDefault === "function"
+	) {
+		return optionalPatchField(schema.removeDefault());
+	}
+	return schema.optional();
+}
+
+export const appSettingsPatchSchema = z.object(
+	Object.fromEntries(
+		Object.entries(appSettingsSchema.shape).map(([key, field]) => [
+			key,
+			optionalPatchField(field),
+		]),
+	),
+);
 export type AppSettingsPatch = z.input<typeof appSettingsPatchSchema>;
 
 export const appSettingsDefaultValues: AppSettingsInput = {
