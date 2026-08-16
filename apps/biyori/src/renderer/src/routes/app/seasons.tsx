@@ -422,7 +422,7 @@ function SeasonsPage() {
 				</p>
 			</div>
 			<ScrollArea className="h-full flex-1">
-				{!ready || query.isLoading ? (
+				{!ready || (query.isPending && !query.data) ? (
 					<div className="space-y-3 p-4">
 						{Array.from({ length: 6 }).map((_, index) => (
 							<Skeleton key={index} className="h-40 w-full rounded-lg" />

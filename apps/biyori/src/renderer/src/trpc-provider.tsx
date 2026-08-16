@@ -1,4 +1,8 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+	keepPreviousData,
+	QueryClient,
+	QueryClientProvider,
+} from "@tanstack/react-query";
 import { ipcLink } from "@biyori/electron-trpc/renderer";
 import { useState, type ReactNode } from "react";
 import superjson from "superjson";
@@ -9,7 +13,16 @@ type TrpcProviderProps = {
 };
 
 export function TrpcProvider({ children }: TrpcProviderProps) {
-	const [queryClient] = useState(() => new QueryClient());
+	const [queryClient] = useState(
+		() =>
+			new QueryClient({
+				defaultOptions: {
+					queries: {
+						placeholderData: keepPreviousData,
+					},
+				},
+			}),
+	);
 	const [trpcClient] = useState(() =>
 		trpc.createClient({
 			links: [

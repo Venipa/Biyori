@@ -13,34 +13,30 @@ function StatRow({ label, value }: { label: string; value: string | number }) {
 
 export function StatisticsView() {
 	const query = trpc.statistics.summary.useQuery();
-
-	if (query.isLoading) {
-		return (
-			<div className="flex flex-col gap-2 px-6 py-5">
-				<Skeleton className="h-6 w-48" />
-				<Skeleton className="h-4 w-72" />
-				<Skeleton className="h-4 w-64" />
-			</div>
-		);
-	}
-
 	const data = query.data;
-	if (!data) {
-		return null;
-	}
 
 	return (
-		<div className="h-full overflow-auto px-6 py-5">
+		<div className="h-full min-h-0 overflow-auto px-6 py-5">
 			<h1 className="mb-3 text-base font-semibold">Anime list</h1>
 			<Separator className="mb-2" />
-			<StatRow label="Anime count:" value={data.animeCount} />
-			<StatRow label="Episode count:" value={data.episodeCount} />
-			<StatRow label="Time spent watching:" value={data.timeSpentWatching} />
-			<StatRow label="Mean score:" value={data.meanScore} />
-
-			<h2 className="pt-4 text-sm font-semibold">Local database</h2>
-			<Separator className="mt-1 mb-2" />
-			<StatRow label="Anime count:" value={data.localAnimeCount} />
+			{query.isPending && !data ? (
+				<>
+					<Skeleton className="mb-2 h-5 w-64" />
+					<Skeleton className="mb-2 h-5 w-56" />
+					<Skeleton className="mb-2 h-5 w-72" />
+					<Skeleton className="h-5 w-40" />
+				</>
+			) : data ? (
+				<>
+					<StatRow label="Anime count:" value={data.animeCount} />
+					<StatRow label="Episode count:" value={data.episodeCount} />
+					<StatRow label="Time spent watching:" value={data.timeSpentWatching} />
+					<StatRow label="Mean score:" value={data.meanScore} />
+					<h2 className="pt-4 text-sm font-semibold">Local database</h2>
+					<Separator className="mt-1 mb-2" />
+					<StatRow label="Anime count:" value={data.localAnimeCount} />
+				</>
+			) : null}
 		</div>
 	);
 }

@@ -26,6 +26,8 @@ const hashHistory = createHashHistory();
 export const router = createRouter({
 	routeTree,
 	history: hashHistory,
+	defaultPendingMs: 0,
+	defaultPendingMinMs: 0,
 });
 
 declare module "@tanstack/react-router" {

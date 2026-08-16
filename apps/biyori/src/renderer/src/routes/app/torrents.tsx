@@ -12,7 +12,7 @@ import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
 import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import { Skeleton } from "@/mainview/components/ui/skeleton";
+import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { TableRow } from "@/mainview/components/ui/table";
 import { DataTable } from "@/mainview/components/data-table";
 import {
@@ -262,11 +262,8 @@ function TorrentsPage() {
 				</Button>
 			</div>
 			<ScrollArea className="h-full flex-1">
-				{query.isLoading && items.length === 0 ? (
-					<div className="flex flex-col gap-2 p-4">
-						<Skeleton className="h-8 w-full" />
-						<Skeleton className="h-8 w-full" />
-					</div>
+				{query.isPending && items.length === 0 ? (
+					<TableRowsSkeleton columnCount={columns.length} />
 				) : null}
 				{items.length === 0 && !query.isLoading ? (
 					<Empty>

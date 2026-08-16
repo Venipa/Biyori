@@ -1,5 +1,5 @@
 import { ArrowUpIcon, FileTextIcon } from "lucide-react";
-import { Skeleton } from "@/mainview/components/ui/skeleton";
+import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import {
 	Table,
@@ -66,12 +66,14 @@ export function HistoryView() {
 	const history = query.data?.history ?? [];
 	const isEmpty = queued.length === 0 && history.length === 0;
 
-	if (query.isLoading) {
+	if (query.isPending && !query.data) {
 		return (
-			<div className="flex flex-col gap-2 p-4">
-				<Skeleton className="h-8 w-full" />
-				<Skeleton className="h-8 w-full" />
-			</div>
+			<ScrollArea className="h-full min-h-0">
+				<TableRowsSkeleton
+					columnCount={3}
+					headers={["Anime title", "Details", "Last modified"]}
+				/>
+			</ScrollArea>
 		);
 	}
 

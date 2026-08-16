@@ -12,8 +12,12 @@ initTheme();
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<TrpcProvider>
-      <AppTitleBar title="Biyori" />
-			<RouterProvider router={router} />
+			<div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+				<AppTitleBar title="Biyori" />
+				<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+					<RouterProvider router={router} />
+				</div>
+			</div>
 		</TrpcProvider>
 	</StrictMode>,
 );

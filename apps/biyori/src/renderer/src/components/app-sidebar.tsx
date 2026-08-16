@@ -43,7 +43,7 @@ export function AppSidebar() {
 	return (
 		<nav
 			aria-label="Main navigation"
-			className="flex h-full w-56 shrink-0 flex-col gap-4 overflow-y-auto border-r bg-sidebar p-2"
+			className="flex h-full min-h-0 w-56 shrink-0 flex-col gap-4 overflow-y-auto border-r bg-sidebar p-2"
 		>
 			<div className="flex flex-col gap-0.5">
 				{primaryItems.map((item) => (

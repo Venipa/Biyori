@@ -42,12 +42,12 @@ function MainLayout() {
 	});
 
 	return (
-		<div className="flex h-full w-full flex-col overflow-hidden bg-background text-foreground">
+		<div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground">
 			<TopMenuBar />
 			<AppToolbar />
-			<div className="flex flex-1 overflow-hidden">
+			<div className="flex min-h-0 flex-1 overflow-hidden">
 				<AppSidebar />
-				<main className="flex-1 overflow-hidden">
+				<main className="min-h-0 min-w-0 flex-1 overflow-hidden">
 					<Outlet />
 				</main>
 			</div>

@@ -11,7 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { ListIcon, ListPlusIcon, SearchIcon } from "lucide-react";
 import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
-import { Skeleton } from "@/mainview/components/ui/skeleton";
+import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { DataTable } from "@/mainview/components/data-table";
@@ -168,12 +168,8 @@ function SearchPage() {
 								</EmptyDescription>
 							</Empty>
 						) : null}
-						{hasQuery && query.isLoading && items.length === 0 ? (
-							<div className="flex flex-col gap-2 p-4">
-								<Skeleton className="h-8 w-full" />
-								<Skeleton className="h-8 w-full" />
-								<Skeleton className="h-8 w-full" />
-							</div>
+						{hasQuery && query.isPending && items.length === 0 ? (
+							<TableRowsSkeleton columnCount={columns.length} />
 						) : null}
 						{query.error ? (
 							<Empty>
@@ -182,7 +178,7 @@ function SearchPage() {
 							</Empty>
 						) : null}
 						{hasQuery &&
-						!query.isLoading &&
+						!query.isPending &&
 						!query.error &&
 						items.length === 0 ? (
 							<Empty>

@@ -15,7 +15,7 @@ import {
 	TabsTrigger,
 } from "@/mainview/components/ui/tabs";
 import { Progress } from "@/mainview/components/ui/progress";
-import { Skeleton } from "@/mainview/components/ui/skeleton";
+import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
@@ -327,12 +327,8 @@ export function AnimeListView({
 					<ContextMenu>
 						<ContextMenuTrigger className="block h-full min-h-0">
 							<ScrollArea className="h-full">
-							{listQuery.isLoading && !listQuery.data ? (
-								<div className="flex flex-col gap-2 p-4">
-									<Skeleton className="h-8 w-full" />
-									<Skeleton className="h-8 w-full" />
-									<Skeleton className="h-8 w-full" />
-								</div>
+							{listQuery.isPending && !listQuery.data ? (
+								<TableRowsSkeleton columnCount={columns.length} />
 							) : null}
 							{listQuery.error ? (
 								<Empty>
