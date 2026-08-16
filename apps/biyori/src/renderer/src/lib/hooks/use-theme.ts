@@ -1,4 +1,9 @@
-import { getThemeMode, setThemeMode, subscribeTheme, ThemeMode } from "@renderer/lib/theme";
+import {
+	getThemeMode,
+	setThemeMode,
+	subscribeTheme,
+	type ThemeMode,
+} from "@/mainview/lib/theme";
 import { useCallback, useSyncExternalStore } from "react";
 
 export function useTheme() {

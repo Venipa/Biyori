@@ -19,6 +19,8 @@ const mainResolve: UserConfig = {
 		alias: {
 			...sharedAliases,
 			"@": resolve("src/main"),
+      "@main": resolve("src/main"),
+      "@renderer": resolve("src/renderer/src"),
 		},
 	},
 };
@@ -28,6 +30,8 @@ const rendererResolve: UserConfig = {
 		alias: {
 			...sharedAliases,
 			"@": resolve("src/renderer/src"),
+      "@renderer": resolve("src/renderer/src"),
+      "@main": resolve("src/main"),
 		},
 	},
 };
