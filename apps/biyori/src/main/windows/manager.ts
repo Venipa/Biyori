@@ -9,6 +9,10 @@ export type WindowDefinition = {
 	title: string;
 	width: number;
 	height: number;
+  minWidth?: number;
+  minHeight?: number;
+  maxWidth?: number;
+  maxHeight?: number;
 	to?: string;
 	singleton?: boolean;
 	saveState?: boolean;
@@ -83,6 +87,10 @@ export class WindowManager<TId extends string> {
 			title: definition.title,
 			width: definition.width,
 			height: definition.height,
+			minWidth: definition.minWidth,
+			minHeight: definition.minHeight,
+			maxWidth: definition.maxWidth,
+			maxHeight: definition.maxHeight,
 			show,
 			skipTaskbar: options.skipTaskbar ?? false,
 			alwaysOnTop: definition.alwaysOnTop ?? false,
@@ -126,6 +134,10 @@ export class WindowManager<TId extends string> {
 		title: string;
 		width: number;
 		height: number;
+		minWidth?: number;
+		minHeight?: number;
+		maxWidth?: number;
+		maxHeight?: number;
 		show: boolean;
 		skipTaskbar: boolean;
 		alwaysOnTop: boolean;
@@ -135,6 +147,10 @@ export class WindowManager<TId extends string> {
 			title: options.title,
 			width: options.width,
 			height: options.height,
+			minWidth: options.minWidth,
+			minHeight: options.minHeight,
+			maxWidth: options.maxWidth,
+			maxHeight: options.maxHeight,
 			show: false,
 			center: !options.parent,
 			frame: false,
