@@ -2,6 +2,7 @@ import { desktopRpc } from "@/desktop-rpc";
 import {
   type AppSettings,
   type AppSettingsInput,
+  type AppSettingsPatch,
   appSettingsDefaultValues,
   appSettingsSchema,
 } from "@/lib/schemas/app-settings";
@@ -50,6 +51,23 @@ function firstErrorPath(errors: FieldErrors): string | null {
 		}
 	}
 	return null;
+}
+
+function pickDirty(
+	values: AppSettings,
+	dirty: object,
+): AppSettingsPatch {
+	const patch: Record<string, unknown> = {};
+	for (const [key, flag] of Object.entries(dirty)) {
+		if (!flag) {
+			continue;
+		}
+		const value = values[key as keyof AppSettings];
+		if (flag === true || Array.isArray(value)) {
+			patch[key] = value;
+		}
+	}
+	return patch;
 }
 
 function SettingsLayout() {
@@ -183,7 +201,15 @@ function SettingsForm({
 								void form.handleSubmit(
 									async (data) => {
 										try {
-											const saved = await saveSettings.mutateAsync(data);
+											const patch = pickDirty(
+												data,
+												form.formState.dirtyFields,
+											);
+											if (Object.keys(patch).length === 0) {
+												await desktopRpc.request.closeSettings({});
+												return;
+											}
+											const saved = await saveSettings.mutateAsync(patch);
 											form.reset(saved);
 											await desktopRpc.request.closeSettings({});
 										} catch (error) {

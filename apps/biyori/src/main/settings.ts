@@ -1,7 +1,9 @@
 import { eq } from "drizzle-orm";
 import {
+	appSettingsSchema,
 	parseAppSettings,
 	type AppSettings,
+	type AppSettingsPatch,
 } from "../lib/schemas/app-settings";
 import type { DatabaseClient } from "./db";
 import { appSetting } from "./db/schema";
@@ -32,6 +34,31 @@ export async function loadAppSettings(
 	} catch {
 		return parseAppSettings(null);
 	}
+}
+
+function omitUndefined(
+	patch: AppSettingsPatch,
+): Record<string, unknown> {
+	const next: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(patch)) {
+		if (value !== undefined) {
+			next[key] = value;
+		}
+	}
+	return next;
+}
+
+export async function patchAppSettings(
+	database: DatabaseClient,
+	patch: AppSettingsPatch,
+): Promise<AppSettings> {
+	const current = await loadAppSettings(database);
+	const next = appSettingsSchema.parse({
+		...current,
+		...omitUndefined(patch),
+	});
+	await saveAppSettings(database, next);
+	return next;
 }
 
 export async function saveAppSettings(

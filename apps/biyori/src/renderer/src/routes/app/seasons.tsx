@@ -219,7 +219,6 @@ function SeasonsPage() {
 			return;
 		}
 		void setSettings.mutateAsync({
-			...settings,
 			seasonsGroupBy: merged.groupBy ?? groupBy,
 			seasonsSortBy: merged.sortBy ?? sortBy,
 			seasonsViewAs: merged.viewAs ?? viewAs,

@@ -3,16 +3,13 @@ import { observable } from "@trpc/server/observable";
 import { desc, eq, max } from "drizzle-orm";
 import { z } from "zod";
 import { parseJsonArray } from "../../lib/parse-json-array";
-import {
-  type AppSettings,
-  appSettingsSchema,
-} from "../../lib/schemas/app-settings";
+import { appSettingsPatchSchema } from "../../lib/schemas/app-settings";
 import { listStatusSchema } from "../../shared/list";
 import { readAnilistAuth } from "../anilist/store";
 import { ensureAnimeCached } from "../anilist/sync";
 import { anime, episodeFile, history, listEntry, syncQueue } from "../db/schema";
 import { getAppNotice, subscribeAppNotice } from "../notice";
-import { loadAppSettings, saveAppSettings } from "../settings";
+import { loadAppSettings, patchAppSettings } from "../settings";
 import { checkTorrents, discardAnimeFilter, discardTorrent, downloadTorrent, getTorrentItems, searchTorrents } from "../torrents";
 import {
   listEpisodes,
@@ -308,9 +305,8 @@ export const appRouter = t.router({
 		get: t.procedure.query(async ({ ctx }) => {
 			return loadAppSettings(ctx.db);
 		}),
-		set: t.procedure.input(appSettingsSchema).mutation(async ({ ctx, input }) => {
-			await saveAppSettings(ctx.db, input);
-			return input;
+		set: t.procedure.input(appSettingsPatchSchema).mutation(async ({ ctx, input }) => {
+			return patchAppSettings(ctx.db, input);
 		}),
 		addLibraryFolder: t.procedure
 			.input(z.object({ path: z.string().min(1) }))
@@ -319,12 +315,9 @@ export const appRouter = t.router({
 				if (current.libraryFolders.some((folder) => folder.path === input.path)) {
 					return current;
 				}
-				const next: AppSettings = {
-					...current,
+				return patchAppSettings(ctx.db, {
 					libraryFolders: [...current.libraryFolders, { path: input.path }],
-				};
-				await saveAppSettings(ctx.db, next);
-				return next;
+				});
 			}),
 	}),
 	media: t.router({

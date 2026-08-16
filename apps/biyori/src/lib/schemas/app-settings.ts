@@ -123,6 +123,8 @@ export const appSettingsSchema = z.object({
 
 export type AppSettingsInput = z.input<typeof appSettingsSchema>;
 export type AppSettings = z.output<typeof appSettingsSchema>;
+export const appSettingsPatchSchema = appSettingsSchema.partial();
+export type AppSettingsPatch = z.input<typeof appSettingsPatchSchema>;
 
 export const appSettingsDefaultValues: AppSettingsInput = {
 	defaultService: "anilist",

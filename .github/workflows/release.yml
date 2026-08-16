@@ -153,6 +153,7 @@ jobs:
         run: bun run release:pack:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_ENV: production
           VITE_ANILIST_CLIENT_ID: ${{ secrets.VITE_ANILIST_CLIENT_ID }}
           VITE_DISCORD_CLIENT_ID: ${{ secrets.VITE_DISCORD_CLIENT_ID }}
 

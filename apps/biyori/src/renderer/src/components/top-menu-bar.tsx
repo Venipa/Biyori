@@ -1,25 +1,25 @@
-import { useSyncExternalStore } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import {
-	Menubar,
-	MenubarContent,
-	MenubarItem,
-	MenubarCheckboxItem,
-	MenubarMenu,
-	MenubarSeparator,
-	MenubarRadioGroup,
-	MenubarRadioItem,
-	MenubarSub,
-	MenubarSubContent,
-	MenubarSubTrigger,
-	MenubarShortcut,
-	MenubarTrigger,
-} from "@/mainview/components/ui/menubar";
 import { desktopRpc } from "@/desktop-rpc";
-import { getThemeMode, setThemeMode, subscribeTheme } from "@/mainview/lib/theme";
+import { useTheme } from "@/lib/hooks/use-theme";
+import {
+  Menubar,
+  MenubarCheckboxItem,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarRadioGroup,
+  MenubarRadioItem,
+  MenubarSeparator,
+  MenubarShortcut,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from "@/mainview/components/ui/menubar";
 import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
 import { useSelectedAnime } from "@/mainview/lib/selected-anime";
+import { setThemeMode } from "@/mainview/lib/theme";
 import { trpc } from "@/mainview/trpc";
+import { useNavigate } from "@tanstack/react-router";
 
 export function TopMenuBar() {
 	const navigate = useNavigate();
@@ -36,7 +36,7 @@ export function TopMenuBar() {
 	const scan = trpc.library.scan.useMutation();
 	const playNext = trpc.library.playNext.useMutation();
 	const playRandom = trpc.library.playRandom.useMutation();
-	const theme = useSyncExternalStore(subscribeTheme, getThemeMode, getThemeMode);
+	const [theme, setTheme] = useTheme();
 	const syncStatus = trpc.anilist.syncStatus.useQuery();
 	const sync = trpc.anilist.sync.useMutation();
 	const syncRunning = syncStatus.data?.phase === "running";
@@ -169,7 +169,6 @@ export function TopMenuBar() {
 									return;
 								}
 								void setSettings.mutateAsync({
-									...settings,
 									enableRecognition: Boolean(checked),
 								});
 							}}
@@ -183,7 +182,6 @@ export function TopMenuBar() {
 									return;
 								}
 								void setSettings.mutateAsync({
-									...settings,
 									updateRichPresence: Boolean(checked),
 								});
 							}}

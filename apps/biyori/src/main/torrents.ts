@@ -7,7 +7,7 @@ import type { AppSettings } from "../lib/schemas/app-settings";
 import { fillTorrentSearchUrl } from "../lib/torrent-feeds";
 import type { DatabaseClient } from "./db";
 import { torrentArchive } from "./db/schema";
-import { loadAppSettings, saveAppSettings, subscribeSettings } from "./settings";
+import { loadAppSettings, patchAppSettings, subscribeSettings } from "./settings";
 import { loadCandidates, matchById } from "./track/match";
 import type { MatchedAnime } from "./track/types";
 import { setAppNotice } from "./notice";
@@ -345,8 +345,7 @@ export async function discardAnimeFilter(
 ): Promise<TorrentItem[]> {
 	const settings = await loadAppSettings(database);
 	if (!settings.torrentDiscardAnimeIds.includes(animeId)) {
-		await saveAppSettings(database, {
-			...settings,
+		await patchAppSettings(database, {
 			torrentDiscardAnimeIds: [...settings.torrentDiscardAnimeIds, animeId],
 		});
 	}
