@@ -1,10 +1,16 @@
 import { z } from "zod";
+import { listStatusSchema } from "../../shared/list";
+import {
+  defaultMediaPlayerIds,
+  defaultStreamingProviderIds,
+} from "../recognition-catalog";
 import { isTorrentFeedUrl } from "../torrent-feeds";
 import {
-	defaultMediaPlayerIds,
-	defaultStreamingProviderIds,
-} from "../recognition-catalog";
-import { listStatusSchema } from "../../shared/list";
+  anilistSeasonNameSchema,
+  seasonGroupBySchema,
+  seasonSortBySchema,
+  seasonViewAsSchema,
+} from "./seasons";
 
 export const titleLanguageSchema = z.enum(["Romaji", "English", "Native"]);
 export const torrentActionSchema = z.enum(["notify", "download"]);
@@ -14,16 +20,10 @@ export const torrentSortOrderSchema = z.enum(["ascending", "descending"]);
 export const defaultServiceSchema = z.enum(["anilist", "myanimelist", "kitsu"]);
 export type DefaultService = z.infer<typeof defaultServiceSchema>;
 export {
-	anilistSeasonNameSchema,
-	seasonGroupBySchema,
-	seasonSortBySchema,
-	seasonViewAsSchema,
-} from "./seasons";
-import {
-	anilistSeasonNameSchema,
-	seasonGroupBySchema,
-	seasonSortBySchema,
-	seasonViewAsSchema,
+  anilistSeasonNameSchema,
+  seasonGroupBySchema,
+  seasonSortBySchema,
+  seasonViewAsSchema
 } from "./seasons";
 
 export const appSettingsSchema = z.object({
@@ -32,6 +32,7 @@ export const appSettingsSchema = z.object({
 	defaultAddToListStatus: listStatusSchema.default("Plan to watch"),
 	autostart: z.boolean().default(false),
 	autostartTray: z.boolean().default(false),
+	closeToTray: z.boolean().default(true),
 	externalLinks: z.preprocess(
 		(value) => (typeof value === "string" ? value : ""),
 		z.string(),
@@ -129,11 +130,9 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	defaultAddToListStatus: "Plan to watch",
 	autostart: false,
 	autostartTray: false,
+	closeToTray: true,
 	externalLinks: "Hibari|https://hb.wopian.me\nAniChart|http://anichart.net/airing",
-	libraryFolders: [
-		{ path: "J:\\Downloads\\nzb\\complete" },
-		{ path: "Z:\\anime" },
-	],
+	libraryFolders: [],
 	realtimeMonitor: true,
 	ignoreOutsideLibrary: true,
 	ignoreOutOfRangeEpisode: false,

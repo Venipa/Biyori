@@ -1,5 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/electron-userland/electron-builder/refs/heads/master/packages/app-builder-lib/scheme.json
+
+
 appId: net.venipa.biyori
 productName: Biyori
+extraMetadata:
+  name: Biyori
 directories:
   buildResources: build
 files:
@@ -15,13 +20,28 @@ extraResources:
 asarUnpack:
   - resources/**
   - "**/{better-sqlite3,anitomy}/**"
+  - "**/*favicon*"
+  - "**/*32x32*"
+  - "**/*16x16*"
+  - "**/*icon*.icns"
+  - "**/*.icns"
+  - "**/*.ico"
+  - "**/assets/**"
 win:
   executableName: biyori
-nsis:
   artifactName: ${name}-${version}-setup.${ext}
+  compression: maximum
+  target:
+    - target: nsis
+      arch: x64
+  icon: build/icon.ico
+nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  installerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  deleteAppDataOnUninstall: true
 # mac:
 #   entitlementsInherit: build/entitlements.mac.plist
 #   extendInfo:

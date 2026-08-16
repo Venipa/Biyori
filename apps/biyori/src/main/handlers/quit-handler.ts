@@ -3,6 +3,7 @@ import { app, type BrowserWindow } from "electron";
 import { autoUpdater } from "electron-updater";
 import { log } from "../logger";
 import { windowManager } from "../windows";
+import { loadAppSettings, subscribeSettings } from "../settings";
 import {
 	isAppQuitting,
 	markAppQuitting,
@@ -38,12 +39,14 @@ function hideToTray(): void {
 	setTrayState("hidden");
 }
 
-function isMinimizeToTrayEnabled(): boolean {
-	return true;
+let closeToTrayEnabled = true;
+
+function isCloseToTrayEnabled(): boolean {
+	return closeToTrayEnabled;
 }
 
 function shouldHideToTray(forceQuit: boolean): boolean {
-	return isMinimizeToTrayEnabled() && !forceQuit && !isAppQuitting();
+	return isCloseToTrayEnabled() && !forceQuit && !isAppQuitting();
 }
 
 export async function requestQuit(forceQuit: boolean = false): Promise<void> {
@@ -70,6 +73,13 @@ export async function requestQuitAndInstall(): Promise<void> {
 }
 
 export function attachQuitHandler(window: BrowserWindow): void {
+	void loadAppSettings().then((settings) => {
+		closeToTrayEnabled = settings.closeToTray;
+	});
+	subscribeSettings((settings) => {
+		closeToTrayEnabled = settings.closeToTray;
+	});
+
 	window.on("close", (ev) => {
 		if (
 			!shouldCancelWindowClose({

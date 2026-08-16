@@ -31,6 +31,7 @@ export function ApplicationPanel() {
 	const defaultAddToListStatusId = useId();
 	const autostartId = useId();
 	const autostartTrayId = useId();
+	const closeToTrayId = useId();
 	const externalLinksId = useId();
 	const form = useFormContext<AppSettingsInput>();
 
@@ -149,6 +150,17 @@ export function ApplicationPanel() {
 							id={autostartTrayId}
 							label="Autostart in tray"
 							disabled={!form.watch("autostart")}
+						/>
+					</FieldSet>
+					<FieldSet className="rounded-md border p-3">
+						<FieldLegend variant="label" className="text-muted-foreground">
+							Tray
+						</FieldLegend>
+						<FormCheckbox
+							control={form.control}
+							name="closeToTray"
+							id={closeToTrayId}
+							label="Close to tray"
 						/>
 					</FieldSet>
 					<FieldSet className="rounded-md border p-3">

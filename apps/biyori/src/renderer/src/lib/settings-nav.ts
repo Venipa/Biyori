@@ -26,6 +26,7 @@ export const settingsFieldSection: Record<string, SettingsSectionId> = {
 	defaultAddToListStatus: "application",
 	autostart: "application",
 	autostartTray: "application",
+	closeToTray: "application",
 	externalLinks: "application",
 	libraryFolders: "library",
 	realtimeMonitor: "library",
