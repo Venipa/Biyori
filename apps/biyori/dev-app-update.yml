@@ -1,0 +1,4 @@
+provider: github
+owner: Venipa
+repo: biyori
+updaterCacheDirName: biyori-updater

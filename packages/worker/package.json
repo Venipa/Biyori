@@ -1,0 +1,15 @@
+{
+	"name": "@biyori/worker",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"test": "bun test src"
+	},
+	"devDependencies": {
+		"@types/node": "^22.19.1"
+	}
+}
