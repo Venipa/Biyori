@@ -16,6 +16,7 @@ export const windowManager = new WindowManager({
     minWidth: 600,
     minHeight: 400,
 		to: "/settings/services",
+    alwaysOnTop: true
 	},
 	update: {
 		title: "Update",
@@ -24,5 +25,7 @@ export const windowManager = new WindowManager({
     minWidth: 400,
     minHeight: 300,
 		to: "/update",
+    alwaysOnTop: true,
+    singleton: true
 	},
 });
