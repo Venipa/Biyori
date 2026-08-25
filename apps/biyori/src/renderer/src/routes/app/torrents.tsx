@@ -1,39 +1,39 @@
-import { type ReactElement, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-	getCoreRowModel,
-	getSortedRowModel,
-	useReactTable,
-	type ColumnDef,
-	type RowSelectionState,
-	type SortingState,
-} from "@tanstack/react-table";
+import { AiringStatusMark } from "@/components/airing-status";
+import { desktopRpc } from "@/desktop-rpc";
+import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
+import { DataTable } from "@/mainview/components/data-table";
 import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuSub,
+    ContextMenuSubContent,
+    ContextMenuSubTrigger,
+    ContextMenuTrigger,
+} from "@/mainview/components/ui/context-menu";
 import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { TableRow } from "@/mainview/components/ui/table";
-import { DataTable } from "@/mainview/components/data-table";
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuSeparator,
-	ContextMenuSub,
-	ContextMenuSubContent,
-	ContextMenuSubTrigger,
-	ContextMenuTrigger,
-} from "@/mainview/components/ui/context-menu";
-import { desktopRpc } from "@/desktop-rpc";
-import { AiringStatusMark } from "@/mainview/lib/airing-status";
-import { formatLocalDateTime } from "@/mainview/lib/format-date";
+import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
+import { formatLocalDateTime } from "@/mainview/lib/format-date";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
-import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
-import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@/shared/app-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+    type ColumnDef,
+    getCoreRowModel,
+    getSortedRowModel,
+    type RowSelectionState,
+    type SortingState,
+    useReactTable,
+} from "@tanstack/react-table";
+import type { inferRouterOutputs } from "@trpc/server";
+import { type ReactElement, useState } from "react";
 
 export const Route = createFileRoute("/app/torrents")({
 	validateSearch: animeInfoSearchSchema,

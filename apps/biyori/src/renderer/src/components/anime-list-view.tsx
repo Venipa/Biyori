@@ -1,54 +1,54 @@
-import { useEffect, useRef, useState } from "react";
-import { keepPreviousData } from "@tanstack/react-query";
+import { AiringStatusMark } from "@/components/airing-status";
+import { desktopRpc } from "@/desktop-rpc";
+import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
+import { DataTable } from "@/mainview/components/data-table";
 import {
-	getCoreRowModel,
-	getFilteredRowModel,
-	getSortedRowModel,
-	useReactTable,
-	type ColumnDef,
-	type SortingState,
-} from "@tanstack/react-table";
-import {
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
-} from "@/mainview/components/ui/tabs";
-import { Progress } from "@/mainview/components/ui/progress";
-import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuShortcut,
+    ContextMenuSub,
+    ContextMenuSubContent,
+    ContextMenuSubTrigger,
+    ContextMenuTrigger,
+} from "@/mainview/components/ui/context-menu";
 import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
+import { Progress } from "@/mainview/components/ui/progress";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
-import { DataTable } from "@/mainview/components/data-table";
-import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
+import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuSeparator,
-	ContextMenuShortcut,
-	ContextMenuSub,
-	ContextMenuSubContent,
-	ContextMenuSubTrigger,
-	ContextMenuTrigger,
-} from "@/mainview/components/ui/context-menu";
-import { trpc } from "@/mainview/trpc";
-import { listStatusSchema, type ListStatus } from "@/shared/list";
-import { cn } from "@/mainview/lib/utils";
-import {
-	setSelectedAnime,
-	requestAnimeDelete,
-	useSelectedAnime,
-	setOrderedAnimeIds,
-	type SelectedAnime,
-} from "@/mainview/lib/selected-anime";
-import { desktopRpc } from "@/desktop-rpc";
-import { AiringStatusMark } from "@/mainview/lib/airing-status";
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/mainview/components/ui/tabs";
+import { animeMatchesListFilter } from "@/mainview/lib/anime-list-filter";
 import { formatTimeAgo } from "@/mainview/lib/format-date";
 import { useListFilterText } from "@/mainview/lib/list-filter";
-import { animeMatchesListFilter } from "@/mainview/lib/anime-list-filter";
-import type { inferRouterOutputs } from "@trpc/server";
+import {
+    requestAnimeDelete,
+    type SelectedAnime,
+    setOrderedAnimeIds,
+    setSelectedAnime,
+    useSelectedAnime,
+} from "@/mainview/lib/selected-anime";
+import { cn } from "@/mainview/lib/utils";
+import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
+import { type ListStatus, listStatusSchema } from "@/shared/list";
+import { keepPreviousData } from "@tanstack/react-query";
+import {
+    type ColumnDef,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getSortedRowModel,
+    type SortingState,
+    useReactTable,
+} from "@tanstack/react-table";
+import type { inferRouterOutputs } from "@trpc/server";
+import { useEffect, useRef, useState } from "react";
 
 const tabs = listStatusSchema.options;
 

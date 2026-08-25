@@ -1,65 +1,65 @@
-import { useId, useState } from "react";
+import { AiringStatusMark } from "@/components/airing-status";
 import {
-	ArrowDownIcon,
-	ArrowUpIcon,
-	FilterIcon,
-	FilterXIcon,
-	MinusIcon,
-	PencilIcon,
-	PlusIcon,
-} from "lucide-react";
+    blankTorrentFilter,
+    cloneTorrentFilter,
+    TORRENT_FILTER_ACTION_LABELS,
+    TORRENT_FILTER_ELEMENT_LABELS,
+    TORRENT_FILTER_MATCH_LABELS,
+    TORRENT_FILTER_OPERATOR_LABELS,
+    TORRENT_FILTER_OPTION_LABELS,
+    type TorrentFilter,
+    type TorrentFilterAction,
+    type TorrentFilterCondition,
+    type TorrentFilterElement,
+    type TorrentFilterOperator,
+    torrentFilterWizardPresets,
+} from "@/lib/schemas/torrent-filter";
 import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/mainview/components/ui/dialog";
-import { Input } from "@/mainview/components/ui/input";
 import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+    Field,
+    FieldGroup,
+    FieldLabel,
+} from "@/mainview/components/ui/field";
+import { Input } from "@/mainview/components/ui/input";
+import { ScrollArea } from "@/mainview/components/ui/scroll-area";
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/mainview/components/ui/select";
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/mainview/components/ui/table";
-import {
-	Field,
-	FieldGroup,
-	FieldLabel,
-} from "@/mainview/components/ui/field";
-import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import { AiringStatusMark } from "@/mainview/lib/airing-status";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import { listStatusSchema } from "@/shared/list";
 import {
-	TORRENT_FILTER_ACTION_LABELS,
-	TORRENT_FILTER_ELEMENT_LABELS,
-	TORRENT_FILTER_MATCH_LABELS,
-	TORRENT_FILTER_OPERATOR_LABELS,
-	TORRENT_FILTER_OPTION_LABELS,
-	blankTorrentFilter,
-	cloneTorrentFilter,
-	torrentFilterWizardPresets,
-	type TorrentFilter,
-	type TorrentFilterAction,
-	type TorrentFilterCondition,
-	type TorrentFilterElement,
-	type TorrentFilterOperator,
-} from "@/lib/schemas/torrent-filter";
+    ArrowDownIcon,
+    ArrowUpIcon,
+    FilterIcon,
+    FilterXIcon,
+    MinusIcon,
+    PencilIcon,
+    PlusIcon,
+} from "lucide-react";
+import { useId, useState } from "react";
 
 const ELEMENT_KEYS = Object.keys(
 	TORRENT_FILTER_ELEMENT_LABELS,

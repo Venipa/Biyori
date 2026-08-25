@@ -3,7 +3,7 @@ import {
 	animeInfoSearchSchema,
 	parseAnimeInfoId,
 } from "@/lib/schemas/anime-info-search";
-import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
+import { useAnimeInfoNav, useAnimeInfoOpen } from "@/mainview/lib/anime-info-nav";
 import { listStatusSchema } from "@/shared/list";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/app/anime-list")({
 function AnimeListPage() {
 	const { tab: tabRaw, id } = Route.useSearch();
 	const tab = tabRaw ?? "Currently watching";
-	const openAnimeId = parseAnimeInfoId(id);
+	const openAnimeId = useAnimeInfoOpen()?.id ?? parseAnimeInfoId(id);
 	const navigate = Route.useNavigate();
 	const animeInfo = useAnimeInfoNav();
 

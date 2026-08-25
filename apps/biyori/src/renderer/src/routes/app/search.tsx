@@ -1,3 +1,4 @@
+import { AiringStatusMark } from "@/components/airing-status";
 import { anilistSearchRouteSchema } from "@/lib/schemas/anilist-search";
 import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
@@ -17,25 +18,22 @@ import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/em
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
-import { AiringStatusMark } from "@/mainview/lib/airing-status";
-import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
+import { useAnimeInfoNav, useAnimeInfoOpen } from "@/mainview/lib/anime-info-nav";
 import { formatSeasonLabel } from "@/mainview/lib/season-view";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
-import { listStatusSchema, type ListStatus } from "@/shared/list";
+import { type ListStatus, listStatusSchema } from "@/shared/list";
 import { createFileRoute } from "@tanstack/react-router";
 import {
-  getCoreRowModel,
-  getExpandedRowModel,
-  getGroupedRowModel,
-  getSortedRowModel,
-  useReactTable,
   type ColumnDef,
+  getCoreRowModel,
+  getSortedRowModel,
   type SortingState,
+  useReactTable,
 } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
-import { ListIcon, ListPlusIcon, SearchIcon } from "lucide-react";
-import { useState } from "react";
+import { SearchIcon } from "lucide-react";
+import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/app/search")({
 	validateSearch: anilistSearchRouteSchema,
@@ -46,12 +44,6 @@ type SearchItem = inferRouterOutputs<AppRouter>["anilist"]["search"]["items"][nu
 type SearchRow = SearchItem & { inList: boolean };
 
 const columns: ColumnDef<SearchRow>[] = [
-	{
-		id: "inList",
-		accessorFn: (row) => (row.inList ? "inlist" : "notinlist"),
-		header: "",
-		enableSorting: false,
-	},
 	{
 		accessorKey: "title",
 		header: "Anime title",
@@ -117,22 +109,26 @@ function parseListStatus(value: string | undefined): ListStatus | null {
 
 function SearchPage() {
 	const { q, id: openIdRaw } = Route.useSearch();
-	const openId = parseAnimeInfoId(openIdRaw);
+	const openId = useAnimeInfoOpen()?.id ?? parseAnimeInfoId(openIdRaw);
 	const animeInfo = useAnimeInfoNav();
 	const query = trpc.anilist.search.useQuery(
 		{ q, page: 1 },
 		{ enabled: (q ?? "").trim().length > 0 },
 	);
 	const listedQuery = trpc.anime.listed.useQuery();
-	const listedById = new Map(
-		(listedQuery.data ?? []).map((row) => [row.id, row.status]),
+	const listed = listedQuery.data;
+	const listedById = useMemo(
+		() => new Map((listed ?? []).map((row) => [row.id, row.status])),
+		[listed],
 	);
-	const items = [...(query.data?.items ?? [])]
-		.map((item) => ({
-			...item,
-			inList: listedById.has(item.id),
-		}))
-		.sort((left, right) => Number(right.inList) - Number(left.inList));
+	const items = useMemo(() => {
+		return (query.data?.items ?? [])
+			.map((item) => ({
+				...item,
+				inList: listedById.has(item.id),
+			}))
+			.sort((left, right) => Number(right.inList) - Number(left.inList));
+	}, [listedById, query.data?.items]);
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [menuRow, setMenuRow] = useState<SearchRow | null>(null);
 	const table = useReactTable({
@@ -140,16 +136,9 @@ function SearchPage() {
 		columns,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: getSortedRowModel(),
-		getGroupedRowModel: getGroupedRowModel(),
-		getExpandedRowModel: getExpandedRowModel(),
 		getRowId: (row) => String(row.id),
-		groupedColumnMode: "remove",
 		onSortingChange: setSorting,
-		state: {
-			sorting,
-			grouping: ["inList"],
-			expanded: true,
-		},
+		state: { sorting },
 	});
 	const hasQuery = (q ?? "").trim().length > 0;
 	const menuStatus = menuRow
@@ -193,19 +182,6 @@ function SearchPage() {
 						{items.length > 0 ? (
 							<DataTable
 								table={table}
-								groupLabel={(value) =>
-									value === "inlist" ? (
-										<span className="inline-flex items-center gap-2">
-											<ListIcon className="size-4" />
-											In list
-										</span>
-									) : (
-										<span className="inline-flex items-center gap-2">
-											<ListPlusIcon className="size-4" />
-											Not in list
-										</span>
-									)
-								}
 								renderRow={(row, cells) => (
 									<TableRow
 										data-state={
