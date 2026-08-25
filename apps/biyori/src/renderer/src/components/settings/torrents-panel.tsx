@@ -3,8 +3,13 @@ import { Controller, useFormContext } from "react-hook-form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/mainview/components/ui/tabs";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
 import { EditableSelect } from "@/mainview/components/editable-select";
-import { Button } from "@/mainview/components/ui/button";
-import { Input } from "@/mainview/components/ui/input";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupButton,
+	InputGroupInput,
+	InputGroupText,
+} from "@/mainview/components/ui/input-group";
 import {
 	RadioGroup,
 	RadioGroupItem,
@@ -37,6 +42,16 @@ import {
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { TorrentFiltersTab } from "./torrent-filters-tab";
 
+const TORRENT_SORT_BY_ITEMS = {
+	episode_number: "Sort by episode number",
+	release_date: "Sort by release date",
+} as const;
+
+const TORRENT_SORT_ORDER_ITEMS = {
+	ascending: "In ascending order",
+	descending: "In descending order",
+} as const;
+
 export function TorrentsPanel() {
 	const rssId = useId();
 	const searchId = useId();
@@ -55,10 +70,6 @@ export function TorrentsPanel() {
 	const appPathId = useId();
 	const downloadDirId = useId();
 	const form = useFormContext<AppSettingsInput>();
-	const useAnimeFolder = form.watch("torrentUseAnimeFolder");
-	const fallbackOnFolder = form.watch("torrentFallbackOnFolder");
-	const appMode = form.watch("torrentAppMode");
-	const folderEnabled = Boolean(useAnimeFolder && fallbackOnFolder);
 
 	return (
 		<Tabs defaultValue="discovery">
@@ -127,17 +138,18 @@ export function TorrentsPanel() {
 						/>
 						<Field>
 							<FieldLabel htmlFor={intervalId}>Interval:</FieldLabel>
-							<div className="flex items-center gap-2">
-								<Input
+							<InputGroup className="w-40">
+								<InputGroupInput
 									id={intervalId}
 									type="number"
-									className="w-20"
 									{...form.register("torrentCheckIntervalMinutes", {
 										valueAsNumber: true,
 									})}
 								/>
-								<span className="text-sm text-muted-foreground">(minutes)</span>
-							</div>
+								<InputGroupAddon align="inline-end">
+									<InputGroupText>(minutes)</InputGroupText>
+								</InputGroupAddon>
+							</InputGroup>
 							<FieldError
 								errors={[form.formState.errors.torrentCheckIntervalMinutes]}
 							/>
@@ -190,10 +202,7 @@ export function TorrentsPanel() {
 									<FieldLabel htmlFor={sortById}>Sort by:</FieldLabel>
 									<Select
 										value={field.value}
-										items={{
-											episode_number: "Sort by episode number",
-											release_date: "Sort by release date",
-										}}
+										items={TORRENT_SORT_BY_ITEMS}
 										onValueChange={(value) => {
 											if (typeof value === "string") {
 												field.onChange(value);
@@ -226,10 +235,7 @@ export function TorrentsPanel() {
 									<FieldLabel htmlFor={sortOrderId}>Order:</FieldLabel>
 									<Select
 										value={field.value}
-										items={{
-											ascending: "In ascending order",
-											descending: "In descending order",
-										}}
+										items={TORRENT_SORT_ORDER_ITEMS}
 										onValueChange={(value) => {
 											if (typeof value === "string") {
 												field.onChange(value);
@@ -255,140 +261,188 @@ export function TorrentsPanel() {
 							)}
 						/>
 					</FieldSet>
-					<FieldSet className="rounded-md border p-3">
-						<FieldLegend variant="label" className="text-muted-foreground">
-							Download location
-						</FieldLegend>
-						<FormCheckbox
-							control={form.control}
-							name="torrentUseAnimeFolder"
-							id={useAnimeFolderId}
-							label="Use anime folders as the download folder"
-						/>
-						<FormCheckbox
-							control={form.control}
-							name="torrentFallbackOnFolder"
-							id={fallbackId}
-							label="If no anime folder is set, use this folder instead:"
-						/>
-						<Field>
-							<FieldLabel htmlFor={downloadDirId} className="sr-only">
-								Fallback download folder
-							</FieldLabel>
-							<div className="flex gap-2">
-								<Input
-									id={downloadDirId}
-									disabled={!folderEnabled}
-									{...form.register("torrentDownloadDir")}
-								/>
-								<Button
-									type="button"
-									variant="outline"
-									disabled={!folderEnabled}
-									onClick={() => {
-										void pickLibraryFolderPath().then((path) => {
-											if (path) {
-												form.setValue("torrentDownloadDir", path, {
-													shouldDirty: true,
-												});
-											}
-										});
-									}}
-								>
-									Browse...
-								</Button>
-							</div>
-							<FieldError
-								errors={[form.formState.errors.torrentDownloadDir]}
-							/>
-						</Field>
-						<FormCheckbox
-							control={form.control}
-							name="torrentCreateSubfolder"
-							id={createSubId}
-							label="Create a subfolder using the anime title as its name"
-						/>
-						<FieldDescription>
-							Supported clients: aria2, Deluge, PicoTorrent, qBittorrent,
-							Transmission, uTorrent.
-						</FieldDescription>
-					</FieldSet>
-					<FieldSet className="rounded-md border p-3">
-						<FieldLegend variant="label" className="text-muted-foreground">
-							BitTorrent client
-						</FieldLegend>
-						<FormCheckbox
-							control={form.control}
-							name="torrentAppOpen"
-							id={appOpenId}
-							label="Open downloaded .torrent files"
-						/>
-						<Controller
-							control={form.control}
-							name="torrentAppMode"
-							render={({ field, fieldState }) => (
-								<Field data-invalid={fieldState.invalid || undefined}>
-									<RadioGroup
-										value={field.value}
-										onValueChange={(value) => {
-											if (typeof value === "string") {
-												field.onChange(value);
-											}
-										}}
-									>
-										<Field orientation="horizontal">
-											<RadioGroupItem value="default" id={appDefaultId} />
-											<FieldLabel htmlFor={appDefaultId} className="font-normal">
-												Use the default application associated with .torrent
-												files
-											</FieldLabel>
-										</Field>
-										<Field orientation="horizontal">
-											<RadioGroupItem value="custom" id={appCustomId} />
-											<FieldLabel htmlFor={appCustomId} className="font-normal">
-												Use a custom application:
-											</FieldLabel>
-										</Field>
-									</RadioGroup>
-									<FieldError errors={[fieldState.error]} />
-								</Field>
-							)}
-						/>
-						<Field>
-							<FieldLabel htmlFor={appPathId} className="sr-only">
-								BitTorrent client path
-							</FieldLabel>
-							<div className="flex gap-2">
-								<Input
-									id={appPathId}
-									disabled={appMode !== "custom"}
-									{...form.register("torrentAppPath")}
-								/>
-								<Button
-									type="button"
-									variant="outline"
-									disabled={appMode !== "custom"}
-									onClick={() => {
-										void pickFilePath().then((path) => {
-											if (path) {
-												form.setValue("torrentAppPath", path, {
-													shouldDirty: true,
-												});
-											}
-										});
-									}}
-								>
-									Browse...
-								</Button>
-							</div>
-							<FieldError errors={[form.formState.errors.torrentAppPath]} />
-						</Field>
-					</FieldSet>
+					<DownloadLocationFields
+						useAnimeFolderId={useAnimeFolderId}
+						fallbackId={fallbackId}
+						downloadDirId={downloadDirId}
+						createSubId={createSubId}
+					/>
+					<TorrentClientFields
+						appOpenId={appOpenId}
+						appDefaultId={appDefaultId}
+						appCustomId={appCustomId}
+						appPathId={appPathId}
+					/>
 				</FieldGroup>
 			</TabsContent>
 			<TabsContent value="filters" className="pt-4">
 				<TorrentFiltersTab />
 			</TabsContent>
 		</Tabs>
+	);
+}
+
+function DownloadLocationFields({
+	useAnimeFolderId,
+	fallbackId,
+	downloadDirId,
+	createSubId,
+}: {
+	useAnimeFolderId: string;
+	fallbackId: string;
+	downloadDirId: string;
+	createSubId: string;
+}) {
+	const form = useFormContext<AppSettingsInput>();
+	const useAnimeFolder = form.watch("torrentUseAnimeFolder");
+	const fallbackOnFolder = form.watch("torrentFallbackOnFolder");
+	const folderEnabled = Boolean(useAnimeFolder && fallbackOnFolder);
+	return (
+		<FieldSet className="rounded-md border p-3">
+			<FieldLegend variant="label" className="text-muted-foreground">
+				Download location
+			</FieldLegend>
+			<FormCheckbox
+				control={form.control}
+				name="torrentUseAnimeFolder"
+				id={useAnimeFolderId}
+				label="Use anime folders as the download folder"
+			/>
+			<FormCheckbox
+				control={form.control}
+				name="torrentFallbackOnFolder"
+				id={fallbackId}
+				label="If no anime folder is set, use this folder instead:"
+			/>
+			<Field data-disabled={!folderEnabled || undefined}>
+				<FieldLabel htmlFor={downloadDirId} className="sr-only">
+					Fallback download folder
+				</FieldLabel>
+				<InputGroup>
+					<InputGroupInput
+						id={downloadDirId}
+						disabled={!folderEnabled}
+						{...form.register("torrentDownloadDir")}
+					/>
+					<InputGroupAddon align="inline-end">
+						<InputGroupButton
+							variant="outline"
+							disabled={!folderEnabled}
+							onClick={() => {
+								void pickLibraryFolderPath().then((path) => {
+									if (path) {
+										form.setValue("torrentDownloadDir", path, {
+											shouldDirty: true,
+										});
+									}
+								});
+							}}
+						>
+							Browse...
+						</InputGroupButton>
+					</InputGroupAddon>
+				</InputGroup>
+				<FieldError errors={[form.formState.errors.torrentDownloadDir]} />
+			</Field>
+			<FormCheckbox
+				control={form.control}
+				name="torrentCreateSubfolder"
+				id={createSubId}
+				label="Create a subfolder using the anime title as its name"
+			/>
+			<FieldDescription>
+				Supported clients: aria2, Deluge, PicoTorrent, qBittorrent,
+				Transmission, uTorrent.
+			</FieldDescription>
+		</FieldSet>
+	);
+}
+
+function TorrentClientFields({
+	appOpenId,
+	appDefaultId,
+	appCustomId,
+	appPathId,
+}: {
+	appOpenId: string;
+	appDefaultId: string;
+	appCustomId: string;
+	appPathId: string;
+}) {
+	const form = useFormContext<AppSettingsInput>();
+	const appMode = form.watch("torrentAppMode");
+	const customApp = appMode === "custom";
+	return (
+		<FieldSet className="rounded-md border p-3">
+			<FieldLegend variant="label" className="text-muted-foreground">
+				BitTorrent client
+			</FieldLegend>
+			<FormCheckbox
+				control={form.control}
+				name="torrentAppOpen"
+				id={appOpenId}
+				label="Open downloaded .torrent files"
+			/>
+			<Controller
+				control={form.control}
+				name="torrentAppMode"
+				render={({ field, fieldState }) => (
+					<Field data-invalid={fieldState.invalid || undefined}>
+						<RadioGroup
+							value={field.value}
+							onValueChange={(value) => {
+								if (typeof value === "string") {
+									field.onChange(value);
+								}
+							}}
+						>
+							<Field orientation="horizontal">
+								<RadioGroupItem value="default" id={appDefaultId} />
+								<FieldLabel htmlFor={appDefaultId} className="font-normal">
+									Use the default application associated with .torrent files
+								</FieldLabel>
+							</Field>
+							<Field orientation="horizontal">
+								<RadioGroupItem value="custom" id={appCustomId} />
+								<FieldLabel htmlFor={appCustomId} className="font-normal">
+									Use a custom application:
+								</FieldLabel>
+							</Field>
+						</RadioGroup>
+						<FieldError errors={[fieldState.error]} />
+					</Field>
+				)}
+			/>
+			<Field data-disabled={!customApp || undefined}>
+				<FieldLabel htmlFor={appPathId} className="sr-only">
+					BitTorrent client path
+				</FieldLabel>
+				<InputGroup>
+					<InputGroupInput
+						id={appPathId}
+						disabled={!customApp}
+						{...form.register("torrentAppPath")}
+					/>
+					<InputGroupAddon align="inline-end">
+						<InputGroupButton
+							variant="outline"
+							disabled={!customApp}
+							onClick={() => {
+								void pickFilePath().then((path) => {
+									if (path) {
+										form.setValue("torrentAppPath", path, {
+											shouldDirty: true,
+										});
+									}
+								});
+							}}
+						>
+							Browse...
+						</InputGroupButton>
+					</InputGroupAddon>
+				</InputGroup>
+				<FieldError errors={[form.formState.errors.torrentAppPath]} />
+			</Field>
+		</FieldSet>
 	);
 }

@@ -1,4 +1,5 @@
 import { observable } from "@trpc/server/observable";
+import { isPathInsideFolder } from "../../lib/folder-path";
 import type { AppSettings, DefaultService } from "../../lib/schemas/app-settings";
 import { readAnilistAuth } from "../anilist/store";
 import type { DatabaseClient } from "../db";
@@ -87,10 +88,7 @@ function isInsideLibrary(
 	if (!filePath) {
 		return true;
 	}
-	const lower = filePath.toLowerCase();
-	return folders.some((folder) =>
-		lower.startsWith(folder.path.toLowerCase()),
-	);
+	return folders.some((folder) => isPathInsideFolder(filePath, folder.path));
 }
 
 export function getNowPlayingSnapshot(): NowPlayingSnapshot {

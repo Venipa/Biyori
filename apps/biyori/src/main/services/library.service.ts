@@ -1,8 +1,9 @@
 import { logger as log } from "../logger";
+import { subscribeSettings } from "../settings";
 import {
-  initLibrary,
-  restartLibraryWatch,
-  scanLibrary,
+	initLibrary,
+	restartLibraryWatch,
+	scanLibrary,
 } from "../track/library";
 import { getDb } from "./database.service";
 import { Service } from "./service";
@@ -13,6 +14,9 @@ export default class LibraryService extends Service {
 
 	onInit(): void {
 		initLibrary(getDb());
+		subscribeSettings(() => {
+			void restartLibraryWatch();
+		});
 	}
 
 	afterInit(): void {

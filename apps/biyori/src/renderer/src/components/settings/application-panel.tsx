@@ -22,6 +22,12 @@ import { Textarea } from "@/mainview/components/ui/textarea";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { listStatusSchema } from "@/shared/list";
 
+const TITLE_LANGUAGE_ITEMS = {
+	Romaji: "Romaji",
+	English: "English",
+	Native: "Native",
+} as const;
+
 const listStatusItems = Object.fromEntries(
 	listStatusSchema.options.map((status) => [status, status]),
 ) as Record<(typeof listStatusSchema.options)[number], string>;
@@ -30,7 +36,6 @@ export function ApplicationPanel() {
 	const titleLanguageId = useId();
 	const defaultAddToListStatusId = useId();
 	const autostartId = useId();
-	const autostartTrayId = useId();
 	const closeToTrayId = useId();
 	const externalLinksId = useId();
 	const form = useFormContext<AppSettingsInput>();
@@ -58,11 +63,7 @@ export function ApplicationPanel() {
 									<div className="max-w-64">
 										<Select
 											value={field.value}
-											items={{
-												Romaji: "Romaji",
-												English: "English",
-												Native: "Native",
-											}}
+											items={TITLE_LANGUAGE_ITEMS}
 											onValueChange={(value) => {
 												if (typeof value === "string") {
 													field.onChange(value);
@@ -144,13 +145,7 @@ export function ApplicationPanel() {
 							id={autostartId}
 							label="Autostart"
 						/>
-						<FormCheckbox
-							control={form.control}
-							name="autostartTray"
-							id={autostartTrayId}
-							label="Autostart in tray"
-							disabled={!form.watch("autostart")}
-						/>
+						<AutostartTrayField />
 					</FieldSet>
 					<FieldSet className="rounded-md border p-3">
 						<FieldLegend variant="label" className="text-muted-foreground">
@@ -179,5 +174,20 @@ export function ApplicationPanel() {
 				</FieldGroup>
 			</TabsContent>
 		</Tabs>
+	);
+}
+
+function AutostartTrayField() {
+	const autostartTrayId = useId();
+	const form = useFormContext<AppSettingsInput>();
+	const autostart = form.watch("autostart");
+	return (
+		<FormCheckbox
+			control={form.control}
+			name="autostartTray"
+			id={autostartTrayId}
+			label="Autostart in tray"
+			disabled={!autostart}
+		/>
 	);
 }

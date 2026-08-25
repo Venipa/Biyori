@@ -40,21 +40,7 @@ export function RecognitionPanel() {
 	const gotoOkId = useId();
 	const notifyBadId = useId();
 	const gotoBadId = useId();
-	const playersEnableId = useId();
-	const playersAllId = useId();
-	const streamEnableId = useId();
-	const streamAllId = useId();
 	const form = useFormContext<AppSettingsInput>();
-	const playersEnabled = form.watch("enableMediaPlayerDetection");
-	const streamingEnabled = form.watch("enableStreamingDetection");
-	const selectedPlayers = form.watch("enabledMediaPlayers") ?? [];
-	const selectedStreams = form.watch("enabledStreamingProviders") ?? [];
-	const allPlayersOn = MEDIA_PLAYERS.every((player) =>
-		selectedPlayers.includes(player.id),
-	);
-	const allStreamsOn = STREAMING_PROVIDERS.every((provider) =>
-		selectedStreams.includes(provider.id),
-	);
 
 	return (
 		<Tabs defaultValue="general">
@@ -180,156 +166,190 @@ export function RecognitionPanel() {
 				</FieldGroup>
 			</TabsContent>
 			<TabsContent value="players" className="pt-4">
-				<FieldGroup>
-					<FormCheckbox
-						control={form.control}
-						name="enableMediaPlayerDetection"
-						id={playersEnableId}
-						label="Enable media player detection"
-					/>
-					<FieldDescription>
-						Tip: Select the players you use, deselect the others.
-					</FieldDescription>
-					<Controller
-						control={form.control}
-						name="enabledMediaPlayers"
-						render={({ field }) => (
-							<FieldSet
-								className="rounded-md border p-3"
-								disabled={!playersEnabled}
-							>
-								<FieldLegend variant="label" className="text-muted-foreground">
-									Supported media players
-								</FieldLegend>
-								<ul className="max-h-72 overflow-auto rounded-md border bg-background p-2">
-									<li className="border-b pb-1">
-										<Field orientation="horizontal">
-											<Checkbox
-												id={playersAllId}
-												disabled={!playersEnabled}
-												checked={allPlayersOn}
-												onCheckedChange={(checked) => {
-													field.onChange(
-														checked === true
-															? MEDIA_PLAYERS.map((player) => player.id)
-															: [],
-													);
-												}}
-											/>
-											<FieldLabel htmlFor={playersAllId} className="font-normal">
-												Select/deselect all
-											</FieldLabel>
-										</Field>
-									</li>
-									{MEDIA_PLAYERS.map((player) => {
-										const itemId = `${playersAllId}-${player.id}`;
-										return (
-											<li key={player.id} className="pl-4">
-												<Field orientation="horizontal">
-													<Checkbox
-														id={itemId}
-														disabled={!playersEnabled}
-														checked={selectedPlayers.includes(player.id)}
-														onCheckedChange={(checked) => {
-															field.onChange(
-																toggleId(
-																	selectedPlayers,
-																	player.id,
-																	checked === true,
-																),
-															);
-														}}
-													/>
-													<FieldLabel htmlFor={itemId} className="font-normal">
-														{player.label}
-													</FieldLabel>
-												</Field>
-											</li>
-										);
-									})}
-								</ul>
-							</FieldSet>
-						)}
-					/>
-				</FieldGroup>
+				<MediaPlayersFields />
 			</TabsContent>
 			<TabsContent value="streaming" className="pt-4">
-				<FieldGroup>
-					<FormCheckbox
-						control={form.control}
-						name="enableStreamingDetection"
-						id={streamEnableId}
-						label="Enable streaming media detection"
-					/>
-					<FieldDescription>
-						Supported web browsers are Google Chrome, Mozilla Firefox, and
-						Opera. Works best with a browser in English language.
-					</FieldDescription>
-					<Controller
-						control={form.control}
-						name="enabledStreamingProviders"
-						render={({ field }) => (
-							<FieldSet
-								className="rounded-md border p-3"
-								disabled={!streamingEnabled}
-							>
-								<FieldLegend variant="label" className="text-muted-foreground">
-									Supported media providers
-								</FieldLegend>
-								<ul className="max-h-72 overflow-auto rounded-md border bg-background p-2">
-									<li className="border-b pb-1">
-										<Field orientation="horizontal">
-											<Checkbox
-												id={streamAllId}
-												disabled={!streamingEnabled}
-												checked={allStreamsOn}
-												onCheckedChange={(checked) => {
-													field.onChange(
-														checked === true
-															? STREAMING_PROVIDERS.map(
-																	(provider) => provider.id,
-																)
-															: [],
-													);
-												}}
-											/>
-											<FieldLabel htmlFor={streamAllId} className="font-normal">
-												Select/deselect all
-											</FieldLabel>
-										</Field>
-									</li>
-									{STREAMING_PROVIDERS.map((provider) => {
-										const itemId = `${streamAllId}-${provider.id}`;
-										return (
-											<li key={provider.id} className="pl-4">
-												<Field orientation="horizontal">
-													<Checkbox
-														id={itemId}
-														disabled={!streamingEnabled}
-														checked={selectedStreams.includes(provider.id)}
-														onCheckedChange={(checked) => {
-															field.onChange(
-																toggleId(
-																	selectedStreams,
-																	provider.id,
-																	checked === true,
-																),
-															);
-														}}
-													/>
-													<FieldLabel htmlFor={itemId} className="font-normal">
-														{provider.label}
-													</FieldLabel>
-												</Field>
-											</li>
-										);
-									})}
-								</ul>
-							</FieldSet>
-						)}
-					/>
-				</FieldGroup>
+				<StreamingFields />
 			</TabsContent>
 		</Tabs>
+	);
+}
+
+function MediaPlayersFields() {
+	const playersEnableId = useId();
+	const playersAllId = useId();
+	const form = useFormContext<AppSettingsInput>();
+	const playersEnabled = form.watch("enableMediaPlayerDetection");
+	return (
+		<FieldGroup>
+			<FormCheckbox
+				control={form.control}
+				name="enableMediaPlayerDetection"
+				id={playersEnableId}
+				label="Enable media player detection"
+			/>
+			<FieldDescription>
+				Tip: Select the players you use, deselect the others.
+			</FieldDescription>
+			<Controller
+				control={form.control}
+				name="enabledMediaPlayers"
+				render={({ field }) => {
+					const selected = field.value ?? [];
+					const selectedSet = new Set(selected);
+					const allOn = MEDIA_PLAYERS.every((player) =>
+						selectedSet.has(player.id),
+					);
+					return (
+						<FieldSet
+							className="rounded-md border p-3"
+							disabled={!playersEnabled}
+						>
+							<FieldLegend variant="label" className="text-muted-foreground">
+								Supported media players
+							</FieldLegend>
+							<ul className="max-h-72 overflow-auto rounded-md border bg-background p-2">
+								<li className="border-b pb-1">
+									<Field orientation="horizontal">
+										<Checkbox
+											id={playersAllId}
+											disabled={!playersEnabled}
+											checked={allOn}
+											onCheckedChange={(checked) => {
+												field.onChange(
+													checked === true
+														? MEDIA_PLAYERS.map((player) => player.id)
+														: [],
+												);
+											}}
+										/>
+										<FieldLabel htmlFor={playersAllId} className="font-normal">
+											Select/deselect all
+										</FieldLabel>
+									</Field>
+								</li>
+								{MEDIA_PLAYERS.map((player) => {
+									const itemId = `${playersAllId}-${player.id}`;
+									return (
+										<li key={player.id} className="pl-4">
+											<Field orientation="horizontal">
+												<Checkbox
+													id={itemId}
+													disabled={!playersEnabled}
+													checked={selectedSet.has(player.id)}
+													onCheckedChange={(checked) => {
+														field.onChange(
+															toggleId(
+																selected,
+																player.id,
+																checked === true,
+															),
+														);
+													}}
+												/>
+												<FieldLabel htmlFor={itemId} className="font-normal">
+													{player.label}
+												</FieldLabel>
+											</Field>
+										</li>
+									);
+								})}
+							</ul>
+						</FieldSet>
+					);
+				}}
+			/>
+		</FieldGroup>
+	);
+}
+
+function StreamingFields() {
+	const streamEnableId = useId();
+	const streamAllId = useId();
+	const form = useFormContext<AppSettingsInput>();
+	const streamingEnabled = form.watch("enableStreamingDetection");
+	return (
+		<FieldGroup>
+			<FormCheckbox
+				control={form.control}
+				name="enableStreamingDetection"
+				id={streamEnableId}
+				label="Enable streaming media detection"
+			/>
+			<FieldDescription>
+				Supported web browsers are Google Chrome, Mozilla Firefox, and Opera.
+				Works best with a browser in English language.
+			</FieldDescription>
+			<Controller
+				control={form.control}
+				name="enabledStreamingProviders"
+				render={({ field }) => {
+					const selected = field.value ?? [];
+					const selectedSet = new Set(selected);
+					const allOn = STREAMING_PROVIDERS.every((provider) =>
+						selectedSet.has(provider.id),
+					);
+					return (
+						<FieldSet
+							className="rounded-md border p-3"
+							disabled={!streamingEnabled}
+						>
+							<FieldLegend variant="label" className="text-muted-foreground">
+								Supported media providers
+							</FieldLegend>
+							<ul className="max-h-72 overflow-auto rounded-md border bg-background p-2">
+								<li className="border-b pb-1">
+									<Field orientation="horizontal">
+										<Checkbox
+											id={streamAllId}
+											disabled={!streamingEnabled}
+											checked={allOn}
+											onCheckedChange={(checked) => {
+												field.onChange(
+													checked === true
+														? STREAMING_PROVIDERS.map(
+																(provider) => provider.id,
+															)
+														: [],
+												);
+											}}
+										/>
+										<FieldLabel htmlFor={streamAllId} className="font-normal">
+											Select/deselect all
+										</FieldLabel>
+									</Field>
+								</li>
+								{STREAMING_PROVIDERS.map((provider) => {
+									const itemId = `${streamAllId}-${provider.id}`;
+									return (
+										<li key={provider.id} className="pl-4">
+											<Field orientation="horizontal">
+												<Checkbox
+													id={itemId}
+													disabled={!streamingEnabled}
+													checked={selectedSet.has(provider.id)}
+													onCheckedChange={(checked) => {
+														field.onChange(
+															toggleId(
+																selected,
+																provider.id,
+																checked === true,
+															),
+														);
+													}}
+												/>
+												<FieldLabel htmlFor={itemId} className="font-normal">
+													{provider.label}
+												</FieldLabel>
+											</Field>
+										</li>
+									);
+								})}
+							</ul>
+						</FieldSet>
+					);
+				}}
+			/>
+		</FieldGroup>
 	);
 }

@@ -2,10 +2,10 @@ import { desktopRpc } from "@/desktop-rpc";
 import {
   type AppSettings,
   type AppSettingsInput,
-  type AppSettingsPatch,
   appSettingsDefaultValues,
   appSettingsSchema,
 } from "@/lib/schemas/app-settings";
+import { pickDirtySettings } from "@/lib/settings-dirty";
 import { Button } from "@/mainview/components/ui/button";
 import { FieldError } from "@/mainview/components/ui/field";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
@@ -19,7 +19,14 @@ import { trpc } from "@/mainview/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { type FieldErrors, type FieldPath, FormProvider, useForm } from "react-hook-form";
+import {
+	type FieldErrors,
+	type FieldPath,
+	FormProvider,
+	useForm,
+	useFormContext,
+	useFormState,
+} from "react-hook-form";
 
 export const Route = createFileRoute("/settings")({
 	beforeLoad: ({ location }) => {
@@ -53,25 +60,11 @@ function firstErrorPath(errors: FieldErrors): string | null {
 	return null;
 }
 
-function pickDirty(
-	values: AppSettings,
-	dirty: object,
-): AppSettingsPatch {
-	const patch: Record<string, unknown> = {};
-	for (const [key, flag] of Object.entries(dirty)) {
-		if (!flag) {
-			continue;
-		}
-		const value = values[key as keyof AppSettings];
-		if (flag === true || Array.isArray(value)) {
-			patch[key] = value;
-		}
-	}
-	return patch;
-}
 
 function SettingsLayout() {
-	const query = trpc.settings.get.useQuery();
+	const query = trpc.settings.get.useQuery(undefined, {
+		refetchOnWindowFocus: false,
+	});
 	if (query.isPending && !query.data) {
 		return (
 			<SettingsChrome
@@ -103,7 +96,6 @@ function SettingsLayout() {
 	}
 	return (
 		<SettingsForm
-			key={query.dataUpdatedAt}
 			defaultValues={query.data ?? appSettingsDefaultValues}
 		/>
 	);
@@ -171,8 +163,6 @@ function SettingsForm({
 }: {
 	defaultValues: AppSettingsInput | AppSettings;
 }) {
-	const navigate = useNavigate();
-	const saveSettings = trpc.settings.set.useMutation();
 	const form = useForm<AppSettingsInput, unknown, AppSettings>({
 		resolver: zodResolver(appSettingsSchema),
 		defaultValues,
@@ -181,73 +171,85 @@ function SettingsForm({
 
 	return (
 		<FormProvider {...form}>
-			<SettingsChrome
-				footer={
-					<div className="flex items-center justify-end gap-2 border-t bg-muted/50 px-4 py-3">
-						<FieldError errors={[form.formState.errors.root?.serverError]} />
-						<Button
-							variant="outline"
-							type="button"
-							onClick={() => {
-								void desktopRpc.request.closeSettings({});
-							}}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="button"
-							disabled={form.formState.isSubmitting}
-							onClick={() => {
-								void form.handleSubmit(
-									async (data) => {
-										try {
-											const patch = pickDirty(
-												data,
-												form.formState.dirtyFields,
-											);
-											if (Object.keys(patch).length === 0) {
-												await desktopRpc.request.closeSettings({});
-												return;
-											}
-											const saved = await saveSettings.mutateAsync(patch);
-											form.reset(saved);
-											await desktopRpc.request.closeSettings({});
-										} catch (error) {
-											form.setError("root.serverError", {
-												message:
-													error instanceof Error
-														? error.message
-														: "Could not save settings",
-											});
-										}
-									},
-									(errors) => {
-										const path = firstErrorPath(errors);
-										const rootKey = path?.split(".")[0] ?? "";
-										const section =
-											settingsFieldSection[rootKey] ?? "application";
-										void navigate({ to: `/settings/${section}` });
-										if (path) {
-											void form.setFocus(path as FieldPath<AppSettingsInput>);
-										}
-										form.setError("root.serverError", {
-											message: path
-												? `Fix ${path} in ${section}`
-												: "Fix invalid settings",
-										});
-									},
-								)();
-							}}
-						>
-							OK
-						</Button>
-					</div>
-				}
-			>
+			<SettingsChrome footer={<SettingsFormFooter />}>
 				<div className="p-4">
 					<Outlet />
 				</div>
 			</SettingsChrome>
 		</FormProvider>
+	);
+}
+
+function SettingsFormFooter() {
+	const navigate = useNavigate();
+	const saveSettings = trpc.settings.set.useMutation();
+	const form = useFormContext<AppSettingsInput, unknown, AppSettings>();
+	const { isSubmitting, errors } = useFormState({
+		control: form.control,
+	});
+
+	return (
+		<div className="flex items-center justify-end gap-2 border-t bg-muted/50 px-4 py-3">
+			<FieldError errors={[errors.root?.serverError]} />
+			<Button
+				variant="outline"
+				type="button"
+				onClick={() => {
+					void desktopRpc.request.closeSettings({});
+				}}
+			>
+				Cancel
+			</Button>
+			<Button
+				type="button"
+				disabled={isSubmitting}
+				onClick={() => {
+					void form.handleSubmit(
+						async (data) => {
+							try {
+								const patch = pickDirtySettings(
+									data,
+									form.formState.dirtyFields,
+									form.formState.defaultValues ?? {},
+								);
+								if (Object.keys(patch).length === 0) {
+									await desktopRpc.request.closeSettings({});
+									return;
+								}
+								const saved = await saveSettings.mutateAsync(patch);
+								form.reset(saved);
+								await desktopRpc.request.closeSettings({});
+							} catch (error) {
+								form.setError("root.serverError", {
+									message:
+										error instanceof Error
+											? error.message
+											: "Could not save settings",
+								});
+							}
+						},
+						(submitErrors) => {
+							const path = firstErrorPath(submitErrors);
+							const rootKey = path?.split(".")[0] ?? "";
+							const section =
+								settingsFieldSection[rootKey] ?? "application";
+							void navigate({ to: `/settings/${section}` });
+							if (path) {
+								void form.setFocus(
+									path as FieldPath<AppSettingsInput>,
+								);
+							}
+							form.setError("root.serverError", {
+								message: path
+									? `Fix ${path} in ${section}`
+									: "Fix invalid settings",
+							});
+						},
+					)();
+				}}
+			>
+				OK
+			</Button>
+		</div>
 	);
 }

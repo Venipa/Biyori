@@ -74,7 +74,6 @@ export function TorrentFiltersTab() {
 		name: "torrentFilters",
 	});
 	const enabled = form.watch("torrentFilterEnabled");
-	const rows = form.watch("torrentFilters") ?? [];
 	const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 	const [wizard, setWizard] = useState<TorrentFilterWizardMode | null>(null);
 	const [resetOpen, setResetOpen] = useState(false);
@@ -82,17 +81,20 @@ export function TorrentFiltersTab() {
 	const selected = selectedIndex ?? -1;
 	const canMoveUp = enabled && selected > 0;
 	const canMoveDown =
-		enabled && selected >= 0 && selected < rows.length - 1;
+		enabled && selected >= 0 && selected < filters.fields.length - 1;
 	const canRemove = enabled && selected >= 0;
+
+	function currentFilters(): TorrentFilter[] {
+		return form.getValues("torrentFilters") ?? [];
+	}
 
 	function replaceFilters(next: TorrentFilter[]): void {
 		filters.replace(next);
-		form.setValue("torrentFilters", next, { shouldDirty: true });
 		setSelectedIndex(next.length > 0 ? Math.min(selected, next.length - 1) : null);
 	}
 
 	function swap(from: number, to: number): void {
-		replaceFilters(moveItem(rows, from, to));
+		replaceFilters(moveItem(currentFilters(), from, to));
 		setSelectedIndex(to);
 	}
 
@@ -122,9 +124,9 @@ export function TorrentFiltersTab() {
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{rows.map((row, index) => (
+						{filters.fields.map((row, index) => (
 							<TableRow
-								key={filters.fields[index]?.id ?? row.id}
+								key={row.id}
 								data-state={selected === index ? "selected" : undefined}
 								className="cursor-pointer"
 								onClick={() => {
@@ -181,7 +183,7 @@ export function TorrentFiltersTab() {
 							setWizard({ kind: "add" });
 						}}
 					>
-						<PlusIcon />
+						<PlusIcon data-icon="inline-start" />
 					</Button>
 					<Button
 						type="button"
@@ -197,7 +199,7 @@ export function TorrentFiltersTab() {
 							setSelectedIndex(null);
 						}}
 					>
-						<MinusIcon />
+						<MinusIcon data-icon="inline-start" />
 					</Button>
 					<Separator orientation="vertical" className="mx-1 h-5" />
 					<Button
@@ -210,7 +212,7 @@ export function TorrentFiltersTab() {
 							swap(selected, selected - 1);
 						}}
 					>
-						<ArrowUpIcon />
+						<ArrowUpIcon data-icon="inline-start" />
 					</Button>
 					<Button
 						type="button"
@@ -222,7 +224,7 @@ export function TorrentFiltersTab() {
 							swap(selected, selected + 1);
 						}}
 					>
-						<ArrowDownIcon />
+						<ArrowDownIcon data-icon="inline-start" />
 					</Button>
 					<Separator orientation="vertical" className="mx-1 h-5" />
 					<Button
@@ -246,7 +248,7 @@ export function TorrentFiltersTab() {
 							});
 						}}
 					>
-						<DownloadIcon />
+						<DownloadIcon data-icon="inline-start" />
 					</Button>
 					<Button
 						type="button"
@@ -258,12 +260,12 @@ export function TorrentFiltersTab() {
 								defaultName: "torrent-filters.biyori",
 								payload: {
 									kind: "torrent-filters",
-									filters: rows,
+									filters: currentFilters(),
 								},
 							});
 						}}
 					>
-						<UploadIcon />
+						<UploadIcon data-icon="inline-start" />
 					</Button>
 					<Separator orientation="vertical" className="mx-1 h-5" />
 					<Button
@@ -275,7 +277,7 @@ export function TorrentFiltersTab() {
 							setResetOpen(true);
 						}}
 					>
-						<XIcon className="text-destructive" />
+						<XIcon className="text-destructive" data-icon="inline-start" />
 					</Button>
 				</div>
 			</div>
@@ -291,7 +293,7 @@ export function TorrentFiltersTab() {
 							filters.update(selected, filter);
 						} else {
 							filters.append(filter);
-							setSelectedIndex(rows.length);
+							setSelectedIndex(filters.fields.length);
 						}
 						setWizard(null);
 					}}

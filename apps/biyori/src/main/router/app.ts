@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { desc, eq, max } from "drizzle-orm";
 import { z } from "zod";
+import { folderPathExists, normalizeFolderPath } from "../../lib/folder-path";
 import { parseJsonArray } from "../../lib/parse-json-array";
 import { appSettingsPatchSchema } from "../../lib/schemas/app-settings";
 import { listStatusSchema } from "../../shared/list";
@@ -339,12 +340,13 @@ export const appRouter = t.router({
 		addLibraryFolder: t.procedure
 			.input(z.object({ path: z.string().min(1) }))
 			.mutation(async ({ ctx, input }) => {
+				const path = normalizeFolderPath(input.path);
 				const current = await loadAppSettings(ctx.db);
-				if (current.libraryFolders.some((folder) => folder.path === input.path)) {
+				if (folderPathExists(current.libraryFolders, path)) {
 					return current;
 				}
 				return patchAppSettings(ctx.db, {
-					libraryFolders: [...current.libraryFolders, { path: input.path }],
+					libraryFolders: [...current.libraryFolders, { path }],
 				});
 			}),
 	}),

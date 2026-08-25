@@ -2,9 +2,14 @@ import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/mainview/components/ui/tabs";
 import { FieldDescription, FieldError } from "@/mainview/components/ui/field";
-import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
 import { Input } from "@/mainview/components/ui/input";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupButton,
+	InputGroupInput,
+} from "@/mainview/components/ui/input-group";
 import {
 	Table,
 	TableBody,
@@ -127,28 +132,32 @@ export function AdvancedPanel() {
 									</label>
 								</TableCell>
 								<TableCell className="text-right">
-									<div className="ml-auto flex w-full max-w-80 items-center justify-end gap-2">
-										<Input
-											id={torrentFileId}
-											className="h-7 min-w-0 flex-1 font-mono text-xs"
-											{...form.register("torrentFileDownloadPath")}
-										/>
-										<Button
-											type="button"
-											variant="outline"
-											size="xs"
-											onClick={() => {
-												void pickLibraryFolderPath().then((path) => {
-													if (path) {
-														form.setValue("torrentFileDownloadPath", path, {
-															shouldDirty: true,
+									<div className="ml-auto w-full max-w-80">
+										<InputGroup>
+											<InputGroupInput
+												id={torrentFileId}
+												className="font-mono text-xs"
+												{...form.register("torrentFileDownloadPath")}
+											/>
+											<InputGroupAddon align="inline-end">
+												<InputGroupButton
+													variant="outline"
+													onClick={() => {
+														void pickLibraryFolderPath().then((path) => {
+															if (path) {
+																form.setValue(
+																	"torrentFileDownloadPath",
+																	path,
+																	{ shouldDirty: true },
+																);
+															}
 														});
-													}
-												});
-											}}
-										>
-											Browse...
-										</Button>
+													}}
+												>
+													Browse...
+												</InputGroupButton>
+											</InputGroupAddon>
+										</InputGroup>
 									</div>
 									<FieldError
 										errors={[form.formState.errors.torrentFileDownloadPath]}

@@ -1,0 +1,106 @@
+---
+description: Renderer freeze prevention (hash search, tables, overlays)
+globs:
+  - "**/*.{ts,tsx}"
+alwaysApply: true
+---
+
+# Renderer freeze prevention
+
+These patterns freeze the Electron renderer (main window or settings). Settings is a small `alwaysOnTop` window, so overlay + layout loops show up there first.
+
+## 1. Hash-history search params
+
+Biyori uses `createHashHistory()`. The hash query is always parsed as **strings**. If `validateSearch` outputs a different shape (number vs string, filled-in defaults), the router writes it back, the hash re-parses, and the renderer **infinite-loops**.
+
+Do not in `validateSearch`:
+
+- `.transform()` / `z.coerce.number()` / `z.number()` on params
+- `.default()` / `.preprocess()` that changes missing vs present keys
+- Parsing with a schema that converts `"21000"` to `21000`
+
+Do:
+
+- Keep param types as URL types: `z.string().optional()`, `z.enum(...).optional()`, `z.union([z.string(), z.number()]).optional()` with **no** transform
+- Coerce in the component (`parseAnimeInfoId` for `id`)
+- Do not `navigate` to set `id` on click. `useAnimeInfoNav().open` writes a store.
+
+```ts
+// BAD
+z.object({ id: z.coerce.number().optional() })
+navigate({ search: (prev) => ({ ...prev, id: String(id) }) })
+
+// GOOD
+z.object({ id: z.union([z.string(), z.number()]).optional() })
+animeInfo.open({ id, infoTab: "main" })
+```
+
+## 2. Tables must not rebuild on the same click that opens an overlay
+
+A new `data` array every render + grouping/`expanded: true` + opening a dialog/menu remounts the table in a loop (search used to freeze this way).
+
+- Do not `items.map(...)` / `[...rows]` as `data` during render unless the source already changed
+- Do not use TanStack Table grouping with `expanded: true` for click-to-open rows. Use a plain sorted table.
+- Do not `setState` in `onContextMenu` / `onClick` that replaces table `data` while a menu or dialog is mounting
+
+## 3. No Base UI Positioner in the settings window
+
+Settings is `alwaysOnTop` and small. `ContextMenu` / `DropdownMenu` / `Popover` `Positioner` runs collision in a rAF loop. If the anchor row re-renders or unmounts (RHF `remove`, new table `data`), that loop never exits. `setTimeout` before `remove` does not help: the freeze is the **re-render**, not the click.
+
+Do **not** use `ContextMenu`, `DropdownMenu`, or `Popover` `Positioner` in `/settings`.
+
+Do: in-flow controls on the row (icon `Button`). No portal, no collision loop.
+
+```tsx
+// BAD: Positioner tracks a row that RHF then rebuilds
+<ContextMenu>
+  <ContextMenuTrigger render={<TableRow />}>...</ContextMenuTrigger>
+  <ContextMenuContent>...</ContextMenuContent>
+</ContextMenu>
+
+// GOOD
+<Button
+  type="button"
+  variant="ghost"
+  size="icon-xs"
+  aria-label="Remove from library"
+  onClick={() => folders.remove(row.index)}
+>
+  <Trash2Icon />
+</Button>
+```
+
+## 4. React Hook Form must not rebuild the settings tree on every edit
+
+`form.formState` is a Proxy. Reading `isSubmitting` / `errors` / `dirtyFields` **during render** of the `FormProvider` parent re-renders **every** settings panel on any field change. In the settings window that remounts open overlays and freezes.
+
+Do:
+
+- Keep the form shell (`useForm` + `FormProvider` + `Outlet`) free of `form.formState` reads
+- Put OK/Cancel `isSubmitting` / root errors in a child that uses `useFormState({ control })`
+- Change field arrays with `append` / `remove` / `replace` only. Do **not** follow `replace()` with `setValue` on the same array: RHF regenerates every row `id`, remounts every row, and kills an open menu
+- Array saves do not need `dirtyFields`. `pickDirtySettings` already includes arrays that differ from `defaultValues`
+- Overlay actions that delete their own trigger: `setTimeout(fn, 0)` (or `onOpenChange(false)` then mutate) so the popup unmounts first
+
+```tsx
+// BAD: shell re-renders Outlet on every dirty change
+function SettingsForm() {
+  const form = useForm(...)
+  return (
+    <FormProvider {...form}>
+      <Button disabled={form.formState.isSubmitting}>OK</Button>
+      <Outlet />
+    </FormProvider>
+  )
+}
+
+// BAD: new ids for every row, menu trigger dies
+folders.replace(next)
+form.setValue("libraryFolders", next, { shouldDirty: true })
+
+// GOOD
+function SettingsFormFooter() {
+  const { isSubmitting } = useFormState({ control: form.control })
+}
+folders.remove(index)
+```

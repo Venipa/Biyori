@@ -1,27 +1,226 @@
-import { useId, useState } from "react";
-import { useFieldArray, useFormContext } from "react-hook-form";
-import { FolderIcon } from "lucide-react";
+import { useId } from "react";
+import { useFieldArray, useFormContext, useFormState } from "react-hook-form";
+import {
+	type ColumnDef,
+	flexRender,
+	getCoreRowModel,
+	useReactTable,
+} from "@tanstack/react-table";
+import { FolderIcon, FolderPlusIcon, Trash2Icon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/mainview/components/ui/tabs";
 import { Button } from "@/mainview/components/ui/button";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
 import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/mainview/components/ui/empty";
+import {
+	Field,
 	FieldError,
 	FieldGroup,
 	FieldSet,
 	FieldLegend,
 	FieldDescription,
 } from "@/mainview/components/ui/field";
-import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/mainview/components/ui/table";
+import {
+	folderPathExists,
+	pickLibraryFolderPath,
+} from "@/mainview/lib/library-folder";
+import { folderDisplayName } from "@/lib/folder-path";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 
-export function LibraryPanel() {
-	const realtimeId = useId();
+type LibraryFolderRow = {
+	id: string;
+	path: string;
+};
+
+const libraryFolderRowModel = getCoreRowModel<LibraryFolderRow>();
+
+function LibraryFoldersError() {
+	const { control } = useFormContext<AppSettingsInput>();
+	const { errors } = useFormState({
+		control,
+		name: "libraryFolders",
+	});
+	return (
+		<FieldError
+			errors={[
+				{
+					message:
+						errors.libraryFolders?.message ??
+						errors.libraryFolders?.root?.message,
+				},
+			]}
+		/>
+	);
+}
+
+const emptyLibraryFolders = (
+	<Empty className="min-h-32 border border-dashed">
+		<EmptyHeader>
+			<EmptyMedia variant="icon">
+				<FolderIcon />
+			</EmptyMedia>
+			<EmptyTitle>No library folders</EmptyTitle>
+			<EmptyDescription>
+				Add a folder to scan and monitor for episodes. Removing a folder only
+				updates settings and does not delete files.
+			</EmptyDescription>
+		</EmptyHeader>
+	</Empty>
+);
+
+function LibraryFoldersField() {
 	const form = useFormContext<AppSettingsInput>();
 	const folders = useFieldArray({
 		control: form.control,
 		name: "libraryFolders",
 	});
-	const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+	const rows = folders.fields as unknown as LibraryFolderRow[];
+
+	const columns: ColumnDef<LibraryFolderRow>[] = [
+		{
+			id: "name",
+			accessorFn: (row) => folderDisplayName(row.path),
+			header: "Folder",
+			cell: ({ getValue }) => (
+				<span className="flex min-w-0 items-center gap-2">
+					<FolderIcon />
+					<span className="truncate font-medium">{String(getValue())}</span>
+				</span>
+			),
+		},
+		{
+			accessorKey: "path",
+			header: "Path",
+			meta: { className: "w-full max-w-0" },
+			cell: ({ getValue }) => (
+				<span className="block truncate text-muted-foreground">
+					{String(getValue())}
+				</span>
+			),
+		},
+		{
+			id: "remove",
+			header: () => <span className="sr-only">Remove</span>,
+			meta: { className: "w-10" },
+			cell: ({ row }) => (
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon-xs"
+					aria-label={`Remove ${folderDisplayName(row.original.path)} from library`}
+					className="opacity-50 group-hover:opacity-100"
+					onClick={() => {
+						folders.remove(row.index);
+					}}
+				>
+					<Trash2Icon />
+				</Button>
+			),
+		},
+	];
+
+	const table = useReactTable({
+		data: rows,
+		columns,
+		getCoreRowModel: libraryFolderRowModel,
+		getRowId: (row) => row.id,
+		enableSorting: false,
+	});
+
+	function addFolder(path: string): void {
+		if (folderPathExists(rows, path)) {
+			return;
+		}
+		folders.append({ path });
+	}
+
+	return (
+		<FieldSet className="group rounded-lg border p-4">
+			<FieldLegend variant="label">Library folders</FieldLegend>
+			<FieldDescription>
+				These folders are scanned and monitored for new episodes.
+			</FieldDescription>
+			<Field>
+				{rows.length === 0 ? (
+					emptyLibraryFolders
+				) : (
+					<Table containerClassName="rounded-lg border">
+						<TableHeader>
+							{table.getHeaderGroups().map((headerGroup) => (
+								<TableRow key={headerGroup.id} className="hover:bg-transparent">
+									{headerGroup.headers.map((header) => (
+										<TableHead
+											key={header.id}
+											className={header.column.columnDef.meta?.className}
+										>
+											{header.isPlaceholder
+												? null
+												: flexRender(
+														header.column.columnDef.header,
+														header.getContext(),
+													)}
+										</TableHead>
+									))}
+								</TableRow>
+							))}
+						</TableHeader>
+						<TableBody>
+							{table.getRowModel().rows.map((row) => (
+								<TableRow key={row.id}>
+									{row.getVisibleCells().map((cell) => (
+										<TableCell
+											key={cell.id}
+											className={cell.column.columnDef.meta?.className}
+										>
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext(),
+											)}
+										</TableCell>
+									))}
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				)}
+			</Field>
+			<LibraryFoldersError />
+			<Field>
+				<Button
+					type="button"
+					variant="outline"
+					onClick={() => {
+						void pickLibraryFolderPath().then((path) => {
+							if (path) {
+								addFolder(path);
+							}
+						});
+					}}
+				>
+					<FolderPlusIcon data-icon="inline-start" />
+					Add library folder
+				</Button>
+			</Field>
+		</FieldSet>
+	);
+}
+
+export function LibraryPanel() {
+	const realtimeId = useId();
+	const form = useFormContext<AppSettingsInput>();
 
 	return (
 		<Tabs defaultValue="folders">
@@ -30,72 +229,9 @@ export function LibraryPanel() {
 			</TabsList>
 			<TabsContent value="folders" className="pt-4">
 				<FieldGroup>
-					<FieldSet className="rounded-md border p-3">
-						<FieldLegend variant="label" className="text-muted-foreground">
-							Library folders
-						</FieldLegend>
-						<FieldDescription>
-							These folders will be scanned and monitored for new episodes.
-						</FieldDescription>
-						<ul className="flex min-h-32 flex-col gap-1 rounded-md border bg-background p-2">
-							{folders.fields.map((folder, index) => (
-								<li key={folder.id}>
-									<button
-										type="button"
-										className="flex w-full items-center gap-2 rounded-sm px-1.5 py-1 text-left text-sm hover:bg-muted"
-										onClick={() => {
-											setSelectedIndex(index);
-										}}
-									>
-										<FolderIcon className="size-4 shrink-0 text-muted-foreground" />
-										<span className="truncate">{folder.path}</span>
-									</button>
-								</li>
-							))}
-						</ul>
-						<FieldError
-							errors={[
-								{
-									message:
-										form.formState.errors.libraryFolders?.message ??
-										form.formState.errors.libraryFolders?.root?.message,
-								},
-							]}
-						/>
-						<div className="flex justify-end gap-2">
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => {
-									void pickLibraryFolderPath().then((path) => {
-										if (path) {
-											folders.append({ path });
-										}
-									});
-								}}
-							>
-								Add new...
-							</Button>
-							<Button
-								type="button"
-								variant="outline"
-								disabled={selectedIndex == null}
-								onClick={() => {
-									if (selectedIndex == null) {
-										return;
-									}
-									folders.remove(selectedIndex);
-									setSelectedIndex(null);
-								}}
-							>
-								Remove
-							</Button>
-						</div>
-					</FieldSet>
-					<FieldSet className="rounded-md border p-3">
-						<FieldLegend variant="label" className="text-muted-foreground">
-							Real-time monitor
-						</FieldLegend>
+					<LibraryFoldersField />
+					<FieldSet className="rounded-lg border p-4">
+						<FieldLegend variant="label">Real-time monitor</FieldLegend>
 						<FormCheckbox
 							control={form.control}
 							name="realtimeMonitor"

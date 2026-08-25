@@ -1,6 +1,5 @@
 import { loadAppSettings, subscribeSettings } from "../settings";
 import { restartHttpServer } from "../share/http";
-import { restartLibraryWatch } from "../track/library";
 import { getDb } from "./database.service";
 import { Service } from "./service";
 
@@ -13,7 +12,6 @@ export default class HttpService extends Service {
 		restartHttpServer(settings);
 		subscribeSettings((next) => {
 			restartHttpServer(next);
-			void restartLibraryWatch();
 		});
 	}
 }

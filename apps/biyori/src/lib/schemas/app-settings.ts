@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { listStatusSchema } from "../../shared/list";
+import { normalizeFolderPath } from "../folder-path";
 import {
   defaultMediaPlayerIds,
   defaultStreamingProviderIds,
@@ -43,7 +44,11 @@ export const appSettingsSchema = z.object({
 	),
 	libraryFolders: z.array(
 		z.object({
-			path: z.string().min(1, "Required"),
+			path: z.preprocess(
+				(value) =>
+					typeof value === "string" ? normalizeFolderPath(value) : value,
+				z.string().min(1, "Required"),
+			),
 		}),
 	),
 	realtimeMonitor: z.boolean(),

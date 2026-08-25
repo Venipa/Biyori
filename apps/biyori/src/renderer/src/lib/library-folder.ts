@@ -1,10 +1,16 @@
+import {
+	folderPathExists,
+	normalizeFolderPath,
+} from "@/lib/folder-path";
 import { desktopRpc } from "@/desktop-rpc";
 import { trpc } from "@/mainview/trpc";
 
+export { folderPathExists, normalizeFolderPath };
+
 export async function pickLibraryFolderPath(): Promise<string | null> {
 	const { path } = await desktopRpc.request.pickFolder({});
-	const trimmed = path?.trim() ?? "";
-	return trimmed.length > 0 ? trimmed : null;
+	const normalized = normalizeFolderPath(path ?? "");
+	return normalized.length > 0 ? normalized : null;
 }
 
 export async function pickFilePath(): Promise<string | null> {

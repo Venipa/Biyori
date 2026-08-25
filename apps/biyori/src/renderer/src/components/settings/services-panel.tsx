@@ -29,6 +29,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useId } from "react";
 import { Controller, useForm, useFormContext } from "react-hook-form";
 
+const DEFAULT_SERVICE_ITEMS = {
+	anilist: "AniList",
+	myanimelist: "MyAnimeList (coming soon)",
+	kitsu: "Kitsu (coming soon)",
+} as const;
+
 export function ServicesPanel() {
 	const serviceId = useId();
 	const usernameId = useId();
@@ -89,11 +95,7 @@ export function ServicesPanel() {
 								<FieldLabel htmlFor={serviceId}>Default service</FieldLabel>
 								<Select
 									value={field.value}
-									items={{
-										anilist: "AniList",
-										myanimelist: "MyAnimeList (coming soon)",
-										kitsu: "Kitsu (coming soon)",
-									}}
+									items={DEFAULT_SERVICE_ITEMS}
 									onValueChange={(value) => {
 										if (typeof value === "string") {
 											field.onChange(value);
