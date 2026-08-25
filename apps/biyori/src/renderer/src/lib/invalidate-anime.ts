@@ -1,4 +1,4 @@
-import { trpc } from "@/mainview/trpc";
+import type { trpc } from "@/mainview/trpc";
 
 export type AnimeCacheEvent =
 	| "added"
@@ -27,13 +27,13 @@ export function invalidateAnimeQueries(
 	if (event === "watched" || event === "synced") {
 		tasks.push(utils.history.list.invalidate());
 		tasks.push(utils.history.queuedCount.invalidate());
-	}
-
-	if (event === "synced") {
 		tasks.push(utils.statistics.summary.invalidate());
 	}
 
-	if (id != null && (event === "added" || event === "entrySaved")) {
+	if (
+		id != null &&
+		(event === "added" || event === "entrySaved" || event === "watched")
+	) {
 		tasks.push(utils.anime.byId.invalidate({ id }));
 	}
 

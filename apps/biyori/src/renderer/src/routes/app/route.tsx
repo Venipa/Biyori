@@ -1,3 +1,5 @@
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { type ReactElement, useRef } from "react";
 import { AnimeDeleteDialog } from "@/mainview/components/anime-delete-dialog";
 import { AppAnimeInfoDialog } from "@/mainview/components/app-anime-info-dialog";
 import { AppSidebar } from "@/mainview/components/app-sidebar";
@@ -5,22 +7,30 @@ import { AppStatusBar } from "@/mainview/components/app-status-bar";
 import { AppToolbar } from "@/mainview/components/app-toolbar";
 import { TopMenuBar } from "@/mainview/components/top-menu-bar";
 import { WatchConfirmDialog } from "@/mainview/components/watch-confirm-dialog";
+import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { trpc } from "@/mainview/trpc";
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useRef } from "react";
 
 export const Route = createFileRoute("/app")({
 	component: MainLayout,
 });
 
-function MainLayout() {
+function MainLayout(): ReactElement {
 	const utils = trpc.useUtils();
 	const navigate = useNavigate();
 	const settingsQuery = trpc.settings.get.useQuery();
 	const lastPlayKey = useRef("");
+	const lastProgressRevision = useRef(0);
 	trpc.media.onNowPlaying.useSubscription(undefined, {
 		onData: (snapshot) => {
 			utils.media.nowPlaying.setData(undefined, snapshot);
+			if (snapshot.progressRevision > lastProgressRevision.current) {
+				lastProgressRevision.current = snapshot.progressRevision;
+				void invalidateAnimeQueries(
+					utils,
+					"watched",
+					snapshot.match?.id,
+				);
+			}
 			const settings = settingsQuery.data;
 			if (!settings || !snapshot.media) {
 				lastPlayKey.current = "";

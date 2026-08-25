@@ -1,16 +1,17 @@
 import { observable } from "@trpc/server/observable";
+import type { AppSettings, DefaultService } from "../../lib/schemas/app-settings";
+import { readAnilistAuth } from "../anilist/store";
 import type { DatabaseClient } from "../db";
+import { setAppNotice } from "../notice";
 import { loadAppSettings, subscribeSettings } from "../settings";
-import { getNowPlayingMedia } from "./detect";
-import { parsePlayback } from "./parse";
-import { loadCandidates, matchById, matchTitle } from "./match";
-import { applyRelation, refreshRelations } from "./relations";
-import { enqueueUpdate, initQueueFlush } from "./queue";
 import { syncDiscordPresence } from "../share/discord";
 import { setNowPlayingForHttp } from "../share/http";
-import { setAppNotice } from "../notice";
-import { readAnilistAuth } from "../anilist/store";
-import type { AppSettings, DefaultService } from "../../lib/schemas/app-settings";
+import { getNowPlayingMedia } from "./detect";
+import { loadCandidates, matchById, matchTitle } from "./match";
+import { parsePlayback } from "./parse";
+import { enqueueUpdate, initQueueFlush } from "./queue";
+import { applyRelation, refreshRelations } from "./relations";
+import { canApplyProgress, progressPayload } from "./tracker-progress";
 import type {
 	MatchedAnime,
 	NowPlayingMedia,
@@ -29,11 +30,12 @@ const IDLE: NowPlayingSnapshot = {
 	delayRemainingSeconds: 0,
 	pendingConfirm: null,
 	startedAt: null,
+	progressRevision: 0,
 	user: { name: "", provider: "anilist" },
 };
 
 function idleSnapshot(user: NowPlayingUser): NowPlayingSnapshot {
-	return { ...IDLE, user };
+	return { ...IDLE, progressRevision, user };
 }
 
 async function resolveNowPlayingUser(
@@ -56,9 +58,12 @@ const TRACKER_START_DELAY_MS = 2000;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let flushTimer: ReturnType<typeof setInterval> | null = null;
 let startTimer: ReturnType<typeof setTimeout> | null = null;
-let delayStartedAt = 0;
+let delayElapsedSeconds = 0;
+let delayLastTickAt = 0;
+let sessionStartedAt = 0;
 let lastFingerprint = "";
 let appliedFingerprint = "";
+let progressRevision = 0;
 let pending: PendingConfirm | null = null;
 let pendingExit: PendingConfirm | null = null;
 const listeners = new Set<Listener>();
@@ -73,29 +78,6 @@ function emit(next: NowPlayingSnapshot): void {
 
 function fingerprint(media: NowPlayingMedia, episode: number | null): string {
 	return `${media.player}|${media.filePath ?? media.title}|${episode ?? "none"}`;
-}
-
-function canApplyProgress(
-	match: MatchedAnime,
-	episode: number,
-	settings: AppSettings,
-): boolean {
-	if (episode <= match.episodesWatched) {
-		return false;
-	}
-	if (match.episodes > 0 && episode > match.episodes) {
-		return false;
-	}
-	if (
-		settings.ignoreOutOfRangeEpisode &&
-		episode > match.episodesWatched + 1
-	) {
-		return false;
-	}
-	if (match.status === "Completed" && !match.rewatching) {
-		return false;
-	}
-	return true;
 }
 
 function isInsideLibrary(
@@ -122,7 +104,9 @@ export function subscribeNowPlaying(listener: Listener): () => void {
 	};
 }
 
-export function nowPlayingObservable() {
+export function nowPlayingObservable(): ReturnType<
+	typeof observable<NowPlayingSnapshot>
+> {
 	return observable<NowPlayingSnapshot>((emitNext) => {
 		emitNext.next(getNowPlayingSnapshot());
 		return subscribeNowPlaying((next) => {
@@ -139,22 +123,13 @@ async function applyProgress(match: MatchedAnime, episode: number): Promise<void
 	if (!canApplyProgress(match, episode, settings)) {
 		return;
 	}
-	const finished =
-		match.episodes > 0 && episode >= match.episodes && !match.rewatching;
 	await enqueueUpdate(db, {
 		animeId: match.id,
 		title: match.title,
 		episode,
-		payload: {
-			progress: episode,
-			status: finished ? "Completed" : "Currently watching",
-			dateStarted:
-				episode >= 1 && !match.dateStarted ? new Date().toISOString().slice(0, 10) : undefined,
-			dateCompleted: finished
-				? new Date().toISOString().slice(0, 10)
-				: undefined,
-		},
+		payload: progressPayload(match, episode),
 	});
+	progressRevision += 1;
 }
 
 async function tick(): Promise<void> {
@@ -176,7 +151,9 @@ async function runTick(): Promise<void> {
 	const settings = await loadAppSettings(db);
 	const user = await resolveNowPlayingUser(db, settings);
 	if (!settings.enableRecognition) {
-		delayStartedAt = 0;
+		delayElapsedSeconds = 0;
+		delayLastTickAt = 0;
+		sessionStartedAt = 0;
 		lastFingerprint = "";
 		pending = null;
 		pendingExit = null;
@@ -185,7 +162,7 @@ async function runTick(): Promise<void> {
 		return;
 	}
 
-	const media = await getNowPlayingMedia(settings);
+	const media = await getNowPlayingMedia(settings, snapshot.media?.windowId);
 	if (!media) {
 		if (pendingExit) {
 			const exit = pendingExit;
@@ -202,7 +179,9 @@ async function runTick(): Promise<void> {
 			syncDiscordPresence(null, settings);
 			return;
 		}
-		delayStartedAt = 0;
+		delayElapsedSeconds = 0;
+		delayLastTickAt = 0;
+		sessionStartedAt = 0;
 		lastFingerprint = "";
 		emit(idleSnapshot(user));
 		syncDiscordPresence(null, settings);
@@ -222,6 +201,7 @@ async function runTick(): Promise<void> {
 			delayRemainingSeconds: 0,
 			pendingConfirm: pending,
 			startedAt: snapshot.startedAt,
+			progressRevision,
 			user,
 		});
 		syncDiscordPresence(null, settings);
@@ -240,6 +220,7 @@ async function runTick(): Promise<void> {
 			delayRemainingSeconds: 0,
 			pendingConfirm: pending,
 			startedAt: snapshot.startedAt,
+			progressRevision,
 			user,
 		});
 		syncDiscordPresence(null, settings);
@@ -259,7 +240,10 @@ async function runTick(): Promise<void> {
 	const key = fingerprint(media, parsed.episode);
 	if (key !== lastFingerprint) {
 		lastFingerprint = key;
-		delayStartedAt = Date.now();
+		delayElapsedSeconds = 0;
+		delayLastTickAt = Date.now();
+		sessionStartedAt = delayLastTickAt;
+		pending = null;
 		pendingExit = null;
 		if (match && settings.notifyOnRecognized) {
 			setAppNotice(`Now playing: ${match.title}`);
@@ -268,10 +252,15 @@ async function runTick(): Promise<void> {
 		}
 	}
 
-	const elapsed = (Date.now() - delayStartedAt) / 1000;
+	const now = Date.now();
+	const isActive = !settings.playerMustBeInFocus || media.foreground;
+	if (isActive && delayLastTickAt > 0) {
+		delayElapsedSeconds += Math.max(0, (now - delayLastTickAt) / 1000);
+	}
+	delayLastTickAt = now;
 	const remaining = Math.max(
 		0,
-		Math.ceil(settings.recognitionDelaySeconds - elapsed),
+		Math.ceil(settings.recognitionDelaySeconds - delayElapsedSeconds),
 	);
 	const episode = parsed.episode;
 
@@ -309,7 +298,8 @@ async function runTick(): Promise<void> {
 		unrecognized: !match,
 		delayRemainingSeconds: remaining,
 		pendingConfirm: pending,
-		startedAt: delayStartedAt || Date.now(),
+		startedAt: sessionStartedAt || now,
+		progressRevision,
 		user,
 	};
 	emit(next);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactElement, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	getCoreRowModel,
@@ -46,7 +46,7 @@ function countLabel(value: number | null): string {
 	return value == null ? "-" : String(value);
 }
 
-function TorrentsPage() {
+function TorrentsPage(): ReactElement {
 	const query = trpc.torrents.list.useQuery();
 	const utils = trpc.useUtils();
 	const items = query.data ?? [];
@@ -87,7 +87,7 @@ function selectionFrom(items: TorrentRow[]): RowSelectionState {
 	);
 }
 
-function TorrentFeed({ items }: { items: TorrentRow[] }) {
+function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 	const utils = trpc.useUtils();
 	const navigate = useNavigate();
 	const animeInfo = useAnimeInfoNav();
@@ -365,13 +365,13 @@ function TorrentFeed({ items }: { items: TorrentRow[] }) {
 								View anime information
 							</ContextMenuItem>
 							<ContextMenuItem
-								disabled={!menuRow?.link}
+								disabled={!menuRow?.infoLink}
 								onClick={() => {
-									if (!menuRow?.link) {
+									if (!menuRow?.infoLink) {
 										return;
 									}
 									void desktopRpc.request.openExternal({
-										url: menuRow.link,
+										url: menuRow.infoLink,
 									});
 								}}
 							>

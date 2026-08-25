@@ -4,6 +4,7 @@ export type RssEntry = {
 	guid: string;
 	title: string;
 	link: string;
+	infoLink: string;
 	size: string;
 	fileSizeBytes: number;
 	category: string;
@@ -13,6 +14,35 @@ export type RssEntry = {
 	description: string;
 	pubDate: string;
 };
+
+function isHttpPageUrl(value: string): boolean {
+	if (!/^https?:\/\//i.test(value)) {
+		return false;
+	}
+	if (value.startsWith("magnet:")) {
+		return false;
+	}
+	return !/\.torrent(\?|#|$)/i.test(value);
+}
+
+export function torrentInfoUrl(guid: string, link: string, comments = ""): string {
+	if (isHttpPageUrl(guid)) {
+		return guid;
+	}
+	if (isHttpPageUrl(comments)) {
+		return comments;
+	}
+	if (isHttpPageUrl(link)) {
+		return link;
+	}
+	const download = link.match(
+		/^(https?:\/\/[^/]+)\/download\/(\d+)\.torrent(?:\?.*)?$/i,
+	);
+	if (download) {
+		return `${download[1]}/view/${download[2]}`;
+	}
+	return "";
+}
 
 function decodeXml(value: string): string {
 	return value
@@ -91,6 +121,7 @@ export function parseRssItems(xml: string): RssEntry[] {
 		if (!title || !guid) {
 			return [];
 		}
+		const comments = tagValue(block, "comments");
 		const sizeTag = firstTag(block, ["nyaa:size", "size"]);
 		const bytes = enclosureLength(block) ?? (sizeTag ? parseSizeBytes(sizeTag) : 0);
 		const category = firstTag(block, ["nyaa:category", "category"]);
@@ -99,6 +130,7 @@ export function parseRssItems(xml: string): RssEntry[] {
 				guid,
 				title,
 				link,
+				infoLink: torrentInfoUrl(guid, link, comments),
 				size: sizeTag || (bytes > 0 ? formatBytes(bytes) : ""),
 				fileSizeBytes: bytes,
 				category,

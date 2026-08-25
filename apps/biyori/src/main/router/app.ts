@@ -8,8 +8,10 @@ import { listStatusSchema } from "../../shared/list";
 import { readAnilistAuth } from "../anilist/store";
 import { ensureAnimeCached } from "../anilist/sync";
 import { anime, episodeFile, history, listEntry, syncQueue } from "../db/schema";
+import type { Anime } from "../db/types";
 import { getAppNotice, subscribeAppNotice } from "../notice";
 import { loadAppSettings, patchAppSettings } from "../settings";
+import { loadStatistics } from "../statistics";
 import { checkTorrents, discardAnimeFilter, discardTorrent, downloadSelectedTorrents, downloadTorrent, applyTorrentView, getTorrentItems, preferFansubFilter, searchTorrents, subscribeTorrentItems } from "../torrents";
 import {
   listEpisodes,
@@ -31,10 +33,30 @@ import { coversRouter } from "./covers";
 import { updaterRouter } from "./updater";
 import { desktopRouter } from "./desktop";
 
+type AnimeDetail = Omit<
+	Anime,
+	"durationMinutes" | "genres" | "producers"
+> & {
+	genres: string[];
+	producers: string[];
+	episodesWatched: number;
+	score: number | null;
+	status: string | null;
+	started: string | null;
+	completed: string | null;
+	lastUpdated: string;
+	timesRewatched: number;
+	rewatching: boolean;
+	notes: string;
+	dateStarted: string | null;
+	dateCompleted: string | null;
+	onList: boolean;
+};
+
 async function loadAnimeDetail(
 	db: Pick<import("../db").DatabaseClient, "select">,
 	id: number,
-) {
+): Promise<AnimeDetail | null> {
 	const rows = await db
 		.select({
 			id: anime.id,
@@ -305,32 +327,7 @@ export const appRouter = t.router({
 			}),
 	}),
 	statistics: t.router({
-		summary: t.procedure.query(async ({ ctx }) => {
-			const entries = await ctx.db.select().from(listEntry);
-			const animeCount = entries.length;
-			const episodeCount = entries.reduce(
-				(sum, entry) => sum + entry.episodesWatched,
-				0,
-			);
-			const scored = entries.filter((entry) => entry.score != null);
-			const meanScore =
-				scored.length === 0
-					? 0
-					: scored.reduce((sum, entry) => sum + (entry.score ?? 0), 0) /
-						scored.length;
-			const minutes = episodeCount * 24;
-			const days = Math.floor(minutes / (60 * 24));
-			const hours = Math.floor((minutes % (60 * 24)) / 60);
-			const mins = minutes % 60;
-
-			return {
-				animeCount,
-				episodeCount,
-				timeSpentWatching: `${days} days ${hours} hours ${mins} minutes`,
-				meanScore: Number(meanScore.toFixed(2)),
-				localAnimeCount: animeCount,
-			};
-		}),
+		summary: t.procedure.query(async ({ ctx }) => loadStatistics(ctx.db)),
 	}),
 	settings: t.router({
 		get: t.procedure.query(async ({ ctx }) => {

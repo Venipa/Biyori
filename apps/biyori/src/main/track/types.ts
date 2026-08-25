@@ -3,9 +3,11 @@ import type { Anime, ListEntry } from "../db/types";
 
 export type NowPlayingMedia = {
 	player: string;
+	windowId: string;
 	title: string | null;
 	filePath: string | null;
 	url: string | null;
+	foreground: boolean;
 };
 
 export type ParsedPlayback = {
@@ -66,5 +68,6 @@ export type NowPlayingSnapshot = {
 	delayRemainingSeconds: number;
 	pendingConfirm: PendingConfirm | null;
 	startedAt: number | null;
+	progressRevision: number;
 	user: NowPlayingUser;
 };

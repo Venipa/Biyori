@@ -16,6 +16,7 @@ import { setAppNotice } from "./notice";
 import { getTorrentParseWorker } from "./torrents/parse-client";
 import type { ParsedTorrentRow } from "./torrents/parse-worker";
 import { parseRssItems } from "./torrents/rss";
+import { isTorrentPayload } from "./torrents/torrent-payload";
 import {
 	addDiscardAnimeFilter,
 	applyArchiveFilter,
@@ -30,6 +31,7 @@ export type TorrentItem = {
 	guid: string;
 	title: string;
 	link: string;
+	infoLink: string;
 	matched: boolean;
 	seenAt: string;
 	animeId: number | null;
@@ -149,6 +151,7 @@ function toTorrentItem(
 		guid: row.entry.guid,
 		title: row.entry.title,
 		link: row.entry.link,
+		infoLink: row.entry.infoLink,
 		matched: Boolean(match),
 		seenAt,
 		animeId: match?.id ?? null,
@@ -314,7 +317,10 @@ async function openTorrent(
 			throw new Error(`Torrent download failed (${response.status})`);
 		}
 		const bytes = Buffer.from(await response.arrayBuffer());
-		const folder = dir || appFeedDir();
+		if (!isTorrentPayload(bytes)) {
+			throw new Error("Torrent download returned an invalid payload");
+		}
+		const folder = appFeedDir();
 		await mkdir(folder, { recursive: true });
 		const filePath = join(folder, `${safeFileStem(title)}.torrent`);
 		await writeFile(filePath, bytes);

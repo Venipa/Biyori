@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import type { AppSettings } from "../../lib/schemas/app-settings";
 import {
 	isBrowserProcess,
@@ -6,13 +7,13 @@ import {
 	processKey,
 } from "../../lib/recognition-catalog";
 import type { NowPlayingMedia } from "./types";
-import { spawn } from "node:child_process";
 
 const VIDEO_EXT = "mkv|mp4|avi|webm|mov|wmv|flv|ts|m2ts|mpg|mpeg";
 
 type WindowRow = {
 	name: string;
 	title: string;
+	windowId: string;
 	foreground: boolean;
 };
 
@@ -50,6 +51,7 @@ function parseRows(raw: string): WindowRow[] {
 			const record = row as Record<string, unknown>;
 			const name = record.name ?? record.ProcessName;
 			const title = record.title ?? record.MainWindowTitle;
+			const windowId = record.windowId ?? record.MainWindowHandle;
 			if (typeof name !== "string" || typeof title !== "string" || !title) {
 				return [];
 			}
@@ -57,6 +59,7 @@ function parseRows(raw: string): WindowRow[] {
 				{
 					name,
 					title,
+					windowId: String(windowId ?? ""),
 					foreground: record.foreground === true,
 				},
 			];
@@ -88,6 +91,7 @@ function isAllowedRow(row: WindowRow, settings: AppSettings): boolean {
 
 export async function getNowPlayingMedia(
 	settings: AppSettings,
+	preferredWindowId?: string,
 ): Promise<NowPlayingMedia | null> {
 	if (process.platform !== "win32") {
 		return null;
@@ -104,7 +108,7 @@ export async function getNowPlayingMedia(
 		"[Console]::OutputEncoding = [Text.UTF8Encoding]::new()",
 		"Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class Fg { [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid); }'",
 		"$fg = [Fg]::GetForegroundWindow(); $fgPid = 0; [void][Fg]::GetWindowThreadProcessId($fg, [ref]$fgPid)",
-		"Get-Process | Where-Object { $_.MainWindowTitle } | ForEach-Object { [pscustomobject]@{ name = $_.ProcessName; title = $_.MainWindowTitle; foreground = ($_.Id -eq $fgPid) } } | ConvertTo-Json -Compress",
+		"Get-Process | Where-Object { $_.MainWindowTitle } | ForEach-Object { [pscustomobject]@{ name = $_.ProcessName; title = $_.MainWindowTitle; windowId = $_.MainWindowHandle.ToString(); foreground = ($_.Id -eq $fgPid) } } | ConvertTo-Json -Compress",
 	].join("; ");
 
 	const stdout = await new Promise<string>((resolve, reject) => {
@@ -131,27 +135,28 @@ export async function getNowPlayingMedia(
 	});
 
 	const rows = parseRows(stdout).filter((row) => isAllowedRow(row, settings));
-	const hasForeground = rows.some((row) => row.foreground);
-	const scoped =
-		settings.playerMustBeInFocus && hasForeground
-			? rows.filter((row) => row.foreground)
-			: rows;
-	const localHit = scoped.find(
+	const preferred = preferredWindowId
+		? rows.find((row) => row.windowId === preferredWindowId)
+		: undefined;
+	const localHit = rows.find(
 		(row) =>
 			settings.enableMediaPlayerDetection &&
 			Boolean(matchMediaPlayerId(row.name, settings.enabledMediaPlayers)),
 	);
 	const hit =
+		preferred ??
 		localHit ??
-		scoped.find((row) => isAllowedRow(row, settings));
+		rows.find((row) => isAllowedRow(row, settings));
 	if (!hit) {
 		return null;
 	}
 
 	return {
 		player: processKey(hit.name),
+		windowId: hit.windowId,
 		title: hit.title,
 		filePath: isBrowserProcess(hit.name) ? null : extractFilePath(hit.title),
 		url: null,
+		foreground: hit.foreground,
 	};
 }
