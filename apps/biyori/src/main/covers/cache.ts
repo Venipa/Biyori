@@ -2,11 +2,11 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
-import { trackedFetch } from "../http-stats";
-import { appCacheDir } from "../lib/app-paths";
 import type { MediaImageKind } from "../../lib/schemas/media-image";
 import type { DatabaseClient } from "../db";
 import { mediaCache } from "../db/schema";
+import { trackedFetch } from "../http-stats";
+import { appCacheDir } from "../lib/app-paths";
 
 const ALLOWED_MIME = new Set([
 	"image/jpeg",

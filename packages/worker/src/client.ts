@@ -1,12 +1,5 @@
 import { Worker, type WorkerOptions } from "node:worker_threads";
-import {
-	WORKER_PROTOCOL_VERSION,
-	isEnvelope,
-	type Envelope,
-	type InvokeOptions,
-	type MessagePortLike,
-	type WorkerClient,
-} from "./types";
+import { type Envelope, type InvokeOptions, isEnvelope, type MessagePortLike, WORKER_PROTOCOL_VERSION, type WorkerClient } from "./types";
 
 type Pending = {
 	resolve: (value: unknown) => void;
@@ -20,23 +13,19 @@ function isWorker(value: unknown): value is Worker {
 }
 
 function isPortLike(value: unknown): value is MessagePortLike {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		"postMessage" in value &&
-		"on" in value
-	);
+	return typeof value === "object" && value !== null && "postMessage" in value && "on" in value;
 }
 
-export function createWorker<TServe>(
-	source: string | URL | Worker | MessagePortLike,
-	options?: WorkerOptions,
-): WorkerClient<TServe> {
+export function createWorker<TServe>(source: string | URL | Worker | MessagePortLike, options?: WorkerOptions): WorkerClient<TServe> {
 	const owned = typeof source === "string" || source instanceof URL;
 	const worker = owned ? new Worker(source, options) : isWorker(source) ? source : null;
-	const port: MessagePortLike = worker ?? (isPortLike(source) ? source : (() => {
-		throw new Error("createWorker expected a path, Worker, or message port");
-	})());
+	const port: MessagePortLike =
+		worker ??
+		(isPortLike(source)
+			? source
+			: (() => {
+					throw new Error("createWorker expected a path, Worker, or message port");
+				})());
 	port.start?.();
 
 	let nextId = 1;
@@ -136,9 +125,7 @@ export function createWorker<TServe>(
 							resolve,
 							reject,
 							onEvent: opts?.onEvent,
-							onAbort: signal
-								? () => signal.removeEventListener("abort", onAbort)
-								: undefined,
+							onAbort: signal ? () => signal.removeEventListener("abort", onAbort) : undefined,
 						});
 						post(port, {
 							v: WORKER_PROTOCOL_VERSION,

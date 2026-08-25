@@ -1,3 +1,8 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { inferRouterOutputs } from "@trpc/server";
+import { FolderOpen } from "lucide-react";
+import { useId } from "react";
+import { Controller, useForm } from "react-hook-form";
 import AniDBIcon from "@/assets/anidb.png";
 import AnilistIcon from "@/assets/anilist.svg";
 import MyAnimeListIcon from "@/assets/mal.svg";
@@ -53,11 +58,6 @@ import { getNeighborAnimeId } from "@/mainview/lib/selected-anime";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { listStatusSchema } from "@/shared/list";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { inferRouterOutputs } from "@trpc/server";
-import { FolderOpen } from "lucide-react";
-import { useId } from "react";
-import { Controller, useForm } from "react-hook-form";
 
 const statusOptions = listStatusSchema.options.map((value) => ({
   value,

@@ -1,3 +1,5 @@
+import { useRouterState } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
 import { AnimeInfoDialog } from "@/mainview/components/anime-info-dialog";
 import {
@@ -5,8 +7,6 @@ import {
 	useAnimeInfoOpen,
 } from "@/mainview/lib/anime-info-nav";
 import { trpc } from "@/mainview/trpc";
-import { useRouterState } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
 
 export function AppAnimeInfoDialog() {
 	const nav = useAnimeInfoNav();

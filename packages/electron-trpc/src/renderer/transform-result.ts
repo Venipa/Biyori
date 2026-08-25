@@ -9,9 +9,7 @@ export const identityTransformer: DataTransformer = {
 export function transformResult(
 	response: TRPCResponseMessage,
 	transformer: DataTransformer,
-):
-	| { ok: false; error: TRPCResponseMessage }
-	| { ok: true; result: TRPCResultMessage<unknown>["result"] } {
+): { ok: false; error: TRPCResponseMessage } | { ok: true; result: TRPCResultMessage<unknown>["result"] } {
 	if ("error" in response) {
 		return {
 			ok: false,

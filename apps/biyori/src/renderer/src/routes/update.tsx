@@ -1,9 +1,9 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { DownloadIcon, RefreshCwIcon } from "lucide-react";
 import { desktopRpc } from "@/desktop-rpc";
 import { Button } from "@/mainview/components/ui/button";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { trpc } from "@/mainview/trpc";
-import { createFileRoute } from "@tanstack/react-router";
-import { DownloadIcon, RefreshCwIcon } from "lucide-react";
 
 export const Route = createFileRoute("/update")({
 	component: UpdatePage,

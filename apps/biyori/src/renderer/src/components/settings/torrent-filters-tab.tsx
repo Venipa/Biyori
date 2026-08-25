@@ -1,5 +1,3 @@
-import { useId, useState } from "react";
-import { useFieldArray, useFormContext } from "react-hook-form";
 import {
 	ArrowDownIcon,
 	ArrowUpIcon,
@@ -11,9 +9,18 @@ import {
 	UploadIcon,
 	XIcon,
 } from "lucide-react";
+import { useId, useState } from "react";
+import { useFieldArray, useFormContext } from "react-hook-form";
+import { desktopRpc } from "@/desktop-rpc";
+import type { AppSettingsInput } from "@/lib/schemas/app-settings";
+import {
+	cloneTorrentFilter,
+	defaultTorrentFilters,
+	parseTorrentFilterExport,
+	type TorrentFilter,
+	type TorrentFilterAction,
+} from "@/lib/schemas/torrent-filter";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
-import { Button } from "@/mainview/components/ui/button";
-import { Checkbox } from "@/mainview/components/ui/checkbox";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -24,6 +31,10 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/mainview/components/ui/alert-dialog";
+import { Button } from "@/mainview/components/ui/button";
+import { Checkbox } from "@/mainview/components/ui/checkbox";
+import { FieldDescription, FieldGroup } from "@/mainview/components/ui/field";
+import { Separator } from "@/mainview/components/ui/separator";
 import {
 	Table,
 	TableBody,
@@ -32,18 +43,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/mainview/components/ui/table";
-import { FieldDescription, FieldGroup } from "@/mainview/components/ui/field";
-import { Separator } from "@/mainview/components/ui/separator";
 import { cn } from "@/mainview/lib/utils";
-import { desktopRpc } from "@/desktop-rpc";
-import type { AppSettingsInput } from "@/lib/schemas/app-settings";
-import {
-	cloneTorrentFilter,
-	defaultTorrentFilters,
-	parseTorrentFilterExport,
-	type TorrentFilter,
-	type TorrentFilterAction,
-} from "@/lib/schemas/torrent-filter";
 import {
 	TorrentFilterWizard,
 	type TorrentFilterWizardMode,

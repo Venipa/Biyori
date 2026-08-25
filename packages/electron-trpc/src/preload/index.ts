@@ -6,8 +6,7 @@ export { ELECTRON_TRPC_CHANNEL } from "../constants";
 
 export function exposeElectronTRPC(): void {
 	const electronTRPC: RendererGlobalElectronTRPC = {
-		sendMessage: (operation) =>
-			ipcRenderer.send(ELECTRON_TRPC_CHANNEL, operation),
+		sendMessage: (operation) => ipcRenderer.send(ELECTRON_TRPC_CHANNEL, operation),
 		onMessage: (callback) => {
 			ipcRenderer.on(ELECTRON_TRPC_CHANNEL, (_event, args) => {
 				callback(args);

@@ -1,5 +1,5 @@
-import { app } from "electron";
 import { basename } from "node:path";
+import { app } from "electron";
 import type { AppSettings } from "../lib/schemas/app-settings";
 
 const STARTUP_FLAG = "--startup";

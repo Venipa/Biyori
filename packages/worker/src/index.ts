@@ -1,8 +1,8 @@
+export { createWorker } from "./client";
 export {
 	createWorkerServe,
 	defineProcedure,
 } from "./serve";
-export { createWorker } from "./client";
 export type {
 	InvokeOptions,
 	Procedure,

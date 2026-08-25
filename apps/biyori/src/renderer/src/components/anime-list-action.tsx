@@ -1,3 +1,4 @@
+import type { SelectListProps } from "@base-ui/react";
 import { Button } from "@/mainview/components/ui/button";
 import {
   Select,
@@ -10,8 +11,7 @@ import {
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
-import { listStatusSchema, type ListStatus } from "@/shared/list";
-import { SelectListProps } from "@base-ui/react";
+import { type ListStatus, listStatusSchema } from "@/shared/list";
 
 const STATUS_ITEMS: Record<ListStatus, string> = Object.fromEntries(
 	listStatusSchema.options.map((value) => [value, value]),

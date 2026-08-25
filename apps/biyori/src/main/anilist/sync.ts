@@ -1,10 +1,13 @@
 import { eq, notInArray } from "drizzle-orm";
-import type { DatabaseClient } from "../db";
-import type { Anime } from "../db/types";
-import { anime, listEntry } from "../db/schema";
 import type { AnilistSeasonName, SeasonItem } from "../../lib/schemas/seasons";
+import type { DatabaseClient } from "../db";
+import { anime, listEntry } from "../db/schema";
+import type { Anime } from "../db/types";
 import { anilistGraphql } from "./client";
 import {
+	type AnilistMedia,
+	type AnilistMediaList,
+	type AnilistMediaStatus,
 	anilistMediaListSchema,
 	anilistMediaSchema,
 	mediaListCollectionSchema,
@@ -15,9 +18,6 @@ import {
 	toMediaCardCached,
 	viewerSchema,
 	withMediaCardTitle,
-	type AnilistMedia,
-	type AnilistMediaList,
-	type AnilistMediaStatus,
 } from "./map";
 import {
 	GET_ALL_ANIMES_FROM_UID,

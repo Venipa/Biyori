@@ -1,3 +1,18 @@
+import { createFileRoute } from "@tanstack/react-router";
+import {
+	ChevronLeftIcon,
+	ChevronRightIcon,
+	RefreshCwIcon,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
+import type {
+	AnilistSeasonName,
+	SeasonGroupBy,
+	SeasonItem,
+	SeasonSortBy,
+	SeasonViewAs,
+} from "@/lib/schemas/seasons";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
 import { Button } from "@/mainview/components/ui/button";
@@ -24,17 +39,9 @@ import {
 	SelectValue,
 } from "@/mainview/components/ui/select";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
-import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
-import type {
-	AnilistSeasonName,
-	SeasonGroupBy,
-	SeasonItem,
-	SeasonSortBy,
-	SeasonViewAs,
-} from "@/lib/schemas/seasons";
+import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { animeMatchesListFilter } from "@/mainview/lib/anime-list-filter";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
-import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { useListFilterText } from "@/mainview/lib/list-filter";
 import {
 	airingBarClass,
@@ -51,13 +58,6 @@ import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { ListStatus } from "@/shared/list";
 import { listStatusSchema } from "@/shared/list";
-import { createFileRoute } from "@tanstack/react-router";
-import {
-	ChevronLeftIcon,
-	ChevronRightIcon,
-	RefreshCwIcon,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 
 const seasons = ["WINTER", "SPRING", "SUMMER", "FALL"] as const;
 
@@ -207,7 +207,7 @@ function SeasonsPage() {
 		};
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
-	}, [season, seasonYear]);
+	}, [refreshSeason]);
 
 	function persistPrefs(next: SeasonLocalPrefs) {
 		const merged = { ...local, ...next };

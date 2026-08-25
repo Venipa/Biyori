@@ -2,8 +2,8 @@ import { readFile, writeFile } from "node:fs/promises";
 import { app, dialog, Menu, shell } from "electron";
 import { z } from "zod";
 import { requestQuit } from "../handlers/quit-handler";
-import { decryptPublicData, encryptPublicData } from "../lib/store/createYmlStore";
 import { setTrayState } from "../handlers/tray-state";
+import { decryptPublicData, encryptPublicData } from "../lib/store/createYmlStore";
 import { t } from "../trpc";
 import { windowManager } from "../windows";
 

@@ -2,8 +2,8 @@ import { is, platform } from "@electron-toolkit/utils";
 import { app, type BrowserWindow } from "electron";
 import { autoUpdater } from "electron-updater";
 import { log } from "../logger";
-import { windowManager } from "../windows";
 import { loadAppSettings, subscribeSettings } from "../settings";
+import { windowManager } from "../windows";
 import {
 	isAppQuitting,
 	markAppQuitting,

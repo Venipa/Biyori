@@ -1,11 +1,11 @@
-import { AnimeListView } from "@/mainview/components/anime-list-view";
+import { createFileRoute } from "@tanstack/react-router";
 import {
 	animeInfoSearchSchema,
 	parseAnimeInfoId,
 } from "@/lib/schemas/anime-info-search";
+import { AnimeListView } from "@/mainview/components/anime-list-view";
 import { useAnimeInfoNav, useAnimeInfoOpen } from "@/mainview/lib/anime-info-nav";
 import { listStatusSchema } from "@/shared/list";
-import { createFileRoute } from "@tanstack/react-router";
 
 const searchSchema = animeInfoSearchSchema.extend({
 	tab: listStatusSchema.optional(),

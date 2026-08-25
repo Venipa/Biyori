@@ -4,8 +4,8 @@ import {
 	appSettingsDefaultValues,
 	appSettingsSchema,
 } from "../../lib/schemas/app-settings";
-import { anime, appSetting } from "./schema";
 import type * as schema from "./schema";
+import { anime, appSetting } from "./schema";
 
 export async function seedIfEmpty(
 	database: BetterSQLite3Database<typeof schema>,

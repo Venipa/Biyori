@@ -1,5 +1,5 @@
-import { electronAPI } from "@electron-toolkit/preload";
 import { exposeElectronTRPC } from "@biyori/electron-trpc/preload";
+import { electronAPI } from "@electron-toolkit/preload";
 import { contextBridge } from "electron";
 
 exposeElectronTRPC();

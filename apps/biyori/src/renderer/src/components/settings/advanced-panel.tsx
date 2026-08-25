@@ -1,8 +1,8 @@
 import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/mainview/components/ui/tabs";
-import { FieldDescription, FieldError } from "@/mainview/components/ui/field";
+import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
+import { FieldDescription, FieldError } from "@/mainview/components/ui/field";
 import { Input } from "@/mainview/components/ui/input";
 import {
 	InputGroup,
@@ -18,8 +18,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/mainview/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
-import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 
 export function AdvancedPanel() {
 	const themeId = useId();

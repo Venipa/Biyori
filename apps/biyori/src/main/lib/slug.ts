@@ -31,7 +31,7 @@ export default function slugify(string: string, options: SlugifyOptions = {}) {
 		.normalize()
 		.split("")
 		// replace characters based on charMap
-		.reduce(function (result, ch) {
+		.reduce((result, ch) => {
 			var appendChar = locale[ch];
 			if (appendChar === undefined) appendChar = charMap[ch];
 			if (appendChar === undefined) appendChar = ch;

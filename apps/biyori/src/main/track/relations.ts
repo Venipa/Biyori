@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
-import { trackedFetch } from "../http-stats";
 import type { DatabaseClient } from "../db";
 import { relationsCache } from "../db/schema";
+import { trackedFetch } from "../http-stats";
 
 const RELATIONS_URL =
 	"https://raw.githubusercontent.com/erengy/anime-relations/master/anime-relations.txt";

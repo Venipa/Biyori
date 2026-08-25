@@ -1,7 +1,6 @@
+import type { inferRouterOutputs } from "@trpc/server";
 import { ArrowUpIcon, FileTextIcon } from "lucide-react";
 import { useState } from "react";
-import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
-import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -19,6 +18,8 @@ import {
 	ContextMenuSeparator,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
+import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
+import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import {
 	Table,
 	TableBody,
@@ -27,10 +28,9 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/mainview/components/ui/table";
-import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
+import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { trpc } from "@/mainview/trpc";
-import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@/shared/app-router";
 
 type HistoryRow = inferRouterOutputs<AppRouter>["history"]["list"]["queued"][number];

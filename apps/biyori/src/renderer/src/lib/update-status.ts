@@ -1,5 +1,5 @@
-import { trpc } from "@/mainview/trpc";
 import type { inferRouterOutputs } from "@trpc/server";
+import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 
 type UpdateState = inferRouterOutputs<AppRouter>["updater"]["status"];

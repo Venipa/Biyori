@@ -1,11 +1,11 @@
 import { spawn } from "node:child_process";
-import type { AppSettings } from "../../lib/schemas/app-settings";
 import {
 	isBrowserProcess,
 	matchMediaPlayerId,
 	matchStreamingProviderId,
 	processKey,
 } from "../../lib/recognition-catalog";
+import type { AppSettings } from "../../lib/schemas/app-settings";
 import type { NowPlayingMedia } from "./types";
 
 const VIDEO_EXT = "mkv|mp4|avi|webm|mov|wmv|flv|ts|m2ts|mpg|mpeg";

@@ -1,7 +1,15 @@
 import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/mainview/components/ui/tabs";
+import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
+import {
+	Field,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+	FieldLegend,
+	FieldSet,
+} from "@/mainview/components/ui/field";
 import {
 	Select,
 	SelectContent,
@@ -10,16 +18,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/mainview/components/ui/select";
-import {
-	Field,
-	FieldError,
-	FieldGroup,
-	FieldLabel,
-	FieldSet,
-	FieldLegend,
-} from "@/mainview/components/ui/field";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { Textarea } from "@/mainview/components/ui/textarea";
-import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { listStatusSchema } from "@/shared/list";
 
 const TITLE_LANGUAGE_ITEMS = {

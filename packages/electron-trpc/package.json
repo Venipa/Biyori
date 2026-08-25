@@ -1,16 +1,16 @@
 {
-  "name": "@biyori/electron-trpc",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "exports": {
-    "./main": "./src/main/index.ts",
-    "./preload": "./src/preload/index.ts",
-    "./renderer": "./src/renderer/index.ts"
-  },
-  "peerDependencies": {
-    "@trpc/client": "^11.0.0",
-    "@trpc/server": "^11.0.0",
-    "electron": ">=39.0.0"
-  }
+	"name": "@biyori/electron-trpc",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./main": "./src/main/index.ts",
+		"./preload": "./src/preload/index.ts",
+		"./renderer": "./src/renderer/index.ts"
+	},
+	"peerDependencies": {
+		"@trpc/client": "^11.0.0",
+		"@trpc/server": "^11.0.0",
+		"electron": ">=39.0.0"
+	}
 }

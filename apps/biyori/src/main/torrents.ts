@@ -9,14 +9,8 @@ import type { DatabaseClient } from "./db";
 import { episodeFile, torrentArchive } from "./db/schema";
 import { trackedFetch } from "./http-stats";
 import { appFeedDir } from "./lib/app-paths";
-import { loadAppSettings, patchAppSettings, subscribeSettings } from "./settings";
-import { loadCandidates, matchById } from "./track/match";
-import type { MatchedAnime } from "./track/types";
 import { setAppNotice } from "./notice";
-import { getTorrentParseWorker } from "./torrents/parse-client";
-import type { ParsedTorrentRow } from "./torrents/parse-worker";
-import { parseRssItems } from "./torrents/rss";
-import { isTorrentPayload } from "./torrents/torrent-payload";
+import { loadAppSettings, patchAppSettings, subscribeSettings } from "./settings";
 import {
 	addDiscardAnimeFilter,
 	applyArchiveFilter,
@@ -26,6 +20,12 @@ import {
 	type TorrentFilterItem,
 	type TorrentFilterSubject,
 } from "./torrents/filter";
+import { getTorrentParseWorker } from "./torrents/parse-client";
+import type { ParsedTorrentRow } from "./torrents/parse-worker";
+import { parseRssItems } from "./torrents/rss";
+import { isTorrentPayload } from "./torrents/torrent-payload";
+import { loadCandidates, matchById } from "./track/match";
+import type { MatchedAnime } from "./track/types";
 
 export type TorrentItem = {
 	guid: string;

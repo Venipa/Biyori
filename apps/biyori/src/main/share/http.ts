@@ -1,6 +1,6 @@
-import type { NowPlayingSnapshot } from "../track/types";
-import type { AppSettings } from "../../lib/schemas/app-settings";
 import { createServer, type Server } from "node:http";
+import type { AppSettings } from "../../lib/schemas/app-settings";
+import type { NowPlayingSnapshot } from "../track/types";
 
 let server: Server | null = null;
 let snapshot: NowPlayingSnapshot | null = null;

@@ -17,17 +17,13 @@ function getElectronTRPC(): RendererGlobalElectronTRPC {
 	).electronTRPC;
 
 	if (!electronTRPC) {
-		throw new Error(
-			"Could not find `electronTRPC` global. Check that `exposeElectronTRPC` has been called in your preload file.",
-		);
+		throw new Error("Could not find `electronTRPC` global. Check that `exposeElectronTRPC` has been called in your preload file.");
 	}
 
 	return electronTRPC;
 }
 
-export function ipcLink<TRouter extends AnyRouter>(
-	options: IpcLinkOptions = {},
-): TRPCLink<TRouter> {
+export function ipcLink<TRouter extends AnyRouter>(options: IpcLinkOptions = {}): TRPCLink<TRouter> {
 	const transformer = options.transformer ?? identityTransformer;
 
 	return () => {

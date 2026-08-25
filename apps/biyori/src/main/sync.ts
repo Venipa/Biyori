@@ -1,6 +1,6 @@
-import type { DatabaseClient } from "./db";
-import { fetchViewer, syncAniListList } from "./anilist/sync";
 import { readAnilistAuth, writeAnilistAuth } from "./anilist/store";
+import { fetchViewer, syncAniListList } from "./anilist/sync";
+import type { DatabaseClient } from "./db";
 
 export type SyncPhase = "idle" | "running" | "error";
 

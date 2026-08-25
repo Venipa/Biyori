@@ -1,10 +1,10 @@
-import type { ComponentType, ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import type { ComponentType, ReactNode } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import type { SelectedAnime } from "@/mainview/lib/selected-anime";
-import { listStatusSchema, type ListStatus } from "@/shared/list";
 import { trpc } from "@/mainview/trpc";
+import { type ListStatus, listStatusSchema } from "@/shared/list";
 
 function parseCustomExternalLinks(
 	raw: string,

@@ -1,3 +1,14 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  ChevronDownIcon,
+  FolderIcon,
+  RefreshCwIcon,
+  SettingsIcon
+} from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { desktopRpc } from "@/desktop-rpc";
 import {
   type AnilistSearchForm,
   type AnilistSearchFormInput,
@@ -15,20 +26,9 @@ import {
   InputGroup,
   InputGroupInput
 } from "@/mainview/components/ui/input-group";
-import { desktopRpc } from "@/desktop-rpc";
 import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
 import { setListFilterText } from "@/mainview/lib/list-filter";
 import { trpc } from "@/mainview/trpc";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
-import {
-  ChevronDownIcon,
-  FolderIcon,
-  RefreshCwIcon,
-  SettingsIcon
-} from "lucide-react";
-import { useEffect, useRef } from "react";
-import { Controller, useForm } from "react-hook-form";
 
 const LIST_FILTER_DEBOUNCE_MS = 250;
 

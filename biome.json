@@ -5,8 +5,10 @@
 		"formatWithErrors": true,
 		"indentWidth": 2,
 		"lineWidth": 180,
-		"attributePosition": "auto",
-		"includes": ["!**/*.generated.d.ts"]
+		"attributePosition": "auto"
+	},
+	"files": {
+		"includes": ["./apps/web/**", "./packages/**", "!**/*.generated.d.ts", "!**/*.gen.ts", "!**/public"]
 	},
 	"javascript": {
 		"formatter": {
@@ -20,6 +22,6 @@
 	},
 	"linter": {
 		"enabled": true,
-		"rules": {  "preset": "recommended" }
+		"rules": { "preset": "recommended" }
 	}
 }

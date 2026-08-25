@@ -1,3 +1,5 @@
+import { useId } from "react";
+import { useFormContext } from "react-hook-form";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
 import {
@@ -11,8 +13,6 @@ import {
 } from "@/mainview/components/ui/field";
 import { Input } from "@/mainview/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
-import { useId } from "react";
-import { useFormContext } from "react-hook-form";
 
 export function SharingPanel() {
 	const presenceId = useId();

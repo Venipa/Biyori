@@ -1,11 +1,11 @@
-import { Fragment, type ReactNode } from "react";
 import {
 	flexRender,
 	type Header,
 	type Row,
 	type Table as TanstackTable,
 } from "@tanstack/react-table";
-import { ChevronDownIcon, ChevronUpIcon, ChevronsUpDownIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronsUpDownIcon, ChevronUpIcon } from "lucide-react";
+import { Fragment, type ReactNode } from "react";
 import {
 	Table,
 	TableBody,

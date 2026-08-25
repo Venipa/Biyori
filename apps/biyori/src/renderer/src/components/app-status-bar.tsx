@@ -1,7 +1,7 @@
+import { useRef } from "react";
 import { Spinner } from "@/mainview/components/ui/spinner";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { trpc } from "@/mainview/trpc";
-import { useRef } from "react";
 
 export function AppStatusBar() {
 	const utils = trpc.useUtils();

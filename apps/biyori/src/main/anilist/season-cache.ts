@@ -5,8 +5,8 @@ import type {
 	SeasonItemCached,
 } from "../../lib/schemas/seasons";
 import {
-	seasonCacheFileSchema,
 	type AnilistSeasonName,
+	seasonCacheFileSchema,
 } from "../../lib/schemas/seasons";
 import { appCacheDir } from "../lib/app-paths";
 

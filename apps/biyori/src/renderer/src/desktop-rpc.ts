@@ -1,5 +1,5 @@
-import { createTRPCClient } from "@trpc/client";
 import { ipcLink } from "@biyori/electron-trpc/renderer";
+import { createTRPCClient } from "@trpc/client";
 import superjson from "superjson";
 import type { AppRouter } from "../../shared/app-router";
 

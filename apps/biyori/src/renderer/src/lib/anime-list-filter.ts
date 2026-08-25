@@ -40,7 +40,6 @@ function parseOperator(raw: string | undefined): SearchOperator {
 			return "le";
 		case "<":
 			return "lt";
-		case "=":
 		default:
 			return "eq";
 	}
@@ -91,7 +90,6 @@ function checkNumber(op: SearchOperator, left: number, right: number): boolean {
 			return left <= right;
 		case "lt":
 			return left < right;
-		case "eq":
 		default:
 			return left === right;
 	}

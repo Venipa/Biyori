@@ -1,10 +1,10 @@
+import { ipcLink } from "@biyori/electron-trpc/renderer";
 import {
 	keepPreviousData,
 	QueryClient,
 	QueryClientProvider,
 } from "@tanstack/react-query";
-import { ipcLink } from "@biyori/electron-trpc/renderer";
-import { useState, type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import superjson from "superjson";
 import { trpc } from "./trpc";
 

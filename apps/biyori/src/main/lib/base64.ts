@@ -1,4 +1,4 @@
-import { Buffer } from "buffer";
+import { Buffer } from "node:buffer";
 
 /*
  * @poppinss/utils
@@ -55,7 +55,7 @@ class Base64 {
 	urlEncode(data: string, encoding?: BufferEncoding): string;
 	urlEncode(data: ArrayBuffer | SharedArrayBuffer | string, encoding?: BufferEncoding): string {
 		const encoded = typeof data === "string" ? this.encode(data, encoding) : this.encode(data);
-		return encoded.replace(/\+/g, "-").replace(/\//g, "_").replace(/\=/g, "");
+		return encoded.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 	}
 
 	/**

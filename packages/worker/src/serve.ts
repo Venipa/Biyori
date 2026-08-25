@@ -1,25 +1,18 @@
 import { parentPort } from "node:worker_threads";
 import {
-	WORKER_PROTOCOL_VERSION,
-	isEnvelope,
 	type Envelope,
+	isEnvelope,
 	type MessagePortLike,
 	type NormalizeProcedures,
 	type Procedure,
 	type ProcedureContext,
 	type ProcedureMap,
+	WORKER_PROTOCOL_VERSION,
 	type WorkerServe,
 } from "./types";
 
-export function defineProcedure<
-	TInput,
-	TOutput,
-	TEvents extends Record<string, unknown> = Record<string, never>,
->(
-	handler: (
-		input: TInput,
-		ctx: ProcedureContext<TEvents>,
-	) => TOutput | Promise<TOutput>,
+export function defineProcedure<TInput, TOutput, TEvents extends Record<string, unknown> = Record<string, never>>(
+	handler: (input: TInput, ctx: ProcedureContext<TEvents>) => TOutput | Promise<TOutput>,
 ): Procedure<TInput, TOutput, TEvents> {
 	return handler as Procedure<TInput, TOutput, TEvents>;
 }
@@ -29,13 +22,7 @@ function post(port: MessagePortLike, envelope: Envelope): void {
 }
 
 export function createWorkerServe<
-	TProcedures extends Record<
-		string,
-		(
-			input: never,
-			ctx: ProcedureContext<Record<string, never>>,
-		) => unknown
-	>,
+	TProcedures extends Record<string, (input: never, ctx: ProcedureContext<Record<string, never>>) => unknown>,
 	TEvents extends Record<string, unknown> = Record<string, never>,
 >(
 	options: {
@@ -84,12 +71,7 @@ export function createWorkerServe<
 	return serve;
 }
 
-async function runProcedure(
-	port: MessagePortLike,
-	procedures: ProcedureMap,
-	controllers: Map<number, AbortController>,
-	raw: Extract<Envelope, { kind: "req" }>,
-): Promise<void> {
+async function runProcedure(port: MessagePortLike, procedures: ProcedureMap, controllers: Map<number, AbortController>, raw: Extract<Envelope, { kind: "req" }>): Promise<void> {
 	const handler = procedures[raw.method];
 	if (!handler) {
 		post(port, {

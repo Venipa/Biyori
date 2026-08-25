@@ -13,7 +13,7 @@ import type { Anime } from "../db/types";
 import { getAppNotice, subscribeAppNotice } from "../notice";
 import { loadAppSettings, patchAppSettings } from "../settings";
 import { loadStatistics } from "../statistics";
-import { checkTorrents, discardAnimeFilter, discardTorrent, downloadSelectedTorrents, downloadTorrent, applyTorrentView, getTorrentItems, preferFansubFilter, searchTorrents, subscribeTorrentItems } from "../torrents";
+import { applyTorrentView, checkTorrents, discardAnimeFilter, discardTorrent, downloadSelectedTorrents, downloadTorrent, getTorrentItems, preferFansubFilter, searchTorrents, subscribeTorrentItems } from "../torrents";
 import {
   listEpisodes,
   playEpisode,
@@ -31,8 +31,8 @@ import {
 import { t } from "../trpc";
 import { anilistRouter } from "./anilist";
 import { coversRouter } from "./covers";
-import { updaterRouter } from "./updater";
 import { desktopRouter } from "./desktop";
+import { updaterRouter } from "./updater";
 
 type AnimeDetail = Omit<
 	Anime,

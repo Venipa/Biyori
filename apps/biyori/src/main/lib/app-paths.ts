@@ -1,6 +1,6 @@
-import { app } from "electron";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { app } from "electron";
 
 
 export function appRootDir(): string {

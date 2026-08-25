@@ -1,6 +1,6 @@
-import { cn } from "@/mainview/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps } from "react";
+import { cn } from "@/mainview/lib/utils";
 
 const getSpans = () =>
 	[...new Array(12)].map((_, index) => (

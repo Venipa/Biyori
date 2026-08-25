@@ -1,5 +1,5 @@
-import { observable } from "@trpc/server/observable";
 import { is } from "@electron-toolkit/utils";
+import { observable } from "@trpc/server/observable";
 import { app } from "electron";
 import { autoUpdater } from "electron-updater";
 

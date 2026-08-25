@@ -1,6 +1,6 @@
-import { is } from "@electron-toolkit/utils";
-import { BrowserWindow, shell, type BrowserWindowConstructorOptions } from "electron";
 import { join } from "node:path";
+import { is } from "@electron-toolkit/utils";
+import { BrowserWindow, type BrowserWindowConstructorOptions, shell } from "electron";
 import icon from "../../../resources/icon.png?asset";
 import { attachTrpcWindow } from "../trpc-handler";
 import { attachWindowState } from "./state";

@@ -1,16 +1,8 @@
-import { TRPCError } from "@trpc/server";
 import type { AnyRouter, inferRouterContext } from "@trpc/server";
-import {
-	isObservable,
-	observableToAsyncIterable,
-} from "@trpc/server/observable";
+import { TRPCError } from "@trpc/server";
+import { isObservable, observableToAsyncIterable } from "@trpc/server/observable";
 import type { TRPCResponseMessage } from "@trpc/server/rpc";
-import {
-	callProcedure,
-	getErrorShape,
-	isAsyncIterable,
-	transformTRPCResponse,
-} from "@trpc/server/unstable-core-do-not-import";
+import { callProcedure, getErrorShape, isAsyncIterable, transformTRPCResponse } from "@trpc/server/unstable-core-do-not-import";
 import type { IpcMainEvent } from "electron";
 import { ELECTRON_TRPC_CHANNEL } from "../constants";
 import type { ETRPCRequest } from "../types";
@@ -32,9 +24,7 @@ export async function handleIPCMessage<TRouter extends AnyRouter>({
 	subscriptions,
 }: {
 	router: TRouter;
-	createContext?: (
-		opts: CreateContextOptions,
-	) => Awaitable<inferRouterContext<TRouter>>;
+	createContext?: (opts: CreateContextOptions) => Awaitable<inferRouterContext<TRouter>>;
 	internalId: string;
 	message: ETRPCRequest;
 	event: IpcMainEvent;
@@ -51,9 +41,7 @@ export async function handleIPCMessage<TRouter extends AnyRouter>({
 	}
 
 	const { type, input: serializedInput, path, id } = message.operation;
-	const input = serializedInput
-		? router._def._config.transformer.input.deserialize(serializedInput)
-		: undefined;
+	const input = serializedInput ? router._def._config.transformer.input.deserialize(serializedInput) : undefined;
 
 	const ctx = (await createContext?.({ event })) ?? {};
 
@@ -61,10 +49,7 @@ export async function handleIPCMessage<TRouter extends AnyRouter>({
 		if (event.sender.isDestroyed()) {
 			return;
 		}
-		event.reply(
-			ELECTRON_TRPC_CHANNEL,
-			transformTRPCResponse(router._def._config, response),
-		);
+		event.reply(ELECTRON_TRPC_CHANNEL, transformTRPCResponse(router._def._config, response));
 	};
 
 	const buildErrorResponse = async (cause: unknown): Promise<TRPCResponseMessage> => {
@@ -119,9 +104,7 @@ export async function handleIPCMessage<TRouter extends AnyRouter>({
 			});
 		}
 
-		const iterable = isObservable(result)
-			? observableToAsyncIterable(result, abortController.signal)
-			: result;
+		const iterable = isObservable(result) ? observableToAsyncIterable(result, abortController.signal) : result;
 
 		subscriptions.set(internalId, {
 			unsubscribe: () => abortController.abort(),

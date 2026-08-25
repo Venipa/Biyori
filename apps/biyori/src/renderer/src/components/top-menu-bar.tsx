@@ -1,5 +1,5 @@
+import { useNavigate } from "@tanstack/react-router";
 import { desktopRpc } from "@/desktop-rpc";
-import { useTheme } from "@/mainview/lib/hooks/use-theme";
 import {
   Menubar,
   MenubarCheckboxItem,
@@ -15,11 +15,11 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from "@/mainview/components/ui/menubar";
+import { useTheme } from "@/mainview/lib/hooks/use-theme";
 import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
 import { useSelectedAnime } from "@/mainview/lib/selected-anime";
 import { setThemeMode } from "@/mainview/lib/theme";
 import { trpc } from "@/mainview/trpc";
-import { useNavigate } from "@tanstack/react-router";
 
 export function TopMenuBar() {
 	const navigate = useNavigate();
@@ -36,7 +36,7 @@ export function TopMenuBar() {
 	const scan = trpc.library.scan.useMutation();
 	const playNext = trpc.library.playNext.useMutation();
 	const playRandom = trpc.library.playRandom.useMutation();
-	const [theme, setTheme] = useTheme();
+	const [theme, _setTheme] = useTheme();
 	const syncStatus = trpc.anilist.syncStatus.useQuery();
 	const sync = trpc.anilist.sync.useMutation();
 	const syncRunning = syncStatus.data?.phase === "running";

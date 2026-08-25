@@ -3,9 +3,7 @@ import { MessageChannel } from "node:worker_threads";
 import { createWorker } from "./client";
 import { createWorkerServe, defineProcedure } from "./serve";
 
-function pair<
-	TServe extends ReturnType<typeof createWorkerServe>,
->(serveFactory: (port: MessageChannel["port2"]) => TServe) {
+function pair<TServe extends ReturnType<typeof createWorkerServe>>(serveFactory: (port: MessageChannel["port2"]) => TServe) {
 	const { port1, port2 } = new MessageChannel();
 	port1.start();
 	port2.start();
@@ -38,13 +36,11 @@ describe("worker rpc", () => {
 			createWorkerServe(
 				{
 					procedures: {
-						run: defineProcedure<void, string, { progress: number }>(
-							async (_input, ctx) => {
-								ctx.emit("progress", 1);
-								ctx.emit("progress", 2);
-								return "ok";
-							},
-						),
+						run: defineProcedure<void, string, { progress: number }>(async (_input, ctx) => {
+							ctx.emit("progress", 1);
+							ctx.emit("progress", 2);
+							return "ok";
+						}),
 					},
 				},
 				{ port },
@@ -101,7 +97,7 @@ describe("worker rpc", () => {
 				{
 					procedures: {
 						hang: defineProcedure(
-							(_input: void, ctx) =>
+							(_input: undefined, ctx) =>
 								new Promise<never>((_resolve, reject) => {
 									ctx.signal.addEventListener("abort", () => {
 										const error = new Error("Aborted");
@@ -126,15 +122,9 @@ describe("worker rpc", () => {
 	});
 
 	test("unknown procedure", async () => {
-		const { client, dispose } = pair((port) =>
-			createWorkerServe({ procedures: {} }, { port }),
-		);
+		const { client, dispose } = pair((port) => createWorkerServe({ procedures: {} }, { port }));
 		try {
-			await expect(
-				(client.invoke as { missing: (input: unknown) => Promise<unknown> }).missing(
-					null,
-				),
-			).rejects.toThrow("Unknown procedure: missing");
+			await expect((client.invoke as { missing: (input: unknown) => Promise<unknown> }).missing(null)).rejects.toThrow("Unknown procedure: missing");
 		} finally {
 			await dispose();
 		}

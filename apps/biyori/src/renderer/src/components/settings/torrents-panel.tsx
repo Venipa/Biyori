@@ -1,8 +1,21 @@
 import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/mainview/components/ui/tabs";
-import { FormCheckbox } from "@/mainview/components/form-checkbox";
+import type { AppSettingsInput } from "@/lib/schemas/app-settings";
+import {
+	TORRENT_RELEASE_FEEDS,
+	TORRENT_SEARCH_FEEDS,
+} from "@/lib/torrent-feeds";
 import { EditableSelect } from "@/mainview/components/editable-select";
+import { FormCheckbox } from "@/mainview/components/form-checkbox";
+import {
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+	FieldLegend,
+	FieldSet,
+} from "@/mainview/components/ui/field";
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -22,24 +35,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/mainview/components/ui/select";
-import {
-	Field,
-	FieldDescription,
-	FieldError,
-	FieldGroup,
-	FieldLabel,
-	FieldSet,
-	FieldLegend,
-} from "@/mainview/components/ui/field";
-import {
-	TORRENT_RELEASE_FEEDS,
-	TORRENT_SEARCH_FEEDS,
-} from "@/lib/torrent-feeds";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import {
 	pickFilePath,
 	pickLibraryFolderPath,
 } from "@/mainview/lib/library-folder";
-import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { TorrentFiltersTab } from "./torrent-filters-tab";
 
 const TORRENT_SORT_BY_ITEMS = {

@@ -1,7 +1,6 @@
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox"
-
-import { cn } from "@/mainview/lib/utils"
 import { CheckIcon } from "lucide-react"
+import { cn } from "@/mainview/lib/utils"
 
 function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
   return (

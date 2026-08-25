@@ -1,10 +1,10 @@
 import {
-	GlobeIcon,
-	FolderIcon,
 	AppWindowIcon,
+	DownloadIcon,
+	FolderIcon,
+	GlobeIcon,
 	ScanEyeIcon,
 	Share2Icon,
-	DownloadIcon,
 	SlidersHorizontalIcon,
 } from "lucide-react";
 

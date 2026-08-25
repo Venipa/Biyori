@@ -1,3 +1,12 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import type { inferRouterOutputs } from "@trpc/server";
+import {
+  CircleAlertIcon,
+  ExternalLinkIcon,
+  PlayCircleIcon,
+  SearchIcon,
+} from "lucide-react";
+import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
 import { PlaceholderView } from "@/mainview/components/placeholder-view";
@@ -17,18 +26,9 @@ import {
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
-import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import type { inferRouterOutputs } from "@trpc/server";
-import {
-  CircleAlertIcon,
-  ExternalLinkIcon,
-  PlayCircleIcon,
-  SearchIcon,
-} from "lucide-react";
 
 export const Route = createFileRoute("/app/now-playing")({
   validateSearch: animeInfoSearchSchema,

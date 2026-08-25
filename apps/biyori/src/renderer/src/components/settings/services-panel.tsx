@@ -1,7 +1,10 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useId } from "react";
+import { Controller, useForm, useFormContext } from "react-hook-form";
 import {
-  anilistTokenSchema,
   type AnilistToken,
   type AnilistTokenInput,
+  anilistTokenSchema,
 } from "@/lib/schemas/anilist-token";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { Button } from "@/mainview/components/ui/button";
@@ -25,9 +28,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { Textarea } from "@/mainview/components/ui/textarea";
 import { trpc } from "@/mainview/trpc";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useId } from "react";
-import { Controller, useForm, useFormContext } from "react-hook-form";
 
 const DEFAULT_SERVICE_ITEMS = {
 	anilist: "AniList",

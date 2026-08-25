@@ -6,7 +6,7 @@ const PLAYER_SUFFIX =
 	/\s+-\s+(mpv|vlc media player|vlc|mpc-hc|mpc-be|potplayer|kmplayer|gom player).*$/i;
 
 const STREAM_SUFFIX =
-	/\s+[|\-]\s+(crunchyroll|hidive|netflix|plex|jellyfin|youtube|bilibili|funimation).*$/i;
+	/\s+[|-]\s+(crunchyroll|hidive|netflix|plex|jellyfin|youtube|bilibili|funimation).*$/i;
 
 export type ParsePlaybackOptions = {
 	ignoredStrings?: string;

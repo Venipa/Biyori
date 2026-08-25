@@ -1,8 +1,8 @@
-import { existsSync, watch, type FSWatcher } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { existsSync, type FSWatcher, watch } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { dirname, extname, join } from "node:path";
 import { eq } from "drizzle-orm";
-import { randomUUID } from "node:crypto";
 import { shell } from "electron";
 import type { DatabaseClient } from "../db";
 import { anime, episodeFile } from "../db/schema";

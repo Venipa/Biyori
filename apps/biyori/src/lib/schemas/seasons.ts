@@ -2,11 +2,11 @@ import { z } from "zod";
 import { anilistMediaCardSchema } from "./anilist-media-card";
 
 export {
-	anilistMediaCardSchema as seasonItemSchema,
-	anilistMediaTitlesSchema as seasonTitlesSchema,
 	type AnilistMediaCard as SeasonItem,
 	type AnilistMediaCardCached as SeasonItemCached,
 	type AnilistMediaTitles as SeasonTitles,
+	anilistMediaCardSchema as seasonItemSchema,
+	anilistMediaTitlesSchema as seasonTitlesSchema,
 } from "./anilist-media-card";
 
 export const anilistSeasonNameSchema = z.enum([

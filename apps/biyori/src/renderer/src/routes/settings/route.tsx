@@ -1,3 +1,14 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import type { ReactNode } from "react";
+import {
+	type FieldErrors,
+	type FieldPath,
+	FormProvider,
+	useForm,
+	useFormContext,
+	useFormState,
+} from "react-hook-form";
 import { desktopRpc } from "@/desktop-rpc";
 import {
   type AppSettings,
@@ -16,17 +27,6 @@ import {
 } from "@/mainview/lib/settings-nav";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import {
-	type FieldErrors,
-	type FieldPath,
-	FormProvider,
-	useForm,
-	useFormContext,
-	useFormState,
-} from "react-hook-form";
 
 export const Route = createFileRoute("/settings")({
 	beforeLoad: ({ location }) => {

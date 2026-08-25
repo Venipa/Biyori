@@ -9,27 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppRouteRouteImport } from './routes/app/route'
-import { Route as SettingsRouteRouteImport } from './routes/settings/route'
-import { Route as UpdateRouteImport } from './routes/update'
-import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppAboutRouteImport } from './routes/app/about'
 import { Route as AppAnimeListRouteImport } from './routes/app/anime-list'
 import { Route as AppHistoryRouteImport } from './routes/app/history'
+import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppNowPlayingRouteImport } from './routes/app/now-playing'
+import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as AppSearchRouteImport } from './routes/app/search'
 import { Route as AppSeasonsRouteImport } from './routes/app/seasons'
 import { Route as AppStatisticsRouteImport } from './routes/app/statistics'
 import { Route as AppTorrentsRouteImport } from './routes/app/torrents'
-import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsAdvancedRouteImport } from './routes/settings/advanced'
 import { Route as SettingsApplicationRouteImport } from './routes/settings/application'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsLibraryRouteImport } from './routes/settings/library'
 import { Route as SettingsRecognitionRouteImport } from './routes/settings/recognition'
+import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as SettingsServicesRouteImport } from './routes/settings/services'
 import { Route as SettingsSharingRouteImport } from './routes/settings/sharing'
 import { Route as SettingsTorrentsRouteImport } from './routes/settings/torrents'
+import { Route as UpdateRouteImport } from './routes/update'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',

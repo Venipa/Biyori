@@ -1,4 +1,4 @@
-import { BrowserWindow, screen } from "electron";
+import { type BrowserWindow, screen } from "electron";
 import { createYmlStore } from "../lib/store/createYmlStore";
 import { logger } from "../logger";
 

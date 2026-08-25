@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import {
-	appSettingsSchema,
-	parseAppSettings,
 	type AppSettings,
 	type AppSettingsPatch,
+	appSettingsSchema,
+	parseAppSettings,
 } from "../lib/schemas/app-settings";
 import type { DatabaseClient } from "./db";
 import { appSetting } from "./db/schema";

@@ -1,14 +1,14 @@
-import { app } from "electron";
-import { type ConfOptions as Options, Conf as Store } from "electron-conf/main";
-import Encryption from "encryption.js";
 import {
   existsSync,
   mkdirSync,
   readFileSync,
   statSync,
   writeFileSync,
-} from "fs";
+} from "node:fs";
 import path from "node:path";
+import { app } from "electron";
+import { type ConfOptions as Options, Conf as Store } from "electron-conf/main";
+import Encryption from "encryption.js";
 import { parse as deserialize, stringify as serialize } from "yaml";
 import { logger } from "../../logger";
 import { base64 } from "../base64";
@@ -30,7 +30,7 @@ logger.debug("getStoreUserData", getStoreUserData());
 export function getOrCreateEncryptionSecret(name: string): string {
 	const encryptionKeyPath = path.join(
 		getStoreUserData(),
-		slugify(name, slugifyOptions) + ".key",
+		`${slugify(name, slugifyOptions)}.key`,
 	);
 	const storeMasterSecret = base64.encode(name.padStart(32, "0"));
 	const enc = new Encryption({ secret: storeMasterSecret }); // secret requires 32 characters

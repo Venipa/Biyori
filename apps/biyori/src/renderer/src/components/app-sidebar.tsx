@@ -1,17 +1,17 @@
+import { Link, useRouterState } from "@tanstack/react-router";
 import {
-	PlayIcon,
-	ListIcon,
-	HistoryIcon,
 	BarChart3Icon,
-	SearchIcon,
 	CalendarDaysIcon,
 	DownloadIcon,
+	HistoryIcon,
+	ListIcon,
+	PlayIcon,
+	SearchIcon,
 } from "lucide-react";
-import { Link, useRouterState } from "@tanstack/react-router";
-import { Button } from "@/mainview/components/ui/button";
-import { cn } from "@/mainview/lib/utils";
-import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { desktopRpc } from "@/desktop-rpc";
+import { Button } from "@/mainview/components/ui/button";
+import { useUpdateStatus } from "@/mainview/lib/update-status";
+import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 
 const primaryItems = [

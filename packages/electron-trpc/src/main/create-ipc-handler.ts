@@ -1,19 +1,15 @@
 import type { AnyRouter, inferRouterContext } from "@trpc/server";
-import { ipcMain } from "electron";
 import type { BrowserWindow, IpcMainEvent } from "electron";
+import { ipcMain } from "electron";
 import { ELECTRON_TRPC_CHANNEL } from "../constants";
 import type { ETRPCRequest } from "../types";
-import {
-	handleIPCMessage,
-	type SubscriptionHandle,
-} from "./handle-ipc-message";
+import { handleIPCMessage, type SubscriptionHandle } from "./handle-ipc-message";
 import type { CreateContextOptions } from "./types";
 
 type Awaitable<T> = T | Promise<T>;
 
 function getInternalId(event: IpcMainEvent, request: ETRPCRequest): string {
-	const messageId =
-		request.method === "request" ? request.operation.id : request.id;
+	const messageId = request.method === "request" ? request.operation.id : request.id;
 	const frameId = event.senderFrame?.routingId ?? 0;
 	return `${event.sender.id}-${frameId}:${messageId}`;
 }
@@ -28,27 +24,22 @@ class IPCHandler<TRouter extends AnyRouter> {
 		router,
 		windows = [],
 	}: {
-		createContext?: (
-			opts: CreateContextOptions,
-		) => Awaitable<inferRouterContext<TRouter>>;
+		createContext?: (opts: CreateContextOptions) => Awaitable<inferRouterContext<TRouter>>;
 		router: TRouter;
 		windows?: BrowserWindow[];
 	}) {
 		if (!this.#listening) {
 			this.#listening = true;
-			ipcMain.on(
-				ELECTRON_TRPC_CHANNEL,
-				(event: IpcMainEvent, request: ETRPCRequest) => {
-					void handleIPCMessage({
-						router,
-						createContext,
-						internalId: getInternalId(event, request),
-						event,
-						message: request,
-						subscriptions: this.#subscriptions,
-					});
-				},
-			);
+			ipcMain.on(ELECTRON_TRPC_CHANNEL, (event: IpcMainEvent, request: ETRPCRequest) => {
+				void handleIPCMessage({
+					router,
+					createContext,
+					internalId: getInternalId(event, request),
+					event,
+					message: request,
+					subscriptions: this.#subscriptions,
+				});
+			});
 		}
 
 		for (const win of windows) {
@@ -66,9 +57,7 @@ class IPCHandler<TRouter extends AnyRouter> {
 
 	detachWindow(win: BrowserWindow, webContentsId?: number): void {
 		if (win.isDestroyed() && webContentsId === undefined) {
-			throw new Error(
-				"webContentsId is required when calling detachWindow on a destroyed window",
-			);
+			throw new Error("webContentsId is required when calling detachWindow on a destroyed window");
 		}
 		this.#windows = this.#windows.filter((item) => item !== win);
 		this.#cleanUpSubscriptions({
@@ -76,13 +65,7 @@ class IPCHandler<TRouter extends AnyRouter> {
 		});
 	}
 
-	#cleanUpSubscriptions({
-		webContentsId,
-		frameRoutingId,
-	}: {
-		webContentsId: number;
-		frameRoutingId?: number;
-	}): void {
+	#cleanUpSubscriptions({ webContentsId, frameRoutingId }: { webContentsId: number; frameRoutingId?: number }): void {
 		const prefix = `${webContentsId}-${frameRoutingId ?? ""}`;
 		for (const [key, sub] of this.#subscriptions.entries()) {
 			if (key.startsWith(prefix)) {
@@ -113,9 +96,7 @@ export function createIPCHandler<TRouter extends AnyRouter>({
 	router,
 	windows = [],
 }: {
-	createContext?: (
-		opts: CreateContextOptions,
-	) => Awaitable<inferRouterContext<TRouter>>;
+	createContext?: (opts: CreateContextOptions) => Awaitable<inferRouterContext<TRouter>>;
 	router: TRouter;
 	windows?: BrowserWindow[];
 }): IPCHandler<TRouter> {

@@ -1,5 +1,5 @@
-import { desktopRpc } from "@/desktop-rpc";
 import { useEffect } from "react";
+import { desktopRpc } from "@/desktop-rpc";
 
 const APP_CONTEXT_MENU_SELECTOR =
 	"[data-slot=context-menu-trigger], [data-slot=context-menu-content]";

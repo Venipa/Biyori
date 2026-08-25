@@ -1,11 +1,11 @@
-import { parse } from "anitomy";
 import { createWorkerServe, defineProcedure } from "@biyori/worker";
-import { matchTitle } from "../track/match-core";
+import { parse } from "anitomy";
 import type { Candidate } from "../track/match-core";
+import { matchTitle } from "../track/match-core";
 import type { MatchedAnime } from "../track/types";
 import { parseRssItems, type RssEntry } from "./rss";
-import { videoFormat } from "./video-format";
 import { resolutionHeight } from "./size";
+import { videoFormat } from "./video-format";
 
 export type ParsedTorrentRow = {
 	entry: RssEntry;

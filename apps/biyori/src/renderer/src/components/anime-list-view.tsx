@@ -1,3 +1,14 @@
+import { keepPreviousData } from "@tanstack/react-query";
+import {
+    type ColumnDef,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getSortedRowModel,
+    type SortingState,
+    useReactTable,
+} from "@tanstack/react-table";
+import type { inferRouterOutputs } from "@trpc/server";
+import { useEffect, useRef, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
@@ -38,17 +49,6 @@ import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
-import { keepPreviousData } from "@tanstack/react-query";
-import {
-    type ColumnDef,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getSortedRowModel,
-    type SortingState,
-    useReactTable,
-} from "@tanstack/react-table";
-import type { inferRouterOutputs } from "@trpc/server";
-import { useEffect, useRef, useState } from "react";
 
 const tabs = listStatusSchema.options;
 
@@ -217,7 +217,7 @@ export function AnimeListView({
 
 	const filteredRows = table.getFilteredRowModel().rows;
 	const visualIds = filteredRows.map((row) => row.original.id);
-	const visualIdsKey = visualIds.join("\0");
+	const _visualIdsKey = visualIds.join("\0");
 
 	function selectRow(row: AnimeRow) {
 		setSelectedAnime(toSelected(row, tab));
@@ -225,7 +225,7 @@ export function AnimeListView({
 
 	useEffect(() => {
 		setOrderedAnimeIds(visualIds);
-	}, [visualIdsKey]);
+	}, [visualIds]);
 
 	useEffect(() => {
 		if (!openAnimeId || !listQuery.data) {

@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RefreshCwIcon } from "lucide-react";
 import { useEffect } from "react";
-import { Button } from "@/mainview/components/ui/button";
 import { desktopRpc } from "@/desktop-rpc";
-import { trpc } from "@/mainview/trpc";
+import { Button } from "@/mainview/components/ui/button";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
+import { trpc } from "@/mainview/trpc";
 
 export const Route = createFileRoute("/app/about")({
 	component: AboutPage,

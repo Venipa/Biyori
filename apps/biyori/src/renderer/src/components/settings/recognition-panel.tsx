@@ -1,24 +1,24 @@
 import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/mainview/components/ui/tabs";
+import {
+	MEDIA_PLAYERS,
+	STREAMING_PROVIDERS,
+} from "@/lib/recognition-catalog";
+import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
-import { Input } from "@/mainview/components/ui/input";
-import { Textarea } from "@/mainview/components/ui/textarea";
 import {
 	Field,
 	FieldDescription,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
-	FieldSet,
 	FieldLegend,
+	FieldSet,
 } from "@/mainview/components/ui/field";
-import {
-	MEDIA_PLAYERS,
-	STREAMING_PROVIDERS,
-} from "@/lib/recognition-catalog";
-import type { AppSettingsInput } from "@/lib/schemas/app-settings";
+import { Input } from "@/mainview/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
+import { Textarea } from "@/mainview/components/ui/textarea";
 
 function toggleId(ids: string[], id: string, checked: boolean): string[] {
 	if (checked) {

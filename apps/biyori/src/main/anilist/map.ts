@@ -1,9 +1,9 @@
 import { z } from "zod";
-import type { ListStatus } from "../../shared/list";
 import type {
 	AnilistMediaCard,
 	AnilistMediaCardCached,
 } from "../../lib/schemas/anilist-media-card";
+import type { ListStatus } from "../../shared/list";
 import type { AnimeInsert, ListEntryInsert } from "../db/types";
 
 export const anilistMediaStatusSchema = z.enum([
@@ -147,8 +147,6 @@ export function mapAnilistStatus(status: string | null | undefined): ListStatus 
 			return "Dropped";
 		case "PLANNING":
 			return "Plan to watch";
-		case "CURRENT":
-		case "REPEATING":
 		default:
 			return "Currently watching";
 	}
@@ -229,7 +227,6 @@ export function mapAiringStatus(status: string | null | undefined): string {
 			return "Cancelled";
 		case "HIATUS":
 			return "Hiatus";
-		case "FINISHED":
 		default:
 			return "Finished airing";
 	}

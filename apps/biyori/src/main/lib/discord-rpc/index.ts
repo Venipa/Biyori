@@ -1,6 +1,6 @@
-import EventEmitter from "node:events";
 import { randomUUID } from "node:crypto";
-import { type DiscordActivity } from "./discord-rpc";
+import EventEmitter from "node:events";
+import type { DiscordActivity } from "./discord-rpc";
 import IPCClient, { OPCode } from "./ipc";
 import { getIPCPath } from "./ipc-path";
 

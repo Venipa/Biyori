@@ -1,3 +1,13 @@
+import {
+    ArrowDownIcon,
+    ArrowUpIcon,
+    FilterIcon,
+    FilterXIcon,
+    MinusIcon,
+    PencilIcon,
+    PlusIcon,
+} from "lucide-react";
+import { useId, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import {
     blankTorrentFilter,
@@ -50,16 +60,6 @@ import {
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import { listStatusSchema } from "@/shared/list";
-import {
-    ArrowDownIcon,
-    ArrowUpIcon,
-    FilterIcon,
-    FilterXIcon,
-    MinusIcon,
-    PencilIcon,
-    PlusIcon,
-} from "lucide-react";
-import { useId, useState } from "react";
 
 const ELEMENT_KEYS = Object.keys(
 	TORRENT_FILTER_ELEMENT_LABELS,

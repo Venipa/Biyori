@@ -1,8 +1,8 @@
+import { CopyIcon, MinusIcon, SquareIcon, XIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import Logo from "@/mainview/components/logo";
 import { cn } from "@/mainview/lib/utils";
-import { CopyIcon, MinusIcon, SquareIcon, XIcon } from "lucide-react";
-import { useEffect, useState } from "react";
 
 export type AppTitleBarProps = {
 	title: string;

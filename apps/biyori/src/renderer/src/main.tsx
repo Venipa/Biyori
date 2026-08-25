@@ -1,7 +1,7 @@
-import { AppTitleBar } from "@/components/app-titlebar";
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { AppTitleBar } from "@/components/app-titlebar";
 import "./index.css";
 import { initTheme } from "./lib/theme";
 import { router } from "./router";

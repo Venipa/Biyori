@@ -1,3 +1,14 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+    type ColumnDef,
+    getCoreRowModel,
+    getSortedRowModel,
+    type RowSelectionState,
+    type SortingState,
+    useReactTable,
+} from "@tanstack/react-table";
+import type { inferRouterOutputs } from "@trpc/server";
+import { type ReactElement, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import { desktopRpc } from "@/desktop-rpc";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
@@ -23,17 +34,6 @@ import { formatLocalDateTime } from "@/mainview/lib/format-date";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-    type ColumnDef,
-    getCoreRowModel,
-    getSortedRowModel,
-    type RowSelectionState,
-    type SortingState,
-    useReactTable,
-} from "@tanstack/react-table";
-import type { inferRouterOutputs } from "@trpc/server";
-import { type ReactElement, useState } from "react";
 
 export const Route = createFileRoute("/app/torrents")({
 	validateSearch: animeInfoSearchSchema,

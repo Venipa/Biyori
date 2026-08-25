@@ -1,3 +1,14 @@
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  type ColumnDef,
+  getCoreRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
+} from "@tanstack/react-table";
+import type { inferRouterOutputs } from "@trpc/server";
+import { SearchIcon } from "lucide-react";
+import { useMemo, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import { anilistSearchRouteSchema } from "@/lib/schemas/anilist-search";
 import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
@@ -23,17 +34,6 @@ import { formatSeasonLabel } from "@/mainview/lib/season-view";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
-import { createFileRoute } from "@tanstack/react-router";
-import {
-  type ColumnDef,
-  getCoreRowModel,
-  getSortedRowModel,
-  type SortingState,
-  useReactTable,
-} from "@tanstack/react-table";
-import type { inferRouterOutputs } from "@trpc/server";
-import { SearchIcon } from "lucide-react";
-import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/app/search")({
 	validateSearch: anilistSearchRouteSchema,

@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { defaultTorrentFilters } from "./torrent-filter";
-import { parseTorrentFilterExport } from "./torrent-filter";
 import { parseAppSettings } from "./app-settings";
+import { defaultTorrentFilters, parseTorrentFilterExport } from "./torrent-filter";
 
 describe("parseAppSettings torrent filters", () => {
 	test("does not convert legacy torrent flags into rules", () => {
@@ -12,7 +11,7 @@ describe("parseAppSettings torrent filters", () => {
 		});
 		expect(parsed.torrentFilters).toEqual(defaultTorrentFilters());
 		expect(
-			Object.prototype.hasOwnProperty.call(parsed, "torrentWatchingOnly"),
+			Object.hasOwn(parsed, "torrentWatchingOnly"),
 		).toBe(false);
 	});
 

@@ -33,7 +33,6 @@ export function sortSeasonItems(
 				return b.averageScore - a.averageScore || (a.title ?? "").localeCompare(b.title ?? "");
 			case "title":
 				return (a.title ?? "").localeCompare(b.title ?? "");
-			case "popularity":
 			default:
 				return b.popularity - a.popularity || (a.title ?? "").localeCompare(b.title ?? "");
 		}
@@ -165,7 +164,6 @@ export function imageFooterText(
 			return formatScore(item.averageScore);
 		case "title":
 			return item.title;
-		case "popularity":
 		default:
 			return formatPopularity(item.popularity);
 	}

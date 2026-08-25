@@ -1,5 +1,3 @@
-import { useId } from "react";
-import { useFieldArray, useFormContext, useFormState } from "react-hook-form";
 import {
 	type ColumnDef,
 	flexRender,
@@ -7,9 +5,12 @@ import {
 	useReactTable,
 } from "@tanstack/react-table";
 import { FolderIcon, FolderPlusIcon, Trash2Icon } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/mainview/components/ui/tabs";
-import { Button } from "@/mainview/components/ui/button";
+import { useId } from "react";
+import { useFieldArray, useFormContext, useFormState } from "react-hook-form";
+import { folderDisplayName } from "@/lib/folder-path";
+import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
+import { Button } from "@/mainview/components/ui/button";
 import {
 	Empty,
 	EmptyDescription,
@@ -19,11 +20,11 @@ import {
 } from "@/mainview/components/ui/empty";
 import {
 	Field,
+	FieldDescription,
 	FieldError,
 	FieldGroup,
-	FieldSet,
 	FieldLegend,
-	FieldDescription,
+	FieldSet,
 } from "@/mainview/components/ui/field";
 import {
 	Table,
@@ -33,12 +34,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/mainview/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import {
 	folderPathExists,
 	pickLibraryFolderPath,
 } from "@/mainview/lib/library-folder";
-import { folderDisplayName } from "@/lib/folder-path";
-import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 
 type LibraryFolderRow = {
 	id: string;

@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { parseJsonArray } from "../../lib/parse-json-array";
-import { anime, listEntry } from "../db/schema";
 import type { DatabaseClient } from "../db";
-import { namesFrom, type Candidate } from "./match-core";
+import { anime, listEntry } from "../db/schema";
+import { type Candidate, namesFrom } from "./match-core";
 
 export type { Candidate } from "./match-core";
 export { matchById, matchTitle } from "./match-core";

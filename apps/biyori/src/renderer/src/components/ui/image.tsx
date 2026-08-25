@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
+import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { cn } from "@/mainview/lib/utils";
 

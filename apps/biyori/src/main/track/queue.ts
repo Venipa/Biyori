@@ -1,12 +1,12 @@
-import { and, asc, count, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
+import { and, asc, count, eq } from "drizzle-orm";
 import { z } from "zod";
-import type { DatabaseClient } from "../db";
-import { anime, history, listEntry, syncQueue } from "../db/schema";
-import { saveMediaListEntry } from "../anilist/sync";
+import { type ListStatus, listStatusSchema } from "../../shared/list";
 import { toAnilistStatus, toFuzzyDateInput, toListEntryRow } from "../anilist/map";
 import { readAnilistAuth } from "../anilist/store";
-import { listStatusSchema, type ListStatus } from "../../shared/list";
+import { saveMediaListEntry } from "../anilist/sync";
+import type { DatabaseClient } from "../db";
+import { anime, history, listEntry, syncQueue } from "../db/schema";
 import { setAppNotice } from "../notice";
 
 export const queuePayloadSchema = z.object({

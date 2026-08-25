@@ -1,8 +1,8 @@
+import { desktopRpc } from "@/desktop-rpc";
 import {
 	folderPathExists,
 	normalizeFolderPath,
 } from "@/lib/folder-path";
-import { desktopRpc } from "@/desktop-rpc";
 import { trpc } from "@/mainview/trpc";
 
 export { folderPathExists, normalizeFolderPath };
