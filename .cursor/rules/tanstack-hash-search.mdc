@@ -1,0 +1,35 @@
+---
+description: Hash-history search params must not coerce or default in validateSearch
+globs:
+  - "**/routes/**/*.{ts,tsx}"
+  - "**/schemas/**/*.ts"
+  - "**/anime-info-nav.ts"
+alwaysApply: false
+---
+
+# TanStack Router hash search params
+
+Biyori uses `createHashHistory()`. The hash query is always parsed as **strings**. If `validateSearch` outputs a different shape (number vs string, filled-in defaults), the router writes it back, the hash re-parses, and the renderer **infinite-loops / freezes**.
+
+## Do not in `validateSearch`
+
+- `.transform()` / `z.coerce.number()` / `z.number()` on params
+- `.default()` / `.preprocess()` that changes missing vs present keys
+- Parsing with a schema that converts `"21000"` to `21000`
+
+## Do
+
+- Keep param types as URL types: `z.string().optional()`, `z.enum(...).optional()`, `z.union([z.string(), z.number()]).optional()` with **no** transform
+- Coerce in the component (`parseAnimeInfoId` for `id`)
+- When writing `id` via `navigate`, use `String(id)` (`useAnimeInfoNav`)
+
+```ts
+// BAD
+z.object({ id: z.coerce.number().optional() })
+z.object({ tab: listStatusSchema.default("Currently watching") })
+
+// GOOD
+z.object({ id: z.union([z.string(), z.number()]).optional() })
+z.object({ tab: listStatusSchema.optional() })
+const tab = tabRaw ?? "Currently watching";
+```

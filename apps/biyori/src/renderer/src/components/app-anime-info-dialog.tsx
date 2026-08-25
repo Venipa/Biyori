@@ -1,19 +1,20 @@
+import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
 import { AnimeInfoDialog } from "@/mainview/components/anime-info-dialog";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
-import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import { trpc } from "@/mainview/trpc";
 import { useRouterState } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function AppAnimeInfoDialog() {
 	const nav = useAnimeInfoNav();
 	const utils = trpc.useUtils();
-	const search = useRouterState({
+	const id = useRouterState({
+		select: (state) => parseAnimeInfoId(state.location.search.id),
+	});
+	const infoTab = useRouterState({
 		select: (state) => {
-			const parsed = animeInfoSearchSchema.safeParse(state.location.search);
-			return parsed.success
-				? parsed.data
-				: { id: undefined, infoTab: undefined };
+			const tab = state.location.search.infoTab;
+			return tab === "main" || tab === "list" ? tab : undefined;
 		},
 	});
 	const ensureAnime = trpc.anime.ensure.useMutation({
@@ -21,18 +22,17 @@ export function AppAnimeInfoDialog() {
 			utils.anime.byId.setData({ id: detail.id }, detail);
 		},
 	});
-	const id = search.id;
-	const ensureMutate = ensureAnime.mutateAsync;
-	const ensureReset = ensureAnime.reset;
+	const ensureRef = useRef(ensureAnime);
+	ensureRef.current = ensureAnime;
 	const ensureForThisId = ensureAnime.variables?.id === id;
 
 	useEffect(() => {
 		if (id == null) {
-			ensureReset();
+			ensureRef.current.reset();
 			return;
 		}
-		void ensureMutate({ id });
-	}, [id, ensureMutate, ensureReset]);
+		void ensureRef.current.mutateAsync({ id });
+	}, [id]);
 
 	return (
 		<AnimeInfoDialog
@@ -47,7 +47,7 @@ export function AppAnimeInfoDialog() {
 					? (ensureAnime.error.message ?? "Could not load anime")
 					: undefined
 			}
-			infoTab={search.infoTab}
+			infoTab={infoTab}
 			onNavigate={nav.navigateTo}
 			onOpenChange={(open) => {
 				if (!open) {

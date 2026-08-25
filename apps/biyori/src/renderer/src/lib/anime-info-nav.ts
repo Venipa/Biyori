@@ -12,7 +12,7 @@ function applyOpenSearch(
 ): Record<string, unknown> {
 	return {
 		...prev,
-		id: options.id,
+		id: String(options.id),
 		infoTab: options.infoTab,
 	};
 }
@@ -48,7 +48,7 @@ export function useAnimeInfoNav() {
 				to: ".",
 				search: (prev) => ({
 					...prev,
-					id,
+					id: String(id),
 				}),
 			});
 		},

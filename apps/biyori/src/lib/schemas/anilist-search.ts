@@ -15,10 +15,7 @@ export const anilistSearchSchema = anilistSearchFormSchema.extend({
 });
 
 export const anilistSearchRouteSchema = animeInfoSearchSchema.extend({
-	q: z.preprocess(
-		(value) => (typeof value === "string" ? value : ""),
-		z.string().default(""),
-	),
+	q: z.string().optional(),
 });
 
 export type AnilistSearchFormInput = z.input<typeof anilistSearchFormSchema>;

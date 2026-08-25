@@ -1,4 +1,5 @@
 import { anilistSearchRouteSchema } from "@/lib/schemas/anilist-search";
+import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
 import { DataTable } from "@/mainview/components/data-table";
 import {
@@ -115,7 +116,8 @@ function parseListStatus(value: string | undefined): ListStatus | null {
 }
 
 function SearchPage() {
-	const { q, id: openId } = Route.useSearch();
+	const { q, id: openIdRaw } = Route.useSearch();
+	const openId = parseAnimeInfoId(openIdRaw);
 	const animeInfo = useAnimeInfoNav();
 	const query = trpc.anilist.search.useQuery(
 		{ q, page: 1 },
