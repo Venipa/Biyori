@@ -13,13 +13,7 @@ import { parsePlayback } from "./parse";
 import { enqueueUpdate, initQueueFlush } from "./queue";
 import { applyRelation, refreshRelations } from "./relations";
 import { canApplyProgress, progressPayload } from "./tracker-progress";
-import type {
-	MatchedAnime,
-	NowPlayingMedia,
-	NowPlayingSnapshot,
-	NowPlayingUser,
-	PendingConfirm,
-} from "./types";
+import type { MatchedAnime, NowPlayingMedia, NowPlayingSnapshot, NowPlayingUser, PendingConfirm } from "./types";
 
 type Listener = (snapshot: NowPlayingSnapshot) => void;
 
@@ -39,10 +33,7 @@ function idleSnapshot(user: NowPlayingUser): NowPlayingSnapshot {
 	return { ...IDLE, progressRevision, user };
 }
 
-async function resolveNowPlayingUser(
-	database: DatabaseClient,
-	settings: AppSettings,
-): Promise<NowPlayingUser> {
+async function resolveNowPlayingUser(database: DatabaseClient, settings: AppSettings): Promise<NowPlayingUser> {
 	const provider: DefaultService = settings.defaultService;
 	if (provider === "anilist") {
 		const auth = await readAnilistAuth(database);
@@ -81,10 +72,7 @@ function fingerprint(media: NowPlayingMedia, episode: number | null): string {
 	return `${media.player}|${media.filePath ?? media.title}|${episode ?? "none"}`;
 }
 
-function isInsideLibrary(
-	filePath: string | null,
-	folders: Array<{ path: string }>,
-): boolean {
+function isInsideLibrary(filePath: string | null, folders: Array<{ path: string }>): boolean {
 	if (!filePath) {
 		return true;
 	}
@@ -102,9 +90,7 @@ export function subscribeNowPlaying(listener: Listener): () => void {
 	};
 }
 
-export function nowPlayingObservable(): ReturnType<
-	typeof observable<NowPlayingSnapshot>
-> {
+export function nowPlayingObservable(): ReturnType<typeof observable<NowPlayingSnapshot>> {
 	return observable<NowPlayingSnapshot>((emitNext) => {
 		emitNext.next(getNowPlayingSnapshot());
 		return subscribeNowPlaying((next) => {
@@ -186,11 +172,7 @@ async function runTick(): Promise<void> {
 		return;
 	}
 
-	if (
-		settings.ignoreOutsideLibrary &&
-		media.filePath &&
-		!isInsideLibrary(media.filePath, settings.libraryFolders)
-	) {
+	if (settings.ignoreOutsideLibrary && media.filePath && !isInsideLibrary(media.filePath, settings.libraryFolders)) {
 		emit({
 			media,
 			parsed: null,
@@ -256,19 +238,10 @@ async function runTick(): Promise<void> {
 		delayElapsedSeconds += Math.max(0, (now - delayLastTickAt) / 1000);
 	}
 	delayLastTickAt = now;
-	const remaining = Math.max(
-		0,
-		Math.ceil(settings.recognitionDelaySeconds - delayElapsedSeconds),
-	);
+	const remaining = Math.max(0, Math.ceil(settings.recognitionDelaySeconds - delayElapsedSeconds));
 	const episode = parsed.episode;
 
-	if (
-		match &&
-		episode != null &&
-		remaining === 0 &&
-		appliedFingerprint !== key &&
-		!pending
-	) {
+	if (match && episode != null && remaining === 0 && appliedFingerprint !== key && !pending) {
 		if (!canApplyProgress(match, episode, settings)) {
 			appliedFingerprint = key;
 		} else if (settings.waitUntilPlayerExits) {

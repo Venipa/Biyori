@@ -29,8 +29,7 @@ export function WatchConfirmDialog() {
 				if (!open && pending) {
 					void skip.mutateAsync();
 				}
-			}}
-		>
+			}}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>Update list?</AlertDialogTitle>
@@ -42,8 +41,7 @@ export function WatchConfirmDialog() {
 					<AlertDialogCancel
 						onClick={() => {
 							void skip.mutateAsync();
-						}}
-					>
+						}}>
 						Skip
 					</AlertDialogCancel>
 					<AlertDialogAction
@@ -51,8 +49,7 @@ export function WatchConfirmDialog() {
 						onClick={(event) => {
 							event.preventDefault();
 							void confirm.mutateAsync();
-						}}
-					>
+						}}>
 						Update
 					</AlertDialogAction>
 				</AlertDialogFooter>

@@ -3,17 +3,11 @@ import { Separator } from "@/mainview/components/ui/separator";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { trpc } from "@/mainview/trpc";
 
-function StatRow({
-	label,
-	value,
-}: {
-	label: string;
-	value: string | number;
-}): ReactElement {
+function StatRow({ label, value }: { label: string; value: string | number }): ReactElement {
 	return (
-		<div className="flex items-baseline gap-6 py-1 text-sm">
-			<span className="w-48 shrink-0 text-muted-foreground">{label}</span>
-			<span className="font-medium tabular-nums">{value}</span>
+		<div className='flex items-baseline gap-6 py-1 text-sm'>
+			<span className='w-48 shrink-0 text-muted-foreground'>{label}</span>
+			<span className='font-medium tabular-nums'>{value}</span>
 		</div>
 	);
 }
@@ -52,90 +46,53 @@ export function StatisticsView(): ReactElement {
 	const data = query.data;
 
 	return (
-		<div className="flex h-full min-h-0 flex-col gap-5 overflow-auto px-6 py-5">
+		<div className='flex h-full min-h-0 flex-col gap-5 overflow-auto px-6 py-5'>
 			{query.isPending && !data ? (
 				<div>
-					<Skeleton className="mb-2 h-5 w-64" />
-					<Skeleton className="mb-2 h-5 w-56" />
-					<Skeleton className="mb-2 h-5 w-72" />
-					<Skeleton className="h-5 w-40" />
+					<Skeleton className='mb-2 h-5 w-64' />
+					<Skeleton className='mb-2 h-5 w-56' />
+					<Skeleton className='mb-2 h-5 w-72' />
+					<Skeleton className='h-5 w-40' />
 				</div>
 			) : data ? (
 				<>
 					<section>
-						<h1 className="text-base font-semibold">Anime list</h1>
-						<Separator className="my-2" />
-						<StatRow label="Anime count:" value={data.animeCount} />
-						<StatRow label="Episode count:" value={data.episodeCount} />
-						<StatRow
-							label="Time spent watching:"
-							value={formatDuration(data.spentMinutes)}
-						/>
-						<StatRow
-							label="Time remaining:"
-							value={formatDuration(data.remainingMinutes)}
-						/>
-						<StatRow label="Mean score:" value={data.meanScore.toFixed(2)} />
-						<StatRow
-							label="Score deviation:"
-							value={data.scoreDeviation.toFixed(2)}
-						/>
+						<h1 className='text-base font-semibold'>Anime list</h1>
+						<Separator className='my-2' />
+						<StatRow label='Anime count:' value={data.animeCount} />
+						<StatRow label='Episode count:' value={data.episodeCount} />
+						<StatRow label='Time spent watching:' value={formatDuration(data.spentMinutes)} />
+						<StatRow label='Time remaining:' value={formatDuration(data.remainingMinutes)} />
+						<StatRow label='Mean score:' value={data.meanScore.toFixed(2)} />
+						<StatRow label='Score deviation:' value={data.scoreDeviation.toFixed(2)} />
 					</section>
 					<section>
-						<h2 className="text-sm font-semibold">Score distribution</h2>
-						<Separator className="my-2" />
-						<div className="flex max-w-xl flex-col gap-1">
+						<h2 className='text-sm font-semibold'>Score distribution</h2>
+						<Separator className='my-2' />
+						<div className='flex max-w-xl flex-col gap-1'>
 							{data.scoreDistribution.map((bucket) => (
-								<div
-									key={bucket.score}
-									className="grid grid-cols-[2rem_1fr_3rem] items-center gap-2 text-sm"
-								>
-									<span className="text-right tabular-nums">
-										{bucket.score}
-									</span>
-									<div className="h-4 overflow-hidden rounded-sm bg-muted">
-										<div
-											role="img"
-											aria-label={`Score ${bucket.score}: ${bucket.count}`}
-											className="h-full bg-primary"
-											style={{ width: `${bucket.ratio * 100}%` }}
-										/>
+								<div key={bucket.score} className='grid grid-cols-[2rem_1fr_3rem] items-center gap-2 text-sm'>
+									<span className='text-right tabular-nums'>{bucket.score}</span>
+									<div className='h-4 overflow-hidden rounded-sm bg-muted'>
+										<div role='img' aria-label={`Score ${bucket.score}: ${bucket.count}`} className='h-full bg-primary' style={{ width: `${bucket.ratio * 100}%` }} />
 									</div>
-									<span className="tabular-nums text-muted-foreground">
-										{bucket.count}
-									</span>
+									<span className='tabular-nums text-muted-foreground'>{bucket.count}</span>
 								</div>
 							))}
 						</div>
 					</section>
 					<section>
-						<h2 className="text-sm font-semibold">Local database</h2>
-						<Separator className="my-2" />
-						<StatRow label="Anime count:" value={data.localAnimeCount} />
-						<StatRow
-							label="Image files:"
-							value={`${data.imageCount} (${formatBytes(data.imageSizeBytes)})`}
-						/>
-						<StatRow
-							label="Torrent files:"
-							value={`${data.torrentCount} (${formatBytes(data.torrentSizeBytes)})`}
-						/>
+						<h2 className='text-sm font-semibold'>Local database</h2>
+						<Separator className='my-2' />
+						<StatRow label='Anime count:' value={data.localAnimeCount} />
+						<StatRow label='Image files:' value={`${data.imageCount} (${formatBytes(data.imageSizeBytes)})`} />
+						<StatRow label='Torrent files:' value={`${data.torrentCount} (${formatBytes(data.torrentSizeBytes)})`} />
 					</section>
 					<section>
-						<h2 className="text-sm font-semibold">Biyori</h2>
-						<Separator className="my-2" />
-						<StatRow
-							label="Connections:"
-							value={`${data.connectionCount}${
-								data.connectionsFailed > 0
-									? ` (${data.connectionsFailed} failed)`
-									: ""
-							}`}
-						/>
-						<StatRow
-							label="Uptime:"
-							value={formatUptime(data.uptimeSeconds)}
-						/>
+						<h2 className='text-sm font-semibold'>Biyori</h2>
+						<Separator className='my-2' />
+						<StatRow label='Connections:' value={`${data.connectionCount}${data.connectionsFailed > 0 ? ` (${data.connectionsFailed} failed)` : ""}`} />
+						<StatRow label='Uptime:' value={formatUptime(data.uptimeSeconds)} />
 					</section>
 				</>
 			) : null}

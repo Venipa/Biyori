@@ -3,12 +3,7 @@ import DatabaseService from "./database.service";
 import HttpService from "./http.service";
 import LibraryService from "./library.service";
 import { type LifecyclePhase, lifecycle } from "./lifecycle";
-import {
-	isService,
-	isServiceClass,
-	type Service,
-	serviceHook,
-} from "./service";
+import { isService, isServiceClass, type Service, serviceHook } from "./service";
 import SettingsService from "./settings.service";
 import TorrentsService from "./torrents.service";
 import TrackerService from "./tracker.service";
@@ -26,16 +21,7 @@ export {
 } from "./lifecycle";
 export { isService, kService, Service } from "./service";
 
-const SERVICE_EXPORTS: unknown[] = [
-	DatabaseService,
-	SettingsService,
-	HttpService,
-	AniListSyncService,
-	LibraryService,
-	TrackerService,
-	TorrentsService,
-	UpdaterService,
-];
+const SERVICE_EXPORTS: unknown[] = [DatabaseService, SettingsService, HttpService, AniListSyncService, LibraryService, TrackerService, TorrentsService, UpdaterService];
 
 const PHASES: LifecyclePhase[] = ["beforeLoad", "onInit", "afterInit"];
 

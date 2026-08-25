@@ -1,25 +1,9 @@
-import {
-	ArrowDownIcon,
-	ArrowUpIcon,
-	DownloadIcon,
-	FilterIcon,
-	FilterXIcon,
-	MinusIcon,
-	PlusIcon,
-	UploadIcon,
-	XIcon,
-} from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, FilterIcon, FilterXIcon, MinusIcon, PlusIcon, UploadIcon, XIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { desktopRpc } from "@/desktop-rpc";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
-import {
-	cloneTorrentFilter,
-	defaultTorrentFilters,
-	parseTorrentFilterExport,
-	type TorrentFilter,
-	type TorrentFilterAction,
-} from "@/lib/schemas/torrent-filter";
+import { cloneTorrentFilter, defaultTorrentFilters, parseTorrentFilterExport, type TorrentFilter, type TorrentFilterAction } from "@/lib/schemas/torrent-filter";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
 import {
 	AlertDialog,
@@ -35,19 +19,9 @@ import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
 import { FieldDescription, FieldGroup } from "@/mainview/components/ui/field";
 import { Separator } from "@/mainview/components/ui/separator";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/mainview/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 import { cn } from "@/mainview/lib/utils";
-import {
-	TorrentFilterWizard,
-	type TorrentFilterWizardMode,
-} from "./torrent-filter-wizard";
+import { TorrentFilterWizard, type TorrentFilterWizardMode } from "./torrent-filter-wizard";
 
 function moveItem<T>(items: T[], from: number, to: number): T[] {
 	const next = [...items];
@@ -61,9 +35,9 @@ function moveItem<T>(items: T[], from: number, to: number): T[] {
 
 function FilterActionIcon({ action }: { action: TorrentFilterAction }) {
 	if (action === "discard") {
-		return <FilterXIcon className="text-destructive" />;
+		return <FilterXIcon className='text-destructive' />;
 	}
-	return <FilterIcon className="text-success" />;
+	return <FilterIcon className='text-success' />;
 }
 
 export function TorrentFiltersTab() {
@@ -80,8 +54,7 @@ export function TorrentFiltersTab() {
 	const [importError, setImportError] = useState(false);
 	const selected = selectedIndex ?? -1;
 	const canMoveUp = enabled && selected > 0;
-	const canMoveDown =
-		enabled && selected >= 0 && selected < filters.fields.length - 1;
+	const canMoveDown = enabled && selected >= 0 && selected < filters.fields.length - 1;
 	const canRemove = enabled && selected >= 0;
 
 	function currentFilters(): TorrentFilter[] {
@@ -100,27 +73,15 @@ export function TorrentFiltersTab() {
 
 	return (
 		<FieldGroup>
-			<FormCheckbox
-				control={form.control}
-				name="torrentFilterEnabled"
-				id={filterId}
-				label="Enable torrent filters"
-			/>
-			<FieldDescription>
-				Filters allow you to download the files you want and ignore the others.
-			</FieldDescription>
-			<div
-				className={cn(
-					"flex flex-col gap-2",
-					!enabled && "pointer-events-none opacity-50",
-				)}
-			>
-				<Table containerClassName="max-h-80 overflow-y-auto rounded-md border">
+			<FormCheckbox control={form.control} name='torrentFilterEnabled' id={filterId} label='Enable torrent filters' />
+			<FieldDescription>Filters allow you to download the files you want and ignore the others.</FieldDescription>
+			<div className={cn("flex flex-col gap-2", !enabled && "pointer-events-none opacity-50")}>
+				<Table containerClassName='max-h-80 overflow-y-auto rounded-md border'>
 					<TableHeader>
 						<TableRow>
-							<TableHead className="w-8" />
+							<TableHead className='w-8' />
 							<TableHead>Name</TableHead>
-							<TableHead className="text-right">Applies to</TableHead>
+							<TableHead className='text-right'>Applies to</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -128,7 +89,7 @@ export function TorrentFiltersTab() {
 							<TableRow
 								key={row.id}
 								data-state={selected === index ? "selected" : undefined}
-								className="cursor-pointer"
+								className='cursor-pointer'
 								onClick={() => {
 									setSelectedIndex(index);
 								}}
@@ -141,8 +102,7 @@ export function TorrentFiltersTab() {
 										filters.remove(index);
 										setSelectedIndex(null);
 									}
-								}}
-							>
+								}}>
 								<TableCell>
 									<Checkbox
 										aria-label={`Enable ${row.name || "filter"}`}
@@ -159,37 +119,32 @@ export function TorrentFiltersTab() {
 									/>
 								</TableCell>
 								<TableCell>
-									<span className="flex items-center gap-2">
+									<span className='flex items-center gap-2'>
 										<FilterActionIcon action={row.action} />
-										<span className="truncate">{row.name || "New Filter"}</span>
+										<span className='truncate'>{row.name || "New Filter"}</span>
 									</span>
 								</TableCell>
-								<TableCell className="text-right text-muted-foreground">
-									{row.animeIds.length === 0
-										? "All"
-										: `${row.animeIds.length} anime`}
-								</TableCell>
+								<TableCell className='text-right text-muted-foreground'>{row.animeIds.length === 0 ? "All" : `${row.animeIds.length} anime`}</TableCell>
 							</TableRow>
 						))}
 					</TableBody>
 				</Table>
-				<div className="flex items-center gap-1">
+				<div className='flex items-center gap-1'>
 					<Button
-						type="button"
-						size="icon-xs"
-						variant="outline"
-						aria-label="Add new filter"
+						type='button'
+						size='icon-xs'
+						variant='outline'
+						aria-label='Add new filter'
 						onClick={() => {
 							setWizard({ kind: "add" });
-						}}
-					>
-						<PlusIcon data-icon="inline-start" />
+						}}>
+						<PlusIcon data-icon='inline-start' />
 					</Button>
 					<Button
-						type="button"
-						size="icon-xs"
-						variant="outline"
-						aria-label="Delete filter"
+						type='button'
+						size='icon-xs'
+						variant='outline'
+						aria-label='Delete filter'
 						disabled={!canRemove}
 						onClick={() => {
 							if (selected < 0) {
@@ -197,41 +152,38 @@ export function TorrentFiltersTab() {
 							}
 							filters.remove(selected);
 							setSelectedIndex(null);
-						}}
-					>
-						<MinusIcon data-icon="inline-start" />
+						}}>
+						<MinusIcon data-icon='inline-start' />
 					</Button>
-					<Separator orientation="vertical" className="mx-1 h-5" />
+					<Separator orientation='vertical' className='mx-1 h-5' />
 					<Button
-						type="button"
-						size="icon-xs"
-						variant="outline"
-						aria-label="Move up"
+						type='button'
+						size='icon-xs'
+						variant='outline'
+						aria-label='Move up'
 						disabled={!canMoveUp}
 						onClick={() => {
 							swap(selected, selected - 1);
-						}}
-					>
-						<ArrowUpIcon data-icon="inline-start" />
+						}}>
+						<ArrowUpIcon data-icon='inline-start' />
 					</Button>
 					<Button
-						type="button"
-						size="icon-xs"
-						variant="outline"
-						aria-label="Move down"
+						type='button'
+						size='icon-xs'
+						variant='outline'
+						aria-label='Move down'
 						disabled={!canMoveDown}
 						onClick={() => {
 							swap(selected, selected + 1);
-						}}
-					>
-						<ArrowDownIcon data-icon="inline-start" />
+						}}>
+						<ArrowDownIcon data-icon='inline-start' />
 					</Button>
-					<Separator orientation="vertical" className="mx-1 h-5" />
+					<Separator orientation='vertical' className='mx-1 h-5' />
 					<Button
-						type="button"
-						size="icon-xs"
-						variant="outline"
-						aria-label="Import filters"
+						type='button'
+						size='icon-xs'
+						variant='outline'
+						aria-label='Import filters'
 						onClick={() => {
 							void desktopRpc.request.importBiyori({}).then((result) => {
 								if (result.canceled) {
@@ -242,19 +194,16 @@ export function TorrentFiltersTab() {
 									setImportError(true);
 									return;
 								}
-								replaceFilters(
-									next.map((row) => cloneTorrentFilter(row, row.id)),
-								);
+								replaceFilters(next.map((row) => cloneTorrentFilter(row, row.id)));
 							});
-						}}
-					>
-						<DownloadIcon data-icon="inline-start" />
+						}}>
+						<DownloadIcon data-icon='inline-start' />
 					</Button>
 					<Button
-						type="button"
-						size="icon-xs"
-						variant="outline"
-						aria-label="Export filters"
+						type='button'
+						size='icon-xs'
+						variant='outline'
+						aria-label='Export filters'
 						onClick={() => {
 							void desktopRpc.request.exportBiyori({
 								defaultName: "torrent-filters.biyori",
@@ -263,21 +212,19 @@ export function TorrentFiltersTab() {
 									filters: currentFilters(),
 								},
 							});
-						}}
-					>
-						<UploadIcon data-icon="inline-start" />
+						}}>
+						<UploadIcon data-icon='inline-start' />
 					</Button>
-					<Separator orientation="vertical" className="mx-1 h-5" />
+					<Separator orientation='vertical' className='mx-1 h-5' />
 					<Button
-						type="button"
-						size="icon-xs"
-						variant="outline"
-						aria-label="Reset filters"
+						type='button'
+						size='icon-xs'
+						variant='outline'
+						aria-label='Reset filters'
 						onClick={() => {
 							setResetOpen(true);
-						}}
-					>
-						<XIcon className="text-destructive" data-icon="inline-start" />
+						}}>
+						<XIcon className='text-destructive' data-icon='inline-start' />
 					</Button>
 				</div>
 			</div>
@@ -303,18 +250,14 @@ export function TorrentFiltersTab() {
 				<AlertDialogContent>
 					<AlertDialogHeader>
 						<AlertDialogTitle>Reset Torrent Filters</AlertDialogTitle>
-						<AlertDialogDescription>
-							Are you sure you want to reset the filters? All custom filters
-							will be lost.
-						</AlertDialogDescription>
+						<AlertDialogDescription>Are you sure you want to reset the filters? All custom filters will be lost.</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel>No</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={() => {
 								replaceFilters(defaultTorrentFilters());
-							}}
-						>
+							}}>
 							Yes
 						</AlertDialogAction>
 					</AlertDialogFooter>
@@ -325,8 +268,7 @@ export function TorrentFiltersTab() {
 					<AlertDialogHeader>
 						<AlertDialogTitle>Import Filters</AlertDialogTitle>
 						<AlertDialogDescription>
-							Could not parse the filter file. It may be missing characters, or
-							encoded with an incompatible version of the application.
+							Could not parse the filter file. It may be missing characters, or encoded with an incompatible version of the application.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>

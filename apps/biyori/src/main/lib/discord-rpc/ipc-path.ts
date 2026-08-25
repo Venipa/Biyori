@@ -17,33 +17,19 @@ export function linuxRuntimePrefix(runtimeDir: string): string {
 }
 
 export function linuxIpcCandidates(prefix: string, id: number): string[] {
-	return [
-		`${prefix}/discord-ipc-${id}`,
-		...PACKAGED_DISCORD_DIRS.map((dir) => `${prefix}/${dir}/discord-ipc-${id}`),
-	];
+	return [`${prefix}/discord-ipc-${id}`, ...PACKAGED_DISCORD_DIRS.map((dir) => `${prefix}/${dir}/discord-ipc-${id}`)];
 }
 
-export function pickExistingIpcPath(
-	candidates: string[],
-	exists: (path: string) => boolean,
-): string {
+export function pickExistingIpcPath(candidates: string[], exists: (path: string) => boolean): string {
 	return candidates.find((path) => exists(path)) ?? candidates[0];
 }
 
-export function getIPCPath(
-	id: number,
-	exists: (path: string) => boolean = existsSync,
-): string {
+export function getIPCPath(id: number, exists: (path: string) => boolean = existsSync): string {
 	if (process.platform === "win32") {
 		return `\\\\?\\pipe\\discord-ipc-${id}`;
 	}
 
-	const dirtyPrefix =
-		process.env.XDG_RUNTIME_DIR ||
-		process.env.TMPDIR ||
-		process.env.TMP ||
-		process.env.TEMP ||
-		"/tmp";
+	const dirtyPrefix = process.env.XDG_RUNTIME_DIR || process.env.TMPDIR || process.env.TMP || process.env.TEMP || "/tmp";
 	const prefix = linuxRuntimePrefix(dirtyPrefix);
 	return pickExistingIpcPath(linuxIpcCandidates(prefix, id), exists);
 }

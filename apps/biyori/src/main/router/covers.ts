@@ -2,11 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { mediaImageKindSchema } from "../../lib/schemas/media-image";
-import {
-  getOrFetchMediaImage,
-  MediaCacheError,
-  readCachedMediaImage,
-} from "../covers/cache";
+import { getOrFetchMediaImage, MediaCacheError, readCachedMediaImage } from "../covers/cache";
 import { anime } from "../db/schema";
 import { t } from "../trpc";
 
@@ -26,10 +22,7 @@ export const coversRouter = t.router({
 			}),
 		)
 		.query(async ({ ctx, input }) => {
-			const inputUrl =
-				input.sourceUrl ||
-				(input.kind === "cover" ? input.coverUrl : undefined) ||
-				"";
+			const inputUrl = input.sourceUrl || (input.kind === "cover" ? input.coverUrl : undefined) || "";
 
 			if (!inputUrl) {
 				const cached = await readCachedMediaImage({
@@ -50,8 +43,7 @@ export const coversRouter = t.router({
 				.from(anime)
 				.where(eq(anime.id, input.animeId))
 				.limit(1);
-			const stored =
-				input.kind === "banner" ? rows[0]?.bannerUrl : rows[0]?.coverUrl;
+			const stored = input.kind === "banner" ? rows[0]?.bannerUrl : rows[0]?.coverUrl;
 			const sourceUrl = (stored || inputUrl).trim();
 
 			try {

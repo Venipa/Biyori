@@ -1,14 +1,4 @@
-import type {
-	anime,
-	appSetting,
-	episodeFile,
-	history,
-	listEntry,
-	mediaCache,
-	relationsCache,
-	syncQueue,
-	torrentArchive,
-} from "./schema";
+import type { anime, appSetting, episodeFile, history, listEntry, mediaCache, relationsCache, syncQueue, torrentArchive } from "./schema";
 
 export type Anime = typeof anime.$inferSelect;
 export type AnimeInsert = typeof anime.$inferInsert;

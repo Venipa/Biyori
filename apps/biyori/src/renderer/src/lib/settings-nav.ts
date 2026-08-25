@@ -1,12 +1,4 @@
-import {
-	AppWindowIcon,
-	DownloadIcon,
-	FolderIcon,
-	GlobeIcon,
-	ScanEyeIcon,
-	Share2Icon,
-	SlidersHorizontalIcon,
-} from "lucide-react";
+import { AppWindowIcon, DownloadIcon, FolderIcon, GlobeIcon, ScanEyeIcon, Share2Icon, SlidersHorizontalIcon } from "lucide-react";
 
 export const settingsSections = [
 	{ id: "services", label: "Services", icon: GlobeIcon },
@@ -74,4 +66,3 @@ export const settingsFieldSection: Record<string, SettingsSectionId> = {
 	fileSizeThreshold: "advanced",
 	mediaDetectionInterval: "advanced",
 };
-

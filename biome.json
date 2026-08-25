@@ -8,7 +8,7 @@
 		"attributePosition": "auto"
 	},
 	"files": {
-		"includes": ["./apps/web/**", "./packages/**", "!**/*.generated.d.ts", "!**/*.gen.ts", "!**/public"]
+		"includes": ["./apps/**", "./packages/**", "!**/*.generated.d.ts", "!**/*.gen.ts", "!**/public", "!**/{dist,out,build,node_modules,public,drizzle}"]
 	},
 	"javascript": {
 		"formatter": {
@@ -22,6 +22,8 @@
 	},
 	"linter": {
 		"enabled": true,
-		"rules": { "preset": "recommended" }
+		"rules": {
+			"preset": "recommended"
+		}
 	}
 }

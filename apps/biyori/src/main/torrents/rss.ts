@@ -35,9 +35,7 @@ export function torrentInfoUrl(guid: string, link: string, comments = ""): strin
 	if (isHttpPageUrl(link)) {
 		return link;
 	}
-	const download = link.match(
-		/^(https?:\/\/[^/]+)\/download\/(\d+)\.torrent(?:\?.*)?$/i,
-	);
+	const download = link.match(/^(https?:\/\/[^/]+)\/download\/(\d+)\.torrent(?:\?.*)?$/i);
 	if (download) {
 		return `${download[1]}/view/${download[2]}`;
 	}
@@ -54,19 +52,18 @@ function decodeXml(value: string): string {
 }
 
 function stripHtml(value: string): string {
-	return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+	return value
+		.replace(/<[^>]+>/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
 }
 
 function tagValue(block: string, tag: string): string {
-	const match = block.match(
-		new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i"),
-	);
+	const match = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i"));
 	if (!match) {
 		return "";
 	}
-	return decodeXml(
-		match[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/, "$1").trim(),
-	);
+	return decodeXml(match[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/, "$1").trim());
 }
 
 function firstTag(block: string, tags: string[]): string {
@@ -134,15 +131,9 @@ export function parseRssItems(xml: string): RssEntry[] {
 				size: sizeTag || (bytes > 0 ? formatBytes(bytes) : ""),
 				fileSizeBytes: bytes,
 				category,
-				seeders: parseIntSafe(
-					firstTag(block, ["nyaa:seeders", "seeders", "torrent:seeds"]),
-				),
-				leechers: parseIntSafe(
-					firstTag(block, ["nyaa:leechers", "leechers", "torrent:peers"]),
-				),
-				downloads: parseIntSafe(
-					firstTag(block, ["nyaa:downloads", "downloads"]),
-				),
+				seeders: parseIntSafe(firstTag(block, ["nyaa:seeders", "seeders", "torrent:seeds"])),
+				leechers: parseIntSafe(firstTag(block, ["nyaa:leechers", "leechers", "torrent:peers"])),
+				downloads: parseIntSafe(firstTag(block, ["nyaa:downloads", "downloads"])),
 				description: stripHtml(tagValue(block, "description")),
 				pubDate: tagValue(block, "pubDate") || tagValue(block, "pubdate"),
 			},

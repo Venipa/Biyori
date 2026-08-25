@@ -2,10 +2,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
 import { AnimeInfoDialog } from "@/mainview/components/anime-info-dialog";
-import {
-	useAnimeInfoNav,
-	useAnimeInfoOpen,
-} from "@/mainview/lib/anime-info-nav";
+import { useAnimeInfoNav, useAnimeInfoOpen } from "@/mainview/lib/anime-info-nav";
 import { trpc } from "@/mainview/trpc";
 
 export function AppAnimeInfoDialog() {
@@ -45,16 +42,8 @@ export function AppAnimeInfoDialog() {
 	return (
 		<AnimeInfoDialog
 			id={id}
-			ensuring={
-				id != null &&
-				!ensureAnime.isError &&
-				(ensureAnime.isPending || !ensureForThisId)
-			}
-			ensureError={
-				id != null && ensureAnime.isError && ensureForThisId
-					? (ensureAnime.error.message ?? "Could not load anime")
-					: undefined
-			}
+			ensuring={id != null && !ensureAnime.isError && (ensureAnime.isPending || !ensureForThisId)}
+			ensureError={id != null && ensureAnime.isError && ensureForThisId ? (ensureAnime.error.message ?? "Could not load anime") : undefined}
 			infoTab={infoTab}
 			onNavigate={nav.navigateTo}
 			onOpenChange={(open) => {

@@ -1,10 +1,5 @@
 import { eq } from "drizzle-orm";
-import {
-	type AppSettings,
-	type AppSettingsPatch,
-	appSettingsSchema,
-	parseAppSettings,
-} from "../lib/schemas/app-settings";
+import { type AppSettings, type AppSettingsPatch, appSettingsSchema, parseAppSettings } from "../lib/schemas/app-settings";
 import type { DatabaseClient } from "./db";
 import { appSetting } from "./db/schema";
 import { syncLoginItem } from "./startup";
@@ -18,14 +13,8 @@ export function initSettings(database: DatabaseClient): void {
 	db = database;
 }
 
-export async function loadAppSettings(
-	database: DatabaseClient = requiredDb(),
-): Promise<AppSettings> {
-	const rows = await database
-		.select()
-		.from(appSetting)
-		.where(eq(appSetting.key, "app"))
-		.limit(1);
+export async function loadAppSettings(database: DatabaseClient = requiredDb()): Promise<AppSettings> {
+	const rows = await database.select().from(appSetting).where(eq(appSetting.key, "app")).limit(1);
 	if (!rows[0]) {
 		return parseAppSettings(null);
 	}
@@ -36,9 +25,7 @@ export async function loadAppSettings(
 	}
 }
 
-function omitUndefined(
-	patch: AppSettingsPatch,
-): Record<string, unknown> {
+function omitUndefined(patch: AppSettingsPatch): Record<string, unknown> {
 	const next: Record<string, unknown> = {};
 	for (const [key, value] of Object.entries(patch)) {
 		if (value !== undefined) {
@@ -48,10 +35,7 @@ function omitUndefined(
 	return next;
 }
 
-export async function patchAppSettings(
-	database: DatabaseClient,
-	patch: AppSettingsPatch,
-): Promise<AppSettings> {
+export async function patchAppSettings(database: DatabaseClient, patch: AppSettingsPatch): Promise<AppSettings> {
 	const current = await loadAppSettings(database);
 	const next = appSettingsSchema.parse({
 		...current,
@@ -61,10 +45,7 @@ export async function patchAppSettings(
 	return next;
 }
 
-export async function saveAppSettings(
-	database: DatabaseClient,
-	input: AppSettings,
-): Promise<void> {
+export async function saveAppSettings(database: DatabaseClient, input: AppSettings): Promise<void> {
 	await database
 		.insert(appSetting)
 		.values({

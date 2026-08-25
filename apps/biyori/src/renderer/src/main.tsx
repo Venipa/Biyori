@@ -12,9 +12,9 @@ initTheme();
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<TrpcProvider>
-			<div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-				<AppTitleBar title="Biyori" />
-				<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+			<div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden'>
+				<AppTitleBar title='Biyori' />
+				<div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
 					<RouterProvider router={router} />
 				</div>
 			</div>

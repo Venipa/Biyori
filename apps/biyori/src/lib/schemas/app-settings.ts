@@ -1,21 +1,10 @@
 import { z } from "zod";
 import { listStatusSchema } from "../../shared/list";
 import { normalizeFolderPath } from "../folder-path";
-import {
-  defaultMediaPlayerIds,
-  defaultStreamingProviderIds,
-} from "../recognition-catalog";
+import { defaultMediaPlayerIds, defaultStreamingProviderIds } from "../recognition-catalog";
 import { isTorrentFeedUrl } from "../torrent-feeds";
-import {
-  anilistSeasonNameSchema,
-  seasonGroupBySchema,
-  seasonSortBySchema,
-  seasonViewAsSchema,
-} from "./seasons";
-import {
-  defaultTorrentFilters,
-  torrentFilterSchema,
-} from "./torrent-filter";
+import { anilistSeasonNameSchema, seasonGroupBySchema, seasonSortBySchema, seasonViewAsSchema } from "./seasons";
+import { defaultTorrentFilters, torrentFilterSchema } from "./torrent-filter";
 
 export const titleLanguageSchema = z.enum(["Romaji", "English", "Native"]);
 export const torrentActionSchema = z.enum(["notify", "download"]);
@@ -25,10 +14,10 @@ export const torrentSortOrderSchema = z.enum(["ascending", "descending"]);
 export const defaultServiceSchema = z.enum(["anilist", "myanimelist", "kitsu"]);
 export type DefaultService = z.infer<typeof defaultServiceSchema>;
 export {
-  anilistSeasonNameSchema,
-  seasonGroupBySchema,
-  seasonSortBySchema,
-  seasonViewAsSchema
+	anilistSeasonNameSchema,
+	seasonGroupBySchema,
+	seasonSortBySchema,
+	seasonViewAsSchema,
 } from "./seasons";
 
 export const appSettingsSchema = z.object({
@@ -38,17 +27,10 @@ export const appSettingsSchema = z.object({
 	autostart: z.boolean().default(false),
 	autostartTray: z.boolean().default(false),
 	closeToTray: z.boolean().default(true),
-	externalLinks: z.preprocess(
-		(value) => (typeof value === "string" ? value : ""),
-		z.string(),
-	),
+	externalLinks: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
 	libraryFolders: z.array(
 		z.object({
-			path: z.preprocess(
-				(value) =>
-					typeof value === "string" ? normalizeFolderPath(value) : value,
-				z.string().min(1, "Required"),
-			),
+			path: z.preprocess((value) => (typeof value === "string" ? normalizeFolderPath(value) : value), z.string().min(1, "Required")),
 		}),
 	),
 	realtimeMonitor: z.boolean(),
@@ -60,22 +42,14 @@ export const appSettingsSchema = z.object({
 	enableMediaPlayerDetection: z.boolean().default(true),
 	enableStreamingDetection: z.boolean().default(false),
 	enabledMediaPlayers: z.array(z.string()).default(defaultMediaPlayerIds()),
-	enabledStreamingProviders: z
-		.array(z.string())
-		.default(defaultStreamingProviderIds()),
+	enabledStreamingProviders: z.array(z.string()).default(defaultStreamingProviderIds()),
 	notifyOnRecognized: z.boolean().default(true),
 	notifyOnUnrecognized: z.boolean().default(true),
 	goToNowPlayingOnRecognized: z.boolean().default(true),
 	goToNowPlayingOnUnrecognized: z.boolean().default(false),
 	playerMustBeInFocus: z.boolean().default(false),
-	rssFeedUrl: z.preprocess(
-		(value) => (typeof value === "string" ? value : ""),
-		z.string().refine(isTorrentFeedUrl, "Enter a valid URL"),
-	),
-	rssSearchUrl: z.preprocess(
-		(value) => (typeof value === "string" ? value : ""),
-		z.string().refine(isTorrentFeedUrl, "Enter a valid URL"),
-	),
+	rssFeedUrl: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string().refine(isTorrentFeedUrl, "Enter a valid URL")),
+	rssSearchUrl: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string().refine(isTorrentFeedUrl, "Enter a valid URL")),
 	checkTorrentsAutomatically: z.boolean(),
 	torrentCheckIntervalMinutes: z.coerce.number().int().min(10).max(3600),
 	newTorrentAction: torrentActionSchema,
@@ -83,42 +57,24 @@ export const appSettingsSchema = z.object({
 	torrentFilters: z.array(torrentFilterSchema),
 	torrentAppMode: torrentAppModeSchema.default("default"),
 	torrentAppOpen: z.boolean().default(true),
-	torrentAppPath: z.preprocess(
-		(value) => (typeof value === "string" ? value : ""),
-		z.string(),
-	),
+	torrentAppPath: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
 	torrentUseAnimeFolder: z.boolean().default(true),
 	torrentFallbackOnFolder: z.boolean().default(false),
 	torrentCreateSubfolder: z.boolean().default(false),
-	torrentDownloadDir: z.preprocess(
-		(value) => (typeof value === "string" ? value : ""),
-		z.string(),
-	),
-	torrentFileDownloadPath: z.preprocess(
-		(value) => (typeof value === "string" ? value : ""),
-		z.string(),
-	),
+	torrentDownloadDir: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
+	torrentFileDownloadPath: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
 	torrentUseMagnet: z.boolean().default(false),
 	torrentDownloadSortBy: torrentSortBySchema.default("episode_number"),
 	torrentDownloadSortOrder: torrentSortOrderSchema.default("ascending"),
 	torrentArchiveMaxCount: z.coerce.number().int().min(0).default(1000),
-	ignoredStrings: z.preprocess(
-		(value) => (typeof value === "string" ? value : ""),
-		z.string(),
-	),
+	ignoredStrings: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
 	waitUntilPlayerExits: z.boolean().default(false),
 	updateRichPresence: z.boolean(),
 	showElapsedTime: z.boolean(),
 	enableHttp: z.boolean(),
 	httpPort: z.coerce.number().int().min(1).max(65535),
-	discordApplicationId: z.preprocess(
-		(value) => (typeof value === "string" ? value : ""),
-		z.string(),
-	),
-	uiTheme: z.preprocess(
-		(value) => (typeof value === "string" && value.length > 0 ? value : "Default"),
-		z.string().min(1, "Required"),
-	),
+	discordApplicationId: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
+	uiTheme: z.preprocess((value) => (typeof value === "string" && value.length > 0 ? value : "Default"), z.string().min(1, "Required")),
 	fileSizeThreshold: z.coerce.number().int().min(0, "Required"),
 	mediaDetectionInterval: z.coerce.number().int().min(0, "Required"),
 	seasonsGroupBy: seasonGroupBySchema.default("airing"),
@@ -132,24 +88,13 @@ export type AppSettingsInput = z.input<typeof appSettingsSchema>;
 export type AppSettings = z.output<typeof appSettingsSchema>;
 
 function optionalPatchField(schema: z.ZodType): z.ZodType {
-	if (
-		schema.def.type === "default" &&
-		"removeDefault" in schema &&
-		typeof schema.removeDefault === "function"
-	) {
+	if (schema.def.type === "default" && "removeDefault" in schema && typeof schema.removeDefault === "function") {
 		return optionalPatchField(schema.removeDefault());
 	}
 	return schema.optional();
 }
 
-export const appSettingsPatchSchema = z.object(
-	Object.fromEntries(
-		Object.entries(appSettingsSchema.shape).map(([key, field]) => [
-			key,
-			optionalPatchField(field),
-		]),
-	),
-);
+export const appSettingsPatchSchema = z.object(Object.fromEntries(Object.entries(appSettingsSchema.shape).map(([key, field]) => [key, optionalPatchField(field)])));
 export type AppSettingsPatch = z.input<typeof appSettingsPatchSchema>;
 
 export const appSettingsDefaultValues: AppSettingsInput = {
@@ -212,15 +157,9 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	seasonsLastYear: null,
 };
 
-const LEGACY_TORRENT_KEYS = [
-	"torrentWatchingOnly",
-	"torrentDiscardNotInList",
-	"torrentDiscardAnimeIds",
-] as const;
+const LEGACY_TORRENT_KEYS = ["torrentWatchingOnly", "torrentDiscardNotInList", "torrentDiscardAnimeIds"] as const;
 
-function omitLegacyTorrentKeys(
-	record: Record<string, unknown>,
-): Record<string, unknown> {
+function omitLegacyTorrentKeys(record: Record<string, unknown>): Record<string, unknown> {
 	const next = { ...record };
 	for (const key of LEGACY_TORRENT_KEYS) {
 		delete next[key];
@@ -240,9 +179,7 @@ function coerceTorrentFilters(value: unknown): unknown {
 		const row = torrentFilterSchema.safeParse(item);
 		return row.success ? [row.data] : [];
 	});
-	return kept.length > 0 || value.length === 0
-		? kept
-		: appSettingsDefaultValues.torrentFilters;
+	return kept.length > 0 || value.length === 0 ? kept : appSettingsDefaultValues.torrentFilters;
 }
 
 export function parseAppSettings(value: unknown): AppSettings {
@@ -250,24 +187,14 @@ export function parseAppSettings(value: unknown): AppSettings {
 	if (direct.success) {
 		return direct.data;
 	}
-	const record = omitLegacyTorrentKeys(
-		value && typeof value === "object"
-			? (value as Record<string, unknown>)
-			: {},
-	);
+	const record = omitLegacyTorrentKeys(value && typeof value === "object" ? (value as Record<string, unknown>) : {});
 	const merged = {
 		...appSettingsDefaultValues,
 		...record,
-		libraryFolders: Array.isArray(record.libraryFolders)
-			? record.libraryFolders
-			: appSettingsDefaultValues.libraryFolders,
+		libraryFolders: Array.isArray(record.libraryFolders) ? record.libraryFolders : appSettingsDefaultValues.libraryFolders,
 		torrentFilters: coerceTorrentFilters(record.torrentFilters),
-		enabledMediaPlayers: Array.isArray(record.enabledMediaPlayers)
-			? record.enabledMediaPlayers
-			: appSettingsDefaultValues.enabledMediaPlayers,
-		enabledStreamingProviders: Array.isArray(record.enabledStreamingProviders)
-			? record.enabledStreamingProviders
-			: appSettingsDefaultValues.enabledStreamingProviders,
+		enabledMediaPlayers: Array.isArray(record.enabledMediaPlayers) ? record.enabledMediaPlayers : appSettingsDefaultValues.enabledMediaPlayers,
+		enabledStreamingProviders: Array.isArray(record.enabledStreamingProviders) ? record.enabledStreamingProviders : appSettingsDefaultValues.enabledStreamingProviders,
 	};
 	const parsed = appSettingsSchema.safeParse(merged);
 	if (parsed.success) {

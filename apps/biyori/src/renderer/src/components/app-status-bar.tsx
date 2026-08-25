@@ -11,10 +11,7 @@ export function AppStatusBar() {
 	trpc.anilist.onSyncStatus.useSubscription(undefined, {
 		onData: (snapshot) => {
 			utils.anilist.syncStatus.setData(undefined, snapshot);
-			if (
-				snapshot.lastSuccessAt != null &&
-				snapshot.lastSuccessAt !== lastSuccessAt.current
-			) {
+			if (snapshot.lastSuccessAt != null && snapshot.lastSuccessAt !== lastSuccessAt.current) {
 				lastSuccessAt.current = snapshot.lastSuccessAt;
 				void invalidateAnimeQueries(utils, "synced");
 			}
@@ -31,25 +28,11 @@ export function AppStatusBar() {
 	const message = snapshot?.message || noticeQuery.data?.message || "";
 
 	return (
-		<div className="flex h-6 shrink-0 items-stretch border-t bg-muted/40 text-[11px] leading-none">
-			<div
-				className="flex min-w-0 flex-1 items-center border-r px-1.5"
-				role="status"
-				aria-live="polite"
-			>
-				<p
-					className={
-						failed
-							? "min-w-0 truncate text-destructive"
-							: "min-w-0 truncate text-muted-foreground"
-					}
-				>
-					{message}
-				</p>
+		<div className='flex h-6 shrink-0 items-stretch border-t bg-muted/40 text-[11px] leading-none'>
+			<div className='flex min-w-0 flex-1 items-center border-r px-1.5' role='status' aria-live='polite'>
+				<p className={failed ? "min-w-0 truncate text-destructive" : "min-w-0 truncate text-muted-foreground"}>{message}</p>
 			</div>
-			<div className="flex w-7 shrink-0 items-center justify-center">
-				{running ? <Spinner size="xs" color="foreground" aria-hidden /> : null}
-			</div>
+			<div className='flex w-7 shrink-0 items-center justify-center'>{running ? <Spinner size='xs' color='foreground' aria-hidden /> : null}</div>
 		</div>
 	);
 }

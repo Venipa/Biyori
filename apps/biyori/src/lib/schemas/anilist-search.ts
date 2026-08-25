@@ -3,10 +3,7 @@ import { animeInfoSearchSchema } from "./anime-info-search";
 
 /** Toolbar / navigate-to-search form (no page). */
 export const anilistSearchFormSchema = z.object({
-	q: z.preprocess(
-		(value) => (typeof value === "string" ? value : ""),
-		z.string().trim().min(1, "Required"),
-	),
+	q: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string().trim().min(1, "Required")),
 });
 
 /** API search procedure input. */

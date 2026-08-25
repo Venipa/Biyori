@@ -54,4 +54,3 @@ app.whenReady().then(async () => {
 	scheduleAfterInit();
 	logger.info("started");
 });
-

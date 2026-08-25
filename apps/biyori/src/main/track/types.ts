@@ -34,16 +34,7 @@ export type MatchedAnime = Pick<
 	| "averageScore"
 	| "synopsis"
 > &
-	Pick<
-		ListEntry,
-		| "episodesWatched"
-		| "status"
-		| "score"
-		| "notes"
-		| "timesRewatched"
-		| "dateStarted"
-		| "dateCompleted"
-	> & {
+	Pick<ListEntry, "episodesWatched" | "status" | "score" | "notes" | "timesRewatched" | "dateStarted" | "dateCompleted"> & {
 		rewatching: boolean;
 		genres: string[];
 		producers: string[];

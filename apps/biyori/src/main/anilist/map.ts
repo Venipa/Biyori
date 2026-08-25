@@ -1,19 +1,9 @@
 import { z } from "zod";
-import type {
-	AnilistMediaCard,
-	AnilistMediaCardCached,
-} from "../../lib/schemas/anilist-media-card";
+import type { AnilistMediaCard, AnilistMediaCardCached } from "../../lib/schemas/anilist-media-card";
 import type { ListStatus } from "../../shared/list";
 import type { AnimeInsert, ListEntryInsert } from "../db/types";
 
-export const anilistMediaStatusSchema = z.enum([
-	"CURRENT",
-	"PLANNING",
-	"COMPLETED",
-	"DROPPED",
-	"PAUSED",
-	"REPEATING",
-]);
+export const anilistMediaStatusSchema = z.enum(["CURRENT", "PLANNING", "COMPLETED", "DROPPED", "PAUSED", "REPEATING"]);
 
 export type AnilistMediaStatus = z.infer<typeof anilistMediaStatusSchema>;
 
@@ -188,16 +178,11 @@ export function formatFuzzyDate(
 	return `${date.year}-${month}-${day}`;
 }
 
-export function formatSeason(
-	season: string | null | undefined,
-	year: number | null | undefined,
-): string {
+export function formatSeason(season: string | null | undefined, year: number | null | undefined): string {
 	if (!season && !year) {
 		return "";
 	}
-	const label = season
-		? `${season.charAt(0)}${season.slice(1).toLowerCase()}`
-		: "";
+	const label = season ? `${season.charAt(0)}${season.slice(1).toLowerCase()}` : "";
 	if (label && year) {
 		return `${label} ${year}`;
 	}
@@ -232,35 +217,14 @@ export function mapAiringStatus(status: string | null | undefined): string {
 	}
 }
 
-export function pickTitle(
-	title: AnilistMedia["title"],
-	language: "Romaji" | "English" | "Native" = "Romaji",
-): string {
+export function pickTitle(title: AnilistMedia["title"], language: "Romaji" | "English" | "Native" = "Romaji"): string {
 	if (language === "English") {
-		return (
-			title.english ||
-			title.userPreferred ||
-			title.romaji ||
-			title.native ||
-			"Untitled"
-		);
+		return title.english || title.userPreferred || title.romaji || title.native || "Untitled";
 	}
 	if (language === "Native") {
-		return (
-			title.native ||
-			title.userPreferred ||
-			title.romaji ||
-			title.english ||
-			"Untitled"
-		);
+		return title.native || title.userPreferred || title.romaji || title.english || "Untitled";
 	}
-	return (
-		title.userPreferred ||
-		title.romaji ||
-		title.english ||
-		title.native ||
-		"Untitled"
-	);
+	return title.userPreferred || title.romaji || title.english || title.native || "Untitled";
 }
 
 export function pickCoverUrl(media: AnilistMedia): string {
@@ -271,9 +235,7 @@ export function pickBannerUrl(media: AnilistMedia): string {
 	return media.bannerImage ?? "";
 }
 
-export function toFuzzyDateInput(
-	iso: string | null | undefined,
-): { year: number; month: number; day: number } | undefined {
+export function toFuzzyDateInput(iso: string | null | undefined): { year: number; month: number; day: number } | undefined {
 	if (!iso) {
 		return undefined;
 	}
@@ -292,7 +254,10 @@ export function stripHtml(value: string | null | undefined): string {
 	if (!value) {
 		return "";
 	}
-	return value.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim();
+	return value
+		.replace(/<[^>]+>/g, "")
+		.replace(/&amp;/g, "&")
+		.trim();
 }
 
 function lastAiredEpisode(media: AnilistMedia): number {
@@ -307,17 +272,9 @@ function lastAiredEpisode(media: AnilistMedia): number {
 	return 0;
 }
 
-export function toAnimeRow(
-	media: AnilistMedia,
-	titleLanguage: "Romaji" | "English" | "Native" = "Romaji",
-): AnimeInsert {
+export function toAnimeRow(media: AnilistMedia, titleLanguage: "Romaji" | "English" | "Native" = "Romaji"): AnimeInsert {
 	const preferred = pickTitle(media.title, titleLanguage);
-	const titles = [
-		media.title.romaji,
-		media.title.english,
-		media.title.native,
-		...(media.synonyms ?? []),
-	].filter((item): item is string => Boolean(item));
+	const titles = [media.title.romaji, media.title.english, media.title.native, ...(media.synonyms ?? [])].filter((item): item is string => Boolean(item));
 	const uniqueTitles = [...new Set(titles)].filter((item) => item !== preferred);
 	const studios = (media.studios?.nodes ?? [])
 		.filter((node): node is NonNullable<typeof node> => Boolean(node))
@@ -345,16 +302,10 @@ export function toAnimeRow(
 	};
 }
 
-export function toListEntryRow(
-	animeId: number,
-	entry: AnilistMediaList,
-): ListEntryInsert {
+export function toListEntryRow(animeId: number, entry: AnilistMediaList): ListEntryInsert {
 	const started = formatFuzzyDate(entry.startedAt);
 	const completed = formatFuzzyDate(entry.completedAt);
-	const updated =
-		entry.updatedAt != null
-			? new Date(entry.updatedAt * 1000).toISOString()
-			: new Date().toISOString();
+	const updated = entry.updatedAt != null ? new Date(entry.updatedAt * 1000).toISOString() : new Date().toISOString();
 
 	return {
 		animeId,
@@ -374,15 +325,11 @@ export function toListEntryRow(
 }
 
 function pickTrailerId(media: AnilistMedia): string | null {
-	return media.trailer?.site?.toLowerCase() === "youtube" || !media.trailer?.site
-		? (media.trailer?.id ?? null)
-		: null;
+	return media.trailer?.site?.toLowerCase() === "youtube" || !media.trailer?.site ? (media.trailer?.id ?? null) : null;
 }
 
 function pickProducers(media: AnilistMedia): string[] {
-	return (media.studios?.nodes ?? [])
-		.filter((node): node is NonNullable<typeof node> => Boolean(node))
-		.map((node) => node.name);
+	return (media.studios?.nodes ?? []).filter((node): node is NonNullable<typeof node> => Boolean(node)).map((node) => node.name);
 }
 
 export function toMediaCardCached(media: AnilistMedia): AnilistMediaCardCached {
@@ -412,19 +359,13 @@ export function toMediaCardCached(media: AnilistMedia): AnilistMediaCardCached {
 	};
 }
 
-export function withMediaCardTitle(
-	item: AnilistMediaCardCached,
-	titleLanguage?: "Romaji" | "English" | "Native",
-): AnilistMediaCard {
+export function withMediaCardTitle(item: AnilistMediaCardCached, titleLanguage?: "Romaji" | "English" | "Native"): AnilistMediaCard {
 	return {
 		...item,
 		title: pickTitle(item.titles, titleLanguage),
 	};
 }
 
-export function toMediaCard(
-	media: AnilistMedia,
-	titleLanguage?: "Romaji" | "English" | "Native",
-): AnilistMediaCard {
+export function toMediaCard(media: AnilistMedia, titleLanguage?: "Romaji" | "English" | "Native"): AnilistMediaCard {
 	return withMediaCardTitle(toMediaCardCached(media), titleLanguage);
 }

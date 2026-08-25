@@ -78,8 +78,5 @@ export function useAnimeInfoNav() {
 		});
 	}, []);
 
-	return useMemo(
-		() => ({ open, close, navigateTo }),
-		[open, close, navigateTo],
-	);
+	return useMemo(() => ({ open, close, navigateTo }), [open, close, navigateTo]);
 }

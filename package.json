@@ -9,7 +9,7 @@
     "release": "bun run --cwd apps/biyori build:win",
     "release:compile": "bun run --cwd apps/biyori release:compile",
     "release:pack:win": "bun run --cwd apps/biyori release:pack:win",
-    "typecheck": "bun run --cwd apps/biyori typecheck"
+    "typecheck": "bun --filter \"biyori\" typecheck"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.10",
@@ -20,5 +20,8 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "workspaces": ["apps/*", "packages/*"]
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }

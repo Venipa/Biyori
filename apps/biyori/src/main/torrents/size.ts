@@ -11,9 +11,7 @@ const UNITS: Record<string, number> = {
 };
 
 export function parseSizeBytes(value: string): number {
-	const match = value
-		.trim()
-		.match(/^([\d.,]+)\s*([a-z]+)?$/i);
+	const match = value.trim().match(/^([\d.,]+)\s*([a-z]+)?$/i);
 	if (!match) {
 		const digits = Number.parseInt(value.replace(/,/g, ""), 10);
 		return Number.isFinite(digits) ? digits : 0;

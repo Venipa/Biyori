@@ -6,11 +6,7 @@ import type { SelectedAnime } from "@/mainview/lib/selected-anime";
 import { trpc } from "@/mainview/trpc";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
 
-function parseCustomExternalLinks(
-	raw: string,
-	title: string,
-	id: number | null,
-): Array<{ label: string; url: string }> {
+function parseCustomExternalLinks(raw: string, title: string, id: number | null): Array<{ label: string; url: string }> {
 	return raw.split(/\r?\n/).flatMap((line) => {
 		const trimmed = line.trim();
 		if (!trimmed || trimmed.startsWith("#")) {
@@ -25,9 +21,7 @@ function parseCustomExternalLinks(
 		if (!label || !template) {
 			return [];
 		}
-		const url = template
-			.replace(/%title%/g, encodeURIComponent(title))
-			.replace(/%id%/g, id != null ? String(id) : "");
+		const url = template.replace(/%title%/g, encodeURIComponent(title)).replace(/%id%/g, id != null ? String(id) : "");
 		return [{ label, url }];
 	});
 }
@@ -61,15 +55,7 @@ export type DiscoverAnimeTarget = {
 };
 
 function externalUrl(
-	kind:
-		| "anilist"
-		| "anidb"
-		| "ann"
-		| "mal"
-		| "reddit"
-		| "wikipedia"
-		| "youtube"
-		| "google",
+	kind: "anilist" | "anidb" | "ann" | "mal" | "reddit" | "wikipedia" | "youtube" | "google",
 	title: string,
 	id: number | null,
 	trailerId?: string | null,
@@ -137,14 +123,7 @@ export function AnimeItemCommands({
 	onEdit?: () => void;
 	onDelete?: () => void;
 }) {
-	const {
-		Item,
-		Sub,
-		SubTrigger,
-		SubContent,
-		Separator,
-		Shortcut,
-	} = parts;
+	const { Item, Sub, SubTrigger, SubContent, Separator, Shortcut } = parts;
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
 	const isList = mode === "list";
@@ -152,18 +131,10 @@ export function AnimeItemCommands({
 	const id = isList ? (anime?.id ?? null) : (discover?.id ?? null);
 	const trailerId = discover?.trailerId ?? null;
 	const disabled = isList ? anime == null : discover == null;
-	const nextEpisode = anime
-		? Math.min(
-				anime.episodesWatched + 1,
-				anime.episodes || anime.episodesWatched + 1,
-			)
-		: 1;
+	const nextEpisode = anime ? Math.min(anime.episodesWatched + 1, anime.episodes || anime.episodesWatched + 1) : 1;
 	const lastEpisode = anime?.episodesWatched ?? 0;
 	const hasFolder = Boolean(anime?.folder);
-	const episodesQuery = trpc.library.episodes.useQuery(
-		{ animeId: anime?.id ?? 0 },
-		{ enabled: Boolean(isList && anime?.id) },
-	);
+	const episodesQuery = trpc.library.episodes.useQuery({ animeId: anime?.id ?? 0 }, { enabled: Boolean(isList && anime?.id) });
 	const scan = trpc.library.scan.useMutation();
 	const playEpisode = trpc.library.playEpisode.useMutation();
 	const playNext = trpc.library.playNext.useMutation();
@@ -183,22 +154,12 @@ export function AnimeItemCommands({
 		enabled: Boolean(!isList && discover?.id != null),
 	});
 	const settingsQuery = trpc.settings.get.useQuery();
-	const customLinks = parseCustomExternalLinks(
-		settingsQuery.data?.externalLinks ?? "",
-		title,
-		id,
-	);
+	const customLinks = parseCustomExternalLinks(settingsQuery.data?.externalLinks ?? "", title, id);
 	const matchedList = listLookup.data?.find((row) => row.id === discover?.id);
-	const matchedStatus = matchedList
-		? listStatusSchema.safeParse(matchedList.status)
-		: null;
-	const discoverStatus =
-		discover?.listStatus ??
-		(matchedStatus?.success ? matchedStatus.data : null);
+	const matchedStatus = matchedList ? listStatusSchema.safeParse(matchedList.status) : null;
+	const discoverStatus = discover?.listStatus ?? (matchedStatus?.success ? matchedStatus.data : null);
 
-	function openExternal(
-		kind: (typeof externalItems)[number]["kind"],
-	): void {
+	function openExternal(kind: (typeof externalItems)[number]["kind"]): void {
 		const url = externalUrl(kind, title, id, trailerId);
 		if (!url) {
 			return;
@@ -235,8 +196,7 @@ export function AnimeItemCommands({
 							to: "/app/search",
 							search: { q: anime.title },
 						});
-					}}
-				>
+					}}>
 					Search
 				</Item>
 			) : null}
@@ -250,8 +210,7 @@ export function AnimeItemCommands({
 							disabled={disabled}
 							onClick={() => {
 								openExternal(item.kind);
-							}}
-						>
+							}}>
 							{item.label}
 						</Item>
 					))}
@@ -261,8 +220,7 @@ export function AnimeItemCommands({
 							disabled={disabled}
 							onClick={() => {
 								void desktopRpc.request.openExternal({ url: item.url });
-							}}
-						>
+							}}>
 							{item.label}
 						</Item>
 					))}
@@ -296,19 +254,14 @@ export function AnimeItemCommands({
 											notes: anime.notes,
 											rewatching: false,
 										});
-									}}
-								>
+									}}>
 									{status}
 								</Item>
 							))}
 						</SubContent>
 					</Sub>
 					{onDelete ? (
-						<Item
-							disabled={disabled}
-							variant="destructive"
-							onClick={onDelete}
-						>
+						<Item disabled={disabled} variant='destructive' onClick={onDelete}>
 							Delete from list...
 							<Shortcut>Del</Shortcut>
 						</Item>
@@ -322,8 +275,7 @@ export function AnimeItemCommands({
 						disabled={disabled || addFromSearch.isPending}
 						onClick={() => {
 							void addWithStatus();
-						}}
-					>
+						}}>
 						Add to list
 					</SubTrigger>
 					<SubContent>
@@ -333,8 +285,7 @@ export function AnimeItemCommands({
 								disabled={disabled || addFromSearch.isPending}
 								onClick={() => {
 									void addWithStatus(status);
-								}}
-							>
+								}}>
 								{status}
 							</Item>
 						))}
@@ -348,16 +299,14 @@ export function AnimeItemCommands({
 						disabled={disabled || !trailerId}
 						onClick={() => {
 							openExternal("youtube");
-						}}
-					>
+						}}>
 						Watch trailer
 					</Item>
 					<Item
 						disabled={disabled || id == null}
 						onClick={() => {
 							openExternal("anilist");
-						}}
-					>
+						}}>
 						View on AniList
 					</Item>
 				</>
@@ -374,8 +323,7 @@ export function AnimeItemCommands({
 								return;
 							}
 							void desktopRpc.request.openPath({ path: anime.folder });
-						}}
-					>
+						}}>
 						Open folder
 						<Shortcut>Ctrl+O</Shortcut>
 					</Item>
@@ -383,8 +331,7 @@ export function AnimeItemCommands({
 						disabled={disabled}
 						onClick={() => {
 							void scan.mutateAsync();
-						}}
-					>
+						}}>
 						Scan available episodes
 						<Shortcut>F5</Shortcut>
 					</Item>
@@ -406,8 +353,7 @@ export function AnimeItemCommands({
 												animeId: anime.id,
 												episode: item.episode,
 											});
-										}}
-									>
+										}}>
 										Episode {item.episode}
 									</Item>
 								))
@@ -424,8 +370,7 @@ export function AnimeItemCommands({
 								animeId: anime.id,
 								episode: lastEpisode,
 							});
-						}}
-					>
+						}}>
 						Play last episode (#{lastEpisode})
 					</Item>
 					<Item
@@ -438,10 +383,8 @@ export function AnimeItemCommands({
 								animeId: anime.id,
 								episodesWatched: anime.episodesWatched,
 							});
-						}}
-					>
-						Play next episode (#{nextEpisode})
-						<Shortcut>Ctrl+N</Shortcut>
+						}}>
+						Play next episode (#{nextEpisode})<Shortcut>Ctrl+N</Shortcut>
 					</Item>
 					<Item
 						disabled={disabled || localEpisodes.length === 0}
@@ -450,8 +393,7 @@ export function AnimeItemCommands({
 								return;
 							}
 							void playRandom.mutateAsync({ animeId: anime.id });
-						}}
-					>
+						}}>
 						Play random episode
 						<Shortcut>Ctrl+R</Shortcut>
 					</Item>
@@ -465,8 +407,7 @@ export function AnimeItemCommands({
 					void navigate({
 						to: "/app/torrents",
 					});
-				}}
-			>
+				}}>
 				Torrents
 			</Item>
 
@@ -477,8 +418,7 @@ export function AnimeItemCommands({
 						disabled={disabled || !title}
 						onClick={() => {
 							void copyText(title);
-						}}
-					>
+						}}>
 						Title
 					</Item>
 					<Item
@@ -488,8 +428,7 @@ export function AnimeItemCommands({
 								return;
 							}
 							void copyText(`https://anilist.co/anime/${id}`);
-						}}
-					>
+						}}>
 						Link
 					</Item>
 				</SubContent>

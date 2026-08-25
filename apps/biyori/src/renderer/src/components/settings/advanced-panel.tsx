@@ -4,20 +4,8 @@ import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
 import { FieldDescription, FieldError } from "@/mainview/components/ui/field";
 import { Input } from "@/mainview/components/ui/input";
-import {
-	InputGroup,
-	InputGroupAddon,
-	InputGroupButton,
-	InputGroupInput,
-} from "@/mainview/components/ui/input-group";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/mainview/components/ui/table";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 
@@ -31,21 +19,18 @@ export function AdvancedPanel() {
 	const form = useFormContext<AppSettingsInput>();
 
 	return (
-		<Tabs defaultValue="settings">
+		<Tabs defaultValue='settings'>
 			<TabsList>
-				<TabsTrigger value="settings">Settings</TabsTrigger>
+				<TabsTrigger value='settings'>Settings</TabsTrigger>
 			</TabsList>
-			<TabsContent value="settings" className="pt-4">
-				<FieldDescription className="font-medium text-destructive">
-					Warning: Do not change these settings unless you are sure of what you
-					are doing.
-				</FieldDescription>
-				<div className="rounded-md border">
+			<TabsContent value='settings' className='pt-4'>
+				<FieldDescription className='font-medium text-destructive'>Warning: Do not change these settings unless you are sure of what you are doing.</FieldDescription>
+				<div className='rounded-md border'>
 					<Table>
 						<TableHeader>
 							<TableRow>
 								<TableHead>Name</TableHead>
-								<TableHead className="text-right">Value</TableHead>
+								<TableHead className='text-right'>Value</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -53,12 +38,8 @@ export function AdvancedPanel() {
 								<TableCell>
 									<label htmlFor={themeId}>Application / UI theme</label>
 								</TableCell>
-								<TableCell className="text-right">
-									<Input
-										id={themeId}
-										className="ml-auto h-7 w-40 font-mono text-xs"
-										{...form.register("uiTheme")}
-									/>
+								<TableCell className='text-right'>
+									<Input id={themeId} className='ml-auto h-7 w-40 font-mono text-xs' {...form.register("uiTheme")} />
 									<FieldError errors={[form.formState.errors.uiTheme]} />
 								</TableCell>
 							</TableRow>
@@ -66,52 +47,44 @@ export function AdvancedPanel() {
 								<TableCell>
 									<label htmlFor={sizeId}>Library / File size threshold</label>
 								</TableCell>
-								<TableCell className="text-right">
+								<TableCell className='text-right'>
 									<Input
 										id={sizeId}
-										type="number"
-										className="ml-auto h-7 w-40 font-mono text-xs"
+										type='number'
+										className='ml-auto h-7 w-40 font-mono text-xs'
 										{...form.register("fileSizeThreshold", {
 											valueAsNumber: true,
 										})}
 									/>
-									<FieldError
-										errors={[form.formState.errors.fileSizeThreshold]}
-									/>
+									<FieldError errors={[form.formState.errors.fileSizeThreshold]} />
 								</TableCell>
 							</TableRow>
 							<TableRow>
 								<TableCell>
-									<label htmlFor={intervalId}>
-										Recognition / Media detection interval
-									</label>
+									<label htmlFor={intervalId}>Recognition / Media detection interval</label>
 								</TableCell>
-								<TableCell className="text-right">
+								<TableCell className='text-right'>
 									<Input
 										id={intervalId}
-										type="number"
-										className="ml-auto h-7 w-40 font-mono text-xs"
+										type='number'
+										className='ml-auto h-7 w-40 font-mono text-xs'
 										{...form.register("mediaDetectionInterval", {
 											valueAsNumber: true,
 										})}
 									/>
-									<FieldError
-										errors={[form.formState.errors.mediaDetectionInterval]}
-									/>
+									<FieldError errors={[form.formState.errors.mediaDetectionInterval]} />
 								</TableCell>
 							</TableRow>
 							<TableRow>
 								<TableCell>
-									<label htmlFor={magnetId}>
-										Torrents / Use magnet links if available
-									</label>
+									<label htmlFor={magnetId}>Torrents / Use magnet links if available</label>
 								</TableCell>
-								<TableCell className="text-right">
+								<TableCell className='text-right'>
 									<Controller
 										control={form.control}
-										name="torrentUseMagnet"
+										name='torrentUseMagnet'
 										render={({ field, fieldState }) => (
-											<div className="flex flex-col items-end">
+											<div className='flex flex-col items-end'>
 												<Checkbox
 													id={magnetId}
 													checked={Boolean(field.value)}
@@ -127,61 +100,44 @@ export function AdvancedPanel() {
 							</TableRow>
 							<TableRow>
 								<TableCell>
-									<label htmlFor={torrentFileId}>
-										Torrents / Download path for .torrent files
-									</label>
+									<label htmlFor={torrentFileId}>Torrents / Download path for .torrent files</label>
 								</TableCell>
-								<TableCell className="text-right">
-									<div className="ml-auto w-full max-w-80">
+								<TableCell className='text-right'>
+									<div className='ml-auto w-full max-w-80'>
 										<InputGroup>
-											<InputGroupInput
-												id={torrentFileId}
-												className="font-mono text-xs"
-												{...form.register("torrentFileDownloadPath")}
-											/>
-											<InputGroupAddon align="inline-end">
+											<InputGroupInput id={torrentFileId} className='font-mono text-xs' {...form.register("torrentFileDownloadPath")} />
+											<InputGroupAddon align='inline-end'>
 												<InputGroupButton
-													variant="outline"
+													variant='outline'
 													onClick={() => {
 														void pickLibraryFolderPath().then((path) => {
 															if (path) {
-																form.setValue(
-																	"torrentFileDownloadPath",
-																	path,
-																	{ shouldDirty: true },
-																);
+																form.setValue("torrentFileDownloadPath", path, { shouldDirty: true });
 															}
 														});
-													}}
-												>
+													}}>
 													Browse...
 												</InputGroupButton>
 											</InputGroupAddon>
 										</InputGroup>
 									</div>
-									<FieldError
-										errors={[form.formState.errors.torrentFileDownloadPath]}
-									/>
+									<FieldError errors={[form.formState.errors.torrentFileDownloadPath]} />
 								</TableCell>
 							</TableRow>
 							<TableRow>
 								<TableCell>
-									<label htmlFor={archiveId}>
-										Torrents / Archive limit
-									</label>
+									<label htmlFor={archiveId}>Torrents / Archive limit</label>
 								</TableCell>
-								<TableCell className="text-right">
+								<TableCell className='text-right'>
 									<Input
 										id={archiveId}
-										type="number"
-										className="ml-auto h-7 w-40 font-mono text-xs"
+										type='number'
+										className='ml-auto h-7 w-40 font-mono text-xs'
 										{...form.register("torrentArchiveMaxCount", {
 											valueAsNumber: true,
 										})}
 									/>
-									<FieldError
-										errors={[form.formState.errors.torrentArchiveMaxCount]}
-									/>
+									<FieldError errors={[form.formState.errors.torrentArchiveMaxCount]} />
 								</TableCell>
 							</TableRow>
 						</TableBody>

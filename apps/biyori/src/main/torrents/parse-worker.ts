@@ -28,20 +28,11 @@ export type ParseFeedInput = {
 	candidates: Candidate[];
 };
 
-function torrentCategory(
-	entry: RssEntry,
-	episodeLow: number | null,
-	episodeHigh: number | null,
-	extension: string,
-): string {
+function torrentCategory(entry: RssEntry, episodeLow: number | null, episodeHigh: number | null, extension: string): string {
 	if (/batch/i.test(entry.category) || /batch/i.test(entry.title)) {
 		return "Batch";
 	}
-	if (
-		episodeLow != null &&
-		episodeHigh != null &&
-		episodeHigh > episodeLow
-	) {
+	if (episodeLow != null && episodeHigh != null && episodeHigh > episodeLow) {
 		return "Batch";
 	}
 	if (extension && !/\b(mkv|mp4|avi|ogm|wmv|flv|ts|m2ts)$/i.test(extension)) {
@@ -50,10 +41,7 @@ function torrentCategory(
 	return "Anime";
 }
 
-function episodeRange(
-	title: string,
-	parsedNumber: number | undefined,
-): { low: number | null; high: number | null } {
+function episodeRange(title: string, parsedNumber: number | undefined): { low: number | null; high: number | null } {
 	const range = title.match(/\b(\d{1,4})\s*[-~]\s*(\d{1,4})\b/);
 	if (range) {
 		const low = Number.parseInt(range[1], 10);
@@ -74,16 +62,10 @@ const server = createWorkerServe({
 			const feed = parseRssItems(input.xml);
 			return feed.map((entry) => {
 				const parsed = parse(entry.title);
-				const match = parsed?.title
-					? matchTitle(parsed.title, input.candidates)
-					: null;
+				const match = parsed?.title ? matchTitle(parsed.title, input.candidates) : null;
 				const range = episodeRange(entry.title, parsed?.episode.number);
 				const resolution = parsed?.video.resolution ?? "";
-				const named =
-					resolution ||
-					(resolutionHeight(entry.title)
-						? `${resolutionHeight(entry.title)}p`
-						: "");
+				const named = resolution || (resolutionHeight(entry.title) ? `${resolutionHeight(entry.title)}p` : "");
 				return {
 					entry,
 					filename: parsed?.file.name || entry.title,
@@ -91,20 +73,11 @@ const server = createWorkerServe({
 					episodeLow: range.low,
 					episodeHigh: range.high,
 					group: parsed?.release.group ?? "",
-					videoFormat: videoFormat(
-						entry.title,
-						parsed?.video.resolution,
-						parsed?.video.term,
-					),
+					videoFormat: videoFormat(entry.title, parsed?.video.resolution, parsed?.video.term),
 					videoResolution: named,
 					videoTerms: parsed?.video.term ?? "",
 					releaseVersion: parsed?.release.version || 1,
-					category: torrentCategory(
-						entry,
-						range.low,
-						range.high,
-						parsed?.file.extension ?? "",
-					),
+					category: torrentCategory(entry, range.low, range.high, parsed?.file.extension ?? ""),
 					parsedTitle: parsed?.title || entry.title,
 					match,
 				};

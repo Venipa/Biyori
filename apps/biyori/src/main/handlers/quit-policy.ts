@@ -9,10 +9,7 @@ export function markAppQuitting(): void {
 }
 
 /** True = preventDefault on BrowserWindow `close` / `before-quit`. */
-export function shouldCancelWindowClose(opts: {
-	quitting: boolean;
-	hideToTray?: boolean;
-}): boolean {
+export function shouldCancelWindowClose(opts: { quitting: boolean; hideToTray?: boolean }): boolean {
 	if (opts.quitting) return false;
 	return true;
 }

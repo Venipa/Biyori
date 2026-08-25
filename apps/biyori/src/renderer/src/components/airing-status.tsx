@@ -16,26 +16,13 @@ export function airingStatusClass(status: string | null | undefined): string {
 	return AIRING_STATUS_CLASS[status] ?? "bg-muted-foreground/30";
 }
 
-export function AiringStatusMark({
-	status,
-	shape,
-	className,
-}: {
-	status: string | null | undefined;
-	shape: "square" | "dot";
-	className?: string;
-}) {
+export function AiringStatusMark({ status, shape, className }: { status: string | null | undefined; shape: "square" | "dot"; className?: string }) {
 	const label = status?.trim() || "Unknown";
 	return (
 		<span
 			aria-label={label}
 			title={label}
-			className={cn(
-				"inline-block shrink-0",
-				shape === "square" ? "size-2.5 rounded-none" : "size-2 rounded-full",
-				airingStatusClass(status),
-				className,
-			)}
+			className={cn("inline-block shrink-0", shape === "square" ? "size-2.5 rounded-none" : "size-2 rounded-full", airingStatusClass(status), className)}
 		/>
 	);
 }

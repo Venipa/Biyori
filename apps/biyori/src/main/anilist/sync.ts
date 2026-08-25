@@ -19,14 +19,7 @@ import {
 	viewerSchema,
 	withMediaCardTitle,
 } from "./map";
-import {
-	GET_ALL_ANIMES_FROM_UID,
-	GET_CURRENT_USER,
-	GET_MEDIA_BY_ID,
-	SAVE_MEDIA_LIST_ENTRY,
-	SEARCH_MEDIA,
-	SEASON_MEDIA,
-} from "./queries";
+import { GET_ALL_ANIMES_FROM_UID, GET_CURRENT_USER, GET_MEDIA_BY_ID, SAVE_MEDIA_LIST_ENTRY, SEARCH_MEDIA, SEASON_MEDIA } from "./queries";
 import { readSeasonCache, writeSeasonCache } from "./season-cache";
 
 const UPSERT_YIELD_EVERY = 4;
@@ -52,11 +45,7 @@ export async function fetchViewer(
 	return viewerSchema.parse(data.Viewer);
 }
 
-export async function fetchMediaListCollection(options: {
-	token: string;
-	userId: number;
-	signal?: AbortSignal;
-}): Promise<AnilistMediaList[]> {
+export async function fetchMediaListCollection(options: { token: string; userId: number; signal?: AbortSignal }): Promise<AnilistMediaList[]> {
 	const entries: AnilistMediaList[] = [];
 	let chunk = 1;
 	for (;;) {
@@ -100,9 +89,7 @@ export async function searchAniListMedia(options: {
 		token: options.token,
 	});
 	const page = searchPageSchema.parse(data.Page);
-	const items = (page.media ?? [])
-		.filter((item): item is AnilistMedia => Boolean(item))
-		.map((item) => toMediaCard(item, options.titleLanguage));
+	const items = (page.media ?? []).filter((item): item is AnilistMedia => Boolean(item)).map((item) => toMediaCard(item, options.titleLanguage));
 	return {
 		items,
 		hasNextPage: Boolean(page.pageInfo?.hasNextPage),
@@ -121,8 +108,7 @@ export async function fetchSeasonMedia(options: {
 	fromCache: boolean;
 	fetchedAt: string | null;
 }> {
-	const resolve = (items: Parameters<typeof withMediaCardTitle>[0][]) =>
-		items.map((item) => withMediaCardTitle(item, options.titleLanguage));
+	const resolve = (items: Parameters<typeof withMediaCardTitle>[0][]) => items.map((item) => withMediaCardTitle(item, options.titleLanguage));
 
 	if (!options.forceRefresh) {
 		const cached = readSeasonCache(options.season, options.seasonYear);
@@ -210,11 +196,7 @@ export async function upsertAnimeFromMedia(
 	titleLanguage: "Romaji" | "English" | "Native" = "Romaji",
 ): Promise<Pick<Anime, "id" | "coverUrl" | "bannerUrl">> {
 	const animeRow = toAnimeRow(media, titleLanguage);
-	const existing = await db
-		.select({ id: anime.id })
-		.from(anime)
-		.where(eq(anime.id, media.id))
-		.limit(1);
+	const existing = await db.select({ id: anime.id }).from(anime).where(eq(anime.id, media.id)).limit(1);
 
 	if (existing[0]) {
 		await db
@@ -255,11 +237,7 @@ export async function ensureAnimeCached(options: {
 	titleLanguage: "Romaji" | "English" | "Native";
 	signal?: AbortSignal;
 }): Promise<{ id: number }> {
-	const existing = await options.db
-		.select({ id: anime.id })
-		.from(anime)
-		.where(eq(anime.id, options.id))
-		.limit(1);
+	const existing = await options.db.select({ id: anime.id }).from(anime).where(eq(anime.id, options.id)).limit(1);
 	if (existing[0]) {
 		return { id: existing[0].id };
 	}
@@ -274,11 +252,7 @@ export async function ensureAnimeCached(options: {
 		throw new Error(`AniList media ${options.id} not found`);
 	}
 	const media = anilistMediaSchema.parse(data.Media);
-	const upserted = await upsertAnimeFromMedia(
-		options.db,
-		media,
-		options.titleLanguage,
-	);
+	const upserted = await upsertAnimeFromMedia(options.db, media, options.titleLanguage);
 	return { id: upserted.id };
 }
 
@@ -294,11 +268,7 @@ export async function upsertMediaList(
 
 	const upserted = await upsertAnimeFromMedia(db, media, titleLanguage);
 	const listRow = toListEntryRow(upserted.id, entry);
-	const existingEntry = await db
-		.select()
-		.from(listEntry)
-		.where(eq(listEntry.animeId, upserted.id))
-		.limit(1);
+	const existingEntry = await db.select().from(listEntry).where(eq(listEntry.animeId, upserted.id)).limit(1);
 
 	if (existingEntry[0]) {
 		await db
@@ -358,17 +328,9 @@ export async function syncAniListList(
 			await yieldToEventLoop();
 		}
 	}
-	const staleListed =
-		syncedIds.length === 0
-			? []
-			: await db
-					.select({ animeId: listEntry.animeId })
-					.from(listEntry)
-					.where(notInArray(listEntry.animeId, syncedIds));
+	const staleListed = syncedIds.length === 0 ? [] : await db.select({ animeId: listEntry.animeId }).from(listEntry).where(notInArray(listEntry.animeId, syncedIds));
 	for (let i = 0; i < staleListed.length; i += 1) {
-		await db
-			.delete(listEntry)
-			.where(eq(listEntry.animeId, staleListed[i].animeId));
+		await db.delete(listEntry).where(eq(listEntry.animeId, staleListed[i].animeId));
 		if (i % UPSERT_YIELD_EVERY === 0) {
 			await yieldToEventLoop();
 		}

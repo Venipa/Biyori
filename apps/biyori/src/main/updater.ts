@@ -6,15 +6,7 @@ import { autoUpdater } from "electron-updater";
 export const UPDATE_GITHUB_REPO = "Venipa/biyori";
 export const UPDATE_STABLE_BASE_URL = `https://github.com/${UPDATE_GITHUB_REPO}/releases/latest/download`;
 
-export type AppUpdatePhase =
-	| "idle"
-	| "checking"
-	| "up-to-date"
-	| "available"
-	| "downloading"
-	| "ready"
-	| "error"
-	| "dev";
+export type AppUpdatePhase = "idle" | "checking" | "up-to-date" | "available" | "downloading" | "ready" | "error" | "dev";
 
 export type AppUpdateState = {
 	phase: AppUpdatePhase;
@@ -161,8 +153,7 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 		await autoUpdater.checkForUpdates();
 		return state;
 	} catch (error) {
-		const message =
-			error instanceof Error ? error.message : "Update check failed";
+		const message = error instanceof Error ? error.message : "Update check failed";
 		patch({
 			phase: "error",
 			error: message,

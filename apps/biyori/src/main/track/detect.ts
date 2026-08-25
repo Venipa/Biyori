@@ -1,10 +1,5 @@
 import { spawn } from "node:child_process";
-import {
-	isBrowserProcess,
-	matchMediaPlayerId,
-	matchStreamingProviderId,
-	processKey,
-} from "../../lib/recognition-catalog";
+import { isBrowserProcess, matchMediaPlayerId, matchStreamingProviderId, processKey } from "../../lib/recognition-catalog";
 import type { AppSettings } from "../../lib/schemas/app-settings";
 import type { NowPlayingMedia } from "./types";
 
@@ -18,21 +13,15 @@ type WindowRow = {
 };
 
 function extractFilePath(title: string): string | null {
-	const win = title.match(
-		new RegExp(String.raw`([A-Za-z]:\\[^:*?"<>|]+\.(?:${VIDEO_EXT}))`, "i"),
-	);
+	const win = title.match(new RegExp(String.raw`([A-Za-z]:\\[^:*?"<>|]+\.(?:${VIDEO_EXT}))`, "i"));
 	if (win?.[1]) {
 		return win[1];
 	}
-	const unc = title.match(
-		new RegExp(String.raw`(\\\\[^:*?"<>|]+\.(?:${VIDEO_EXT}))`, "i"),
-	);
+	const unc = title.match(new RegExp(String.raw`(\\\\[^:*?"<>|]+\.(?:${VIDEO_EXT}))`, "i"));
 	if (unc?.[1]) {
 		return unc[1];
 	}
-	const posix = title.match(
-		new RegExp(String.raw`(/(?:[^:*?"<>|\n]+\.(?:${VIDEO_EXT})))`, "i"),
-	);
+	const posix = title.match(new RegExp(String.raw`(/(?:[^:*?"<>|\n]+\.(?:${VIDEO_EXT})))`, "i"));
 	return posix?.[1] ?? null;
 }
 
@@ -76,47 +65,31 @@ function isAllowedRow(row: WindowRow, settings: AppSettings): boolean {
 		}
 	}
 	if (settings.enableStreamingDetection) {
-		if (
-			matchStreamingProviderId(
-				row.name,
-				row.title,
-				settings.enabledStreamingProviders,
-			)
-		) {
+		if (matchStreamingProviderId(row.name, row.title, settings.enabledStreamingProviders)) {
 			return true;
 		}
 	}
 	return false;
 }
 
-export async function getNowPlayingMedia(
-	settings: AppSettings,
-	preferredWindowId?: string,
-): Promise<NowPlayingMedia | null> {
+export async function getNowPlayingMedia(settings: AppSettings, preferredWindowId?: string): Promise<NowPlayingMedia | null> {
 	if (process.platform !== "win32") {
 		return null;
 	}
-	if (
-		!settings.enableMediaPlayerDetection &&
-		!settings.enableStreamingDetection
-	) {
+	if (!settings.enableMediaPlayerDetection && !settings.enableStreamingDetection) {
 		return null;
 	}
 
 	const script = [
 		"$ErrorActionPreference = 'SilentlyContinue'",
 		"[Console]::OutputEncoding = [Text.UTF8Encoding]::new()",
-		"Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class Fg { [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid); }'",
+		'Add-Type -TypeDefinition \'using System; using System.Runtime.InteropServices; public static class Fg { [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid); }\'',
 		"$fg = [Fg]::GetForegroundWindow(); $fgPid = 0; [void][Fg]::GetWindowThreadProcessId($fg, [ref]$fgPid)",
 		"Get-Process | Where-Object { $_.MainWindowTitle } | ForEach-Object { [pscustomobject]@{ name = $_.ProcessName; title = $_.MainWindowTitle; windowId = $_.MainWindowHandle.ToString(); foreground = ($_.Id -eq $fgPid) } } | ConvertTo-Json -Compress",
 	].join("; ");
 
 	const stdout = await new Promise<string>((resolve, reject) => {
-		const proc = spawn(
-			"powershell",
-			["-NoProfile", "-NonInteractive", "-Command", script],
-			{ windowsHide: true },
-		);
+		const proc = spawn("powershell", ["-NoProfile", "-NonInteractive", "-Command", script], { windowsHide: true });
 		let out = "";
 		const timeout = setTimeout(() => {
 			proc.kill();
@@ -135,18 +108,9 @@ export async function getNowPlayingMedia(
 	});
 
 	const rows = parseRows(stdout).filter((row) => isAllowedRow(row, settings));
-	const preferred = preferredWindowId
-		? rows.find((row) => row.windowId === preferredWindowId)
-		: undefined;
-	const localHit = rows.find(
-		(row) =>
-			settings.enableMediaPlayerDetection &&
-			Boolean(matchMediaPlayerId(row.name, settings.enabledMediaPlayers)),
-	);
-	const hit =
-		preferred ??
-		localHit ??
-		rows.find((row) => isAllowedRow(row, settings));
+	const preferred = preferredWindowId ? rows.find((row) => row.windowId === preferredWindowId) : undefined;
+	const localHit = rows.find((row) => settings.enableMediaPlayerDetection && Boolean(matchMediaPlayerId(row.name, settings.enabledMediaPlayers)));
+	const hit = preferred ?? localHit ?? rows.find((row) => isAllowedRow(row, settings));
 	if (!hit) {
 		return null;
 	}

@@ -30,12 +30,7 @@ async function sleep(ms: number): Promise<void> {
 	});
 }
 
-export async function anilistGraphql<T>(options: {
-	query: string;
-	variables?: Record<string, unknown>;
-	token?: string;
-	signal?: AbortSignal;
-}): Promise<T> {
+export async function anilistGraphql<T>(options: { query: string; variables?: Record<string, unknown>; token?: string; signal?: AbortSignal }): Promise<T> {
 	const headers: Record<string, string> = {
 		Accept: "application/json",
 		"Content-Type": "application/json",
@@ -47,9 +42,7 @@ export async function anilistGraphql<T>(options: {
 
 	let retriedRateLimit = false;
 	const timeout = AbortSignal.timeout(20_000);
-	const signal = options.signal
-		? AbortSignal.any([options.signal, timeout])
-		: timeout;
+	const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
 
 	for (;;) {
 		const response = await trackedFetch(ANILIST_GRAPHQL_URL, {
@@ -77,17 +70,11 @@ export async function anilistGraphql<T>(options: {
 
 		const firstError = parsed.data.errors?.[0];
 		if (firstError) {
-			throw new AnilistApiError(
-				firstError.message,
-				firstError.status ?? response.status,
-			);
+			throw new AnilistApiError(firstError.message, firstError.status ?? response.status);
 		}
 
 		if (!response.ok) {
-			throw new AnilistApiError(
-				`AniList request failed (${response.status})`,
-				response.status,
-			);
+			throw new AnilistApiError(`AniList request failed (${response.status})`, response.status);
 		}
 
 		return parsed.data.data as T;

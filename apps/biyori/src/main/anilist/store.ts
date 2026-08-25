@@ -21,14 +21,8 @@ export type AnilistPublicStatus = {
 
 const ANILIST_SETTING_KEY = "anilist";
 
-export async function readAnilistAuth(
-	db: DatabaseClient,
-): Promise<AnilistAuth | null> {
-	const rows = await db
-		.select()
-		.from(appSetting)
-		.where(eq(appSetting.key, ANILIST_SETTING_KEY))
-		.limit(1);
+export async function readAnilistAuth(db: DatabaseClient): Promise<AnilistAuth | null> {
+	const rows = await db.select().from(appSetting).where(eq(appSetting.key, ANILIST_SETTING_KEY)).limit(1);
 	if (!rows[0]) {
 		return null;
 	}
@@ -43,29 +37,19 @@ export async function readAnilistAuth(
 	}
 }
 
-export async function writeAnilistAuth(
-	db: DatabaseClient,
-	auth: AnilistAuth,
-): Promise<void> {
+export async function writeAnilistAuth(db: DatabaseClient, auth: AnilistAuth): Promise<void> {
 	const value = JSON.stringify(auth);
-	await db
-		.insert(appSetting)
-		.values({ key: ANILIST_SETTING_KEY, value })
-		.onConflictDoUpdate({
-			target: appSetting.key,
-			set: { value },
-		});
+	await db.insert(appSetting).values({ key: ANILIST_SETTING_KEY, value }).onConflictDoUpdate({
+		target: appSetting.key,
+		set: { value },
+	});
 }
 
 export async function clearAnilistAuth(db: DatabaseClient): Promise<void> {
-	await db
-		.delete(appSetting)
-		.where(eq(appSetting.key, ANILIST_SETTING_KEY));
+	await db.delete(appSetting).where(eq(appSetting.key, ANILIST_SETTING_KEY));
 }
 
-export function toPublicStatus(
-	auth: AnilistAuth | null,
-): AnilistPublicStatus {
+export function toPublicStatus(auth: AnilistAuth | null): AnilistPublicStatus {
 	if (!auth || auth.expiresAt <= Date.now()) {
 		return {
 			connected: false,

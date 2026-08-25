@@ -31,20 +31,11 @@ type ButtonToggleProps = Omit<ButtonPrimitive.Props, "children"> &
 		children: ReactNode;
 	};
 
-function ButtonToggle({
-	className,
-	variant = "default",
-	size = "default",
-	pressed,
-	onPressedChange,
-	onClick,
-	children,
-	...props
-}: ButtonToggleProps) {
+function ButtonToggle({ className, variant = "default", size = "default", pressed, onPressedChange, onClick, children, ...props }: ButtonToggleProps) {
 	return (
 		<ButtonPrimitive
-			type="button"
-			data-slot="button-toggle"
+			type='button'
+			data-slot='button-toggle'
 			data-pressed={pressed ? "" : undefined}
 			aria-pressed={pressed}
 			className={cn(buttonToggleVariants({ variant, size }), className)}
@@ -54,8 +45,7 @@ function ButtonToggle({
 				if (!event.defaultPrevented) {
 					onPressedChange(!pressed);
 				}
-			}}
-		>
+			}}>
 			{children}
 		</ButtonPrimitive>
 	);

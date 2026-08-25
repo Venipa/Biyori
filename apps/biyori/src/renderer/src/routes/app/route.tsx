@@ -25,11 +25,7 @@ function MainLayout(): ReactElement {
 			utils.media.nowPlaying.setData(undefined, snapshot);
 			if (snapshot.progressRevision > lastProgressRevision.current) {
 				lastProgressRevision.current = snapshot.progressRevision;
-				void invalidateAnimeQueries(
-					utils,
-					"watched",
-					snapshot.match?.id,
-				);
+				void invalidateAnimeQueries(utils, "watched", snapshot.match?.id);
 			}
 			const settings = settingsQuery.data;
 			if (!settings || !snapshot.media) {
@@ -41,10 +37,8 @@ function MainLayout(): ReactElement {
 				return;
 			}
 			lastPlayKey.current = key;
-			const goRecognized =
-				Boolean(snapshot.match) && settings.goToNowPlayingOnRecognized;
-			const goUnrecognized =
-				snapshot.unrecognized && settings.goToNowPlayingOnUnrecognized;
+			const goRecognized = Boolean(snapshot.match) && settings.goToNowPlayingOnRecognized;
+			const goUnrecognized = snapshot.unrecognized && settings.goToNowPlayingOnUnrecognized;
 			if (goRecognized || goUnrecognized) {
 				void navigate({ to: "/app/now-playing" });
 			}
@@ -52,12 +46,12 @@ function MainLayout(): ReactElement {
 	});
 
 	return (
-		<div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground">
+		<div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'>
 			<TopMenuBar />
 			<AppToolbar />
-			<div className="flex min-h-0 flex-1 overflow-hidden">
+			<div className='flex min-h-0 flex-1 overflow-hidden'>
 				<AppSidebar />
-				<main className="min-h-0 min-w-0 flex-1 overflow-hidden">
+				<main className='min-h-0 min-w-0 flex-1 overflow-hidden'>
 					<Outlet />
 				</main>
 			</div>

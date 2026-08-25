@@ -1,16 +1,8 @@
 import { z } from "zod";
 
-export const torrentFilterActionSchema = z.enum([
-	"discard",
-	"select",
-	"prefer",
-]);
+export const torrentFilterActionSchema = z.enum(["discard", "select", "prefer"]);
 export const torrentFilterMatchSchema = z.enum(["all", "any"]);
-export const torrentFilterOptionSchema = z.enum([
-	"default",
-	"deactivate",
-	"hide",
-]);
+export const torrentFilterOptionSchema = z.enum(["default", "deactivate", "hide"]);
 export const torrentFilterElementSchema = z.enum([
 	"meta_id",
 	"meta_status",
@@ -33,18 +25,7 @@ export const torrentFilterElementSchema = z.enum([
 	"file_link",
 	"file_size",
 ]);
-export const torrentFilterOperatorSchema = z.enum([
-	"equals",
-	"not_equals",
-	"gt",
-	"gte",
-	"lt",
-	"lte",
-	"begins_with",
-	"ends_with",
-	"contains",
-	"not_contains",
-]);
+export const torrentFilterOperatorSchema = z.enum(["equals", "not_equals", "gt", "gte", "lt", "lte", "begins_with", "ends_with", "contains", "not_contains"]);
 
 export const torrentFilterConditionSchema = z.object({
 	element: torrentFilterElementSchema,
@@ -71,13 +52,7 @@ export type TorrentFilterOperator = z.infer<typeof torrentFilterOperatorSchema>;
 export type TorrentFilterMatch = z.infer<typeof torrentFilterMatchSchema>;
 export type TorrentFilterOption = z.infer<typeof torrentFilterOptionSchema>;
 
-export const torrentItemStateSchema = z.enum([
-	"blank",
-	"discarded_normal",
-	"discarded_inactive",
-	"discarded_hidden",
-	"selected",
-]);
+export const torrentItemStateSchema = z.enum(["blank", "discarded_normal", "discarded_inactive", "discarded_hidden", "selected"]);
 export type TorrentItemState = z.infer<typeof torrentItemStateSchema>;
 
 function filter(input: {
@@ -194,34 +169,30 @@ export function defaultTorrentFilters(): TorrentFilter[] {
 	];
 }
 
-export const TORRENT_FILTER_ELEMENT_LABELS: Record<TorrentFilterElement, string> =
-	{
-		meta_id: "Anime ID",
-		meta_status: "Anime airing status",
-		meta_type: "Anime type",
-		meta_episodes: "Anime episode count",
-		meta_date_start: "Anime date started",
-		meta_date_end: "Anime date ended",
-		user_notes: "Anime notes",
-		user_status: "Anime watching status",
-		local_episode_available: "Episode availability",
-		episode_title: "Episode title",
-		episode_number: "Episode number",
-		episode_version: "Episode version",
-		episode_group: "Episode fansub group",
-		episode_video_resolution: "Episode video resolution",
-		episode_video_type: "Episode video type",
-		file_title: "File name",
-		file_category: "File category",
-		file_description: "File description",
-		file_link: "File link",
-		file_size: "File size",
-	};
+export const TORRENT_FILTER_ELEMENT_LABELS: Record<TorrentFilterElement, string> = {
+	meta_id: "Anime ID",
+	meta_status: "Anime airing status",
+	meta_type: "Anime type",
+	meta_episodes: "Anime episode count",
+	meta_date_start: "Anime date started",
+	meta_date_end: "Anime date ended",
+	user_notes: "Anime notes",
+	user_status: "Anime watching status",
+	local_episode_available: "Episode availability",
+	episode_title: "Episode title",
+	episode_number: "Episode number",
+	episode_version: "Episode version",
+	episode_group: "Episode fansub group",
+	episode_video_resolution: "Episode video resolution",
+	episode_video_type: "Episode video type",
+	file_title: "File name",
+	file_category: "File category",
+	file_description: "File description",
+	file_link: "File link",
+	file_size: "File size",
+};
 
-export const TORRENT_FILTER_OPERATOR_LABELS: Record<
-	TorrentFilterOperator,
-	string
-> = {
+export const TORRENT_FILTER_OPERATOR_LABELS: Record<TorrentFilterOperator, string> = {
 	equals: "is",
 	not_equals: "is not",
 	gt: "is greater than",
@@ -251,10 +222,7 @@ export const TORRENT_FILTER_OPTION_LABELS: Record<TorrentFilterOption, string> =
 	hide: "Hide discarded items",
 };
 
-export function cloneTorrentFilter(
-	row: TorrentFilter,
-	id: string = crypto.randomUUID(),
-): TorrentFilter {
+export function cloneTorrentFilter(row: TorrentFilter, id: string = crypto.randomUUID()): TorrentFilter {
 	return {
 		...row,
 		id,
@@ -312,8 +280,7 @@ export function torrentFilterWizardPresets(): TorrentFilterWizardPreset[] {
 		{
 			id: "bad-keywords",
 			name: "Discard bad video keywords",
-			description:
-				"Discards everything that is AVI, DIVX, LQ, RMVB, SD, WMV or XVID",
+			description: "Discards everything that is AVI, DIVX, LQ, RMVB, SD, WMV or XVID",
 			filter: filter({
 				id: "preset-bad-keywords",
 				name: "Discard bad video keywords",
@@ -333,16 +300,13 @@ export function torrentFilterWizardPresets(): TorrentFilterWizardPreset[] {
 		{
 			id: "new-versions",
 			name: "Prefer new versions",
-			description:
-				"Prefers v2 files and above when there are earlier releases of the same episode as well",
+			description: "Prefers v2 files and above when there are earlier releases of the same episode as well",
 			filter: filter({
 				id: "preset-new-versions",
 				name: "Prefer new versions",
 				action: "prefer",
 				match: "any",
-				conditions: [
-					{ element: "episode_version", op: "gt", value: "1" },
-				],
+				conditions: [{ element: "episode_version", op: "gt", value: "1" }],
 			}),
 		},
 	];
@@ -353,9 +317,7 @@ export const torrentFilterExportSchema = z.object({
 	filters: z.array(torrentFilterSchema),
 });
 
-export function parseTorrentFilterExport(
-	value: unknown,
-): TorrentFilter[] | null {
+export function parseTorrentFilterExport(value: unknown): TorrentFilter[] | null {
 	const parsed = torrentFilterExportSchema.safeParse(value);
 	return parsed.success ? parsed.data.filters : null;
 }

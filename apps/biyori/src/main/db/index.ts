@@ -15,11 +15,7 @@ const hasMigrationJournal = (folder: string): boolean => {
 };
 
 function resolveMigrationsFolder(): string {
-	const candidates = [
-		is.dev && join(app.getAppPath(), "drizzle"),
-		join(process.resourcesPath, "drizzle"),
-		join(app.getAppPath(), "drizzle"),
-	].filter(Boolean) as string[];
+	const candidates = [is.dev && join(app.getAppPath(), "drizzle"), join(process.resourcesPath, "drizzle"), join(app.getAppPath(), "drizzle")].filter(Boolean) as string[];
 
 	log.info("drizzle paths", {
 		isDev: is.dev,
@@ -29,9 +25,7 @@ function resolveMigrationsFolder(): string {
 
 	const folder = candidates.find(hasMigrationJournal);
 	if (!folder) {
-		throw new Error(
-			`Can't find drizzle migrations. Looked in: ${candidates.join(", ")}`,
-		);
+		throw new Error(`Can't find drizzle migrations. Looked in: ${candidates.join(", ")}`);
 	}
 
 	log.info("drizzle migrations folder", folder);
@@ -83,23 +77,22 @@ export async function initDatabase() {
 export type DatabaseClient = ReturnType<typeof createDatabase>;
 
 export type {
-  Anime,
-  AnimeInsert,
-  AppSetting,
-  AppSettingInsert,
-  EpisodeFile,
-  EpisodeFileInsert,
-  History,
-  HistoryInsert,
-  ListEntry,
-  ListEntryInsert,
-  MediaCache,
-  MediaCacheInsert,
-  RelationsCache,
-  RelationsCacheInsert,
-  SyncQueue,
-  SyncQueueInsert,
-  TorrentArchive,
-  TorrentArchiveInsert
+	Anime,
+	AnimeInsert,
+	AppSetting,
+	AppSettingInsert,
+	EpisodeFile,
+	EpisodeFileInsert,
+	History,
+	HistoryInsert,
+	ListEntry,
+	ListEntryInsert,
+	MediaCache,
+	MediaCacheInsert,
+	RelationsCache,
+	RelationsCacheInsert,
+	SyncQueue,
+	SyncQueueInsert,
+	TorrentArchive,
+	TorrentArchiveInsert,
 } from "./types";
-

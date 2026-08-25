@@ -13,18 +13,12 @@ export function isStartupLaunch(): boolean {
 
 function loginItemArgs(): string[] {
 	if (process.platform === "win32") {
-		return [
-			"--processStart",
-			`"${basename(process.execPath)}"`,
-			STARTUP_FLAG,
-		];
+		return ["--processStart", `"${basename(process.execPath)}"`, STARTUP_FLAG];
 	}
 	return [STARTUP_FLAG];
 }
 
-export function syncLoginItem(
-	settings: Pick<AppSettings, "autostart" | "autostartTray">,
-): void {
+export function syncLoginItem(settings: Pick<AppSettings, "autostart" | "autostartTray">): void {
 	const args = loginItemArgs();
 	if (settings.autostart) {
 		app.setLoginItemSettings({

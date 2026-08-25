@@ -2,11 +2,9 @@ import { basename, dirname } from "node:path";
 import { parse } from "anitomy";
 import type { NowPlayingMedia, ParsedPlayback } from "./types";
 
-const PLAYER_SUFFIX =
-	/\s+-\s+(mpv|vlc media player|vlc|mpc-hc|mpc-be|potplayer|kmplayer|gom player).*$/i;
+const PLAYER_SUFFIX = /\s+-\s+(mpv|vlc media player|vlc|mpc-hc|mpc-be|potplayer|kmplayer|gom player).*$/i;
 
-const STREAM_SUFFIX =
-	/\s+[|-]\s+(crunchyroll|hidive|netflix|plex|jellyfin|youtube|bilibili|funimation).*$/i;
+const STREAM_SUFFIX = /\s+[|-]\s+(crunchyroll|hidive|netflix|plex|jellyfin|youtube|bilibili|funimation).*$/i;
 
 export type ParsePlaybackOptions = {
 	ignoredStrings?: string;
@@ -38,11 +36,7 @@ function stripPlayerSuffix(value: string): string {
 		.trim();
 }
 
-function parseAnimeName(
-	source: string,
-	filePath: string | null,
-	ignored: string[],
-): ParsedPlayback | null {
+function parseAnimeName(source: string, filePath: string | null, ignored: string[]): ParsedPlayback | null {
 	const parsed = parse(stripIgnored(source, ignored));
 	const title = parsed?.title?.trim();
 	if (!title) {
@@ -58,25 +52,14 @@ function parseAnimeName(
 	};
 }
 
-export function parsePlayback(
-	media: NowPlayingMedia,
-	options: ParsePlaybackOptions = {},
-): ParsedPlayback | null {
+export function parsePlayback(media: NowPlayingMedia, options: ParsePlaybackOptions = {}): ParsedPlayback | null {
 	const ignored = ignoredTokens(options.ignoredStrings);
 	if (media.filePath) {
-		const fromFile = parseAnimeName(
-			basename(media.filePath),
-			media.filePath,
-			ignored,
-		);
+		const fromFile = parseAnimeName(basename(media.filePath), media.filePath, ignored);
 		if (fromFile) {
 			return fromFile;
 		}
-		const fromParent = parseAnimeName(
-			basename(dirname(media.filePath)),
-			media.filePath,
-			ignored,
-		);
+		const fromParent = parseAnimeName(basename(dirname(media.filePath)), media.filePath, ignored);
 		if (fromParent) {
 			return fromParent;
 		}

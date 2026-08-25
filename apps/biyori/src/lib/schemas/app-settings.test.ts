@@ -10,9 +10,7 @@ describe("parseAppSettings torrent filters", () => {
 			torrentDiscardAnimeIds: [42],
 		});
 		expect(parsed.torrentFilters).toEqual(defaultTorrentFilters());
-		expect(
-			Object.hasOwn(parsed, "torrentWatchingOnly"),
-		).toBe(false);
+		expect(Object.hasOwn(parsed, "torrentWatchingOnly")).toBe(false);
 	});
 
 	test("keeps an explicit empty filter list", () => {

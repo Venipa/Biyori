@@ -1,10 +1,6 @@
 import { logger as log } from "../logger";
 import { subscribeSettings } from "../settings";
-import {
-	initLibrary,
-	restartLibraryWatch,
-	scanLibrary,
-} from "../track/library";
+import { initLibrary, restartLibraryWatch, scanLibrary } from "../track/library";
 import { getDb } from "./database.service";
 import { Service } from "./service";
 

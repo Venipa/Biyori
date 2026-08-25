@@ -1,8 +1,4 @@
-import type {
-	SeasonGroupBy,
-	SeasonItem,
-	SeasonSortBy,
-} from "@/lib/schemas/seasons";
+import type { SeasonGroupBy, SeasonItem, SeasonSortBy } from "@/lib/schemas/seasons";
 
 export type SeasonGroup = {
 	key: string;
@@ -18,10 +14,7 @@ function dateKey(value: string | null): number {
 	return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
 }
 
-export function sortSeasonItems(
-	items: SeasonItem[],
-	sortBy: SeasonSortBy,
-): SeasonItem[] {
+export function sortSeasonItems(items: SeasonItem[], sortBy: SeasonSortBy): SeasonItem[] {
 	const next = [...items];
 	next.sort((a, b) => {
 		switch (sortBy) {
@@ -52,32 +45,18 @@ function airingGroupKey(status: string): { key: string; label: string; order: nu
 }
 
 function listGroupKey(inList: boolean): { key: string; label: string; order: number } {
-	return inList
-		? { key: "inlist", label: "In list", order: 0 }
-		: { key: "notinlist", label: "Not in list", order: 1 };
+	return inList ? { key: "inlist", label: "In list", order: 0 } : { key: "notinlist", label: "Not in list", order: 1 };
 }
 
 function typeGroupKey(format: string): { key: string; label: string; order: number } {
 	return { key: format || "TV", label: format || "TV", order: 0 };
 }
 
-export function groupSeasonItems(options: {
-	items: SeasonItem[];
-	groupBy: SeasonGroupBy;
-	inListIds: ReadonlySet<number>;
-}): SeasonGroup[] {
-	const buckets = new Map<
-		string,
-		{ label: string; order: number; items: SeasonItem[] }
-	>();
+export function groupSeasonItems(options: { items: SeasonItem[]; groupBy: SeasonGroupBy; inListIds: ReadonlySet<number> }): SeasonGroup[] {
+	const buckets = new Map<string, { label: string; order: number; items: SeasonItem[] }>();
 
 	for (const item of options.items) {
-		const meta =
-			options.groupBy === "list"
-				? listGroupKey(options.inListIds.has(item.id))
-				: options.groupBy === "type"
-					? typeGroupKey(item.format)
-					: airingGroupKey(item.status);
+		const meta = options.groupBy === "list" ? listGroupKey(options.inListIds.has(item.id)) : options.groupBy === "type" ? typeGroupKey(item.format) : airingGroupKey(item.status);
 		const bucket = buckets.get(meta.key) ?? {
 			label: meta.label,
 			order: meta.order,
@@ -96,11 +75,7 @@ export function groupSeasonItems(options: {
 		}));
 }
 
-export function shiftSeason(
-	season: "WINTER" | "SPRING" | "SUMMER" | "FALL",
-	year: number,
-	delta: -1 | 1,
-): { season: "WINTER" | "SPRING" | "SUMMER" | "FALL"; seasonYear: number } {
+export function shiftSeason(season: "WINTER" | "SPRING" | "SUMMER" | "FALL", year: number, delta: -1 | 1): { season: "WINTER" | "SPRING" | "SUMMER" | "FALL"; seasonYear: number } {
 	const order = ["WINTER", "SPRING", "SUMMER", "FALL"] as const;
 	const index = order.indexOf(season);
 	const nextIndex = index + delta;
@@ -113,16 +88,11 @@ export function shiftSeason(
 	return { season: order[nextIndex], seasonYear: year };
 }
 
-export function formatSeasonLabel(
-	season: string,
-	year: number | null | undefined,
-): string {
+export function formatSeasonLabel(season: string, year: number | null | undefined): string {
 	if (!season && !year) {
 		return "";
 	}
-	const label = season
-		? `${season.charAt(0)}${season.slice(1).toLowerCase()}`
-		: "";
+	const label = season ? `${season.charAt(0)}${season.slice(1).toLowerCase()}` : "";
 	if (label && year) {
 		return `${label} ${year}`;
 	}
@@ -131,10 +101,7 @@ export function formatSeasonLabel(
 
 export function formatAiredRange(item: SeasonItem): string {
 	const start = item.startDate ?? "?";
-	const end =
-		item.endDate && item.endDate !== item.startDate
-			? ` to ${item.endDate}`
-			: "";
+	const end = item.endDate && item.endDate !== item.startDate ? ` to ${item.endDate}` : "";
 	return `${start}${end} (${item.status})`;
 }
 
@@ -149,17 +116,12 @@ export function formatScore(score: number): string {
 	return score > 0 ? `${score}%` : "?";
 }
 
-export function imageFooterText(
-	item: SeasonItem,
-	sortBy: SeasonSortBy,
-): string {
+export function imageFooterText(item: SeasonItem, sortBy: SeasonSortBy): string {
 	switch (sortBy) {
 		case "date":
 			return item.startDate ?? "?";
 		case "episodes":
-			return item.episodes > 0
-				? `${item.episodes} episode${item.episodes === 1 ? "" : "s"}`
-				: "Unknown";
+			return item.episodes > 0 ? `${item.episodes} episode${item.episodes === 1 ? "" : "s"}` : "Unknown";
 		case "score":
 			return formatScore(item.averageScore);
 		case "title":

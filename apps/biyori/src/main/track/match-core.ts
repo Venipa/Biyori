@@ -65,9 +65,7 @@ function dice(left: string, right: string): number {
 }
 
 export function namesFrom(title: string, alternativeTitles: string): string[] {
-	return [title, ...alternativeTitles.split(/[,;]/)]
-		.map((item) => normalize(item))
-		.filter(Boolean);
+	return [title, ...alternativeTitles.split(/[,;]/)].map((item) => normalize(item)).filter(Boolean);
 }
 
 function statusBoost(status: string): number {
@@ -109,10 +107,7 @@ function toMatch(candidate: Candidate): MatchedAnime {
 	};
 }
 
-export function matchTitle(
-	query: string,
-	candidates: Candidate[],
-): MatchedAnime | null {
+export function matchTitle(query: string, candidates: Candidate[]): MatchedAnime | null {
 	const needle = normalize(query);
 	if (!needle) {
 		return null;
@@ -122,8 +117,7 @@ export function matchTitle(
 		let nameScore = 0;
 		for (const name of candidate.names) {
 			const exact = name === needle ? 1 : 0;
-			const contains =
-				name.includes(needle) || needle.includes(name) ? 0.82 : 0;
+			const contains = name.includes(needle) || needle.includes(name) ? 0.82 : 0;
 			nameScore = Math.max(nameScore, exact, contains, dice(name, needle));
 		}
 		const score = nameScore + statusBoost(candidate.status);
@@ -137,10 +131,7 @@ export function matchTitle(
 	return toMatch(best.candidate);
 }
 
-export function matchById(
-	id: number,
-	candidates: Candidate[],
-): MatchedAnime | null {
+export function matchById(id: number, candidates: Candidate[]): MatchedAnime | null {
 	const hit = candidates.find((item) => item.id === id);
 	return hit ? toMatch(hit) : null;
 }

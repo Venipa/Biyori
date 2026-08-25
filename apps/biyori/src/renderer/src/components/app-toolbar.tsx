@@ -1,31 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import {
-  ChevronDownIcon,
-  FolderIcon,
-  RefreshCwIcon,
-  SettingsIcon
-} from "lucide-react";
+import { ChevronDownIcon, FolderIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { desktopRpc } from "@/desktop-rpc";
-import {
-  type AnilistSearchForm,
-  type AnilistSearchFormInput,
-  anilistSearchFormSchema,
-} from "@/lib/schemas/anilist-search";
+import { type AnilistSearchForm, type AnilistSearchFormInput, anilistSearchFormSchema } from "@/lib/schemas/anilist-search";
 import { Button } from "@/mainview/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/mainview/components/ui/dropdown-menu";
-import {
-  InputGroup,
-  InputGroupInput
-} from "@/mainview/components/ui/input-group";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
+import { InputGroup, InputGroupInput } from "@/mainview/components/ui/input-group";
 import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
 import { setListFilterText } from "@/mainview/lib/list-filter";
 import { trpc } from "@/mainview/trpc";
@@ -80,40 +62,30 @@ export function AppToolbar() {
 	}, [qValue, isLiveFilterPage]);
 
 	return (
-		<div className="flex h-11 shrink-0 items-center gap-1.5 border-b bg-card px-2">
+		<div className='flex h-11 shrink-0 items-center gap-1.5 border-b bg-card px-2'>
 			<Button
-				variant="ghost"
-				size="icon"
-				aria-label="Synchronize"
+				variant='ghost'
+				size='icon'
+				aria-label='Synchronize'
 				disabled={syncRunning || sync.isPending}
 				onClick={() => {
 					void sync.mutateAsync();
-				}}
-			>
+				}}>
 				<RefreshCwIcon />
 			</Button>
 
 			<DropdownMenu>
-				<DropdownMenuTrigger
-					render={
-						<Button
-							variant="ghost"
-							className="gap-1 px-2"
-							aria-label="Library folders"
-						/>
-					}
-				>
-					<FolderIcon data-icon="inline-start" />
-					<ChevronDownIcon className="size-3.5 text-muted-foreground" />
+				<DropdownMenuTrigger render={<Button variant='ghost' className='gap-1 px-2' aria-label='Library folders' />}>
+					<FolderIcon data-icon='inline-start' />
+					<ChevronDownIcon className='size-3.5 text-muted-foreground' />
 				</DropdownMenuTrigger>
-				<DropdownMenuContent className="w-auto min-w-56">
+				<DropdownMenuContent className='w-auto min-w-56'>
 					{folders.map((folder) => (
 						<DropdownMenuItem
 							key={folder.path}
 							onClick={() => {
 								void desktopRpc.request.openPath({ path: folder.path });
-							}}
-						>
+							}}>
 							{folder.path}
 						</DropdownMenuItem>
 					))}
@@ -121,46 +93,38 @@ export function AppToolbar() {
 					<DropdownMenuItem
 						onClick={() => {
 							void addLibraryFolder.addFromPicker();
-						}}
-					>
+						}}>
 						Add new folder...
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
 
-
 			<Button
-				variant="ghost"
-				size="icon"
-				aria-label="Settings"
+				variant='ghost'
+				size='icon'
+				aria-label='Settings'
 				onClick={() => {
 					void desktopRpc.request.openSettings({});
-				}}
-			>
+				}}>
 				<SettingsIcon />
 			</Button>
 
 			<form
-				className="ml-auto w-72"
+				className='ml-auto w-72'
 				onSubmit={form.handleSubmit((data) => {
 					void navigate({
 						to: "/app/search",
 						search: { q: data.q },
 					});
-				})}
-			>
+				})}>
 				<Controller
 					control={form.control}
-					name="q"
+					name='q'
 					render={({ field, fieldState: _fieldState }) => (
 						<>
 							<InputGroup>
 								<InputGroupInput
-									placeholder={
-										isLiveFilterPage
-											? "Filter list or search AniList"
-											: "Search AniList for anime"
-									}
+									placeholder={isLiveFilterPage ? "Filter list or search AniList" : "Search AniList for anime"}
 									name={field.name}
 									ref={field.ref}
 									onBlur={field.onBlur}

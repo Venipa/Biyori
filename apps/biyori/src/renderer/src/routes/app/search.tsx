@@ -1,11 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  type ColumnDef,
-  getCoreRowModel,
-  getSortedRowModel,
-  type SortingState,
-  useReactTable,
-} from "@tanstack/react-table";
+import { type ColumnDef, getCoreRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
 import { SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -15,15 +9,15 @@ import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
 import { DataTable } from "@/mainview/components/data-table";
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuSeparator,
+	ContextMenuShortcut,
+	ContextMenuSub,
+	ContextMenuSubContent,
+	ContextMenuSubTrigger,
+	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
 import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
@@ -48,11 +42,9 @@ const columns: ColumnDef<SearchRow>[] = [
 		accessorKey: "title",
 		header: "Anime title",
 		cell: ({ row }) => (
-			<div className="flex min-w-0 items-center gap-2">
-				<AiringStatusMark status={row.original.status} shape="square" />
-				<span className="min-w-0 truncate font-medium text-primary">
-					{row.original.title}
-				</span>
+			<div className='flex min-w-0 items-center gap-2'>
+				<AiringStatusMark status={row.original.status} shape='square' />
+				<span className='min-w-0 truncate font-medium text-primary'>{row.original.title}</span>
 			</div>
 		),
 	},
@@ -63,30 +55,18 @@ const columns: ColumnDef<SearchRow>[] = [
 	{
 		accessorKey: "episodes",
 		header: "Episodes",
-		cell: ({ row }) => (
-			<span className="tabular-nums">
-				{row.original.episodes > 0 ? row.original.episodes : "-"}
-			</span>
-		),
+		cell: ({ row }) => <span className='tabular-nums'>{row.original.episodes > 0 ? row.original.episodes : "-"}</span>,
 	},
 	{
 		accessorKey: "averageScore",
 		header: "Score",
-		cell: ({ row }) => (
-			<span className="tabular-nums">
-				{row.original.averageScore > 0
-					? `${row.original.averageScore}%`
-					: "-"}
-			</span>
-		),
+		cell: ({ row }) => <span className='tabular-nums'>{row.original.averageScore > 0 ? `${row.original.averageScore}%` : "-"}</span>,
 	},
 	{
 		id: "season",
 		accessorFn: (row) => formatSeasonLabel(row.season, row.seasonYear),
 		header: "Season",
-		cell: ({ row }) =>
-			formatSeasonLabel(row.original.season, row.original.seasonYear) ||
-			"-",
+		cell: ({ row }) => formatSeasonLabel(row.original.season, row.original.seasonYear) || "-",
 	},
 ];
 
@@ -111,16 +91,10 @@ function SearchPage() {
 	const { q, id: openIdRaw } = Route.useSearch();
 	const openId = useAnimeInfoOpen()?.id ?? parseAnimeInfoId(openIdRaw);
 	const animeInfo = useAnimeInfoNav();
-	const query = trpc.anilist.search.useQuery(
-		{ q, page: 1 },
-		{ enabled: (q ?? "").trim().length > 0 },
-	);
+	const query = trpc.anilist.search.useQuery({ q, page: 1 }, { enabled: (q ?? "").trim().length > 0 });
 	const listedQuery = trpc.anime.listed.useQuery();
 	const listed = listedQuery.data;
-	const listedById = useMemo(
-		() => new Map((listed ?? []).map((row) => [row.id, row.status])),
-		[listed],
-	);
+	const listedById = useMemo(() => new Map((listed ?? []).map((row) => [row.id, row.status])), [listed]);
 	const items = useMemo(() => {
 		return (query.data?.items ?? [])
 			.map((item) => ({
@@ -141,42 +115,31 @@ function SearchPage() {
 		state: { sorting },
 	});
 	const hasQuery = (q ?? "").trim().length > 0;
-	const menuStatus = menuRow
-		? parseListStatus(listedById.get(menuRow.id))
-		: null;
+	const menuStatus = menuRow ? parseListStatus(listedById.get(menuRow.id)) : null;
 
 	return (
-		<div className="flex h-full min-h-0 flex-col">
+		<div className='flex h-full min-h-0 flex-col'>
 			<ContextMenu>
-				<ContextMenuTrigger className="block h-full min-h-0">
-					<ScrollArea className="h-full">
+				<ContextMenuTrigger className='block h-full min-h-0'>
+					<ScrollArea className='h-full'>
 						{!hasQuery ? (
-							<Empty className="h-full">
-								<SearchIcon className="size-8 text-muted-foreground" />
+							<Empty className='h-full'>
+								<SearchIcon className='size-8 text-muted-foreground' />
 								<EmptyTitle>Search AniList</EmptyTitle>
-								<EmptyDescription>
-									Type a title in the toolbar and press Enter.
-								</EmptyDescription>
+								<EmptyDescription>Type a title in the toolbar and press Enter.</EmptyDescription>
 							</Empty>
 						) : null}
-						{hasQuery && query.isPending && items.length === 0 ? (
-							<TableRowsSkeleton columnCount={columns.length} />
-						) : null}
+						{hasQuery && query.isPending && items.length === 0 ? <TableRowsSkeleton columnCount={columns.length} /> : null}
 						{query.error ? (
 							<Empty>
 								<EmptyTitle>Search failed</EmptyTitle>
 								<EmptyDescription>{query.error.message}</EmptyDescription>
 							</Empty>
 						) : null}
-						{hasQuery &&
-						!query.isPending &&
-						!query.error &&
-						items.length === 0 ? (
+						{hasQuery && !query.isPending && !query.error && items.length === 0 ? (
 							<Empty>
 								<EmptyTitle>No results</EmptyTitle>
-								<EmptyDescription>
-									Nothing matched "{q}".
-								</EmptyDescription>
+								<EmptyDescription>Nothing matched "{q}".</EmptyDescription>
 							</Empty>
 						) : null}
 						{items.length > 0 ? (
@@ -184,10 +147,8 @@ function SearchPage() {
 								table={table}
 								renderRow={(row, cells) => (
 									<TableRow
-										data-state={
-											openId === row.original.id ? "selected" : undefined
-										}
-										className="cursor-pointer"
+										data-state={openId === row.original.id ? "selected" : undefined}
+										className='cursor-pointer'
 										onClick={() => {
 											animeInfo.open({
 												id: row.original.id,
@@ -196,8 +157,7 @@ function SearchPage() {
 										}}
 										onContextMenu={() => {
 											setMenuRow(row.original);
-										}}
-									>
+										}}>
 										{cells}
 									</TableRow>
 								)}
@@ -205,11 +165,11 @@ function SearchPage() {
 						) : null}
 					</ScrollArea>
 				</ContextMenuTrigger>
-				<ContextMenuContent className="min-w-56">
+				<ContextMenuContent className='min-w-56'>
 					{menuRow ? (
 						<AnimeItemCommands
 							parts={commandParts}
-							mode="discover"
+							mode='discover'
 							discover={{
 								id: menuRow.id,
 								title: menuRow.title,

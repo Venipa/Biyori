@@ -21,19 +21,7 @@ type ImageProps = Omit<ComponentProps<"img">, "src"> &
 		imageClassName?: string;
 	};
 
-function Image({
-	src,
-	alt,
-	className,
-	skeletonClassName,
-	imageClassName,
-	variant,
-	width,
-	height,
-	onLoad,
-	onError,
-	...props
-}: ImageProps) {
+function Image({ src, alt, className, skeletonClassName, imageClassName, variant, width, height, onLoad, onError, ...props }: ImageProps) {
 	const imgRef = useRef<HTMLImageElement>(null);
 	const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
 	const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -53,14 +41,9 @@ function Image({
 
 	return (
 		<div
-			data-slot="image"
+			data-slot='image'
 			className={cn(imageVariants({ variant }), className)}
-			style={
-				width != null || height != null
-					? { width: width ?? undefined, height: height ?? undefined }
-					: undefined
-			}
-		>
+			style={width != null || height != null ? { width: width ?? undefined, height: height ?? undefined } : undefined}>
 			<Skeleton
 				aria-hidden
 				className={cn(
@@ -77,7 +60,7 @@ function Image({
 					aria-hidden={loaded ? undefined : true}
 					width={width}
 					height={height}
-					decoding="async"
+					decoding='async'
 					className={cn(
 						"relative size-full object-cover transition-[opacity,filter] duration-200 ease-out motion-reduce:transition-none",
 						loaded ? "opacity-100 blur-0" : "opacity-0 blur-[2px]",

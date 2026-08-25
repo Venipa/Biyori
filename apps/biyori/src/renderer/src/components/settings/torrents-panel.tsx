@@ -1,45 +1,15 @@
 import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
-import {
-	TORRENT_RELEASE_FEEDS,
-	TORRENT_SEARCH_FEEDS,
-} from "@/lib/torrent-feeds";
+import { TORRENT_RELEASE_FEEDS, TORRENT_SEARCH_FEEDS } from "@/lib/torrent-feeds";
 import { EditableSelect } from "@/mainview/components/editable-select";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
-import {
-	Field,
-	FieldDescription,
-	FieldError,
-	FieldGroup,
-	FieldLabel,
-	FieldLegend,
-	FieldSet,
-} from "@/mainview/components/ui/field";
-import {
-	InputGroup,
-	InputGroupAddon,
-	InputGroupButton,
-	InputGroupInput,
-	InputGroupText,
-} from "@/mainview/components/ui/input-group";
-import {
-	RadioGroup,
-	RadioGroupItem,
-} from "@/mainview/components/ui/radio-group";
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/mainview/components/ui/select";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/mainview/components/ui/field";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, InputGroupText } from "@/mainview/components/ui/input-group";
+import { RadioGroup, RadioGroupItem } from "@/mainview/components/ui/radio-group";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
-import {
-	pickFilePath,
-	pickLibraryFolderPath,
-} from "@/mainview/lib/library-folder";
+import { pickFilePath, pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 import { TorrentFiltersTab } from "./torrent-filters-tab";
 
 const TORRENT_SORT_BY_ITEMS = {
@@ -72,26 +42,24 @@ export function TorrentsPanel() {
 	const form = useFormContext<AppSettingsInput>();
 
 	return (
-		<Tabs defaultValue="discovery">
+		<Tabs defaultValue='discovery'>
 			<TabsList>
-				<TabsTrigger value="discovery">Discovery</TabsTrigger>
-				<TabsTrigger value="downloads">Downloads</TabsTrigger>
-				<TabsTrigger value="filters">Filters</TabsTrigger>
+				<TabsTrigger value='discovery'>Discovery</TabsTrigger>
+				<TabsTrigger value='downloads'>Downloads</TabsTrigger>
+				<TabsTrigger value='filters'>Filters</TabsTrigger>
 			</TabsList>
-			<TabsContent value="discovery" className="pt-4">
+			<TabsContent value='discovery' className='pt-4'>
 				<FieldGroup>
-					<FieldSet className="rounded-md border p-3">
-						<FieldLegend variant="label" className="text-muted-foreground">
+					<FieldSet className='rounded-md border p-3'>
+						<FieldLegend variant='label' className='text-muted-foreground'>
 							Sources
 						</FieldLegend>
 						<Controller
 							control={form.control}
-							name="rssFeedUrl"
+							name='rssFeedUrl'
 							render={({ field, fieldState }) => (
 								<Field data-invalid={fieldState.invalid || undefined}>
-									<FieldLabel htmlFor={rssId}>
-										RSS feed for checking new releases:
-									</FieldLabel>
+									<FieldLabel htmlFor={rssId}>RSS feed for checking new releases:</FieldLabel>
 									<EditableSelect
 										id={rssId}
 										value={typeof field.value === "string" ? field.value : ""}
@@ -105,12 +73,10 @@ export function TorrentsPanel() {
 						/>
 						<Controller
 							control={form.control}
-							name="rssSearchUrl"
+							name='rssSearchUrl'
 							render={({ field, fieldState }) => (
 								<Field data-invalid={fieldState.invalid || undefined}>
-									<FieldLabel htmlFor={searchId}>
-										RSS feed for searching releases for a title:
-									</FieldLabel>
+									<FieldLabel htmlFor={searchId}>RSS feed for searching releases for a title:</FieldLabel>
 									<EditableSelect
 										id={searchId}
 										value={typeof field.value === "string" ? field.value : ""}
@@ -118,45 +84,36 @@ export function TorrentsPanel() {
 										options={TORRENT_SEARCH_FEEDS}
 										invalid={fieldState.invalid}
 									/>
-									<FieldDescription>
-										Use %title% as the search string.
-									</FieldDescription>
+									<FieldDescription>Use %title% as the search string.</FieldDescription>
 									<FieldError errors={[fieldState.error]} />
 								</Field>
 							)}
 						/>
 					</FieldSet>
-					<FieldSet className="rounded-md border p-3">
-						<FieldLegend variant="label" className="text-muted-foreground">
+					<FieldSet className='rounded-md border p-3'>
+						<FieldLegend variant='label' className='text-muted-foreground'>
 							Automation
 						</FieldLegend>
-						<FormCheckbox
-							control={form.control}
-							name="checkTorrentsAutomatically"
-							id={checkId}
-							label="Check new torrents automatically"
-						/>
+						<FormCheckbox control={form.control} name='checkTorrentsAutomatically' id={checkId} label='Check new torrents automatically' />
 						<Field>
 							<FieldLabel htmlFor={intervalId}>Interval:</FieldLabel>
-							<InputGroup className="w-40">
+							<InputGroup className='w-40'>
 								<InputGroupInput
 									id={intervalId}
-									type="number"
+									type='number'
 									{...form.register("torrentCheckIntervalMinutes", {
 										valueAsNumber: true,
 									})}
 								/>
-								<InputGroupAddon align="inline-end">
+								<InputGroupAddon align='inline-end'>
 									<InputGroupText>(minutes)</InputGroupText>
 								</InputGroupAddon>
 							</InputGroup>
-							<FieldError
-								errors={[form.formState.errors.torrentCheckIntervalMinutes]}
-							/>
+							<FieldError errors={[form.formState.errors.torrentCheckIntervalMinutes]} />
 						</Field>
 						<Controller
 							control={form.control}
-							name="newTorrentAction"
+							name='newTorrentAction'
 							render={({ field, fieldState }) => (
 								<Field data-invalid={fieldState.invalid || undefined}>
 									<FieldLabel>When there are new torrents:</FieldLabel>
@@ -166,17 +123,16 @@ export function TorrentsPanel() {
 											if (typeof value === "string") {
 												field.onChange(value);
 											}
-										}}
-									>
-										<Field orientation="horizontal">
-											<RadioGroupItem value="notify" id={notifyId} />
-											<FieldLabel htmlFor={notifyId} className="font-normal">
+										}}>
+										<Field orientation='horizontal'>
+											<RadioGroupItem value='notify' id={notifyId} />
+											<FieldLabel htmlFor={notifyId} className='font-normal'>
 												Notify me
 											</FieldLabel>
 										</Field>
-										<Field orientation="horizontal">
-											<RadioGroupItem value="download" id={downloadId} />
-											<FieldLabel htmlFor={downloadId} className="font-normal">
+										<Field orientation='horizontal'>
+											<RadioGroupItem value='download' id={downloadId} />
+											<FieldLabel htmlFor={downloadId} className='font-normal'>
 												Download immediately
 											</FieldLabel>
 										</Field>
@@ -188,15 +144,15 @@ export function TorrentsPanel() {
 					</FieldSet>
 				</FieldGroup>
 			</TabsContent>
-			<TabsContent value="downloads" className="pt-4">
+			<TabsContent value='downloads' className='pt-4'>
 				<FieldGroup>
-					<FieldSet className="rounded-md border p-3">
-						<FieldLegend variant="label" className="text-muted-foreground">
+					<FieldSet className='rounded-md border p-3'>
+						<FieldLegend variant='label' className='text-muted-foreground'>
 							Download queue
 						</FieldLegend>
 						<Controller
 							control={form.control}
-							name="torrentDownloadSortBy"
+							name='torrentDownloadSortBy'
 							render={({ field, fieldState }) => (
 								<Field data-invalid={fieldState.invalid || undefined}>
 									<FieldLabel htmlFor={sortById}>Sort by:</FieldLabel>
@@ -207,19 +163,14 @@ export function TorrentsPanel() {
 											if (typeof value === "string") {
 												field.onChange(value);
 											}
-										}}
-									>
-										<SelectTrigger id={sortById} className="w-full max-w-72">
+										}}>
+										<SelectTrigger id={sortById} className='w-full max-w-72'>
 											<SelectValue />
 										</SelectTrigger>
 										<SelectContent>
 											<SelectGroup>
-												<SelectItem value="episode_number">
-													Sort by episode number
-												</SelectItem>
-												<SelectItem value="release_date">
-													Sort by release date
-												</SelectItem>
+												<SelectItem value='episode_number'>Sort by episode number</SelectItem>
+												<SelectItem value='release_date'>Sort by release date</SelectItem>
 											</SelectGroup>
 										</SelectContent>
 									</Select>
@@ -229,7 +180,7 @@ export function TorrentsPanel() {
 						/>
 						<Controller
 							control={form.control}
-							name="torrentDownloadSortOrder"
+							name='torrentDownloadSortOrder'
 							render={({ field, fieldState }) => (
 								<Field data-invalid={fieldState.invalid || undefined}>
 									<FieldLabel htmlFor={sortOrderId}>Order:</FieldLabel>
@@ -240,19 +191,14 @@ export function TorrentsPanel() {
 											if (typeof value === "string") {
 												field.onChange(value);
 											}
-										}}
-									>
-										<SelectTrigger id={sortOrderId} className="w-full max-w-72">
+										}}>
+										<SelectTrigger id={sortOrderId} className='w-full max-w-72'>
 											<SelectValue />
 										</SelectTrigger>
 										<SelectContent>
 											<SelectGroup>
-												<SelectItem value="ascending">
-													In ascending order
-												</SelectItem>
-												<SelectItem value="descending">
-													In descending order
-												</SelectItem>
+												<SelectItem value='ascending'>In ascending order</SelectItem>
+												<SelectItem value='descending'>In descending order</SelectItem>
 											</SelectGroup>
 										</SelectContent>
 									</Select>
@@ -261,21 +207,11 @@ export function TorrentsPanel() {
 							)}
 						/>
 					</FieldSet>
-					<DownloadLocationFields
-						useAnimeFolderId={useAnimeFolderId}
-						fallbackId={fallbackId}
-						downloadDirId={downloadDirId}
-						createSubId={createSubId}
-					/>
-					<TorrentClientFields
-						appOpenId={appOpenId}
-						appDefaultId={appDefaultId}
-						appCustomId={appCustomId}
-						appPathId={appPathId}
-					/>
+					<DownloadLocationFields useAnimeFolderId={useAnimeFolderId} fallbackId={fallbackId} downloadDirId={downloadDirId} createSubId={createSubId} />
+					<TorrentClientFields appOpenId={appOpenId} appDefaultId={appDefaultId} appCustomId={appCustomId} appPathId={appPathId} />
 				</FieldGroup>
 			</TabsContent>
-			<TabsContent value="filters" className="pt-4">
+			<TabsContent value='filters' className='pt-4'>
 				<TorrentFiltersTab />
 			</TabsContent>
 		</Tabs>
@@ -298,35 +234,21 @@ function DownloadLocationFields({
 	const fallbackOnFolder = form.watch("torrentFallbackOnFolder");
 	const folderEnabled = Boolean(useAnimeFolder && fallbackOnFolder);
 	return (
-		<FieldSet className="rounded-md border p-3">
-			<FieldLegend variant="label" className="text-muted-foreground">
+		<FieldSet className='rounded-md border p-3'>
+			<FieldLegend variant='label' className='text-muted-foreground'>
 				Download location
 			</FieldLegend>
-			<FormCheckbox
-				control={form.control}
-				name="torrentUseAnimeFolder"
-				id={useAnimeFolderId}
-				label="Use anime folders as the download folder"
-			/>
-			<FormCheckbox
-				control={form.control}
-				name="torrentFallbackOnFolder"
-				id={fallbackId}
-				label="If no anime folder is set, use this folder instead:"
-			/>
+			<FormCheckbox control={form.control} name='torrentUseAnimeFolder' id={useAnimeFolderId} label='Use anime folders as the download folder' />
+			<FormCheckbox control={form.control} name='torrentFallbackOnFolder' id={fallbackId} label='If no anime folder is set, use this folder instead:' />
 			<Field data-disabled={!folderEnabled || undefined}>
-				<FieldLabel htmlFor={downloadDirId} className="sr-only">
+				<FieldLabel htmlFor={downloadDirId} className='sr-only'>
 					Fallback download folder
 				</FieldLabel>
 				<InputGroup>
-					<InputGroupInput
-						id={downloadDirId}
-						disabled={!folderEnabled}
-						{...form.register("torrentDownloadDir")}
-					/>
-					<InputGroupAddon align="inline-end">
+					<InputGroupInput id={downloadDirId} disabled={!folderEnabled} {...form.register("torrentDownloadDir")} />
+					<InputGroupAddon align='inline-end'>
 						<InputGroupButton
-							variant="outline"
+							variant='outline'
 							disabled={!folderEnabled}
 							onClick={() => {
 								void pickLibraryFolderPath().then((path) => {
@@ -336,56 +258,32 @@ function DownloadLocationFields({
 										});
 									}
 								});
-							}}
-						>
+							}}>
 							Browse...
 						</InputGroupButton>
 					</InputGroupAddon>
 				</InputGroup>
 				<FieldError errors={[form.formState.errors.torrentDownloadDir]} />
 			</Field>
-			<FormCheckbox
-				control={form.control}
-				name="torrentCreateSubfolder"
-				id={createSubId}
-				label="Create a subfolder using the anime title as its name"
-			/>
-			<FieldDescription>
-				Supported clients: aria2, Deluge, PicoTorrent, qBittorrent,
-				Transmission, uTorrent.
-			</FieldDescription>
+			<FormCheckbox control={form.control} name='torrentCreateSubfolder' id={createSubId} label='Create a subfolder using the anime title as its name' />
+			<FieldDescription>Supported clients: aria2, Deluge, PicoTorrent, qBittorrent, Transmission, uTorrent.</FieldDescription>
 		</FieldSet>
 	);
 }
 
-function TorrentClientFields({
-	appOpenId,
-	appDefaultId,
-	appCustomId,
-	appPathId,
-}: {
-	appOpenId: string;
-	appDefaultId: string;
-	appCustomId: string;
-	appPathId: string;
-}) {
+function TorrentClientFields({ appOpenId, appDefaultId, appCustomId, appPathId }: { appOpenId: string; appDefaultId: string; appCustomId: string; appPathId: string }) {
 	const form = useFormContext<AppSettingsInput>();
 	const appMode = form.watch("torrentAppMode");
 	const customApp = appMode === "custom";
 	return (
-		<FieldSet className="rounded-md border p-3">
-			<FieldLegend variant="label" className="text-muted-foreground">
+		<FieldSet className='rounded-md border p-3'>
+			<FieldLegend variant='label' className='text-muted-foreground'>
 				BitTorrent client
 			</FieldLegend>
-			<FormCheckbox
-				control={form.control}
-				name="torrentAppOpen"
-				id={appOpenId}
-				label="Open downloaded .torrent files"
-			/>
+			<FormCheckbox control={form.control} name='torrentAppOpen' id={appOpenId} label='Open downloaded .torrent files' />
 			<Controller
 				control={form.control}
-				name="torrentAppMode"
+				name='torrentAppMode'
 				render={({ field, fieldState }) => (
 					<Field data-invalid={fieldState.invalid || undefined}>
 						<RadioGroup
@@ -394,17 +292,16 @@ function TorrentClientFields({
 								if (typeof value === "string") {
 									field.onChange(value);
 								}
-							}}
-						>
-							<Field orientation="horizontal">
-								<RadioGroupItem value="default" id={appDefaultId} />
-								<FieldLabel htmlFor={appDefaultId} className="font-normal">
+							}}>
+							<Field orientation='horizontal'>
+								<RadioGroupItem value='default' id={appDefaultId} />
+								<FieldLabel htmlFor={appDefaultId} className='font-normal'>
 									Use the default application associated with .torrent files
 								</FieldLabel>
 							</Field>
-							<Field orientation="horizontal">
-								<RadioGroupItem value="custom" id={appCustomId} />
-								<FieldLabel htmlFor={appCustomId} className="font-normal">
+							<Field orientation='horizontal'>
+								<RadioGroupItem value='custom' id={appCustomId} />
+								<FieldLabel htmlFor={appCustomId} className='font-normal'>
 									Use a custom application:
 								</FieldLabel>
 							</Field>
@@ -414,18 +311,14 @@ function TorrentClientFields({
 				)}
 			/>
 			<Field data-disabled={!customApp || undefined}>
-				<FieldLabel htmlFor={appPathId} className="sr-only">
+				<FieldLabel htmlFor={appPathId} className='sr-only'>
 					BitTorrent client path
 				</FieldLabel>
 				<InputGroup>
-					<InputGroupInput
-						id={appPathId}
-						disabled={!customApp}
-						{...form.register("torrentAppPath")}
-					/>
-					<InputGroupAddon align="inline-end">
+					<InputGroupInput id={appPathId} disabled={!customApp} {...form.register("torrentAppPath")} />
+					<InputGroupAddon align='inline-end'>
 						<InputGroupButton
-							variant="outline"
+							variant='outline'
 							disabled={!customApp}
 							onClick={() => {
 								void pickFilePath().then((path) => {
@@ -435,8 +328,7 @@ function TorrentClientFields({
 										});
 									}
 								});
-							}}
-						>
+							}}>
 							Browse...
 						</InputGroupButton>
 					</InputGroupAddon>

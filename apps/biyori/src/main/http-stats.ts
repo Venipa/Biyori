@@ -17,10 +17,7 @@ export function connectionCounts(): {
 	};
 }
 
-export async function trackedFetch(
-	input: RequestInfo | URL,
-	init?: RequestInit,
-): Promise<Response> {
+export async function trackedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
 	try {
 		const response = await fetch(input, init);
 		if (response.ok) {

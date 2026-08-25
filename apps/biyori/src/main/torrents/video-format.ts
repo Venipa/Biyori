@@ -15,10 +15,7 @@ function detectCodec(title: string, term: string | undefined): string {
 	return term?.trim() ?? "";
 }
 
-function detectResolution(
-	title: string,
-	resolution: string | undefined,
-): string {
+function detectResolution(title: string, resolution: string | undefined): string {
 	if (resolution) {
 		const pixels = resolution.match(/^(\d+)\s*x\s*(\d+)$/i);
 		if (pixels) {
@@ -42,12 +39,6 @@ function detectResolution(
 	return named ? named[1] : "";
 }
 
-export function videoFormat(
-	title: string,
-	resolution: string | undefined,
-	term: string | undefined,
-): string {
-	return [detectResolution(title, resolution), detectCodec(title, term)]
-		.filter(Boolean)
-		.join(" ");
+export function videoFormat(title: string, resolution: string | undefined, term: string | undefined): string {
+	return [detectResolution(title, resolution), detectCodec(title, term)].filter(Boolean).join(" ");
 }

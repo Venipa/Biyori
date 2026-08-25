@@ -1,13 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type {
-	SeasonCacheFile,
-	SeasonItemCached,
-} from "../../lib/schemas/seasons";
-import {
-	type AnilistSeasonName,
-	seasonCacheFileSchema,
-} from "../../lib/schemas/seasons";
+import type { SeasonCacheFile, SeasonItemCached } from "../../lib/schemas/seasons";
+import { type AnilistSeasonName, seasonCacheFileSchema } from "../../lib/schemas/seasons";
 import { appCacheDir } from "../lib/app-paths";
 
 function seasonsDir(): string {
@@ -16,17 +10,11 @@ function seasonsDir(): string {
 	return dir;
 }
 
-export function seasonCachePath(
-	season: AnilistSeasonName,
-	seasonYear: number,
-): string {
+export function seasonCachePath(season: AnilistSeasonName, seasonYear: number): string {
 	return join(seasonsDir(), `${season}-${seasonYear}.json`);
 }
 
-export function readSeasonCache(
-	season: AnilistSeasonName,
-	seasonYear: number,
-): SeasonCacheFile | null {
+export function readSeasonCache(season: AnilistSeasonName, seasonYear: number): SeasonCacheFile | null {
 	const path = seasonCachePath(season, seasonYear);
 	if (!existsSync(path)) {
 		return null;
@@ -38,12 +26,7 @@ export function readSeasonCache(
 			typeof raw === "object" &&
 			"items" in raw &&
 			Array.isArray(raw.items) &&
-			raw.items.some(
-				(item) =>
-					item != null &&
-					typeof item === "object" &&
-					!("isAdult" in item),
-			)
+			raw.items.some((item) => item != null && typeof item === "object" && !("isAdult" in item))
 		) {
 			return null;
 		}
@@ -54,21 +37,13 @@ export function readSeasonCache(
 	}
 }
 
-export function writeSeasonCache(options: {
-	season: AnilistSeasonName;
-	seasonYear: number;
-	items: SeasonItemCached[];
-}): SeasonCacheFile {
+export function writeSeasonCache(options: { season: AnilistSeasonName; seasonYear: number; items: SeasonItemCached[] }): SeasonCacheFile {
 	const payload: SeasonCacheFile = {
 		season: options.season,
 		seasonYear: options.seasonYear,
 		fetchedAt: new Date().toISOString(),
 		items: options.items,
 	};
-	writeFileSync(
-		seasonCachePath(options.season, options.seasonYear),
-		JSON.stringify(payload),
-		"utf8",
-	);
+	writeFileSync(seasonCachePath(options.season, options.seasonYear), JSON.stringify(payload), "utf8");
 	return payload;
 }

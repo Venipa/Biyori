@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 
-const APP_CONTEXT_MENU_SELECTOR =
-	"[data-slot=context-menu-trigger], [data-slot=context-menu-content]";
+const APP_CONTEXT_MENU_SELECTOR = "[data-slot=context-menu-trigger], [data-slot=context-menu-content]";
 
 function isAppContextMenuTarget(target: EventTarget | null): boolean {
 	return target instanceof Element && Boolean(target.closest(APP_CONTEXT_MENU_SELECTOR));

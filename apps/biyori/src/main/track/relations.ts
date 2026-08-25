@@ -3,8 +3,7 @@ import type { DatabaseClient } from "../db";
 import { relationsCache } from "../db/schema";
 import { trackedFetch } from "../http-stats";
 
-const RELATIONS_URL =
-	"https://raw.githubusercontent.com/erengy/anime-relations/master/anime-relations.txt";
+const RELATIONS_URL = "https://raw.githubusercontent.com/erengy/anime-relations/master/anime-relations.txt";
 const CACHE_ID = "anime-relations";
 const REFRESH_MS = 24 * 60 * 60 * 1000;
 
@@ -70,10 +69,7 @@ export function parseRelations(body: string): RelationRule[] {
 	return next;
 }
 
-export function applyRelation(
-	id: number,
-	episode: number,
-): { id: number; episode: number } {
+export function applyRelation(id: number, episode: number): { id: number; episode: number } {
 	for (const rule of rules) {
 		if (rule.fromId !== id) {
 			continue;
@@ -96,14 +92,8 @@ export async function refreshRelations(db: DatabaseClient): Promise<void> {
 	if (rules.length > 0 && Date.now() - loadedAt < REFRESH_MS) {
 		return;
 	}
-	const cached = await db
-		.select()
-		.from(relationsCache)
-		.where(eq(relationsCache.id, CACHE_ID))
-		.limit(1);
-	const cachedAt = cached[0]
-		? new Date(cached[0].fetchedAt).getTime()
-		: 0;
+	const cached = await db.select().from(relationsCache).where(eq(relationsCache.id, CACHE_ID)).limit(1);
+	const cachedAt = cached[0] ? new Date(cached[0].fetchedAt).getTime() : 0;
 	if (cached[0] && Date.now() - cachedAt < REFRESH_MS) {
 		rules = parseRelations(cached[0].body);
 		loadedAt = Date.now();

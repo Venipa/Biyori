@@ -48,50 +48,25 @@ let flushAgain = false;
 let retryTimer: ReturnType<typeof setInterval> | null = null;
 let queueDb: DatabaseClient | null = null;
 
-export async function applyLocalUpdate(
-	db: DatabaseClient,
-	animeId: number,
-	payload: QueuePayload,
-): Promise<void> {
-	const rows = await db
-		.select()
-		.from(listEntry)
-		.where(eq(listEntry.animeId, animeId))
-		.limit(1);
+export async function applyLocalUpdate(db: DatabaseClient, animeId: number, payload: QueuePayload): Promise<void> {
+	const rows = await db.select().from(listEntry).where(eq(listEntry.animeId, animeId)).limit(1);
 	const current = rows[0];
 	if (!current) {
 		return;
 	}
 	const progress = payload.progress ?? current.episodesWatched;
 	const status = payload.status ?? (current.status as ListStatus);
-	const dateStarted =
-		payload.dateStarted !== undefined
-			? payload.dateStarted
-			: progress >= 1 && !current.dateStarted
-				? todayIsoDate()
-				: current.dateStarted;
-	const dateCompleted =
-		payload.dateCompleted !== undefined
-			? payload.dateCompleted
-			: status === "Completed" && !current.dateCompleted
-				? todayIsoDate()
-				: current.dateCompleted;
+	const dateStarted = payload.dateStarted !== undefined ? payload.dateStarted : progress >= 1 && !current.dateStarted ? todayIsoDate() : current.dateStarted;
+	const dateCompleted = payload.dateCompleted !== undefined ? payload.dateCompleted : status === "Completed" && !current.dateCompleted ? todayIsoDate() : current.dateCompleted;
 	await db
 		.update(listEntry)
 		.set({
 			status,
 			episodesWatched: progress,
-			score:
-				payload.score !== undefined ? payload.score : current.score,
+			score: payload.score !== undefined ? payload.score : current.score,
 			notes: payload.notes ?? current.notes,
-			rewatching:
-				payload.rewatching !== undefined
-					? payload.rewatching
-						? 1
-						: 0
-					: current.rewatching,
-			timesRewatched:
-				payload.timesRewatched ?? current.timesRewatched,
+			rewatching: payload.rewatching !== undefined ? (payload.rewatching ? 1 : 0) : current.rewatching,
+			timesRewatched: payload.timesRewatched ?? current.timesRewatched,
 			dateStarted,
 			dateCompleted,
 			started: dateStarted,
@@ -116,11 +91,7 @@ export async function enqueueUpdate(
 	},
 ): Promise<void> {
 	await applyLocalUpdate(db, options.animeId, options.payload);
-	const existing = await db
-		.select()
-		.from(syncQueue)
-		.where(eq(syncQueue.animeId, options.animeId))
-		.limit(1);
+	const existing = await db.select().from(syncQueue).where(eq(syncQueue.animeId, options.animeId)).limit(1);
 	const merged: QueuePayload = {
 		...(existing[0] ? parsePayload(existing[0].payload) : {}),
 		...options.payload,
@@ -143,9 +114,7 @@ export async function enqueueUpdate(
 	const queued = await db
 		.select()
 		.from(history)
-		.where(
-			and(eq(history.kind, "queued"), eq(history.animeId, options.animeId)),
-		)
+		.where(and(eq(history.kind, "queued"), eq(history.animeId, options.animeId)))
 		.limit(1);
 	if (queued[0]) {
 		await db
@@ -211,11 +180,7 @@ async function flushNext(db: DatabaseClient): Promise<void> {
 		return;
 	}
 
-	const items = await db
-		.select()
-		.from(syncQueue)
-		.orderBy(asc(syncQueue.createdAt))
-		.limit(1);
+	const items = await db.select().from(syncQueue).orderBy(asc(syncQueue.createdAt)).limit(1);
 	const item = items[0];
 	if (!item) {
 		return;
@@ -246,28 +211,19 @@ async function flushNext(db: DatabaseClient): Promise<void> {
 
 	const payload = parsePayload(item.payload);
 	const remaining = await countQueued(db);
-	setAppNotice(
-		remaining > 1
-			? `Updating anime list... (${remaining} queued)`
-			: "Updating anime list...",
-	);
+	setAppNotice(remaining > 1 ? `Updating anime list... (${remaining} queued)` : "Updating anime list...");
 
 	try {
 		const saved = await saveMediaListEntry({
 			token: auth.accessToken,
 			mediaId: row.id,
-			status: toAnilistStatus(
-				(payload.status ?? row.status) as ListStatus,
-				payload.rewatching ?? row.rewatching === 1,
-			),
+			status: toAnilistStatus((payload.status ?? row.status) as ListStatus, payload.rewatching ?? row.rewatching === 1),
 			progress: payload.progress ?? row.episodesWatched,
 			score: payload.score === undefined ? row.score : payload.score,
 			repeat: payload.timesRewatched ?? row.timesRewatched,
 			notes: payload.notes ?? row.notes,
 			startedAt: toFuzzyDateInput(payload.dateStarted ?? row.dateStarted),
-			completedAt: toFuzzyDateInput(
-				payload.dateCompleted ?? row.dateCompleted,
-			),
+			completedAt: toFuzzyDateInput(payload.dateCompleted ?? row.dateCompleted),
 		});
 
 		const listRow = toListEntryRow(item.animeId, saved);
@@ -293,9 +249,7 @@ async function flushNext(db: DatabaseClient): Promise<void> {
 		await db
 			.update(history)
 			.set({ kind: "history", lastModified: nowStamp() })
-			.where(
-				and(eq(history.kind, "queued"), eq(history.animeId, item.animeId)),
-			);
+			.where(and(eq(history.kind, "queued"), eq(history.animeId, item.animeId)));
 
 		const left = await countQueued(db);
 		if (left === 0) {

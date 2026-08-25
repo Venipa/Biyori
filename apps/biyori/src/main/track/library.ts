@@ -11,19 +11,7 @@ import { loadAppSettings } from "../settings";
 import { loadCandidates, matchTitle } from "./match";
 import { parseFilename } from "./parse";
 
-const VIDEO_EXT = new Set([
-	".mkv",
-	".mp4",
-	".avi",
-	".webm",
-	".mov",
-	".wmv",
-	".flv",
-	".ts",
-	".m2ts",
-	".mpg",
-	".mpeg",
-]);
+const VIDEO_EXT = new Set([".mkv", ".mp4", ".avi", ".webm", ".mov", ".wmv", ".flv", ".ts", ".m2ts", ".mpg", ".mpeg"]);
 
 const YIELD_EVERY = 32;
 
@@ -38,12 +26,7 @@ function yieldToEventLoop(): Promise<void> {
 	});
 }
 
-async function collectFiles(
-	root: string,
-	threshold: number,
-	out: string[],
-	state: { visited: number },
-): Promise<boolean> {
+async function collectFiles(root: string, threshold: number, out: string[], state: { visited: number }): Promise<boolean> {
 	let entries: string[] = [];
 	try {
 		entries = await readdir(root);
@@ -81,9 +64,7 @@ export function initLibrary(database: DatabaseClient): void {
 	db = database;
 }
 
-export async function scanLibrary(
-	database: DatabaseClient = requiredDb(),
-): Promise<{ files: number; matched: number }> {
+export async function scanLibrary(database: DatabaseClient = requiredDb()): Promise<{ files: number; matched: number }> {
 	if (scanInFlight) {
 		return scanInFlight;
 	}
@@ -93,9 +74,7 @@ export async function scanLibrary(
 	return scanInFlight;
 }
 
-async function runScan(
-	database: DatabaseClient,
-): Promise<{ files: number; matched: number }> {
+async function runScan(database: DatabaseClient): Promise<{ files: number; matched: number }> {
 	const settings = await loadAppSettings(database);
 	const candidates = await loadCandidates(database);
 	const files: string[] = [];
@@ -105,12 +84,7 @@ async function runScan(
 		if (!(await existsAsync(folder.path))) {
 			continue;
 		}
-		const ok = await collectFiles(
-			folder.path,
-			settings.fileSizeThreshold,
-			files,
-			walkState,
-		);
+		const ok = await collectFiles(folder.path, settings.fileSizeThreshold, files, walkState);
 		if (ok) {
 			scannedRoots.push(folder.path);
 		}
@@ -140,11 +114,7 @@ async function runScan(
 		} catch {
 			continue;
 		}
-		const existing = await database
-			.select({ id: episodeFile.id })
-			.from(episodeFile)
-			.where(eq(episodeFile.path, path))
-			.limit(1);
+		const existing = await database.select({ id: episodeFile.id }).from(episodeFile).where(eq(episodeFile.path, path)).limit(1);
 		if (existing[0]) {
 			await database
 				.update(episodeFile)
@@ -176,9 +146,7 @@ async function runScan(
 	}
 	const stored = await database.select().from(episodeFile);
 	for (const row of stored) {
-		const underScannedRoot = scannedRoots.some((root) =>
-			row.path.toLowerCase().startsWith(root.toLowerCase()),
-		);
+		const underScannedRoot = scannedRoots.some((root) => row.path.toLowerCase().startsWith(root.toLowerCase()));
 		if (!underScannedRoot) {
 			continue;
 		}
@@ -198,10 +166,7 @@ async function existsAsync(path: string): Promise<boolean> {
 	}
 }
 
-export async function listEpisodes(
-	database: DatabaseClient,
-	animeId: number,
-): Promise<Array<{ episode: number; path: string }>> {
+export async function listEpisodes(database: DatabaseClient, animeId: number): Promise<Array<{ episode: number; path: string }>> {
 	const rows = await database
 		.select({
 			episode: episodeFile.episode,
@@ -212,15 +177,8 @@ export async function listEpisodes(
 	return rows.sort((a, b) => a.episode - b.episode);
 }
 
-export async function playEpisode(
-	database: DatabaseClient,
-	animeId: number,
-	episode: number,
-): Promise<{ ok: boolean; path: string | null }> {
-	const rows = await database
-		.select()
-		.from(episodeFile)
-		.where(eq(episodeFile.animeId, animeId));
+export async function playEpisode(database: DatabaseClient, animeId: number, episode: number): Promise<{ ok: boolean; path: string | null }> {
+	const rows = await database.select().from(episodeFile).where(eq(episodeFile.animeId, animeId));
 	const hit = rows.find((row) => row.episode === episode) ?? null;
 	if (!hit || !existsSync(hit.path)) {
 		return { ok: false, path: null };
@@ -229,16 +187,8 @@ export async function playEpisode(
 	return { ok: error.length === 0, path: hit.path };
 }
 
-export async function playNext(
-	database: DatabaseClient,
-	animeId: number,
-	episodesWatched: number,
-): Promise<{ ok: boolean; path: string | null; episode: number | null }> {
-	const rows = await database
-		.select({ episodes: anime.episodes })
-		.from(anime)
-		.where(eq(anime.id, animeId))
-		.limit(1);
+export async function playNext(database: DatabaseClient, animeId: number, episodesWatched: number): Promise<{ ok: boolean; path: string | null; episode: number | null }> {
+	const rows = await database.select({ episodes: anime.episodes }).from(anime).where(eq(anime.id, animeId)).limit(1);
 	const total = rows[0]?.episodes ?? 0;
 	let episode = episodesWatched + 1;
 	if (episode < 1) {
@@ -254,10 +204,7 @@ export async function playNext(
 	return { ...played, episode };
 }
 
-export async function playRandom(
-	database: DatabaseClient,
-	animeId: number,
-): Promise<{ ok: boolean; path: string | null; episode: number | null }> {
+export async function playRandom(database: DatabaseClient, animeId: number): Promise<{ ok: boolean; path: string | null; episode: number | null }> {
 	const rows = await listEpisodes(database, animeId);
 	if (rows.length === 0) {
 		return { ok: false, path: null, episode: null };

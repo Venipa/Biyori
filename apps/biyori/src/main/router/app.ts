@@ -13,31 +13,28 @@ import type { Anime } from "../db/types";
 import { getAppNotice, subscribeAppNotice } from "../notice";
 import { loadAppSettings, patchAppSettings } from "../settings";
 import { loadStatistics } from "../statistics";
-import { applyTorrentView, checkTorrents, discardAnimeFilter, discardTorrent, downloadSelectedTorrents, downloadTorrent, getTorrentItems, preferFansubFilter, searchTorrents, subscribeTorrentItems } from "../torrents";
 import {
-  listEpisodes,
-  playEpisode,
-  playNext,
-  playRandom,
-  scanLibrary,
-} from "../track/library";
+	applyTorrentView,
+	checkTorrents,
+	discardAnimeFilter,
+	discardTorrent,
+	downloadSelectedTorrents,
+	downloadTorrent,
+	getTorrentItems,
+	preferFansubFilter,
+	searchTorrents,
+	subscribeTorrentItems,
+} from "../torrents";
+import { listEpisodes, playEpisode, playNext, playRandom, scanLibrary } from "../track/library";
 import { countQueued } from "../track/queue";
-import {
-  confirmPendingUpdate,
-  getNowPlayingSnapshot,
-  nowPlayingObservable,
-  skipPendingUpdate,
-} from "../track/tracker";
+import { confirmPendingUpdate, getNowPlayingSnapshot, nowPlayingObservable, skipPendingUpdate } from "../track/tracker";
 import { t } from "../trpc";
 import { anilistRouter } from "./anilist";
 import { coversRouter } from "./covers";
 import { desktopRouter } from "./desktop";
 import { updaterRouter } from "./updater";
 
-type AnimeDetail = Omit<
-	Anime,
-	"durationMinutes" | "genres" | "producers"
-> & {
+type AnimeDetail = Omit<Anime, "durationMinutes" | "genres" | "producers"> & {
 	genres: string[];
 	producers: string[];
 	episodesWatched: number;
@@ -54,10 +51,7 @@ type AnimeDetail = Omit<
 	onList: boolean;
 };
 
-async function loadAnimeDetail(
-	db: Pick<import("../db").DatabaseClient, "select">,
-	id: number,
-): Promise<AnimeDetail | null> {
+async function loadAnimeDetail(db: Pick<import("../db").DatabaseClient, "select">, id: number): Promise<AnimeDetail | null> {
 	const rows = await db
 		.select({
 			id: anime.id,
@@ -121,59 +115,50 @@ async function loadAnimeDetail(
 
 export const appRouter = t.router({
 	anime: t.router({
-		list: t.procedure
-			.input(z.object({ status: listStatusSchema }))
-			.query(async ({ ctx, input }) => {
-				const rows = await ctx.db
-					.select({
-						id: anime.id,
-						title: anime.title,
-						alternativeTitles: anime.alternativeTitles,
-						type: anime.type,
-						episodes: anime.episodes,
-						averageScore: anime.averageScore,
-						season: anime.season,
-						airingStatus: anime.airingStatus,
-						genres: anime.genres,
-						episodesWatched: listEntry.episodesWatched,
-						score: listEntry.score,
-						started: listEntry.started,
-						completed: listEntry.completed,
-						lastUpdated: listEntry.lastUpdated,
-						status: listEntry.status,
-						notes: listEntry.notes,
-						folder: anime.folder,
-						fansub: anime.fansub,
-						lastAiredEpisode: anime.lastAiredEpisode,
-					})
-					.from(listEntry)
-					.innerJoin(anime, eq(listEntry.animeId, anime.id))
-					.where(eq(listEntry.status, input.status))
-					.orderBy(desc(listEntry.lastUpdated));
-
-				const availableRows = await ctx.db
-					.select({
-						animeId: episodeFile.animeId,
-						availableEpisode: max(episodeFile.episode),
-					})
-					.from(episodeFile)
-					.groupBy(episodeFile.animeId);
-				const availableById = new Map(
-					availableRows.map((row) => [
-						row.animeId,
-						row.availableEpisode ?? 0,
-					]),
-				);
-
-				return rows.map((row) => ({
-					...row,
-					availableEpisode: availableById.get(row.id) ?? 0,
-				}));
-			}),
-		counts: t.procedure.query(async ({ ctx }) => {
+		list: t.procedure.input(z.object({ status: listStatusSchema })).query(async ({ ctx, input }) => {
 			const rows = await ctx.db
-				.select({ status: listEntry.status })
-				.from(listEntry);
+				.select({
+					id: anime.id,
+					title: anime.title,
+					alternativeTitles: anime.alternativeTitles,
+					type: anime.type,
+					episodes: anime.episodes,
+					averageScore: anime.averageScore,
+					season: anime.season,
+					airingStatus: anime.airingStatus,
+					genres: anime.genres,
+					episodesWatched: listEntry.episodesWatched,
+					score: listEntry.score,
+					started: listEntry.started,
+					completed: listEntry.completed,
+					lastUpdated: listEntry.lastUpdated,
+					status: listEntry.status,
+					notes: listEntry.notes,
+					folder: anime.folder,
+					fansub: anime.fansub,
+					lastAiredEpisode: anime.lastAiredEpisode,
+				})
+				.from(listEntry)
+				.innerJoin(anime, eq(listEntry.animeId, anime.id))
+				.where(eq(listEntry.status, input.status))
+				.orderBy(desc(listEntry.lastUpdated));
+
+			const availableRows = await ctx.db
+				.select({
+					animeId: episodeFile.animeId,
+					availableEpisode: max(episodeFile.episode),
+				})
+				.from(episodeFile)
+				.groupBy(episodeFile.animeId);
+			const availableById = new Map(availableRows.map((row) => [row.animeId, row.availableEpisode ?? 0]));
+
+			return rows.map((row) => ({
+				...row,
+				availableEpisode: availableById.get(row.id) ?? 0,
+			}));
+		}),
+		counts: t.procedure.query(async ({ ctx }) => {
+			const rows = await ctx.db.select({ status: listEntry.status }).from(listEntry);
 			const counts: Record<string, number> = {
 				"Currently watching": 0,
 				Completed: 0,
@@ -197,43 +182,38 @@ export const appRouter = t.router({
 				.from(anime)
 				.innerJoin(listEntry, eq(listEntry.animeId, anime.id));
 		}),
-		byId: t.procedure
-			.input(z.object({ id: z.number().int() }))
-			.query(async ({ ctx, input }) => {
-				return loadAnimeDetail(ctx.db, input.id);
-			}),
-		ensure: t.procedure
-			.input(z.object({ id: z.number().int() }))
-			.mutation(async ({ ctx, input, signal }) => {
-				try {
-					const auth = await readAnilistAuth(ctx.db);
-					const settings = await loadAppSettings(ctx.db);
-					const { id } = await ensureAnimeCached({
-						db: ctx.db,
-						id: input.id,
-						token: auth?.accessToken,
-						titleLanguage: settings.titleLanguage,
-						signal,
-					});
-					const detail = await loadAnimeDetail(ctx.db, id);
-					if (!detail) {
-						throw new TRPCError({
-							code: "INTERNAL_SERVER_ERROR",
-							message: "Anime cache write failed",
-						});
-					}
-					return detail;
-				} catch (error) {
-					if (error instanceof TRPCError) {
-						throw error;
-					}
+		byId: t.procedure.input(z.object({ id: z.number().int() })).query(async ({ ctx, input }) => {
+			return loadAnimeDetail(ctx.db, input.id);
+		}),
+		ensure: t.procedure.input(z.object({ id: z.number().int() })).mutation(async ({ ctx, input, signal }) => {
+			try {
+				const auth = await readAnilistAuth(ctx.db);
+				const settings = await loadAppSettings(ctx.db);
+				const { id } = await ensureAnimeCached({
+					db: ctx.db,
+					id: input.id,
+					token: auth?.accessToken,
+					titleLanguage: settings.titleLanguage,
+					signal,
+				});
+				const detail = await loadAnimeDetail(ctx.db, id);
+				if (!detail) {
 					throw new TRPCError({
-						code: "BAD_REQUEST",
-						message:
-							error instanceof Error ? error.message : "Could not cache anime",
+						code: "INTERNAL_SERVER_ERROR",
+						message: "Anime cache write failed",
 					});
 				}
-			}),
+				return detail;
+			} catch (error) {
+				if (error instanceof TRPCError) {
+					throw error;
+				}
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: error instanceof Error ? error.message : "Could not cache anime",
+				});
+			}
+		}),
 		setFansub: t.procedure
 			.input(
 				z.object({
@@ -242,10 +222,7 @@ export const appRouter = t.router({
 				}),
 			)
 			.mutation(async ({ ctx, input }) => {
-				await ctx.db
-					.update(anime)
-					.set({ fansub: input.fansub.trim() })
-					.where(eq(anime.id, input.id));
+				await ctx.db.update(anime).set({ fansub: input.fansub.trim() }).where(eq(anime.id, input.id));
 				return { ok: true as const };
 			}),
 		setLocal: t.procedure
@@ -268,27 +245,16 @@ export const appRouter = t.router({
 					.where(eq(anime.id, input.id));
 				return { ok: true as const };
 			}),
-		remove: t.procedure
-			.input(z.object({ id: z.number().int() }))
-			.mutation(async ({ ctx, input }) => {
-				await ctx.db
-					.delete(episodeFile)
-					.where(eq(episodeFile.animeId, input.id));
-				await ctx.db
-					.delete(syncQueue)
-					.where(eq(syncQueue.animeId, input.id));
-				await ctx.db
-					.delete(listEntry)
-					.where(eq(listEntry.animeId, input.id));
-				return { ok: true as const };
-			}),
+		remove: t.procedure.input(z.object({ id: z.number().int() })).mutation(async ({ ctx, input }) => {
+			await ctx.db.delete(episodeFile).where(eq(episodeFile.animeId, input.id));
+			await ctx.db.delete(syncQueue).where(eq(syncQueue.animeId, input.id));
+			await ctx.db.delete(listEntry).where(eq(listEntry.animeId, input.id));
+			return { ok: true as const };
+		}),
 	}),
 	history: t.router({
 		list: t.procedure.query(async ({ ctx }) => {
-			const rows = await ctx.db
-				.select()
-				.from(history)
-				.orderBy(desc(history.lastModified));
+			const rows = await ctx.db.select().from(history).orderBy(desc(history.lastModified));
 			return {
 				queued: rows.filter((row) => row.kind === "queued"),
 				history: rows.filter((row) => row.kind === "history"),
@@ -297,35 +263,25 @@ export const appRouter = t.router({
 		queuedCount: t.procedure.query(async ({ ctx }) => {
 			return countQueued(ctx.db);
 		}),
-		remove: t.procedure
-			.input(z.object({ id: z.string().min(1) }))
-			.mutation(async ({ ctx, input }) => {
-				const rows = await ctx.db
-					.select()
-					.from(history)
-					.where(eq(history.id, input.id))
-					.limit(1);
-				const row = rows[0];
-				if (!row) {
-					return { ok: true as const };
-				}
-				if (row.kind === "queued") {
-					await ctx.db
-						.delete(syncQueue)
-						.where(eq(syncQueue.animeId, row.animeId));
-				}
-				await ctx.db.delete(history).where(eq(history.id, input.id));
+		remove: t.procedure.input(z.object({ id: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+			const rows = await ctx.db.select().from(history).where(eq(history.id, input.id)).limit(1);
+			const row = rows[0];
+			if (!row) {
 				return { ok: true as const };
-			}),
-		clear: t.procedure
-			.input(z.object({ kind: z.enum(["history", "queued"]) }))
-			.mutation(async ({ ctx, input }) => {
-				if (input.kind === "queued") {
-					await ctx.db.delete(syncQueue);
-				}
-				await ctx.db.delete(history).where(eq(history.kind, input.kind));
-				return { ok: true as const };
-			}),
+			}
+			if (row.kind === "queued") {
+				await ctx.db.delete(syncQueue).where(eq(syncQueue.animeId, row.animeId));
+			}
+			await ctx.db.delete(history).where(eq(history.id, input.id));
+			return { ok: true as const };
+		}),
+		clear: t.procedure.input(z.object({ kind: z.enum(["history", "queued"]) })).mutation(async ({ ctx, input }) => {
+			if (input.kind === "queued") {
+				await ctx.db.delete(syncQueue);
+			}
+			await ctx.db.delete(history).where(eq(history.kind, input.kind));
+			return { ok: true as const };
+		}),
 	}),
 	statistics: t.router({
 		summary: t.procedure.query(async ({ ctx }) => loadStatistics(ctx.db)),
@@ -337,18 +293,16 @@ export const appRouter = t.router({
 		set: t.procedure.input(appSettingsPatchSchema).mutation(async ({ ctx, input }) => {
 			return patchAppSettings(ctx.db, input);
 		}),
-		addLibraryFolder: t.procedure
-			.input(z.object({ path: z.string().min(1) }))
-			.mutation(async ({ ctx, input }) => {
-				const path = normalizeFolderPath(input.path);
-				const current = await loadAppSettings(ctx.db);
-				if (folderPathExists(current.libraryFolders, path)) {
-					return current;
-				}
-				return patchAppSettings(ctx.db, {
-					libraryFolders: [...current.libraryFolders, { path }],
-				});
-			}),
+		addLibraryFolder: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+			const path = normalizeFolderPath(input.path);
+			const current = await loadAppSettings(ctx.db);
+			if (folderPathExists(current.libraryFolders, path)) {
+				return current;
+			}
+			return patchAppSettings(ctx.db, {
+				libraryFolders: [...current.libraryFolders, { path }],
+			});
+		}),
 	}),
 	media: t.router({
 		nowPlaying: t.procedure.query(() => getNowPlayingSnapshot()),
@@ -366,16 +320,12 @@ export const appRouter = t.router({
 		scan: t.procedure.mutation(async ({ ctx }) => {
 			return scanLibrary(ctx.db);
 		}),
-		episodes: t.procedure
-			.input(z.object({ animeId: z.number().int() }))
-			.query(async ({ ctx, input }) => {
-				return listEpisodes(ctx.db, input.animeId);
-			}),
-		playEpisode: t.procedure
-			.input(z.object({ animeId: z.number().int(), episode: z.number().int() }))
-			.mutation(async ({ ctx, input }) => {
-				return playEpisode(ctx.db, input.animeId, input.episode);
-			}),
+		episodes: t.procedure.input(z.object({ animeId: z.number().int() })).query(async ({ ctx, input }) => {
+			return listEpisodes(ctx.db, input.animeId);
+		}),
+		playEpisode: t.procedure.input(z.object({ animeId: z.number().int(), episode: z.number().int() })).mutation(async ({ ctx, input }) => {
+			return playEpisode(ctx.db, input.animeId, input.episode);
+		}),
 		playNext: t.procedure
 			.input(
 				z.object({
@@ -386,11 +336,9 @@ export const appRouter = t.router({
 			.mutation(async ({ ctx, input }) => {
 				return playNext(ctx.db, input.animeId, input.episodesWatched);
 			}),
-		playRandom: t.procedure
-			.input(z.object({ animeId: z.number().int() }))
-			.mutation(async ({ ctx, input }) => {
-				return playRandom(ctx.db, input.animeId);
-			}),
+		playRandom: t.procedure.input(z.object({ animeId: z.number().int() })).mutation(async ({ ctx, input }) => {
+			return playRandom(ctx.db, input.animeId);
+		}),
 	}),
 	torrents: t.router({
 		list: t.procedure.query(async ({ ctx }) => {
@@ -407,28 +355,20 @@ export const appRouter = t.router({
 		refresh: t.procedure.mutation(async ({ ctx }) => {
 			return checkTorrents(ctx.db, true);
 		}),
-		search: t.procedure
-			.input(z.object({ title: z.string().min(1) }))
-			.mutation(async ({ ctx, input }) => {
-				return searchTorrents(input.title, ctx.db);
-			}),
-		download: t.procedure
-			.input(z.object({ guid: z.string().min(1) }))
-			.mutation(async ({ ctx, input }) => {
-				await downloadTorrent(input.guid, ctx.db);
-				return { ok: true as const };
-			}),
-		downloadMarked: t.procedure
-			.input(z.object({ guids: z.array(z.string().min(1)) }))
-			.mutation(async ({ ctx, input }) => {
-				await downloadSelectedTorrents(input.guids, ctx.db);
-				return { ok: true as const };
-			}),
-		discard: t.procedure
-			.input(z.object({ guid: z.string().min(1) }))
-			.mutation(({ input }) => {
-				return discardTorrent(input.guid);
-			}),
+		search: t.procedure.input(z.object({ title: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+			return searchTorrents(input.title, ctx.db);
+		}),
+		download: t.procedure.input(z.object({ guid: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+			await downloadTorrent(input.guid, ctx.db);
+			return { ok: true as const };
+		}),
+		downloadMarked: t.procedure.input(z.object({ guids: z.array(z.string().min(1)) })).mutation(async ({ ctx, input }) => {
+			await downloadSelectedTorrents(input.guids, ctx.db);
+			return { ok: true as const };
+		}),
+		discard: t.procedure.input(z.object({ guid: z.string().min(1) })).mutation(({ input }) => {
+			return discardTorrent(input.guid);
+		}),
 		discardAnime: t.procedure
 			.input(
 				z.object({
@@ -448,12 +388,7 @@ export const appRouter = t.router({
 				}),
 			)
 			.mutation(async ({ ctx, input }) => {
-				return preferFansubFilter(
-					input.animeId,
-					input.group,
-					input.title,
-					ctx.db,
-				);
+				return preferFansubFilter(input.animeId, input.group, input.title, ctx.db);
 			}),
 	}),
 	notice: t.router({

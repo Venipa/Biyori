@@ -4,11 +4,7 @@ function sameJson(left: unknown, right: unknown): boolean {
 	return JSON.stringify(left) === JSON.stringify(right);
 }
 
-export function pickDirtySettings(
-	values: AppSettings,
-	dirty: object,
-	defaults: object,
-): AppSettingsPatch {
+export function pickDirtySettings(values: AppSettings, dirty: object, defaults: object): AppSettingsPatch {
 	const patch: Record<string, unknown> = {};
 	const dirtyRecord = dirty as Record<string, unknown>;
 	const defaultsRecord = defaults as Record<string, unknown>;
@@ -19,10 +15,7 @@ export function pickDirtySettings(
 			patch[key as string] = current;
 			continue;
 		}
-		if (
-			Array.isArray(current) &&
-			!sameJson(current, defaultsRecord[key as string])
-		) {
+		if (Array.isArray(current) && !sameJson(current, defaultsRecord[key as string])) {
 			patch[key as string] = current;
 		}
 	}

@@ -11,19 +11,13 @@ type FormCheckboxProps<TFieldValues extends FieldValues> = {
 	disabled?: boolean;
 };
 
-export function FormCheckbox<TFieldValues extends FieldValues>({
-	control,
-	name,
-	id,
-	label,
-	disabled,
-}: FormCheckboxProps<TFieldValues>) {
+export function FormCheckbox<TFieldValues extends FieldValues>({ control, name, id, label, disabled }: FormCheckboxProps<TFieldValues>) {
 	return (
 		<Controller
 			control={control}
 			name={name}
 			render={({ field }) => (
-				<Field orientation="horizontal" data-disabled={disabled || undefined}>
+				<Field orientation='horizontal' data-disabled={disabled || undefined}>
 					<Checkbox
 						id={id}
 						disabled={disabled}
@@ -32,7 +26,7 @@ export function FormCheckbox<TFieldValues extends FieldValues>({
 							field.onChange(checked === true);
 						}}
 					/>
-					<FieldLabel htmlFor={id} className="font-normal">
+					<FieldLabel htmlFor={id} className='font-normal'>
 						{label}
 					</FieldLabel>
 				</Field>

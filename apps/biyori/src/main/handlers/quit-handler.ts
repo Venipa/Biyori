@@ -4,11 +4,7 @@ import { autoUpdater } from "electron-updater";
 import { log } from "../logger";
 import { loadAppSettings, subscribeSettings } from "../settings";
 import { windowManager } from "../windows";
-import {
-	isAppQuitting,
-	markAppQuitting,
-	shouldCancelWindowClose,
-} from "./quit-policy";
+import { isAppQuitting, markAppQuitting, shouldCancelWindowClose } from "./quit-policy";
 import { setTrayState } from "./tray-state";
 
 export { isAppQuitting } from "./quit-policy";

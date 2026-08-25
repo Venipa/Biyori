@@ -1,9 +1,4 @@
-import type {
-	TorrentFilter,
-	TorrentFilterCondition,
-	TorrentFilterOperator,
-	TorrentItemState,
-} from "../../lib/schemas/torrent-filter";
+import type { TorrentFilter, TorrentFilterCondition, TorrentFilterOperator, TorrentItemState } from "../../lib/schemas/torrent-filter";
 import { parseSizeBytes, resolutionHeight } from "./size";
 
 export type TorrentFilterSubject = {
@@ -37,20 +32,9 @@ export type TorrentFilterItem = {
 	subject: TorrentFilterSubject;
 };
 
-const NUMERIC_ELEMENTS = new Set([
-	"file_size",
-	"meta_id",
-	"meta_episodes",
-	"episode_number",
-	"episode_version",
-	"local_episode_available",
-]);
+const NUMERIC_ELEMENTS = new Set(["file_size", "meta_id", "meta_episodes", "episode_number", "episode_version", "local_episode_available"]);
 
-function compareOp(
-	left: number,
-	right: number,
-	op: TorrentFilterOperator,
-): boolean {
+function compareOp(left: number, right: number, op: TorrentFilterOperator): boolean {
 	switch (op) {
 		case "equals":
 			return left === right;
@@ -81,10 +65,7 @@ function replaceVars(value: string, subject: TorrentFilterSubject): string {
 	return value.replace(/%watched%/gi, String(subject.watched));
 }
 
-function elementValue(
-	condition: TorrentFilterCondition,
-	subject: TorrentFilterSubject,
-): string {
+function elementValue(condition: TorrentFilterCondition, subject: TorrentFilterSubject): string {
 	switch (condition.element) {
 		case "file_title":
 			return subject.title;
@@ -115,11 +96,7 @@ function elementValue(
 		case "user_status":
 			return subject.userStatus;
 		case "episode_number":
-			return subject.episodeHigh > 0
-				? String(subject.episodeHigh)
-				: subject.episodes > 0
-					? String(subject.episodes)
-					: "";
+			return subject.episodeHigh > 0 ? String(subject.episodeHigh) : subject.episodes > 0 ? String(subject.episodes) : "";
 		case "episode_version":
 			return String(subject.releaseVersion);
 		case "local_episode_available":
@@ -139,37 +116,19 @@ function isNumeric(element: TorrentFilterCondition["element"]): boolean {
 	return NUMERIC_ELEMENTS.has(element);
 }
 
-export function evaluateCondition(
-	condition: TorrentFilterCondition,
-	subject: TorrentFilterSubject,
-): boolean {
+export function evaluateCondition(condition: TorrentFilterCondition, subject: TorrentFilterSubject): boolean {
 	const element = elementValue(condition, subject);
 	const value = replaceVars(condition.value, subject);
 	if (isNumeric(condition.element) && (!element || !value)) {
 		return false;
 	}
 
-	if (
-		condition.op === "equals" ||
-		condition.op === "not_equals" ||
-		condition.op === "gt" ||
-		condition.op === "gte" ||
-		condition.op === "lt" ||
-		condition.op === "lte"
-	) {
+	if (condition.op === "equals" || condition.op === "not_equals" || condition.op === "gt" || condition.op === "gte" || condition.op === "lt" || condition.op === "lte") {
 		if (condition.element === "file_size") {
-			return compareOp(
-				Number.parseInt(element, 10) || 0,
-				parseSizeBytes(value),
-				condition.op,
-			);
+			return compareOp(Number.parseInt(element, 10) || 0, parseSizeBytes(value), condition.op);
 		}
 		if (condition.element === "episode_video_resolution") {
-			return compareOp(
-				resolutionHeight(element),
-				resolutionHeight(value),
-				condition.op,
-			);
+			return compareOp(resolutionHeight(element), resolutionHeight(value), condition.op);
 		}
 		if (isNumeric(condition.element)) {
 			if (condition.op === "equals" || condition.op === "not_equals") {
@@ -177,11 +136,7 @@ export function evaluateCondition(
 					return compareOp(Number.parseInt(element, 10) || 0, 1, condition.op);
 				}
 			}
-			return compareOp(
-				Number.parseInt(element, 10) || 0,
-				Number.parseInt(value, 10) || 0,
-				condition.op,
-			);
+			return compareOp(Number.parseInt(element, 10) || 0, Number.parseInt(value, 10) || 0, condition.op);
 		}
 		if (condition.op === "equals" || condition.op === "not_equals") {
 			return compareOp(equalText(element, value) ? 1 : 0, 1, condition.op);
@@ -201,11 +156,7 @@ export function evaluateCondition(
 }
 
 function isDiscarded(state: TorrentItemState): boolean {
-	return (
-		state === "discarded_normal" ||
-		state === "discarded_inactive" ||
-		state === "discarded_hidden"
-	);
+	return state === "discarded_normal" || state === "discarded_inactive" || state === "discarded_hidden";
 }
 
 function discardState(option: TorrentFilter["option"]): TorrentItemState {
@@ -218,10 +169,7 @@ function discardState(option: TorrentFilter["option"]): TorrentItemState {
 	return "discarded_normal";
 }
 
-function conditionsMatch(
-	filter: TorrentFilter,
-	subject: TorrentFilterSubject,
-): { matched: boolean; index: number } {
+function conditionsMatch(filter: TorrentFilter, subject: TorrentFilterSubject): { matched: boolean; index: number } {
 	if (filter.match === "all") {
 		for (let i = 0; i < filter.conditions.length; i += 1) {
 			if (!evaluateCondition(filter.conditions[i], subject)) {
@@ -238,13 +186,8 @@ function conditionsMatch(
 	return { matched: false, index: 0 };
 }
 
-function samePreferenceGroup(
-	filter: TorrentFilter,
-	left: TorrentFilterSubject,
-	right: TorrentFilterSubject,
-): boolean {
-	const has = (element: TorrentFilterCondition["element"]): boolean =>
-		filter.conditions.some((condition) => condition.element === element);
+function samePreferenceGroup(filter: TorrentFilter, left: TorrentFilterSubject, right: TorrentFilterSubject): boolean {
+	const has = (element: TorrentFilterCondition["element"]): boolean => filter.conditions.some((condition) => condition.element === element);
 	if (!has("meta_id") && !has("episode_title")) {
 		if (left.animeId == null && right.animeId == null) {
 			if (!equalText(left.animeTitle, right.animeTitle)) {
@@ -255,10 +198,7 @@ function samePreferenceGroup(
 		}
 	}
 	if (!has("episode_number")) {
-		if (
-			left.episodeLow !== right.episodeLow ||
-			left.episodeHigh !== right.episodeHigh
-		) {
+		if (left.episodeLow !== right.episodeLow || left.episodeHigh !== right.episodeHigh) {
 			return false;
 		}
 	}
@@ -268,20 +208,11 @@ function samePreferenceGroup(
 	return true;
 }
 
-export function applyFilter(
-	filter: TorrentFilter,
-	items: TorrentFilterItem[],
-	item: TorrentFilterItem,
-	recursive: boolean,
-): boolean {
+export function applyFilter(filter: TorrentFilter, items: TorrentFilterItem[], item: TorrentFilterItem, recursive: boolean): boolean {
 	if (!filter.enabled || isDiscarded(item.state)) {
 		return false;
 	}
-	if (
-		filter.animeIds.length > 0 &&
-		(item.subject.animeId == null ||
-			!filter.animeIds.includes(item.subject.animeId))
-	) {
+	if (filter.animeIds.length > 0 && (item.subject.animeId == null || !filter.animeIds.includes(item.subject.animeId))) {
 		return false;
 	}
 
@@ -319,11 +250,7 @@ export function applyFilter(
 	return false;
 }
 
-export function applyPreferenceFilter(
-	filter: TorrentFilter,
-	items: TorrentFilterItem[],
-	item: TorrentFilterItem,
-): boolean {
+export function applyPreferenceFilter(filter: TorrentFilter, items: TorrentFilterItem[], item: TorrentFilterItem): boolean {
 	let applied = false;
 	for (const peer of items) {
 		if (isDiscarded(peer.state) || peer.id === item.id) {
@@ -337,11 +264,7 @@ export function applyPreferenceFilter(
 	return applied;
 }
 
-export function applyTorrentFilters(
-	items: TorrentFilterItem[],
-	filters: TorrentFilter[],
-	enabled: boolean,
-): TorrentFilterItem[] {
+export function applyTorrentFilters(items: TorrentFilterItem[], filters: TorrentFilter[], enabled: boolean): TorrentFilterItem[] {
 	if (!enabled) {
 		return items;
 	}
@@ -362,10 +285,7 @@ export function applyTorrentFilters(
 	return items;
 }
 
-export function applyArchiveFilter(
-	items: TorrentFilterItem[],
-	archivedTitles: Set<string>,
-): TorrentFilterItem[] {
+export function applyArchiveFilter(items: TorrentFilterItem[], archivedTitles: Set<string>): TorrentFilterItem[] {
 	for (const item of items) {
 		if (!isDiscarded(item.state) && archivedTitles.has(item.subject.title)) {
 			item.state = "discarded_normal";
@@ -382,25 +302,14 @@ const STATE_RANK: Record<TorrentItemState, number> = {
 	discarded_hidden: 4,
 };
 
-export function compareTorrentState(
-	left: TorrentItemState,
-	right: TorrentItemState,
-): number {
+export function compareTorrentState(left: TorrentItemState, right: TorrentItemState): number {
 	return STATE_RANK[left] - STATE_RANK[right];
 }
 
-export function addDiscardAnimeFilter(
-	filters: TorrentFilter[],
-	animeId: number,
-	title: string,
-): TorrentFilter[] {
+export function addDiscardAnimeFilter(filters: TorrentFilter[], animeId: number, title: string): TorrentFilter[] {
 	if (
 		filters.some(
-			(filter) =>
-				filter.action === "discard" &&
-				filter.conditions.length === 1 &&
-				filter.conditions[0].element === "meta_id" &&
-				filter.conditions[0].value === String(animeId),
+			(filter) => filter.action === "discard" && filter.conditions.length === 1 && filter.conditions[0].element === "meta_id" && filter.conditions[0].value === String(animeId),
 		)
 	) {
 		return filters;
@@ -426,30 +335,20 @@ export function addDiscardAnimeFilter(
 	];
 }
 
-export function setFansubFilter(
-	filters: TorrentFilter[],
-	animeId: number,
-	group: string,
-	title: string,
-): TorrentFilter[] {
+export function setFansubFilter(filters: TorrentFilter[], animeId: number, group: string, title: string): TorrentFilter[] {
 	const next = filters.map((filter) => ({
 		...filter,
 		animeIds: [...filter.animeIds],
 		conditions: filter.conditions.map((condition) => ({ ...condition })),
 	}));
 	const existing = next.find(
-		(filter) =>
-			filter.action === "prefer" &&
-			filter.animeIds.includes(animeId) &&
-			filter.conditions.some((condition) => condition.element === "episode_group"),
+		(filter) => filter.action === "prefer" && filter.animeIds.includes(animeId) && filter.conditions.some((condition) => condition.element === "episode_group"),
 	);
 	if (existing) {
 		if (existing.animeIds.length > 1) {
 			existing.animeIds = existing.animeIds.filter((id) => id !== animeId);
 		} else {
-			const groupCondition = existing.conditions.find(
-				(condition) => condition.element === "episode_group",
-			);
+			const groupCondition = existing.conditions.find((condition) => condition.element === "episode_group");
 			if (groupCondition) {
 				groupCondition.value = group;
 			}

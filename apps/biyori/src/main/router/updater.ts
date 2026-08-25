@@ -1,12 +1,5 @@
 import { t } from "../trpc";
-import {
-  applyAppUpdate,
-  checkForAppUpdate,
-  downloadAppUpdate,
-  getUpdateState,
-  refreshLocalUpdateInfo,
-  updateStateObservable,
-} from "../updater";
+import { applyAppUpdate, checkForAppUpdate, downloadAppUpdate, getUpdateState, refreshLocalUpdateInfo, updateStateObservable } from "../updater";
 
 export const updaterRouter = t.router({
 	status: t.procedure.query(() => getUpdateState()),

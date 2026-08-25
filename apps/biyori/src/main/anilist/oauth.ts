@@ -55,15 +55,8 @@ export function expiresAtFromToken(token: string): number {
 		if (!payload) {
 			return Date.now() + DEFAULT_EXPIRES_IN_SECONDS * 1000;
 		}
-		const json: unknown = JSON.parse(
-			Buffer.from(payload, "base64url").toString("utf8"),
-		);
-		if (
-			json &&
-			typeof json === "object" &&
-			"exp" in json &&
-			typeof json.exp === "number"
-		) {
+		const json: unknown = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+		if (json && typeof json === "object" && "exp" in json && typeof json.exp === "number") {
 			return json.exp * 1000;
 		}
 	} catch {

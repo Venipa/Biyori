@@ -1,10 +1,6 @@
 import type { AppSettings, DefaultService } from "../../lib/schemas/app-settings";
 import DiscordClient from "../lib/discord-rpc";
-import {
-  type DiscordActivity,
-  DiscordActivityStatusDisplayType,
-  DiscordActivityType,
-} from "../lib/discord-rpc/discord-rpc";
+import { type DiscordActivity, DiscordActivityStatusDisplayType, DiscordActivityType } from "../lib/discord-rpc/discord-rpc";
 import type { NowPlayingSnapshot } from "../track/types";
 
 const CONNECT_RETRY_MS = 5_000;
@@ -34,11 +30,7 @@ let connectPromise: Promise<boolean> | null = null;
 let lastClientId = "";
 
 function clientIdFrom(settings: AppSettings): string {
-	return (
-		settings.discordApplicationId.trim() ||
-		DISCORD_CLIENT_ID ||
-		""
-	);
+	return settings.discordApplicationId.trim() || DISCORD_CLIENT_ID || "";
 }
 
 function clearRetry(): void {
@@ -110,10 +102,7 @@ async function ensureConnected(settings: AppSettings): Promise<boolean> {
 	return connectPromise;
 }
 
-export function syncDiscordPresence(
-	snapshot: NowPlayingSnapshot | null,
-	settings: AppSettings,
-): void {
+export function syncDiscordPresence(snapshot: NowPlayingSnapshot | null, settings: AppSettings): void {
 	const clientId = clientIdFrom(settings);
 	wantConnected = settings.updateRichPresence && Boolean(clientId);
 	if (!wantConnected) {
@@ -130,9 +119,7 @@ export function syncDiscordPresence(
 			client.clearActivity();
 			return;
 		}
-		const largeImage = snapshot.match.coverUrl.startsWith("https://")
-			? snapshot.match.coverUrl
-			: proxiedCoverImage(snapshot.match.coverUrl);
+		const largeImage = snapshot.match.coverUrl.startsWith("https://") ? snapshot.match.coverUrl : proxiedCoverImage(snapshot.match.coverUrl);
 		const smallImage = providerSmallImage(snapshot.user.provider);
 		const assets: DiscordActivity["assets"] = {
 			large_text: snapshot.match.title,
@@ -148,12 +135,8 @@ export function syncDiscordPresence(
 			type: DiscordActivityType.Watching,
 			status_display_type: DiscordActivityStatusDisplayType.Details,
 			details: snapshot.match.title,
-			state: snapshot.parsed.episode
-				? `Episode ${snapshot.parsed.episode}`
-				: "Watching",
-			timestamps: settings.showElapsedTime && snapshot.startedAt
-				? { start: snapshot.startedAt }
-				: undefined,
+			state: snapshot.parsed.episode ? `Episode ${snapshot.parsed.episode}` : "Watching",
+			timestamps: settings.showElapsedTime && snapshot.startedAt ? { start: snapshot.startedAt } : undefined,
 			assets,
 			instance: false,
 			buttons: snapshot.match

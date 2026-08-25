@@ -5,20 +5,14 @@ import type { DatabaseClient } from "./db";
 import { anime, listEntry, mediaCache } from "./db/schema";
 import { appUptimeSeconds, connectionCounts } from "./http-stats";
 import { appCacheDir, appFeedDir } from "./lib/app-paths";
-import {
-	type StatisticsSummary,
-	summarizeList,
-} from "./statistics-core";
+import { type StatisticsSummary, summarizeList } from "./statistics-core";
 
 type FileTotals = {
 	count: number;
 	sizeBytes: number;
 };
 
-async function totalNamedFiles(
-	directory: string,
-	fileNames: string[],
-): Promise<FileTotals> {
+async function totalNamedFiles(directory: string, fileNames: string[]): Promise<FileTotals> {
 	const sizes = await Promise.all(
 		fileNames.map(async (fileName) => {
 			try {
@@ -29,24 +23,13 @@ async function totalNamedFiles(
 			}
 		}),
 	);
-	return sizes.reduce<FileTotals>(
-		(total, size) =>
-			size == null
-				? total
-				: { count: total.count + 1, sizeBytes: total.sizeBytes + size },
-		{ count: 0, sizeBytes: 0 },
-	);
+	return sizes.reduce<FileTotals>((total, size) => (size == null ? total : { count: total.count + 1, sizeBytes: total.sizeBytes + size }), { count: 0, sizeBytes: 0 });
 }
 
 async function totalTorrentFiles(directory: string): Promise<FileTotals> {
 	try {
 		const entries = await readdir(directory, { withFileTypes: true });
-		const fileNames = entries
-			.filter(
-				(entry) =>
-					entry.isFile() && extname(entry.name).toLowerCase() === ".torrent",
-			)
-			.map((entry) => entry.name);
+		const fileNames = entries.filter((entry) => entry.isFile() && extname(entry.name).toLowerCase() === ".torrent").map((entry) => entry.name);
 		return totalNamedFiles(directory, fileNames);
 	} catch {
 		return { count: 0, sizeBytes: 0 };
@@ -65,9 +48,7 @@ export type StatisticsResult = StatisticsSummary & {
 	uptimeSeconds: number;
 };
 
-export async function loadStatistics(
-	database: DatabaseClient,
-): Promise<StatisticsResult> {
+export async function loadStatistics(database: DatabaseClient): Promise<StatisticsResult> {
 	const [entries, localRows, images] = await Promise.all([
 		database
 			.select({

@@ -2,7 +2,6 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { app } from "electron";
 
-
 export function appRootDir(): string {
 	const dir = app.getPath("userData");
 	mkdirSync(dir, { recursive: true });

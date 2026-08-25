@@ -25,15 +25,9 @@ function scoreValue(value: unknown): unknown {
 export const animeListEntrySchema = z.object({
 	status: listStatusSchema,
 	progress: z.coerce.number().int().min(0, "Required"),
-	notes: z.preprocess(
-		(value) => (typeof value === "string" ? value : ""),
-		z.string(),
-	),
+	notes: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
 	rewatching: z.boolean(),
-	score: z.preprocess(
-		scoreValue,
-		z.number().int().min(1).max(100).nullable().optional(),
-	),
+	score: z.preprocess(scoreValue, z.number().int().min(1).max(100).nullable().optional()),
 	timesRewatched: z.number().int().min(0).optional(),
 	dateStarted: z.string().nullable().optional(),
 	dateCompleted: z.string().nullable().optional(),

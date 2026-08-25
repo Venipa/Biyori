@@ -9,35 +9,19 @@ import { listStatusSchema } from "../../shared/list";
 import { AnilistApiError } from "../anilist/client";
 import { toAnilistStatus } from "../anilist/map";
 import {
-  clearAnilistLoginError,
-  expiresAtFromToken,
-  getAnilistClientId,
-  getAnilistLoginError,
-  normalizeAnilistToken,
-  openAnilistLogin,
-  setAnilistLoginError,
+	clearAnilistLoginError,
+	expiresAtFromToken,
+	getAnilistClientId,
+	getAnilistLoginError,
+	normalizeAnilistToken,
+	openAnilistLogin,
+	setAnilistLoginError,
 } from "../anilist/oauth";
-import {
-  clearAnilistAuth,
-  readAnilistAuth,
-  toPublicStatus,
-  writeAnilistAuth,
-} from "../anilist/store";
-import {
-  fetchSeasonMedia,
-  fetchViewer,
-  saveMediaListEntry,
-  searchAniListMedia,
-  upsertMediaList,
-} from "../anilist/sync";
+import { clearAnilistAuth, readAnilistAuth, toPublicStatus, writeAnilistAuth } from "../anilist/store";
+import { fetchSeasonMedia, fetchViewer, saveMediaListEntry, searchAniListMedia, upsertMediaList } from "../anilist/sync";
 import { anime, listEntry } from "../db/schema";
 import { loadAppSettings } from "../settings";
-import {
-  abortAniListSync,
-  getSyncSnapshot,
-  requestAniListSync,
-  subscribeSyncStatus,
-} from "../sync";
+import { abortAniListSync, getSyncSnapshot, requestAniListSync, subscribeSyncStatus } from "../sync";
 import { enqueueUpdate } from "../track/queue";
 import { t } from "../trpc";
 
@@ -93,8 +77,7 @@ export const anilistRouter = t.router({
 		try {
 			return openAnilistLogin();
 		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "Could not open AniList login";
+			const message = error instanceof Error ? error.message : "Could not open AniList login";
 			setAnilistLoginError(message);
 			throw new TRPCError({
 				code: "BAD_REQUEST",
@@ -102,28 +85,26 @@ export const anilistRouter = t.router({
 			});
 		}
 	}),
-	connectWithToken: t.procedure
-		.input(anilistTokenSchema)
-		.mutation(async ({ ctx, input }) => {
-			clearAnilistLoginError();
-			const token = normalizeAnilistToken(input.token);
-			try {
-				const viewer = await fetchViewer(token);
-				await writeAnilistAuth(ctx.db, {
-					accessToken: token,
-					expiresAt: expiresAtFromToken(token),
-					userId: viewer.id,
-					username: viewer.name,
-				});
-				requestAniListSync();
-				return {
-					...toPublicStatus(await readAnilistAuth(ctx.db)),
-					loginError: null as string | null,
-				};
-			} catch (error) {
-				mapAnilistError(error);
-			}
-		}),
+	connectWithToken: t.procedure.input(anilistTokenSchema).mutation(async ({ ctx, input }) => {
+		clearAnilistLoginError();
+		const token = normalizeAnilistToken(input.token);
+		try {
+			const viewer = await fetchViewer(token);
+			await writeAnilistAuth(ctx.db, {
+				accessToken: token,
+				expiresAt: expiresAtFromToken(token),
+				userId: viewer.id,
+				username: viewer.name,
+			});
+			requestAniListSync();
+			return {
+				...toPublicStatus(await readAnilistAuth(ctx.db)),
+				loginError: null as string | null,
+			};
+		} catch (error) {
+			mapAnilistError(error);
+		}
+	}),
 	disconnect: t.procedure.mutation(async ({ ctx }) => {
 		clearAnilistLoginError();
 		abortAniListSync();
@@ -202,11 +183,7 @@ export const anilistRouter = t.router({
 					mediaId: input.mediaId,
 					status: toAnilistStatus(status, false),
 				});
-				const upserted = await upsertMediaList(
-					ctx.db,
-					saved,
-					settings.titleLanguage,
-				);
+				const upserted = await upsertMediaList(ctx.db, saved, settings.titleLanguage);
 				if (!upserted) {
 					throw new TRPCError({
 						code: "INTERNAL_SERVER_ERROR",
@@ -218,7 +195,7 @@ export const anilistRouter = t.router({
 				mapAnilistError(error);
 			}
 		}),
-		saveEntry: t.procedure
+	saveEntry: t.procedure
 		.input(
 			animeListEntrySchema.extend({
 				animeId: z.number().int(),
@@ -255,12 +232,8 @@ export const anilistRouter = t.router({
 						notes: input.notes,
 						rewatching: input.rewatching,
 						timesRewatched: input.timesRewatched ?? row.timesRewatched,
-						...(input.dateStarted !== undefined
-							? { dateStarted: input.dateStarted }
-							: {}),
-						...(input.dateCompleted !== undefined
-							? { dateCompleted: input.dateCompleted }
-							: {}),
+						...(input.dateStarted !== undefined ? { dateStarted: input.dateStarted } : {}),
+						...(input.dateCompleted !== undefined ? { dateCompleted: input.dateCompleted } : {}),
 					},
 				});
 				return { ok: true as const };

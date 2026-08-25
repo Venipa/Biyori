@@ -39,10 +39,7 @@ function subject(partial: Partial<TorrentFilterSubject>): TorrentFilterSubject {
 	};
 }
 
-function item(
-	id: string,
-	partial: Partial<TorrentFilterSubject> = {},
-): TorrentFilterItem {
+function item(id: string, partial: Partial<TorrentFilterSubject> = {}): TorrentFilterItem {
 	return {
 		id,
 		state: "blank",
@@ -52,12 +49,7 @@ function item(
 
 describe("torrent filters", () => {
 	test("empty numeric values do not match", () => {
-		expect(
-			evaluateCondition(
-				{ element: "episode_number", op: "lte", value: "%watched%" },
-				subject({ episodeHigh: 0, episodes: 0, watched: 3 }),
-			),
-		).toBe(false);
+		expect(evaluateCondition({ element: "episode_number", op: "lte", value: "%watched%" }, subject({ episodeHigh: 0, episodes: 0, watched: 3 }))).toBe(false);
 	});
 
 	test("default presets select watching and deactivate not-in-list", () => {
@@ -65,11 +57,7 @@ describe("torrent filters", () => {
 		const unknown = item("u", { animeId: null, userStatus: "Not in list" });
 		const dropped = item("d", { userStatus: "Dropped" });
 		const watched = item("old", { episodeHigh: 1, watched: 1 });
-		const rows = applyTorrentFilters(
-			[watching, unknown, dropped, watched],
-			defaultTorrentFilters(),
-			true,
-		);
+		const rows = applyTorrentFilters([watching, unknown, dropped, watched], defaultTorrentFilters(), true);
 		expect(rows.find((row) => row.id === "w")?.state).toBe("selected");
 		expect(rows.find((row) => row.id === "u")?.state).toBe("discarded_inactive");
 		expect(rows.find((row) => row.id === "d")?.state).toBe("discarded_normal");
@@ -103,9 +91,7 @@ describe("torrent filters", () => {
 	});
 
 	test("selected sorts before discarded", () => {
-		expect(compareTorrentState("selected", "discarded_inactive")).toBeLessThan(
-			0,
-		);
+		expect(compareTorrentState("selected", "discarded_inactive")).toBeLessThan(0);
 		expect(compareTorrentState("blank", "discarded_normal")).toBeLessThan(0);
 	});
 

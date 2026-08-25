@@ -15,17 +15,7 @@ type AnimeCoverProps = {
 	lazy?: boolean;
 };
 
-export function AnimeCover({
-	id,
-	kind = "cover",
-	sourceUrl,
-	coverUrl,
-	alt,
-	className,
-	width,
-	height,
-	lazy = false,
-}: AnimeCoverProps) {
+export function AnimeCover({ id, kind = "cover", sourceUrl, coverUrl, alt, className, width, height, lazy = false }: AnimeCoverProps) {
 	const rootRef = useRef<HTMLDivElement>(null);
 	const [visible, setVisible] = useState(!lazy);
 	const enabled = visible && id != null;
@@ -68,12 +58,8 @@ export function AnimeCover({
 			setObjectUrl(null);
 			return;
 		}
-		const bytes = Uint8Array.from(atob(query.data.base64), (char) =>
-			char.charCodeAt(0),
-		);
-		const url = URL.createObjectURL(
-			new Blob([bytes], { type: query.data.mime }),
-		);
+		const bytes = Uint8Array.from(atob(query.data.base64), (char) => char.charCodeAt(0));
+		const url = URL.createObjectURL(new Blob([bytes], { type: query.data.mime }));
 		setObjectUrl(url);
 		return () => {
 			URL.revokeObjectURL(url);
@@ -82,13 +68,7 @@ export function AnimeCover({
 
 	return (
 		<div ref={rootRef} className={className}>
-			<Image
-				src={objectUrl}
-				alt={alt}
-				width={width}
-				height={height}
-				className="size-full"
-			/>
+			<Image src={objectUrl} alt={alt} width={width} height={height} className='size-full' />
 		</div>
 	);
 }

@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-	animeInfoSearchSchema,
-	parseAnimeInfoId,
-} from "./anime-info-search";
+import { animeInfoSearchSchema, parseAnimeInfoId } from "./anime-info-search";
 
 describe("anime info search params", () => {
 	test("keeps id as the url string so hash history does not rewrite", () => {

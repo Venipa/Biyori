@@ -143,8 +143,7 @@ async function runSync(): Promise<void> {
 			userId: viewer.id,
 			signal,
 			onProgress: (processed, total) => {
-				const percent =
-					total > 0 ? Math.round((processed / total) * 100) : undefined;
+				const percent = total > 0 ? Math.round((processed / total) * 100) : undefined;
 				emitRunning(synchronizingMessage(percent), processed, total);
 			},
 		});
@@ -164,8 +163,7 @@ async function runSync(): Promise<void> {
 		if (signal.aborted) {
 			return;
 		}
-		const message =
-			error instanceof Error ? error.message : "Request failed";
+		const message = error instanceof Error ? error.message : "Request failed";
 		emit({
 			phase: "error",
 			message: taggedMessage(message),

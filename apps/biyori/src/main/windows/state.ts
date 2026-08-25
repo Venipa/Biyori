@@ -18,20 +18,11 @@ function isOnDisplay(state: SavedWindowState): boolean {
 	}
 	return screen.getAllDisplays().some((display) => {
 		const { x, y, width, height } = display.bounds;
-		return (
-			state.x! >= x &&
-			state.y! >= y &&
-			state.x! + state.width <= x + width &&
-			state.y! + state.height <= y + height
-		);
+		return state.x! >= x && state.y! >= y && state.x! + state.width <= x + width && state.y! + state.height <= y + height;
 	});
 }
 
-export function attachWindowState(
-	win: BrowserWindow,
-	name: string,
-	defaults: { width: number; height: number },
-): void {
+export function attachWindowState(win: BrowserWindow, name: string, defaults: { width: number; height: number }): void {
 	const store = createYmlStore<SavedWindowState>(name);
 	const restored: SavedWindowState = {
 		width: Number(store.get("width", defaults.width)) || defaults.width,

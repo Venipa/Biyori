@@ -10,18 +10,12 @@ import {
 } from "@/mainview/components/ui/alert-dialog";
 import { useHeldOpenPayload } from "@/mainview/lib/held-open-payload";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
-import {
-	requestAnimeDelete,
-	setSelectedAnime,
-	useAnimeDeleteRequest,
-} from "@/mainview/lib/selected-anime";
+import { requestAnimeDelete, setSelectedAnime, useAnimeDeleteRequest } from "@/mainview/lib/selected-anime";
 import { trpc } from "@/mainview/trpc";
 
 export function AnimeDeleteDialog() {
 	const pending = useAnimeDeleteRequest();
-	const { payload: held, onOpenChangeComplete } = useHeldOpenPayload(
-		pending ?? undefined,
-	);
+	const { payload: held, onOpenChangeComplete } = useHeldOpenPayload(pending ?? undefined);
 	const utils = trpc.useUtils();
 	const remove = trpc.anime.remove.useMutation();
 
@@ -33,19 +27,16 @@ export function AnimeDeleteDialog() {
 					requestAnimeDelete(null);
 				}
 			}}
-			onOpenChangeComplete={onOpenChangeComplete}
-		>
+			onOpenChangeComplete={onOpenChangeComplete}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>Delete from list</AlertDialogTitle>
-					<AlertDialogDescription>
-						Remove {held?.title ?? "this anime"} from your list?
-					</AlertDialogDescription>
+					<AlertDialogDescription>Remove {held?.title ?? "this anime"} from your list?</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
 					<AlertDialogCancel>Cancel</AlertDialogCancel>
 					<AlertDialogAction
-						variant="destructive"
+						variant='destructive'
 						disabled={remove.isPending}
 						onClick={() => {
 							if (!held) {
@@ -56,8 +47,7 @@ export function AnimeDeleteDialog() {
 								setSelectedAnime(null);
 								void invalidateAnimeQueries(utils, "removed");
 							});
-						}}
-					>
+						}}>
 						Delete
 					</AlertDialogAction>
 				</AlertDialogFooter>

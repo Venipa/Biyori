@@ -56,9 +56,7 @@ function estimateEpisodeCount(entry: StatisticsEntry): number {
 	return 0;
 }
 
-export function summarizeList(
-	entries: StatisticsEntry[],
-): StatisticsSummary {
+export function summarizeList(entries: StatisticsEntry[]): StatisticsSummary {
 	let episodeCount = 0;
 	let spentMinutes = 0;
 	let remainingMinutes = 0;
@@ -66,16 +64,12 @@ export function summarizeList(
 	const scoreCounts = Array.from({ length: 11 }, () => 0);
 
 	for (const entry of entries) {
-		const watched =
-			entry.episodesWatched + entry.timesRewatched * entry.episodes;
+		const watched = entry.episodesWatched + entry.timesRewatched * entry.episodes;
 		const duration = estimateDuration(entry);
 		episodeCount += watched;
 		spentMinutes += duration * watched;
 		if (entry.status !== "Completed" && entry.status !== "Dropped") {
-			const remaining = Math.max(
-				0,
-				estimateEpisodeCount(entry) - entry.episodesWatched,
-			);
+			const remaining = Math.max(0, estimateEpisodeCount(entry) - entry.episodesWatched);
 			remainingMinutes += duration * remaining;
 		}
 		if (entry.score != null && entry.score > 0) {
@@ -85,19 +79,8 @@ export function summarizeList(
 		}
 	}
 
-	const mean =
-		scores.length > 0
-			? scores.reduce((sum, score) => sum + score, 0) / scores.length
-			: 0;
-	const deviation =
-		scores.length > 0
-			? Math.sqrt(
-					scores.reduce(
-						(sum, score) => sum + (score - mean) ** 2,
-						0,
-					) / scores.length,
-				)
-			: 0;
+	const mean = scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
+	const deviation = scores.length > 0 ? Math.sqrt(scores.reduce((sum, score) => sum + (score - mean) ** 2, 0) / scores.length) : 0;
 	const largestBucket = Math.max(1, ...scoreCounts);
 
 	return {

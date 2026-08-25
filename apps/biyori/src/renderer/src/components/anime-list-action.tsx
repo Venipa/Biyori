@@ -1,21 +1,11 @@
-import type { SelectListProps } from "@base-ui/react";
 import { Button } from "@/mainview/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/mainview/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
 
-const STATUS_ITEMS: Record<ListStatus, string> = Object.fromEntries(
-	listStatusSchema.options.map((value) => [value, value]),
-) as Record<ListStatus, string>;
+const STATUS_ITEMS: Record<ListStatus, string> = Object.fromEntries(listStatusSchema.options.map((value) => [value, value])) as Record<ListStatus, string>;
 
 type AnimeListActionProps = {
 	mediaId: number;
@@ -25,20 +15,11 @@ type AnimeListActionProps = {
 	notes: string;
 	rewatching: boolean;
 	onAdded?: (id: number) => void;
+	size?: "sm" | "default";
 	className?: string;
-} & SelectListProps;
+};
 
-export function AnimeListAction({
-	mediaId,
-	onList,
-	status,
-	progress,
-	notes,
-	rewatching,
-	onAdded,
-	size,
-	className,
-}: AnimeListActionProps) {
+export function AnimeListAction({ mediaId, onList, status, progress, notes, rewatching, onAdded, size, className }: AnimeListActionProps) {
 	const utils = trpc.useUtils();
 	const addFromSearch = trpc.anilist.addFromSearch.useMutation();
 	const saveEntry = trpc.anilist.saveEntry.useMutation();
@@ -49,8 +30,8 @@ export function AnimeListAction({
 	if (!onList) {
 		return (
 			<Button
-				type="button"
-        size={size}
+				type='button'
+				size={size}
 				className={cn("w-full", className)}
 				disabled={busy}
 				onClick={() => {
@@ -58,8 +39,7 @@ export function AnimeListAction({
 						void invalidateAnimeQueries(utils, "added", result.id);
 						onAdded?.(result.id);
 					});
-				}}
-			>
+				}}>
 				Add to list
 			</Button>
 		);
@@ -70,7 +50,6 @@ export function AnimeListAction({
 			value={listStatus}
 			items={STATUS_ITEMS}
 			disabled={busy}
-			size={size}
 			onValueChange={(value) => {
 				if (typeof value !== "string" || value === listStatus) {
 					return;
@@ -90,15 +69,11 @@ export function AnimeListAction({
 					.then(() => {
 						void invalidateAnimeQueries(utils, "entrySaved", mediaId);
 					});
-			}}
-		>
-			<SelectTrigger
-				className={cn("w-full", className)}
-				aria-label="List status"
-			>
+			}}>
+			<SelectTrigger size={size} className={cn("w-full", className)} aria-label='List status'>
 				<SelectValue />
 			</SelectTrigger>
-			<SelectContent alignItemWithTrigger={false} align="start">
+			<SelectContent alignItemWithTrigger={false} align='start'>
 				<SelectGroup>
 					{listStatusSchema.options.map((option) => (
 						<SelectItem key={option} value={option}>

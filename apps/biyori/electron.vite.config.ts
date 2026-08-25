@@ -20,8 +20,8 @@ const mainResolve: UserConfig = {
 		alias: {
 			...sharedAliases,
 			"@": resolve("src/main"),
-      "@main": resolve("src/main"),
-      "@renderer": resolve("src/renderer/src"),
+			"@main": resolve("src/main"),
+			"@renderer": resolve("src/renderer/src"),
 		},
 	},
 };
@@ -31,8 +31,8 @@ const rendererResolve: UserConfig = {
 		alias: {
 			...sharedAliases,
 			"@": resolve("src/renderer/src"),
-      "@renderer": resolve("src/renderer/src"),
-      "@main": resolve("src/main"),
+			"@renderer": resolve("src/renderer/src"),
+			"@main": resolve("src/main"),
 		},
 	},
 };
@@ -75,10 +75,10 @@ export default defineConfig({
 				routesDirectory: resolve("src/renderer/src/routes"),
 				generatedRouteTree: resolve("src/renderer/src/routeTree.gen.ts"),
 			}),
-      svgr({
-        include: "**/*.svg",
-        svgrOptions: {}
-      }),
+			svgr({
+				include: ["**/*.svg", "**/*.svg?react"],
+				svgrOptions: {},
+			}),
 			react(),
 			tailwindcss(),
 			styledJsx(),

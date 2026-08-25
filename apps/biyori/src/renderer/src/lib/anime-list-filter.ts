@@ -10,17 +10,7 @@ export type ListFilterRow = {
 	score?: number | null;
 };
 
-type SearchField =
-	| "none"
-	| "id"
-	| "eps"
-	| "title"
-	| "genre"
-	| "note"
-	| "type"
-	| "season"
-	| "year"
-	| "score";
+type SearchField = "none" | "id" | "eps" | "title" | "genre" | "note" | "type" | "season" | "year" | "score";
 
 type SearchOperator = "eq" | "ge" | "gt" | "le" | "lt";
 
@@ -132,10 +122,7 @@ function seasonYear(row: ListFilterRow): number {
  * Taiga-style list filter: space-separated AND terms.
  * Numeric fields support = >= > <= < (e.g. score:>=80, eps:>12, year:2024).
  */
-export function animeMatchesListFilter(
-	row: ListFilterRow,
-	rawFilter: string | null | undefined,
-): boolean {
+export function animeMatchesListFilter(row: ListFilterRow, rawFilter: string | null | undefined): boolean {
 	const text = (rawFilter ?? "").trim();
 	if (!text) {
 		return true;

@@ -56,11 +56,9 @@ export function initTheme(): void {
 	const stored = window.localStorage.getItem(STORAGE_KEY);
 	mode = isThemeMode(stored) ? stored : "system";
 	applyTheme(mode);
-	window
-		.matchMedia("(prefers-color-scheme: dark)")
-		.addEventListener("change", () => {
-			if (mode === "system") {
-				applyTheme("system");
-			}
-		});
+	window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+		if (mode === "system") {
+			applyTheme("system");
+		}
+	});
 }

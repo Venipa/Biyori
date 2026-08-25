@@ -79,9 +79,7 @@ function emitTorrentItems(): TorrentItem[] {
 	return next;
 }
 
-export function subscribeTorrentItems(
-	listener: (next: TorrentItem[]) => void,
-): () => void {
+export function subscribeTorrentItems(listener: (next: TorrentItem[]) => void): () => void {
 	torrentListeners.add(listener);
 	return () => {
 		torrentListeners.delete(listener);
@@ -92,9 +90,7 @@ function availableKey(animeId: number, episode: number): string {
 	return `${animeId}:${episode}`;
 }
 
-async function loadAvailableEpisodes(
-	database: DatabaseClient,
-): Promise<Set<string>> {
+async function loadAvailableEpisodes(database: DatabaseClient): Promise<Set<string>> {
 	const rows = await database
 		.select({
 			animeId: episodeFile.animeId,
@@ -104,10 +100,7 @@ async function loadAvailableEpisodes(
 	return new Set(rows.map((row) => availableKey(row.animeId, row.episode)));
 }
 
-function toSubject(
-	row: ParsedTorrentRow,
-	available: Set<string>,
-): TorrentFilterSubject {
+function toSubject(row: ParsedTorrentRow, available: Set<string>): TorrentFilterSubject {
 	const match = row.match;
 	const episodeHigh = row.episodeHigh ?? row.episode ?? 0;
 	const episodeLow = row.episodeLow ?? episodeHigh;
@@ -129,10 +122,7 @@ function toSubject(
 		episodeHigh,
 		episodeLow,
 		releaseVersion: row.releaseVersion,
-		episodeAvailable:
-			match != null &&
-			episodeHigh > 0 &&
-			available.has(availableKey(match.id, episodeHigh)),
+		episodeAvailable: match != null && episodeHigh > 0 && available.has(availableKey(match.id, episodeHigh)),
 		group: row.group,
 		videoResolution: row.videoResolution,
 		videoTerms: row.videoTerms,
@@ -140,12 +130,7 @@ function toSubject(
 	};
 }
 
-function toTorrentItem(
-	row: ParsedTorrentRow,
-	seenAt: string,
-	state: TorrentItem["state"],
-	newEpisode: boolean,
-): TorrentItem {
+function toTorrentItem(row: ParsedTorrentRow, seenAt: string, state: TorrentItem["state"], newEpisode: boolean): TorrentItem {
 	const match = row.match;
 	return {
 		guid: row.entry.guid,
@@ -173,10 +158,7 @@ function toTorrentItem(
 }
 
 export function getTorrentItems(): TorrentItem[] {
-	return items.filter(
-		(item) =>
-			!discardedGuids.has(item.guid) && item.state !== "discarded_hidden",
-	);
+	return items.filter((item) => !discardedGuids.has(item.guid) && item.state !== "discarded_hidden");
 }
 
 function materializeItems(settings: AppSettings): TorrentItem[] {
@@ -190,11 +172,7 @@ function materializeItems(settings: AppSettings): TorrentItem[] {
 		state: "blank",
 		subject: toSubject(row, cache.available),
 	}));
-	applyTorrentFilters(
-		filterItems,
-		settings.torrentFilters,
-		settings.torrentFilterEnabled,
-	);
+	applyTorrentFilters(filterItems, settings.torrentFilters, settings.torrentFilterEnabled);
 	applyArchiveFilter(filterItems, cache.archivedTitles);
 	const byGuid = new Map(filterItems.map((item) => [item.id, item]));
 	const next: TorrentItem[] = [];
@@ -204,8 +182,7 @@ function materializeItems(settings: AppSettings): TorrentItem[] {
 		const watched = row.match?.episodesWatched ?? 0;
 		const episodeHigh = row.episodeHigh ?? row.episode ?? 0;
 		const newEpisode = Boolean(row.match) && episodeHigh > watched;
-		const seenAt =
-			cache.seenByGuid.get(row.entry.guid) ?? new Date().toISOString();
+		const seenAt = cache.seenByGuid.get(row.entry.guid) ?? new Date().toISOString();
 		next.push(toTorrentItem(row, seenAt, state, newEpisode));
 	}
 	next.sort((left, right) => compareTorrentState(left.state, right.state));
@@ -213,9 +190,7 @@ function materializeItems(settings: AppSettings): TorrentItem[] {
 	return emitTorrentItems();
 }
 
-export async function applyTorrentView(
-	database: DatabaseClient = requiredDb(),
-): Promise<TorrentItem[]> {
+export async function applyTorrentView(database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
 	const settings = await loadAppSettings(database);
 	if (feedCache) {
 		feedCache.available = await loadAvailableEpisodes(database);
@@ -223,10 +198,7 @@ export async function applyTorrentView(
 	return materializeItems(settings);
 }
 
-export function sortDownloadQueue(
-	rows: TorrentItem[],
-	settings: AppSettings,
-): TorrentItem[] {
+export function sortDownloadQueue(rows: TorrentItem[], settings: AppSettings): TorrentItem[] {
 	const dir = settings.torrentDownloadSortOrder === "descending" ? -1 : 1;
 	return [...rows].sort((left, right) => {
 		const leftId = left.animeId ?? Number.MAX_SAFE_INTEGER;
@@ -246,18 +218,11 @@ function safeFileStem(value: string): string {
 	return cleaned.slice(0, 80) || "torrent";
 }
 
-async function resolveDownloadDir(
-	settings: AppSettings,
-	title: string,
-	match: MatchedAnime | null,
-): Promise<string> {
+async function resolveDownloadDir(settings: AppSettings, title: string, match: MatchedAnime | null): Promise<string> {
 	let dir = "";
 	if (settings.torrentUseAnimeFolder && match?.folder.trim()) {
 		dir = match.folder.trim();
-	} else if (
-		settings.torrentFallbackOnFolder ||
-		!settings.torrentUseAnimeFolder
-	) {
+	} else if (settings.torrentFallbackOnFolder || !settings.torrentUseAnimeFolder) {
 		dir = settings.torrentDownloadDir.trim();
 	}
 	if (dir && settings.torrentCreateSubfolder) {
@@ -270,21 +235,14 @@ async function resolveDownloadDir(
 	return fileDir;
 }
 
-function spawnTorrentClient(
-	link: string,
-	dir: string,
-	settings: AppSettings,
-): boolean {
+function spawnTorrentClient(link: string, dir: string, settings: AppSettings): boolean {
 	if (!settings.torrentAppOpen) {
 		return true;
 	}
-	const custom =
-		settings.torrentAppMode === "custom" && settings.torrentAppPath.trim();
+	const custom = settings.torrentAppMode === "custom" && settings.torrentAppPath.trim();
 	if (custom) {
 		const appPath = settings.torrentAppPath.trim();
-		const args = dir
-			? [appPath, "--save-path", dir, link]
-			: [appPath, link];
+		const args = dir ? [appPath, "--save-path", dir, link] : [appPath, link];
 		spawn(args[0], args.slice(1), {
 			stdio: "ignore",
 			detached: true,
@@ -296,12 +254,7 @@ function spawnTorrentClient(
 	return true;
 }
 
-async function openTorrent(
-	link: string,
-	title: string,
-	settings: AppSettings,
-	match: MatchedAnime | null,
-): Promise<void> {
+async function openTorrent(link: string, title: string, settings: AppSettings, match: MatchedAnime | null): Promise<void> {
 	const dir = await resolveDownloadDir(settings, title, match);
 	const useMagnet = settings.torrentUseMagnet || link.startsWith("magnet:");
 	if (dir && useMagnet) {
@@ -330,11 +283,7 @@ async function openTorrent(
 	spawnTorrentClient(link, dir, settings);
 }
 
-async function ingestFeed(
-	database: DatabaseClient,
-	feedUrl: string,
-	force: boolean,
-): Promise<TorrentItem[]> {
+async function ingestFeed(database: DatabaseClient, feedUrl: string, force: boolean): Promise<TorrentItem[]> {
 	const settings = await loadAppSettings(database);
 	const response = await trackedFetch(feedUrl);
 	if (!response.ok) {
@@ -354,9 +303,7 @@ async function ingestFeed(
 			seenAt: torrentArchive.seenAt,
 		})
 		.from(torrentArchive);
-	const seenByGuid = new Map(
-		existingArchive.map((row) => [row.guid, row.seenAt]),
-	);
+	const seenByGuid = new Map(existingArchive.map((row) => [row.guid, row.seenAt]));
 	const archivedTitles = new Set(existingArchive.map((row) => row.title));
 	const bootstrap = existingArchive.length === 0;
 	const now = new Date().toISOString();
@@ -396,12 +343,7 @@ async function ingestFeed(
 		if (announce && !force && !bootstrap) {
 			setAppNotice(`New torrent: ${row.entry.title}`);
 			if (settings.newTorrentAction === "download" && row.entry.link) {
-				await openTorrent(
-					row.entry.link,
-					row.entry.title,
-					settings,
-					row.match,
-				);
+				await openTorrent(row.entry.link, row.entry.title, settings, row.match);
 			}
 		}
 	}
@@ -409,25 +351,16 @@ async function ingestFeed(
 	return visible;
 }
 
-async function trimTorrentArchive(
-	database: DatabaseClient,
-	maxCount: number,
-): Promise<void> {
+async function trimTorrentArchive(database: DatabaseClient, maxCount: number): Promise<void> {
 	if (maxCount <= 0) {
 		return;
 	}
-	const [row] = await database
-		.select({ total: count() })
-		.from(torrentArchive);
+	const [row] = await database.select({ total: count() }).from(torrentArchive);
 	const extra = (row?.total ?? 0) - maxCount;
 	if (extra <= 0) {
 		return;
 	}
-	const oldest = await database
-		.select({ guid: torrentArchive.guid })
-		.from(torrentArchive)
-		.orderBy(asc(torrentArchive.seenAt))
-		.limit(extra);
+	const oldest = await database.select({ guid: torrentArchive.guid }).from(torrentArchive).orderBy(asc(torrentArchive.seenAt)).limit(extra);
 	if (oldest.length === 0) {
 		return;
 	}
@@ -439,11 +372,7 @@ async function trimTorrentArchive(
 	);
 }
 
-export async function checkTorrents(
-	database: DatabaseClient = requiredDb(),
-	force = false,
-	feedUrl?: string,
-): Promise<TorrentItem[]> {
+export async function checkTorrents(database: DatabaseClient = requiredDb(), force = false, feedUrl?: string): Promise<TorrentItem[]> {
 	const settings = await loadAppSettings(database);
 	const url = (feedUrl ?? settings.rssFeedUrl).trim();
 	if (!url) {
@@ -454,10 +383,7 @@ export async function checkTorrents(
 	return ingestFeed(database, url, force);
 }
 
-export async function searchTorrents(
-	title: string,
-	database: DatabaseClient = requiredDb(),
-): Promise<TorrentItem[]> {
+export async function searchTorrents(title: string, database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
 	const settings = await loadAppSettings(database);
 	const template = settings.rssSearchUrl.trim() || settings.rssFeedUrl.trim();
 	if (!template) {
@@ -466,10 +392,7 @@ export async function searchTorrents(
 	return checkTorrents(database, true, fillTorrentSearchUrl(template, title));
 }
 
-export async function downloadTorrent(
-	guid: string,
-	database: DatabaseClient = requiredDb(),
-): Promise<void> {
+export async function downloadTorrent(guid: string, database: DatabaseClient = requiredDb()): Promise<void> {
 	const item = items.find((row) => row.guid === guid);
 	if (!item?.link) {
 		return;
@@ -480,10 +403,7 @@ export async function downloadTorrent(
 	await openTorrent(item.link, item.title, settings, match);
 }
 
-export async function downloadSelectedTorrents(
-	guids: string[],
-	database: DatabaseClient = requiredDb(),
-): Promise<void> {
+export async function downloadSelectedTorrents(guids: string[], database: DatabaseClient = requiredDb()): Promise<void> {
 	const settings = await loadAppSettings(database);
 	const selected = sortDownloadQueue(
 		items.filter((item) => guids.includes(item.guid)),
@@ -499,36 +419,18 @@ export function discardTorrent(guid: string): TorrentItem[] {
 	return emitTorrentItems();
 }
 
-export async function discardAnimeFilter(
-	animeId: number,
-	title: string,
-	database: DatabaseClient = requiredDb(),
-): Promise<TorrentItem[]> {
+export async function discardAnimeFilter(animeId: number, title: string, database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
 	const settings = await loadAppSettings(database);
 	await patchAppSettings(database, {
-		torrentFilters: addDiscardAnimeFilter(
-			settings.torrentFilters,
-			animeId,
-			title,
-		),
+		torrentFilters: addDiscardAnimeFilter(settings.torrentFilters, animeId, title),
 	});
 	return applyTorrentView(database);
 }
 
-export async function preferFansubFilter(
-	animeId: number,
-	group: string,
-	title: string,
-	database: DatabaseClient = requiredDb(),
-): Promise<TorrentItem[]> {
+export async function preferFansubFilter(animeId: number, group: string, title: string, database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
 	const settings = await loadAppSettings(database);
 	await patchAppSettings(database, {
-		torrentFilters: setFansubFilter(
-			settings.torrentFilters,
-			animeId,
-			group,
-			title,
-		),
+		torrentFilters: setFansubFilter(settings.torrentFilters, animeId, group, title),
 	});
 	return applyTorrentView(database);
 }
@@ -567,13 +469,16 @@ export async function restartTorrentPoll(): Promise<void> {
 		void checkTorrents(db).catch(() => {
 			/* ignore poll errors */
 		});
-		pollTimer = setInterval(() => {
-			if (db) {
-				void checkTorrents(db).catch(() => {
-					/* ignore */
-				});
-			}
-		}, Math.max(10, settings.torrentCheckIntervalMinutes) * 60 * 1000);
+		pollTimer = setInterval(
+			() => {
+				if (db) {
+					void checkTorrents(db).catch(() => {
+						/* ignore */
+					});
+				}
+			},
+			Math.max(10, settings.torrentCheckIntervalMinutes) * 60 * 1000,
+		);
 	};
 	firstCheckTimer = setTimeout(() => {
 		firstCheckTimer = null;

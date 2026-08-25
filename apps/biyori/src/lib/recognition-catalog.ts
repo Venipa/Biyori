@@ -61,14 +61,7 @@ export const STREAMING_PROVIDERS: readonly StreamingProviderOption[] = [
 	{ id: "youtube", label: "YouTube", titlePattern: "YouTube" },
 ];
 
-const BROWSER_PROCESSES = new Set([
-	"chrome",
-	"msedge",
-	"firefox",
-	"brave",
-	"opera",
-	"chromium",
-]);
+const BROWSER_PROCESSES = new Set(["chrome", "msedge", "firefox", "brave", "opera", "chromium"]);
 
 export function defaultMediaPlayerIds(): string[] {
 	return MEDIA_PLAYERS.map((player) => player.id);
@@ -86,10 +79,7 @@ export function isBrowserProcess(name: string): boolean {
 	return BROWSER_PROCESSES.has(processKey(name));
 }
 
-export function matchMediaPlayerId(
-	processName: string,
-	enabledIds: readonly string[],
-): string | null {
+export function matchMediaPlayerId(processName: string, enabledIds: readonly string[]): string | null {
 	const key = processKey(processName);
 	for (const player of MEDIA_PLAYERS) {
 		if (!enabledIds.includes(player.id)) {
@@ -102,22 +92,14 @@ export function matchMediaPlayerId(
 	return null;
 }
 
-export function matchStreamingProviderId(
-	processName: string,
-	windowTitle: string,
-	enabledIds: readonly string[],
-): string | null {
+export function matchStreamingProviderId(processName: string, windowTitle: string, enabledIds: readonly string[]): string | null {
 	const key = processKey(processName);
 	const browser = isBrowserProcess(processName);
 	for (const provider of STREAMING_PROVIDERS) {
 		if (!enabledIds.includes(provider.id)) {
 			continue;
 		}
-		if (
-			provider.processes?.some(
-				(process) => key === process || key.includes(process),
-			)
-		) {
+		if (provider.processes?.some((process) => key === process || key.includes(process))) {
 			return provider.id;
 		}
 		if (browser && windowTitle.toLowerCase().includes(provider.titlePattern.toLowerCase())) {

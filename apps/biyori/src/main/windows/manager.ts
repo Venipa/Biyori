@@ -9,10 +9,10 @@ export type WindowDefinition = {
 	title: string;
 	width: number;
 	height: number;
-  minWidth?: number;
-  minHeight?: number;
-  maxWidth?: number;
-  maxHeight?: number;
+	minWidth?: number;
+	minHeight?: number;
+	maxWidth?: number;
+	maxHeight?: number;
 	to?: string;
 	singleton?: boolean;
 	saveState?: boolean;
@@ -51,10 +51,7 @@ function centerOnParent(win: BrowserWindow, parent: BrowserWindow): void {
 	}
 	const parentBounds = parent.getBounds();
 	const { width, height } = win.getBounds();
-	win.setPosition(
-		Math.round(parentBounds.x + (parentBounds.width - width) / 2),
-		Math.round(parentBounds.y + (parentBounds.height - height) / 2),
-	);
+	win.setPosition(Math.round(parentBounds.x + (parentBounds.width - width) / 2), Math.round(parentBounds.y + (parentBounds.height - height) / 2));
 }
 
 export class WindowManager<TId extends string> {
@@ -83,10 +80,10 @@ export class WindowManager<TId extends string> {
 
 		const show = options.show ?? true;
 		const parent = id === "main" ? undefined : (this.get("main" as TId) ?? undefined);
-    const skipTaskbar = options.skipTaskbar ?? false;
-    const alwaysOnTop = definition.alwaysOnTop ?? false;
+		const skipTaskbar = options.skipTaskbar ?? false;
+		const alwaysOnTop = definition.alwaysOnTop ?? false;
 		const win = this.createChrome({
-      ...definition,
+			...definition,
 			show,
 			skipTaskbar,
 			alwaysOnTop,
@@ -140,7 +137,7 @@ export class WindowManager<TId extends string> {
 		parent?: BrowserWindow;
 	}): BrowserWindow {
 		const ctor: BrowserWindowConstructorOptions = {
-      ...options,
+			...options,
 			show: false,
 			center: !options.parent,
 			frame: false,

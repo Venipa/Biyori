@@ -17,19 +17,13 @@ let current: SelectedAnime | null = null;
 let deleteRequest: SelectedAnime | null = null;
 
 export function setOrderedAnimeIds(ids: number[]): void {
-	if (
-		orderedIds.length === ids.length &&
-		orderedIds.every((id, index) => id === ids[index])
-	) {
+	if (orderedIds.length === ids.length && orderedIds.every((id, index) => id === ids[index])) {
 		return;
 	}
 	orderedIds = ids;
 }
 
-export function getNeighborAnimeId(
-	id: number,
-	delta: number,
-): number | null {
+export function getNeighborAnimeId(id: number, delta: number): number | null {
 	const index = orderedIds.indexOf(id);
 	if (index === -1) {
 		return null;
@@ -92,9 +86,5 @@ function subscribeDelete(listener: () => void): () => void {
 }
 
 export function useAnimeDeleteRequest(): SelectedAnime | null {
-	return useSyncExternalStore(
-		subscribeDelete,
-		getAnimeDeleteRequest,
-		getAnimeDeleteRequest,
-	);
+	return useSyncExternalStore(subscribeDelete, getAnimeDeleteRequest, getAnimeDeleteRequest);
 }

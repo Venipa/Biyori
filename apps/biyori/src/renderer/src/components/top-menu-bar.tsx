@@ -1,19 +1,19 @@
 import { useNavigate } from "@tanstack/react-router";
 import { desktopRpc } from "@/desktop-rpc";
 import {
-  Menubar,
-  MenubarCheckboxItem,
-  MenubarContent,
-  MenubarItem,
-  MenubarMenu,
-  MenubarRadioGroup,
-  MenubarRadioItem,
-  MenubarSeparator,
-  MenubarShortcut,
-  MenubarSub,
-  MenubarSubContent,
-  MenubarSubTrigger,
-  MenubarTrigger,
+	Menubar,
+	MenubarCheckboxItem,
+	MenubarContent,
+	MenubarItem,
+	MenubarMenu,
+	MenubarRadioGroup,
+	MenubarRadioItem,
+	MenubarSeparator,
+	MenubarShortcut,
+	MenubarSub,
+	MenubarSubContent,
+	MenubarSubTrigger,
+	MenubarTrigger,
 } from "@/mainview/components/ui/menubar";
 import { useTheme } from "@/mainview/lib/hooks/use-theme";
 import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
@@ -43,8 +43,8 @@ export function TopMenuBar() {
 	const settings = settingsQuery.data;
 
 	return (
-		<div className="flex h-9 shrink-0 items-center border-b bg-card px-2">
-			<Menubar className="h-auto border-none bg-transparent p-0">
+		<div className='flex h-9 shrink-0 items-center border-b bg-card px-2'>
+			<Menubar className='h-auto border-none bg-transparent p-0'>
 				<MenubarMenu>
 					<MenubarTrigger>File</MenubarTrigger>
 					<MenubarContent>
@@ -56,8 +56,7 @@ export function TopMenuBar() {
 										key={folder.path}
 										onClick={() => {
 											void desktopRpc.request.openPath({ path: folder.path });
-										}}
-									>
+										}}>
 										{folder.path}
 									</MenubarItem>
 								))}
@@ -65,8 +64,7 @@ export function TopMenuBar() {
 								<MenubarItem
 									onClick={() => {
 										void addLibraryFolder.addFromPicker();
-									}}
-								>
+									}}>
 									Add new folder...
 								</MenubarItem>
 							</MenubarSubContent>
@@ -74,8 +72,7 @@ export function TopMenuBar() {
 						<MenubarItem
 							onClick={() => {
 								void scan.mutateAsync();
-							}}
-						>
+							}}>
 							Scan available episodes
 						</MenubarItem>
 						<MenubarSeparator />
@@ -89,8 +86,7 @@ export function TopMenuBar() {
 									animeId: selected.id,
 									episodesWatched: selected.episodesWatched,
 								});
-							}}
-						>
+							}}>
 							Play next episode
 							<MenubarShortcut>Ctrl+N</MenubarShortcut>
 						</MenubarItem>
@@ -101,8 +97,7 @@ export function TopMenuBar() {
 									return;
 								}
 								void playRandom.mutateAsync({ animeId: selected.id });
-							}}
-						>
+							}}>
 							Play random episode
 							<MenubarShortcut>Ctrl+R</MenubarShortcut>
 						</MenubarItem>
@@ -110,8 +105,7 @@ export function TopMenuBar() {
 						<MenubarItem
 							onClick={() => {
 								void desktopRpc.request.closeWindow({});
-							}}
-						>
+							}}>
 							Exit
 						</MenubarItem>
 					</MenubarContent>
@@ -124,8 +118,7 @@ export function TopMenuBar() {
 							disabled={syncRunning || sync.isPending}
 							onClick={() => {
 								void sync.mutateAsync();
-							}}
-						>
+							}}>
 							Synchronize list
 							<MenubarShortcut>Ctrl+S</MenubarShortcut>
 						</MenubarItem>
@@ -141,18 +134,13 @@ export function TopMenuBar() {
 								<MenubarRadioGroup
 									value={theme}
 									onValueChange={(value) => {
-										if (
-											value === "light" ||
-											value === "dark" ||
-											value === "system"
-										) {
+										if (value === "light" || value === "dark" || value === "system") {
 											setThemeMode(value);
 										}
-									}}
-								>
-									<MenubarRadioItem value="light">Light</MenubarRadioItem>
-									<MenubarRadioItem value="dark">Dark</MenubarRadioItem>
-									<MenubarRadioItem value="system">System</MenubarRadioItem>
+									}}>
+									<MenubarRadioItem value='light'>Light</MenubarRadioItem>
+									<MenubarRadioItem value='dark'>Dark</MenubarRadioItem>
+									<MenubarRadioItem value='system'>System</MenubarRadioItem>
 								</MenubarRadioGroup>
 							</MenubarSubContent>
 						</MenubarSub>
@@ -171,8 +159,7 @@ export function TopMenuBar() {
 								void setSettings.mutateAsync({
 									enableRecognition: Boolean(checked),
 								});
-							}}
-						>
+							}}>
 							Enable anime recognition
 						</MenubarCheckboxItem>
 						<MenubarCheckboxItem
@@ -184,16 +171,14 @@ export function TopMenuBar() {
 								void setSettings.mutateAsync({
 									updateRichPresence: Boolean(checked),
 								});
-							}}
-						>
+							}}>
 							Enable auto sharing
 						</MenubarCheckboxItem>
 						<MenubarSeparator />
 						<MenubarItem
 							onClick={() => {
 								void desktopRpc.request.openSettings({});
-							}}
-						>
+							}}>
 							Settings
 						</MenubarItem>
 					</MenubarContent>
@@ -205,8 +190,7 @@ export function TopMenuBar() {
 						<MenubarItem
 							onClick={() => {
 								void navigate({ to: "/app/about" });
-							}}
-						>
+							}}>
 							About Biyori
 						</MenubarItem>
 					</MenubarContent>
