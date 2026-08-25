@@ -33,6 +33,7 @@ import type {
 	SeasonViewAs,
 } from "@/lib/schemas/seasons";
 import { animeMatchesListFilter } from "@/mainview/lib/anime-list-filter";
+import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { useListFilterText } from "@/mainview/lib/list-filter";
 import {
@@ -171,12 +172,8 @@ function SeasonsPage() {
 	const inListIds = useMemo(() => new Set(localById.keys()), [localById]);
 
 	const addFromSearch = trpc.anilist.addFromSearch.useMutation({
-		onSuccess: async () => {
-			await Promise.all([
-				utils.anime.list.invalidate(),
-				utils.anime.counts.invalidate(),
-				utils.anime.listed.invalidate(),
-			]);
+		onSuccess: (_data, variables) => {
+			void invalidateAnimeQueries(utils, "added", variables.mediaId);
 		},
 	});
 

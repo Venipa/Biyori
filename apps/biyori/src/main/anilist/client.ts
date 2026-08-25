@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { trackedFetch } from "../http-stats";
 
 const ANILIST_GRAPHQL_URL = "https://graphql.anilist.co";
 const USER_AGENT = "Biyori/1.0";
@@ -51,7 +52,7 @@ export async function anilistGraphql<T>(options: {
 		: timeout;
 
 	for (;;) {
-		const response = await fetch(ANILIST_GRAPHQL_URL, {
+		const response = await trackedFetch(ANILIST_GRAPHQL_URL, {
 			method: "POST",
 			headers,
 			body: JSON.stringify({

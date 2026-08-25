@@ -49,9 +49,48 @@ function countLabel(value: number | null): string {
 function TorrentsPage() {
 	const query = trpc.torrents.list.useQuery();
 	const utils = trpc.useUtils();
+	const items = query.data ?? [];
+	trpc.torrents.onList.useSubscription(undefined, {
+		onData: (next) => {
+			utils.torrents.list.setData(undefined, next);
+		},
+	});
+
+	return (
+		<div className="flex h-full min-h-0 flex-col">
+			{query.isPending && items.length === 0 ? (
+				<TableRowsSkeleton columnCount={12} />
+			) : null}
+			{items.length === 0 && !query.isLoading ? (
+				<Empty>
+					<EmptyTitle>No torrents found</EmptyTitle>
+					<EmptyDescription>
+						Matching torrents for your list will be listed here.
+					</EmptyDescription>
+				</Empty>
+			) : null}
+			{items.length > 0 ? (
+				<TorrentFeed
+					key={items.map((item) => `${item.guid}:${item.state}`).join("|")}
+					items={items}
+				/>
+			) : null}
+		</div>
+	);
+}
+
+function selectionFrom(items: TorrentRow[]): RowSelectionState {
+	return Object.fromEntries(
+		items
+			.filter((item) => item.state === "selected")
+			.map((item) => [item.guid, true]),
+	);
+}
+
+function TorrentFeed({ items }: { items: TorrentRow[] }) {
+	const utils = trpc.useUtils();
 	const navigate = useNavigate();
 	const animeInfo = useAnimeInfoNav();
-	const setFansub = trpc.anime.setFansub.useMutation();
 	const refresh = trpc.torrents.refresh.useMutation({
 		onSuccess: (next) => {
 			utils.torrents.list.setData(undefined, next);
@@ -63,6 +102,13 @@ function TorrentsPage() {
 		},
 	});
 	const download = trpc.torrents.download.useMutation();
+	const downloadMarked = trpc.torrents.downloadMarked.useMutation();
+	const preferFansub = trpc.torrents.preferFansub.useMutation({
+		onSuccess: (next) => {
+			utils.torrents.list.setData(undefined, next);
+			void utils.settings.get.invalidate();
+		},
+	});
 	const discard = trpc.torrents.discard.useMutation({
 		onSuccess: (next) => {
 			utils.torrents.list.setData(undefined, next);
@@ -74,9 +120,10 @@ function TorrentsPage() {
 			void utils.settings.get.invalidate();
 		},
 	});
-	const items = query.data ?? [];
 	const [sorting, setSorting] = useState<SortingState>([]);
-	const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+	const [rowSelection, setRowSelection] = useState<RowSelectionState>(() =>
+		selectionFrom(items),
+	);
 	const [menuRow, setMenuRow] = useState<TorrentRow | null>(null);
 
 	const columns: ColumnDef<TorrentRow>[] = [
@@ -125,9 +172,11 @@ function TorrentsPage() {
 			cell: ({ row }) => (
 				<span
 					className={
-						row.original.matched && row.original.episode != null
-							? "tabular-nums text-blue-600 dark:text-blue-400"
-							: "tabular-nums text-muted-foreground"
+						row.original.state === "selected"
+							? "tabular-nums text-primary"
+							: row.original.matched && row.original.episode != null
+								? "tabular-nums text-blue-600 dark:text-blue-400"
+								: "tabular-nums text-muted-foreground"
 					}
 				>
 					{row.original.episode ?? "-"}
@@ -216,21 +265,17 @@ function TorrentsPage() {
 	const selected = table.getSelectedRowModel().rows;
 	const menuOnList = Boolean(menuRow?.matched && menuRow.animeId != null);
 
-	function applyList(next: TorrentRow[]): void {
-		utils.torrents.list.setData(undefined, next);
-	}
-
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<div className="flex shrink-0 justify-end gap-2 border-b px-3 py-2">
 				<Button
 					variant="outline"
 					size="sm"
-					disabled={selected.length === 0 || download.isPending}
+					disabled={selected.length === 0 || downloadMarked.isPending}
 					onClick={() => {
-						for (const row of selected) {
-							void download.mutateAsync({ guid: row.original.guid });
-						}
+						void downloadMarked.mutateAsync({
+							guids: selected.map((row) => row.original.guid),
+						});
 					}}
 				>
 					Download marked torrents
@@ -262,18 +307,6 @@ function TorrentsPage() {
 				</Button>
 			</div>
 			<ScrollArea className="h-full flex-1">
-				{query.isPending && items.length === 0 ? (
-					<TableRowsSkeleton columnCount={columns.length} />
-				) : null}
-				{items.length === 0 && !query.isLoading ? (
-					<Empty>
-						<EmptyTitle>No torrents found</EmptyTitle>
-						<EmptyDescription>
-							Matching torrents for your list will be listed here.
-						</EmptyDescription>
-					</Empty>
-				) : null}
-				{items.length > 0 ? (
 					<ContextMenu>
 						<ContextMenuTrigger className="block h-full min-h-0">
 							<DataTable
@@ -283,7 +316,16 @@ function TorrentsPage() {
 										data-state={row.getIsSelected() ? "selected" : undefined}
 										className={cn(
 											"cursor-pointer",
-											!row.original.matched &&
+											(row.original.state === "discarded_normal" ||
+												row.original.state === "discarded_inactive") &&
+												"text-muted-foreground",
+											row.original.state === "discarded_inactive" &&
+												"opacity-60",
+											row.original.state === "selected" &&
+												row.original.newEpisode &&
+												"bg-primary/10",
+											row.original.state !== "selected" &&
+												!row.original.matched &&
 												"text-muted-foreground **:text-muted-foreground! [&_.text-blue-400]:text-muted-foreground! [&_.text-blue-600]:text-muted-foreground! [&_.text-primary]:text-muted-foreground!",
 										)}
 										onClick={() => {
@@ -360,6 +402,7 @@ function TorrentsPage() {
 											}
 											void discardAnime.mutateAsync({
 												animeId: menuRow.animeId,
+												title: menuRow.animeTitle,
 											});
 										}}
 									>
@@ -371,24 +414,11 @@ function TorrentsPage() {
 											if (!menuRow?.animeId || !menuRow.group) {
 												return;
 											}
-											void setFansub
-												.mutateAsync({
-													id: menuRow.animeId,
-													fansub: menuRow.group,
-												})
-												.then(async () => {
-													void utils.anime.list.invalidate();
-													for (const item of items) {
-														if (
-															item.animeId === menuRow.animeId &&
-															item.group !== menuRow.group
-														) {
-															applyList(
-																await discard.mutateAsync({ guid: item.guid }),
-															);
-														}
-													}
-												});
+											void preferFansub.mutateAsync({
+												animeId: menuRow.animeId,
+												group: menuRow.group,
+												title: menuRow.animeTitle,
+											});
 										}}
 									>
 										Select this fansub group for this anime
@@ -423,7 +453,6 @@ function TorrentsPage() {
 							</ContextMenuItem>
 						</ContextMenuContent>
 					</ContextMenu>
-				) : null}
 			</ScrollArea>
 		</div>
 	);

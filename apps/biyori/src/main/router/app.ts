@@ -10,7 +10,7 @@ import { ensureAnimeCached } from "../anilist/sync";
 import { anime, episodeFile, history, listEntry, syncQueue } from "../db/schema";
 import { getAppNotice, subscribeAppNotice } from "../notice";
 import { loadAppSettings, patchAppSettings } from "../settings";
-import { checkTorrents, discardAnimeFilter, discardTorrent, downloadTorrent, getTorrentItems, searchTorrents } from "../torrents";
+import { checkTorrents, discardAnimeFilter, discardTorrent, downloadSelectedTorrents, downloadTorrent, applyTorrentView, getTorrentItems, preferFansubFilter, searchTorrents, subscribeTorrentItems } from "../torrents";
 import {
   listEpisodes,
   playEpisode,
@@ -167,7 +167,9 @@ export const appRouter = t.router({
 			return ctx.db
 				.select({
 					id: anime.id,
+					title: anime.title,
 					status: listEntry.status,
+					airingStatus: anime.airingStatus,
 				})
 				.from(anime)
 				.innerJoin(listEntry, eq(listEntry.animeId, anime.id));
@@ -272,6 +274,35 @@ export const appRouter = t.router({
 		queuedCount: t.procedure.query(async ({ ctx }) => {
 			return countQueued(ctx.db);
 		}),
+		remove: t.procedure
+			.input(z.object({ id: z.string().min(1) }))
+			.mutation(async ({ ctx, input }) => {
+				const rows = await ctx.db
+					.select()
+					.from(history)
+					.where(eq(history.id, input.id))
+					.limit(1);
+				const row = rows[0];
+				if (!row) {
+					return { ok: true as const };
+				}
+				if (row.kind === "queued") {
+					await ctx.db
+						.delete(syncQueue)
+						.where(eq(syncQueue.animeId, row.animeId));
+				}
+				await ctx.db.delete(history).where(eq(history.id, input.id));
+				return { ok: true as const };
+			}),
+		clear: t.procedure
+			.input(z.object({ kind: z.enum(["history", "queued"]) }))
+			.mutation(async ({ ctx, input }) => {
+				if (input.kind === "queued") {
+					await ctx.db.delete(syncQueue);
+				}
+				await ctx.db.delete(history).where(eq(history.kind, input.kind));
+				return { ok: true as const };
+			}),
 	}),
 	statistics: t.router({
 		summary: t.procedure.query(async ({ ctx }) => {
@@ -363,7 +394,17 @@ export const appRouter = t.router({
 			}),
 	}),
 	torrents: t.router({
-		list: t.procedure.query(() => getTorrentItems()),
+		list: t.procedure.query(async ({ ctx }) => {
+			return applyTorrentView(ctx.db);
+		}),
+		onList: t.procedure.subscription(() => {
+			return observable<ReturnType<typeof getTorrentItems>>((emit) => {
+				emit.next(getTorrentItems());
+				return subscribeTorrentItems((next) => {
+					emit.next(next);
+				});
+			});
+		}),
 		refresh: t.procedure.mutation(async ({ ctx }) => {
 			return checkTorrents(ctx.db, true);
 		}),
@@ -378,15 +419,42 @@ export const appRouter = t.router({
 				await downloadTorrent(input.guid, ctx.db);
 				return { ok: true as const };
 			}),
+		downloadMarked: t.procedure
+			.input(z.object({ guids: z.array(z.string().min(1)) }))
+			.mutation(async ({ ctx, input }) => {
+				await downloadSelectedTorrents(input.guids, ctx.db);
+				return { ok: true as const };
+			}),
 		discard: t.procedure
 			.input(z.object({ guid: z.string().min(1) }))
 			.mutation(({ input }) => {
 				return discardTorrent(input.guid);
 			}),
 		discardAnime: t.procedure
-			.input(z.object({ animeId: z.number().int() }))
+			.input(
+				z.object({
+					animeId: z.number().int(),
+					title: z.string(),
+				}),
+			)
 			.mutation(async ({ ctx, input }) => {
-				return discardAnimeFilter(input.animeId, ctx.db);
+				return discardAnimeFilter(input.animeId, input.title, ctx.db);
+			}),
+		preferFansub: t.procedure
+			.input(
+				z.object({
+					animeId: z.number().int(),
+					group: z.string().min(1),
+					title: z.string(),
+				}),
+			)
+			.mutation(async ({ ctx, input }) => {
+				return preferFansubFilter(
+					input.animeId,
+					input.group,
+					input.title,
+					ctx.db,
+				);
 			}),
 	}),
 	notice: t.router({

@@ -1,8 +1,12 @@
+import { parseSizeBytes } from "./size";
+
 export type RssEntry = {
 	guid: string;
 	title: string;
 	link: string;
 	size: string;
+	fileSizeBytes: number;
+	category: string;
 	seeders: number | null;
 	leechers: number | null;
 	downloads: number | null;
@@ -88,13 +92,16 @@ export function parseRssItems(xml: string): RssEntry[] {
 			return [];
 		}
 		const sizeTag = firstTag(block, ["nyaa:size", "size"]);
-		const bytes = enclosureLength(block);
+		const bytes = enclosureLength(block) ?? (sizeTag ? parseSizeBytes(sizeTag) : 0);
+		const category = firstTag(block, ["nyaa:category", "category"]);
 		return [
 			{
 				guid,
 				title,
 				link,
-				size: sizeTag || (bytes != null ? formatBytes(bytes) : ""),
+				size: sizeTag || (bytes > 0 ? formatBytes(bytes) : ""),
+				fileSizeBytes: bytes,
+				category,
 				seeders: parseIntSafe(
 					firstTag(block, ["nyaa:seeders", "seeders", "torrent:seeds"]),
 				),

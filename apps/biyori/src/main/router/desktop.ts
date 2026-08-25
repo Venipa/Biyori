@@ -1,9 +1,15 @@
+import { readFile, writeFile } from "node:fs/promises";
 import { app, dialog, Menu, shell } from "electron";
 import { z } from "zod";
 import { requestQuit } from "../handlers/quit-handler";
+import { decryptPublicData, encryptPublicData } from "../lib/store/createYmlStore";
 import { setTrayState } from "../handlers/tray-state";
 import { t } from "../trpc";
 import { windowManager } from "../windows";
+
+const BIYORI_FILE_FILTERS = [
+	{ name: "Biyori", extensions: ["biyori"] },
+];
 
 function requireWindow(getBrowserWindow: () => Electron.BrowserWindow | null) {
 	const win = getBrowserWindow();
@@ -100,14 +106,66 @@ export const desktopRouter = t.router({
 		const path = result.canceled ? null : (result.filePaths[0] ?? null);
 		return { path };
 	}),
-	showDefaultContextMenu: t.procedure.mutation(() => {
-		Menu.buildFromTemplate([
-			{ role: "cut" },
-			{ role: "copy" },
-			{ role: "paste" },
-			{ type: "separator" },
-			{ role: "selectAll" },
-		]).popup();
-		return { ok: true as const };
-	}),
-});
+		exportBiyori: t.procedure
+			.input(
+				z.object({
+					defaultName: z.string().min(1),
+					payload: z.record(z.string(), z.unknown()),
+				}),
+			)
+			.mutation(async ({ ctx, input }) => {
+				const win = ctx.getBrowserWindow();
+				const options = {
+					defaultPath: input.defaultName,
+					filters: BIYORI_FILE_FILTERS,
+				};
+				const result = win
+					? await dialog.showSaveDialog(win, options)
+					: await dialog.showSaveDialog(options);
+				if (result.canceled || !result.filePath) {
+					return { ok: false as const, canceled: true as const };
+				}
+				await writeFile(
+					result.filePath,
+					encryptPublicData(input.payload),
+					"utf8",
+				);
+				return { ok: true as const, canceled: false as const };
+			}),
+		importBiyori: t.procedure.mutation(async ({ ctx }) => {
+			const win = ctx.getBrowserWindow();
+			const options = {
+				defaultPath: app.getPath("home"),
+				filters: BIYORI_FILE_FILTERS,
+				properties: ["openFile"] as Array<"openFile">,
+			};
+			const result = win
+				? await dialog.showOpenDialog(win, options)
+				: await dialog.showOpenDialog(options);
+			const path = result.canceled ? null : (result.filePaths[0] ?? null);
+			if (!path) {
+				return { ok: false as const, canceled: true as const, payload: null };
+			}
+			try {
+				const raw = await readFile(path, "utf8");
+				const payload = decryptPublicData(raw);
+				return { ok: true as const, canceled: false as const, payload };
+			} catch {
+				return {
+					ok: false as const,
+					canceled: false as const,
+					payload: null,
+				};
+			}
+		}),
+		showDefaultContextMenu: t.procedure.mutation(() => {
+			Menu.buildFromTemplate([
+				{ role: "cut" },
+				{ role: "copy" },
+				{ role: "paste" },
+				{ type: "separator" },
+				{ role: "selectAll" },
+			]).popup();
+			return { ok: true as const };
+		}),
+	});

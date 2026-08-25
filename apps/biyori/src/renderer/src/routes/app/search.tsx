@@ -1,40 +1,40 @@
-import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { anilistSearchRouteSchema } from "@/lib/schemas/anilist-search";
+import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
+import { DataTable } from "@/mainview/components/data-table";
 import {
-	getCoreRowModel,
-	getExpandedRowModel,
-	getGroupedRowModel,
-	getSortedRowModel,
-	useReactTable,
-	type ColumnDef,
-	type SortingState,
-} from "@tanstack/react-table";
-import { ListIcon, ListPlusIcon, SearchIcon } from "lucide-react";
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@/mainview/components/ui/context-menu";
 import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
-import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
-import { DataTable } from "@/mainview/components/data-table";
-import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuSeparator,
-	ContextMenuShortcut,
-	ContextMenuSub,
-	ContextMenuSubContent,
-	ContextMenuSubTrigger,
-	ContextMenuTrigger,
-} from "@/mainview/components/ui/context-menu";
-import { formatSeasonLabel } from "@/mainview/lib/season-view";
+import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { AiringStatusMark } from "@/mainview/lib/airing-status";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
-import { listStatusSchema, type ListStatus } from "@/shared/list";
+import { formatSeasonLabel } from "@/mainview/lib/season-view";
 import { trpc } from "@/mainview/trpc";
-import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@/shared/app-router";
-import { anilistSearchRouteSchema } from "@/lib/schemas/anilist-search";
+import { listStatusSchema, type ListStatus } from "@/shared/list";
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  getCoreRowModel,
+  getExpandedRowModel,
+  getGroupedRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnDef,
+  type SortingState,
+} from "@tanstack/react-table";
+import type { inferRouterOutputs } from "@trpc/server";
+import { ListIcon, ListPlusIcon, SearchIcon } from "lucide-react";
+import { useState } from "react";
 
 export const Route = createFileRoute("/app/search")({
 	validateSearch: anilistSearchRouteSchema,
@@ -160,7 +160,7 @@ function SearchPage() {
 				<ContextMenuTrigger className="block h-full min-h-0">
 					<ScrollArea className="h-full">
 						{!hasQuery ? (
-							<Empty>
+							<Empty className="h-full">
 								<SearchIcon className="size-8 text-muted-foreground" />
 								<EmptyTitle>Search AniList</EmptyTitle>
 								<EmptyDescription>

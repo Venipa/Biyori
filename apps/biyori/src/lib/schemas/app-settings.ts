@@ -11,6 +11,10 @@ import {
   seasonSortBySchema,
   seasonViewAsSchema,
 } from "./seasons";
+import {
+  defaultTorrentFilters,
+  torrentFilterSchema,
+} from "./torrent-filter";
 
 export const titleLanguageSchema = z.enum(["Romaji", "English", "Native"]);
 export const torrentActionSchema = z.enum(["notify", "download"]);
@@ -70,10 +74,8 @@ export const appSettingsSchema = z.object({
 	checkTorrentsAutomatically: z.boolean(),
 	torrentCheckIntervalMinutes: z.coerce.number().int().min(10).max(3600),
 	newTorrentAction: torrentActionSchema,
-	torrentWatchingOnly: z.boolean().default(true),
 	torrentFilterEnabled: z.boolean().default(true),
-	torrentDiscardNotInList: z.boolean().default(true),
-	torrentDiscardAnimeIds: z.array(z.number().int()).default([]),
+	torrentFilters: z.array(torrentFilterSchema),
 	torrentAppMode: torrentAppModeSchema.default("default"),
 	torrentAppOpen: z.boolean().default(true),
 	torrentAppPath: z.preprocess(
@@ -157,7 +159,7 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	realtimeMonitor: true,
 	ignoreOutsideLibrary: true,
 	ignoreOutOfRangeEpisode: false,
-	recognitionDelaySeconds: 10,
+	recognitionDelaySeconds: 120,
 	askToConfirmUpdate: true,
 	enableRecognition: true,
 	enableMediaPlayerDetection: true,
@@ -174,10 +176,8 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	checkTorrentsAutomatically: true,
 	torrentCheckIntervalMinutes: 60,
 	newTorrentAction: "notify",
-	torrentWatchingOnly: true,
 	torrentFilterEnabled: true,
-	torrentDiscardNotInList: true,
-	torrentDiscardAnimeIds: [],
+	torrentFilters: defaultTorrentFilters(),
 	torrentAppMode: "default",
 	torrentAppOpen: true,
 	torrentAppPath: "",
@@ -207,24 +207,56 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	seasonsLastYear: null,
 };
 
+const LEGACY_TORRENT_KEYS = [
+	"torrentWatchingOnly",
+	"torrentDiscardNotInList",
+	"torrentDiscardAnimeIds",
+] as const;
+
+function omitLegacyTorrentKeys(
+	record: Record<string, unknown>,
+): Record<string, unknown> {
+	const next = { ...record };
+	for (const key of LEGACY_TORRENT_KEYS) {
+		delete next[key];
+	}
+	return next;
+}
+
+function coerceTorrentFilters(value: unknown): unknown {
+	if (!Array.isArray(value)) {
+		return appSettingsDefaultValues.torrentFilters;
+	}
+	const parsed = z.array(torrentFilterSchema).safeParse(value);
+	if (parsed.success) {
+		return parsed.data;
+	}
+	const kept = value.flatMap((item) => {
+		const row = torrentFilterSchema.safeParse(item);
+		return row.success ? [row.data] : [];
+	});
+	return kept.length > 0 || value.length === 0
+		? kept
+		: appSettingsDefaultValues.torrentFilters;
+}
+
 export function parseAppSettings(value: unknown): AppSettings {
 	const direct = appSettingsSchema.safeParse(value);
 	if (direct.success) {
 		return direct.data;
 	}
-	const record =
+	const record = omitLegacyTorrentKeys(
 		value && typeof value === "object"
 			? (value as Record<string, unknown>)
-			: {};
+			: {},
+	);
 	const merged = {
 		...appSettingsDefaultValues,
 		...record,
 		libraryFolders: Array.isArray(record.libraryFolders)
 			? record.libraryFolders
 			: appSettingsDefaultValues.libraryFolders,
-		torrentDiscardAnimeIds: Array.isArray(record.torrentDiscardAnimeIds)
-			? record.torrentDiscardAnimeIds
-			: appSettingsDefaultValues.torrentDiscardAnimeIds,
+		torrentFilters: coerceTorrentFilters(record.torrentFilters),
 		enabledMediaPlayers: Array.isArray(record.enabledMediaPlayers)
 			? record.enabledMediaPlayers
 			: appSettingsDefaultValues.enabledMediaPlayers,

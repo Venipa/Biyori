@@ -6,7 +6,9 @@ import { shell } from "electron";
 import type { AppSettings } from "../lib/schemas/app-settings";
 import { fillTorrentSearchUrl } from "../lib/torrent-feeds";
 import type { DatabaseClient } from "./db";
-import { torrentArchive } from "./db/schema";
+import { episodeFile, torrentArchive } from "./db/schema";
+import { trackedFetch } from "./http-stats";
+import { appFeedDir } from "./lib/app-paths";
 import { loadAppSettings, patchAppSettings, subscribeSettings } from "./settings";
 import { loadCandidates, matchById } from "./track/match";
 import type { MatchedAnime } from "./track/types";
@@ -14,6 +16,15 @@ import { setAppNotice } from "./notice";
 import { getTorrentParseWorker } from "./torrents/parse-client";
 import type { ParsedTorrentRow } from "./torrents/parse-worker";
 import { parseRssItems } from "./torrents/rss";
+import {
+	addDiscardAnimeFilter,
+	applyArchiveFilter,
+	applyTorrentFilters,
+	compareTorrentState,
+	setFansubFilter,
+	type TorrentFilterItem,
+	type TorrentFilterSubject,
+} from "./torrents/filter";
 
 export type TorrentItem = {
 	guid: string;
@@ -34,6 +45,8 @@ export type TorrentItem = {
 	description: string;
 	filename: string;
 	pubDate: string;
+	state: TorrentFilterItem["state"];
+	newEpisode: boolean;
 };
 
 export { parseRssItems };
@@ -45,42 +58,184 @@ let pollTimer: ReturnType<typeof setInterval> | null = null;
 let firstCheckTimer: ReturnType<typeof setTimeout> | null = null;
 let items: TorrentItem[] = [];
 const discardedGuids = new Set<string>();
+const torrentListeners = new Set<(next: TorrentItem[]) => void>();
 
-function groupsMatch(preferred: string, group: string): boolean {
-	const left = preferred.trim().toLowerCase();
-	const right = group.trim().toLowerCase();
-	if (!left || !right) {
-		return false;
+type FeedCache = {
+	rows: ParsedTorrentRow[];
+	available: Set<string>;
+	seenByGuid: Map<string, string>;
+	archivedTitles: Set<string>;
+};
+
+let feedCache: FeedCache | null = null;
+
+function emitTorrentItems(): TorrentItem[] {
+	const next = getTorrentItems();
+	for (const listener of torrentListeners) {
+		listener(next);
 	}
-	return left === right || left.includes(right) || right.includes(left);
+	return next;
 }
 
-function shouldAnnounceTorrent(
-	match: MatchedAnime | null,
-	group: string,
+export function subscribeTorrentItems(
+	listener: (next: TorrentItem[]) => void,
+): () => void {
+	torrentListeners.add(listener);
+	return () => {
+		torrentListeners.delete(listener);
+	};
+}
+
+function availableKey(animeId: number, episode: number): string {
+	return `${animeId}:${episode}`;
+}
+
+async function loadAvailableEpisodes(
+	database: DatabaseClient,
+): Promise<Set<string>> {
+	const rows = await database
+		.select({
+			animeId: episodeFile.animeId,
+			episode: episodeFile.episode,
+		})
+		.from(episodeFile);
+	return new Set(rows.map((row) => availableKey(row.animeId, row.episode)));
+}
+
+function toSubject(
+	row: ParsedTorrentRow,
+	available: Set<string>,
+): TorrentFilterSubject {
+	const match = row.match;
+	const episodeHigh = row.episodeHigh ?? row.episode ?? 0;
+	const episodeLow = row.episodeLow ?? episodeHigh;
+	return {
+		title: row.entry.title,
+		category: row.category || row.entry.category || "Anime",
+		description: row.entry.description,
+		link: row.entry.link,
+		fileSizeBytes: row.entry.fileSizeBytes,
+		animeId: match?.id ?? null,
+		animeTitle: match?.title || row.parsedTitle || row.entry.title,
+		dateStart: "",
+		dateEnd: "",
+		episodes: match?.episodes ?? 0,
+		airingStatus: match?.airingStatus ?? "",
+		type: match?.type ?? "",
+		notes: match?.notes ?? "",
+		userStatus: match?.status ?? "Not in list",
+		episodeHigh,
+		episodeLow,
+		releaseVersion: row.releaseVersion,
+		episodeAvailable:
+			match != null &&
+			episodeHigh > 0 &&
+			available.has(availableKey(match.id, episodeHigh)),
+		group: row.group,
+		videoResolution: row.videoResolution,
+		videoTerms: row.videoTerms,
+		watched: match?.episodesWatched ?? 0,
+	};
+}
+
+function toTorrentItem(
+	row: ParsedTorrentRow,
+	seenAt: string,
+	state: TorrentItem["state"],
+	newEpisode: boolean,
+): TorrentItem {
+	const match = row.match;
+	return {
+		guid: row.entry.guid,
+		title: row.entry.title,
+		link: row.entry.link,
+		matched: Boolean(match),
+		seenAt,
+		animeId: match?.id ?? null,
+		animeTitle: match?.title || row.parsedTitle || row.entry.title,
+		airingStatus: match?.airingStatus ?? "",
+		episode: row.episode,
+		group: row.group,
+		size: row.entry.size,
+		videoFormat: row.videoFormat,
+		seeders: row.entry.seeders,
+		leechers: row.entry.leechers,
+		downloads: row.entry.downloads,
+		description: row.entry.description,
+		filename: row.filename,
+		pubDate: row.entry.pubDate,
+		state,
+		newEpisode,
+	};
+}
+
+export function getTorrentItems(): TorrentItem[] {
+	return items.filter(
+		(item) =>
+			!discardedGuids.has(item.guid) && item.state !== "discarded_hidden",
+	);
+}
+
+function materializeItems(settings: AppSettings): TorrentItem[] {
+	const cache = feedCache;
+	if (!cache) {
+		items = [];
+		return emitTorrentItems();
+	}
+	const filterItems: TorrentFilterItem[] = cache.rows.map((row) => ({
+		id: row.entry.guid,
+		state: "blank",
+		subject: toSubject(row, cache.available),
+	}));
+	applyTorrentFilters(
+		filterItems,
+		settings.torrentFilters,
+		settings.torrentFilterEnabled,
+	);
+	applyArchiveFilter(filterItems, cache.archivedTitles);
+	const byGuid = new Map(filterItems.map((item) => [item.id, item]));
+	const next: TorrentItem[] = [];
+	for (const row of cache.rows) {
+		const filtered = byGuid.get(row.entry.guid);
+		const state = filtered?.state ?? "blank";
+		const watched = row.match?.episodesWatched ?? 0;
+		const episodeHigh = row.episodeHigh ?? row.episode ?? 0;
+		const newEpisode = Boolean(row.match) && episodeHigh > watched;
+		const seenAt =
+			cache.seenByGuid.get(row.entry.guid) ?? new Date().toISOString();
+		next.push(toTorrentItem(row, seenAt, state, newEpisode));
+	}
+	next.sort((left, right) => compareTorrentState(left.state, right.state));
+	items = next;
+	return emitTorrentItems();
+}
+
+export async function applyTorrentView(
+	database: DatabaseClient = requiredDb(),
+): Promise<TorrentItem[]> {
+	const settings = await loadAppSettings(database);
+	if (feedCache) {
+		feedCache.available = await loadAvailableEpisodes(database);
+	}
+	return materializeItems(settings);
+}
+
+export function sortDownloadQueue(
+	rows: TorrentItem[],
 	settings: AppSettings,
-): boolean {
-	if (!match) {
-		return false;
-	}
-	if (!settings.torrentFilterEnabled) {
-		return true;
-	}
-	if (settings.torrentDiscardAnimeIds.includes(match.id)) {
-		return false;
-	}
-	if (
-		settings.torrentWatchingOnly &&
-		match.status !== "Currently watching" &&
-		match.status !== "Plan to watch"
-	) {
-		return false;
-	}
-	const fansub = match.fansub.trim();
-	if (fansub && !groupsMatch(fansub, group)) {
-		return false;
-	}
-	return true;
+): TorrentItem[] {
+	const dir = settings.torrentDownloadSortOrder === "descending" ? -1 : 1;
+	return [...rows].sort((left, right) => {
+		const leftId = left.animeId ?? Number.MAX_SAFE_INTEGER;
+		const rightId = right.animeId ?? Number.MAX_SAFE_INTEGER;
+		if (leftId !== rightId) {
+			return leftId - rightId;
+		}
+		if (settings.torrentDownloadSortBy === "release_date") {
+			return left.pubDate.localeCompare(right.pubDate) * dir;
+		}
+		return ((left.episode ?? 0) - (right.episode ?? 0)) * dir;
+	});
 }
 
 function safeFileStem(value: string): string {
@@ -148,51 +303,25 @@ async function openTorrent(
 	const useMagnet = settings.torrentUseMagnet || link.startsWith("magnet:");
 	if (dir && useMagnet) {
 		await writeFile(join(dir, `${safeFileStem(title)}.magnet`), link, "utf8");
+		spawnTorrentClient(link, dir, settings);
+		return;
+	}
+	if (!useMagnet && link.startsWith("http")) {
+		const response = await trackedFetch(link, {
+			headers: { Accept: "application/x-bittorrent, */*" },
+		});
+		if (!response.ok) {
+			throw new Error(`Torrent download failed (${response.status})`);
+		}
+		const bytes = Buffer.from(await response.arrayBuffer());
+		const folder = dir || appFeedDir();
+		await mkdir(folder, { recursive: true });
+		const filePath = join(folder, `${safeFileStem(title)}.torrent`);
+		await writeFile(filePath, bytes);
+		spawnTorrentClient(filePath, dir, settings);
+		return;
 	}
 	spawnTorrentClient(link, dir, settings);
-}
-
-function toTorrentItem(row: ParsedTorrentRow, seenAt: string): TorrentItem {
-	const { entry, match } = row;
-	return {
-		guid: entry.guid,
-		title: entry.title,
-		link: entry.link,
-		matched: Boolean(match),
-		seenAt,
-		animeId: match?.id ?? null,
-		animeTitle: match?.title || row.parsedTitle || entry.title,
-		airingStatus: match?.airingStatus ?? "",
-		episode: row.episode,
-		group: row.group,
-		size: entry.size,
-		videoFormat: row.videoFormat,
-		seeders: entry.seeders,
-		leechers: entry.leechers,
-		downloads: entry.downloads,
-		description: entry.description,
-		filename: row.filename,
-		pubDate: entry.pubDate,
-	};
-}
-
-export function getTorrentItems(): TorrentItem[] {
-	return items.filter((item) => !discardedGuids.has(item.guid));
-}
-
-function sortTorrentItems(
-	rows: TorrentItem[],
-	settings: AppSettings,
-): TorrentItem[] {
-	const copy = [...rows];
-	const dir = settings.torrentDownloadSortOrder === "descending" ? -1 : 1;
-	copy.sort((left, right) => {
-		if (settings.torrentDownloadSortBy === "release_date") {
-			return left.pubDate.localeCompare(right.pubDate) * dir;
-		}
-		return ((left.episode ?? 0) - (right.episode ?? 0)) * dir;
-	});
-	return copy;
 }
 
 async function ingestFeed(
@@ -201,57 +330,77 @@ async function ingestFeed(
 	force: boolean,
 ): Promise<TorrentItem[]> {
 	const settings = await loadAppSettings(database);
-	const response = await fetch(feedUrl);
+	const response = await trackedFetch(feedUrl);
 	if (!response.ok) {
 		throw new Error(`RSS feed failed (${response.status})`);
 	}
 	const xml = await response.text();
 	const candidates = await loadCandidates(database);
+	const available = await loadAvailableEpisodes(database);
 	const rows = await getTorrentParseWorker().invoke.parseFeed({
 		xml,
 		candidates,
 	});
 	const existingArchive = await database
-		.select({ guid: torrentArchive.guid, seenAt: torrentArchive.seenAt })
+		.select({
+			guid: torrentArchive.guid,
+			title: torrentArchive.title,
+			seenAt: torrentArchive.seenAt,
+		})
 		.from(torrentArchive);
 	const seenByGuid = new Map(
 		existingArchive.map((row) => [row.guid, row.seenAt]),
 	);
+	const archivedTitles = new Set(existingArchive.map((row) => row.title));
 	const bootstrap = existingArchive.length === 0;
-	const next: TorrentItem[] = [];
+	const now = new Date().toISOString();
+	const freshGuids = new Set<string>();
 	for (const row of rows) {
-		const { entry, match, group } = row;
-		const archivedAt = seenByGuid.get(entry.guid);
-		const seenAt = archivedAt ?? new Date().toISOString();
-		const announce =
-			Boolean(match) && shouldAnnounceTorrent(match, group, settings);
-		if (archivedAt == null) {
-			await database.insert(torrentArchive).values({
-				guid: entry.guid,
-				title: entry.title,
-				link: entry.link,
-				matched: announce ? 1 : 0,
-				seenAt,
-			});
-			seenByGuid.set(entry.guid, seenAt);
-			if (announce && !force && !bootstrap) {
-				setAppNotice(`New torrent: ${entry.title}`);
-				if (settings.newTorrentAction === "download" && entry.link) {
-					await openTorrent(entry.link, entry.title, settings, match);
-				}
+		if (!seenByGuid.has(row.entry.guid)) {
+			seenByGuid.set(row.entry.guid, now);
+			freshGuids.add(row.entry.guid);
+		}
+	}
+	feedCache = {
+		rows,
+		available,
+		seenByGuid,
+		archivedTitles,
+	};
+	const visible = materializeItems(settings);
+	const byGuid = new Map(items.map((item) => [item.guid, item]));
+	for (const row of rows) {
+		if (!freshGuids.has(row.entry.guid)) {
+			continue;
+		}
+		const state = byGuid.get(row.entry.guid)?.state ?? "blank";
+		const watched = row.match?.episodesWatched ?? 0;
+		const episodeHigh = row.episodeHigh ?? row.episode ?? 0;
+		const newEpisode = Boolean(row.match) && episodeHigh > watched;
+		const seenAt = seenByGuid.get(row.entry.guid) ?? now;
+		const announce = state === "selected" && newEpisode;
+		await database.insert(torrentArchive).values({
+			guid: row.entry.guid,
+			title: row.entry.title,
+			link: row.entry.link,
+			matched: announce ? 1 : 0,
+			seenAt,
+		});
+		archivedTitles.add(row.entry.title);
+		if (announce && !force && !bootstrap) {
+			setAppNotice(`New torrent: ${row.entry.title}`);
+			if (settings.newTorrentAction === "download" && row.entry.link) {
+				await openTorrent(
+					row.entry.link,
+					row.entry.title,
+					settings,
+					row.match,
+				);
 			}
 		}
-		if (
-			match &&
-			settings.torrentFilterEnabled &&
-			settings.torrentDiscardAnimeIds.includes(match.id)
-		) {
-			discardedGuids.add(entry.guid);
-		}
-		next.push(toTorrentItem(row, seenAt));
 	}
 	await trimTorrentArchive(database, settings.torrentArchiveMaxCount);
-	return sortTorrentItems(next, settings);
+	return visible;
 }
 
 async function trimTorrentArchive(
@@ -292,11 +441,11 @@ export async function checkTorrents(
 	const settings = await loadAppSettings(database);
 	const url = (feedUrl ?? settings.rssFeedUrl).trim();
 	if (!url) {
+		feedCache = null;
 		items = [];
-		return items;
+		return emitTorrentItems();
 	}
-	items = await ingestFeed(database, url, force);
-	return getTorrentItems();
+	return ingestFeed(database, url, force);
 }
 
 export async function searchTorrents(
@@ -325,37 +474,66 @@ export async function downloadTorrent(
 	await openTorrent(item.link, item.title, settings, match);
 }
 
-export function discardTorrent(guid: string): TorrentItem[] {
-	discardedGuids.add(guid);
-	return getTorrentItems();
+export async function downloadSelectedTorrents(
+	guids: string[],
+	database: DatabaseClient = requiredDb(),
+): Promise<void> {
+	const settings = await loadAppSettings(database);
+	const selected = sortDownloadQueue(
+		items.filter((item) => guids.includes(item.guid)),
+		settings,
+	);
+	for (const item of selected) {
+		await downloadTorrent(item.guid, database);
+	}
 }
 
-export function discardTorrentsForAnime(animeId: number): TorrentItem[] {
-	for (const item of items) {
-		if (item.animeId === animeId) {
-			discardedGuids.add(item.guid);
-		}
-	}
-	return getTorrentItems();
+export function discardTorrent(guid: string): TorrentItem[] {
+	discardedGuids.add(guid);
+	return emitTorrentItems();
 }
 
 export async function discardAnimeFilter(
 	animeId: number,
+	title: string,
 	database: DatabaseClient = requiredDb(),
 ): Promise<TorrentItem[]> {
 	const settings = await loadAppSettings(database);
-	if (!settings.torrentDiscardAnimeIds.includes(animeId)) {
-		await patchAppSettings(database, {
-			torrentDiscardAnimeIds: [...settings.torrentDiscardAnimeIds, animeId],
-		});
-	}
-	return discardTorrentsForAnime(animeId);
+	await patchAppSettings(database, {
+		torrentFilters: addDiscardAnimeFilter(
+			settings.torrentFilters,
+			animeId,
+			title,
+		),
+	});
+	return applyTorrentView(database);
+}
+
+export async function preferFansubFilter(
+	animeId: number,
+	group: string,
+	title: string,
+	database: DatabaseClient = requiredDb(),
+): Promise<TorrentItem[]> {
+	const settings = await loadAppSettings(database);
+	await patchAppSettings(database, {
+		torrentFilters: setFansubFilter(
+			settings.torrentFilters,
+			animeId,
+			group,
+			title,
+		),
+	});
+	return applyTorrentView(database);
 }
 
 export function initTorrents(database: DatabaseClient): void {
 	db = database;
 	void restartTorrentPoll();
 	subscribeSettings(() => {
+		void applyTorrentView(database).catch(() => {
+			/* ignore */
+		});
 		void restartTorrentPoll();
 	});
 }

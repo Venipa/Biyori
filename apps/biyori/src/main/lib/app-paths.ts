@@ -15,6 +15,12 @@ export function appCacheDir(): string {
 	return dir;
 }
 
+export function appFeedDir(): string {
+	const dir = join(appRootDir(), "feed");
+	mkdirSync(dir, { recursive: true });
+	return dir;
+}
+
 export function appDatabasePath(): string {
 	return join(appRootDir(), "biyori.db");
 }

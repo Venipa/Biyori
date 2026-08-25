@@ -224,6 +224,7 @@ export async function upsertAnimeFromMedia(
 				alternativeTitles: animeRow.alternativeTitles,
 				type: animeRow.type,
 				episodes: animeRow.episodes,
+				durationMinutes: animeRow.durationMinutes,
 				averageScore: animeRow.averageScore,
 				season: animeRow.season,
 				airingStatus: animeRow.airingStatus,

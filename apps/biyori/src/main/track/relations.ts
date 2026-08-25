@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { trackedFetch } from "../http-stats";
 import type { DatabaseClient } from "../db";
 import { relationsCache } from "../db/schema";
 
@@ -109,7 +110,7 @@ export async function refreshRelations(db: DatabaseClient): Promise<void> {
 		return;
 	}
 	try {
-		const response = await fetch(RELATIONS_URL);
+		const response = await trackedFetch(RELATIONS_URL);
 		if (!response.ok) {
 			if (cached[0]) {
 				rules = parseRelations(cached[0].body);

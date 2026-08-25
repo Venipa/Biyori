@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/mainview/components/ui/select";
+import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import { listStatusSchema, type ListStatus } from "@/shared/list";
@@ -45,18 +46,6 @@ export function AnimeListAction({
 	const listStatus = parsedStatus.success ? parsedStatus.data : "Plan to watch";
 	const busy = addFromSearch.isPending || saveEntry.isPending;
 
-	async function invalidateList(id: number): Promise<void> {
-		await Promise.all([
-			utils.anime.list.invalidate(),
-			utils.anime.counts.invalidate(),
-			utils.anime.listed.invalidate(),
-			utils.anime.byId.invalidate({ id }),
-			utils.statistics.summary.invalidate(),
-			utils.history.list.invalidate(),
-			utils.history.queuedCount.invalidate(),
-		]);
-	}
-
 	if (!onList) {
 		return (
 			<Button
@@ -65,12 +54,10 @@ export function AnimeListAction({
 				className={cn("w-full", className)}
 				disabled={busy}
 				onClick={() => {
-					void addFromSearch
-						.mutateAsync({ mediaId })
-						.then(async (result) => {
-							await invalidateList(result.id);
-							onAdded?.(result.id);
-						});
+					void addFromSearch.mutateAsync({ mediaId }).then((result) => {
+						void invalidateAnimeQueries(utils, "added", result.id);
+						onAdded?.(result.id);
+					});
 				}}
 			>
 				Add to list
@@ -100,7 +87,9 @@ export function AnimeListAction({
 						notes,
 						rewatching,
 					})
-					.then(() => invalidateList(mediaId));
+					.then(() => {
+						void invalidateAnimeQueries(utils, "entrySaved", mediaId);
+					});
 			}}
 		>
 			<SelectTrigger

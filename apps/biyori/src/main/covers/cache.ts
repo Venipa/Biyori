@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
+import { trackedFetch } from "../http-stats";
 import { appCacheDir } from "../lib/app-paths";
 import type { MediaImageKind } from "../../lib/schemas/media-image";
 import type { DatabaseClient } from "../db";
@@ -73,7 +74,7 @@ async function downloadImage(
 	if (!isAllowedMediaUrl(kind, url)) {
 		throw new MediaCacheError(`Prohibited ${kind} URL`);
 	}
-	const response = await fetch(url, {
+	const response = await trackedFetch(url, {
 		headers: { Accept: "image/*", "User-Agent": "Biyori/1.0" },
 	});
 	if (!response.ok) {

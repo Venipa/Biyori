@@ -8,6 +8,7 @@ export const anime = sqliteTable("anime", {
 	alternativeTitles: text("alternative_titles").notNull().default(""),
 	type: text("type").notNull().$type<AnimeType>(),
 	episodes: integer("episodes").notNull(),
+	durationMinutes: integer("duration_minutes").notNull().default(0),
 	averageScore: integer("average_score").notNull(),
 	season: text("season").notNull(),
 	airingStatus: text("airing_status").notNull(),

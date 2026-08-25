@@ -12,7 +12,9 @@
     "typecheck": "bun run --cwd apps/biyori typecheck"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.10",
     "@types/bun": "latest",
+    "lefthook": "^2.1.10",
     "vite-plugin-svgr": "^5.2.0"
   },
   "peerDependencies": {

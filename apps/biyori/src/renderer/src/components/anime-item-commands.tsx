@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { desktopRpc } from "@/desktop-rpc";
+import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import type { SelectedAnime } from "@/mainview/lib/selected-anime";
 import { listStatusSchema, type ListStatus } from "@/shared/list";
 import { trpc } from "@/mainview/trpc";
@@ -168,23 +169,13 @@ export function AnimeItemCommands({
 	const playNext = trpc.library.playNext.useMutation();
 	const playRandom = trpc.library.playRandom.useMutation();
 	const addFromSearch = trpc.anilist.addFromSearch.useMutation({
-		onSuccess: async () => {
-			await Promise.all([
-				utils.anime.list.invalidate(),
-				utils.anime.counts.invalidate(),
-				utils.anime.listed.invalidate(),
-				utils.statistics.summary.invalidate(),
-			]);
+		onSuccess: (_data, variables) => {
+			void invalidateAnimeQueries(utils, "added", variables.mediaId);
 		},
 	});
 	const saveEntry = trpc.anilist.saveEntry.useMutation({
-		onSuccess: async () => {
-			await Promise.all([
-				utils.anime.list.invalidate(),
-				utils.anime.counts.invalidate(),
-				utils.history.list.invalidate(),
-				utils.history.queuedCount.invalidate(),
-			]);
+		onSuccess: (_data, variables) => {
+			void invalidateAnimeQueries(utils, "entrySaved", variables.animeId);
 		},
 	});
 	const localEpisodes = episodesQuery.data ?? [];

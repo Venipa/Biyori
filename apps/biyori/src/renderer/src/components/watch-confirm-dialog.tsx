@@ -8,19 +8,15 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/mainview/components/ui/alert-dialog";
+import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { trpc } from "@/mainview/trpc";
 
 export function WatchConfirmDialog() {
 	const utils = trpc.useUtils();
 	const query = trpc.media.nowPlaying.useQuery();
 	const confirm = trpc.media.confirmUpdate.useMutation({
-		onSuccess: async () => {
-			await Promise.all([
-				utils.anime.list.invalidate(),
-				utils.anime.counts.invalidate(),
-				utils.history.list.invalidate(),
-				utils.history.queuedCount.invalidate(),
-			]);
+		onSuccess: () => {
+			void invalidateAnimeQueries(utils, "watched");
 		},
 	});
 	const skip = trpc.media.skipUpdate.useMutation();

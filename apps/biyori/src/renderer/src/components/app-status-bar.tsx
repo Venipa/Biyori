@@ -1,4 +1,5 @@
 import { Spinner } from "@/mainview/components/ui/spinner";
+import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { trpc } from "@/mainview/trpc";
 import { useRef } from "react";
 
@@ -15,13 +16,7 @@ export function AppStatusBar() {
 				snapshot.lastSuccessAt !== lastSuccessAt.current
 			) {
 				lastSuccessAt.current = snapshot.lastSuccessAt;
-				void Promise.all([
-					utils.anime.list.invalidate(),
-					utils.anime.counts.invalidate(),
-					utils.history.list.invalidate(),
-					utils.history.queuedCount.invalidate(),
-				]);
-				void utils.statistics.summary.invalidate();
+				void invalidateAnimeQueries(utils, "synced");
 			}
 		},
 	});

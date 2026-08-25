@@ -32,6 +32,12 @@ export const desktopRpc = {
 			client.desktop.pickFolder.mutate(),
 		pickFile: (_input?: Record<string, never>) =>
 			client.desktop.pickFile.mutate(),
+		exportBiyori: (input: {
+			defaultName: string;
+			payload: Record<string, unknown>;
+		}) => client.desktop.exportBiyori.mutate(input),
+		importBiyori: (_input?: Record<string, never>) =>
+			client.desktop.importBiyori.mutate(),
 		showDefaultContextMenu: (_input?: Record<string, never>) =>
 			client.desktop.showDefaultContextMenu.mutate(),
 	},

@@ -47,6 +47,7 @@ import {
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { useHeldOpenPayload } from "@/mainview/lib/held-open-payload";
+import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 import { getNeighborAnimeId } from "@/mainview/lib/selected-anime";
 import { trpc } from "@/mainview/trpc";
@@ -682,14 +683,7 @@ function AnimeInfoBody({
                   });
                   form.reset(data);
                   onClose();
-                  void Promise.all([
-                    utils.anime.list.invalidate(),
-                    utils.anime.counts.invalidate(),
-                    utils.history.list.invalidate(),
-                    utils.history.queuedCount.invalidate(),
-                  ]);
-                  void utils.anime.byId.invalidate({ id: anime.id });
-                  void utils.statistics.summary.invalidate();
+                  void invalidateAnimeQueries(utils, "entrySaved", anime.id);
                 } catch (error) {
                   form.setError("root.serverError", {
                     message:

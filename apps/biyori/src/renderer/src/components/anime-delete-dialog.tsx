@@ -9,6 +9,7 @@ import {
 	AlertDialogTitle,
 } from "@/mainview/components/ui/alert-dialog";
 import { useHeldOpenPayload } from "@/mainview/lib/held-open-payload";
+import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import {
 	requestAnimeDelete,
 	setSelectedAnime,
@@ -50,14 +51,10 @@ export function AnimeDeleteDialog() {
 							if (!held) {
 								return;
 							}
-							void remove.mutateAsync({ id: held.id }).then(async () => {
+							void remove.mutateAsync({ id: held.id }).then(() => {
 								requestAnimeDelete(null);
 								setSelectedAnime(null);
-								await Promise.all([
-									utils.anime.list.invalidate(),
-									utils.anime.counts.invalidate(),
-									utils.statistics.summary.invalidate(),
-								]);
+								void invalidateAnimeQueries(utils, "removed");
 							});
 						}}
 					>

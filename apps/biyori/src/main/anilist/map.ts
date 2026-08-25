@@ -45,6 +45,7 @@ export const anilistMediaSchema = z.object({
 	idMal: z.number().nullable().optional(),
 	description: z.string().nullable().optional(),
 	episodes: z.number().nullable().optional(),
+	duration: z.number().nullable().optional(),
 	title: titleSchema,
 	coverImage: z
 		.object({
@@ -332,6 +333,7 @@ export function toAnimeRow(
 		alternativeTitles: uniqueTitles.join(", "),
 		type: mapFormat(media.format),
 		episodes: media.episodes ?? 0,
+		durationMinutes: media.duration ?? 0,
 		averageScore: media.averageScore ?? media.meanScore ?? 0,
 		season: formatSeason(media.season, media.seasonYear),
 		airingStatus: mapAiringStatus(media.status),

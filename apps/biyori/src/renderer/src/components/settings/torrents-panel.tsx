@@ -35,6 +35,7 @@ import {
 	pickLibraryFolderPath,
 } from "@/mainview/lib/library-folder";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
+import { TorrentFiltersTab } from "./torrent-filters-tab";
 
 export function TorrentsPanel() {
 	const rssId = useId();
@@ -43,9 +44,6 @@ export function TorrentsPanel() {
 	const intervalId = useId();
 	const notifyId = useId();
 	const downloadId = useId();
-	const watchingOnlyId = useId();
-	const filterId = useId();
-	const discardNotInListId = useId();
 	const sortById = useId();
 	const sortOrderId = useId();
 	const useAnimeFolderId = useId();
@@ -60,7 +58,6 @@ export function TorrentsPanel() {
 	const useAnimeFolder = form.watch("torrentUseAnimeFolder");
 	const fallbackOnFolder = form.watch("torrentFallbackOnFolder");
 	const appMode = form.watch("torrentAppMode");
-	const discardedIds = form.watch("torrentDiscardAnimeIds") ?? [];
 	const folderEnabled = Boolean(useAnimeFolder && fallbackOnFolder);
 
 	return (
@@ -390,60 +387,7 @@ export function TorrentsPanel() {
 				</FieldGroup>
 			</TabsContent>
 			<TabsContent value="filters" className="pt-4">
-				<FieldGroup>
-					<FormCheckbox
-						control={form.control}
-						name="torrentFilterEnabled"
-						id={filterId}
-						label="Enable torrent filters"
-					/>
-					<FieldDescription>
-						Filters allow you to download the files you want and ignore the
-						others.
-					</FieldDescription>
-					<FormCheckbox
-						control={form.control}
-						name="torrentWatchingOnly"
-						id={watchingOnlyId}
-						label="Select currently watching and plan to watch"
-					/>
-					<FormCheckbox
-						control={form.control}
-						name="torrentDiscardNotInList"
-						id={discardNotInListId}
-						label="Discard and deactivate not-in-list anime"
-					/>
-					<FieldDescription>
-						Quick filters on the torrents page set a preferred fansub or discard
-						an anime. Other groups are ignored.
-					</FieldDescription>
-					{discardedIds.length > 0 ? (
-						<ul className="rounded-md border p-2 text-sm">
-							{discardedIds.map((animeId) => (
-								<li
-									key={animeId}
-									className="flex items-center justify-between gap-2 py-1"
-								>
-									<span>Discard anime #{animeId}</span>
-									<Button
-										type="button"
-										variant="ghost"
-										size="xs"
-										onClick={() => {
-											form.setValue(
-												"torrentDiscardAnimeIds",
-												discardedIds.filter((id) => id !== animeId),
-												{ shouldDirty: true },
-											);
-										}}
-									>
-										Remove
-									</Button>
-								</li>
-							))}
-						</ul>
-					) : null}
-				</FieldGroup>
+				<TorrentFiltersTab />
 			</TabsContent>
 		</Tabs>
 	);

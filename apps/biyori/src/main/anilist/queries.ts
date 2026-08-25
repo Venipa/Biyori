@@ -24,6 +24,7 @@ id
 idMal
 description
 episodes
+duration
 title {
   romaji
   english
