@@ -83,17 +83,13 @@ export class WindowManager<TId extends string> {
 
 		const show = options.show ?? true;
 		const parent = id === "main" ? undefined : (this.get("main" as TId) ?? undefined);
+    const skipTaskbar = options.skipTaskbar ?? false;
+    const alwaysOnTop = definition.alwaysOnTop ?? false;
 		const win = this.createChrome({
-			title: definition.title,
-			width: definition.width,
-			height: definition.height,
-			minWidth: definition.minWidth,
-			minHeight: definition.minHeight,
-			maxWidth: definition.maxWidth,
-			maxHeight: definition.maxHeight,
+      ...definition,
 			show,
-			skipTaskbar: options.skipTaskbar ?? false,
-			alwaysOnTop: definition.alwaysOnTop ?? false,
+			skipTaskbar,
+			alwaysOnTop,
 			parent,
 		});
 
@@ -144,20 +140,11 @@ export class WindowManager<TId extends string> {
 		parent?: BrowserWindow;
 	}): BrowserWindow {
 		const ctor: BrowserWindowConstructorOptions = {
-			title: options.title,
-			width: options.width,
-			height: options.height,
-			minWidth: options.minWidth,
-			minHeight: options.minHeight,
-			maxWidth: options.maxWidth,
-			maxHeight: options.maxHeight,
+      ...options,
 			show: false,
 			center: !options.parent,
 			frame: false,
 			autoHideMenuBar: true,
-			skipTaskbar: options.skipTaskbar,
-			alwaysOnTop: options.alwaysOnTop,
-			parent: options.parent,
 			...(process.platform === "linux" ? { icon } : {}),
 			webPreferences: {
 				preload: join(__dirname, "../preload/index.js"),

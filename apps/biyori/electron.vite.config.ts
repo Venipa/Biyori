@@ -5,6 +5,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "electron-vite";
 import { resolve } from "node:path";
 import type { Plugin, PluginOption, UserConfig } from "vite";
+import svgr from "vite-plugin-svgr";
 
 const sharedAliases = {
 	"@shared": resolve("src/shared"),
@@ -74,6 +75,10 @@ export default defineConfig({
 				routesDirectory: resolve("src/renderer/src/routes"),
 				generatedRouteTree: resolve("src/renderer/src/routeTree.gen.ts"),
 			}),
+      svgr({
+        include: "**/*.svg",
+        svgrOptions: {}
+      }),
 			react(),
 			tailwindcss(),
 			styledJsx(),

@@ -1,9 +1,15 @@
+import AniDBIcon from "@/assets/anidb.png";
+import AnilistIcon from "@/assets/anilist.svg";
+import MyAnimeListIcon from "@/assets/mal.svg";
+import { Image } from "@/components/ui/image";
+import { desktopRpc } from "@/desktop-rpc";
 import {
   type AnimeInfoFormInput,
   type AnimeInfoFormValues,
   animeInfoFormSchema,
 } from "@/lib/schemas/anime-list-entry";
 import { AnimeCover } from "@/mainview/components/anime-cover";
+import { AnimeListAction } from "@/mainview/components/anime-list-action";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
 import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
@@ -56,6 +62,28 @@ const statusOptions = listStatusSchema.options.map((value) => ({
   value,
   label: value,
 }));
+
+function posterExternalLinks(
+  id: number,
+  title: string,
+): Array<{ label: string; short: string; url: string, icon?: React.ReactNode }> {
+  const q = encodeURIComponent(title);
+  return [
+    { label: "AniList", short: "AL", url: `https://anilist.co/anime/${id}`, icon: <AnilistIcon className="size-4" /> },
+    {
+      label: "MyAnimeList",
+      short: "MAL",
+      url: `https://myanimelist.net/anime.php?q=${q}`,
+      icon: <MyAnimeListIcon className="size-4" />,
+    },
+    {
+      label: "AniDB",
+      short: "ADB",
+      url: `https://anidb.net/anime/?adb.search=${q}`,
+      icon: <Image src={AniDBIcon} alt="AniDB" className="size-6" />,
+    },
+  ];
+}
 
 type AnimeDetail = NonNullable<inferRouterOutputs<AppRouter>["anime"]["byId"]>;
 
@@ -146,7 +174,7 @@ export function AnimeInfoDialog({
 
         {anime && !loading ? (
           <AnimeInfoBody
-            key={`${anime.id}-${heldInfoTab ?? "main"}`}
+            key={`${anime.id}-${heldInfoTab ?? "main"}-${anime.onList}`}
             anime={anime}
             infoTab={heldInfoTab ?? "main"}
             readOnly={!anime.onList}
@@ -221,7 +249,6 @@ function AnimeInfoBody({
   const utils = trpc.useUtils();
   const saveEntry = trpc.anilist.saveEntry.useMutation();
   const setLocal = trpc.anime.setLocal.useMutation();
-  const addFromSearch = trpc.anilist.addFromSearch.useMutation();
   const parsedStatus = listStatusSchema.safeParse(anime.status);
   const episodeMax = anime.episodes > 0 ? anime.episodes : 9999;
   const form = useForm<AnimeInfoFormInput, unknown, AnimeInfoFormValues>({
@@ -258,14 +285,41 @@ function AnimeInfoBody({
         </div>
 
         <div className="relative z-10 -mt-14 flex min-h-0 flex-1 gap-4 px-4">
-          <div className="aspect-2/3 w-56 shrink-0 self-start overflow-hidden rounded-md border bg-muted shadow-md ring-1 ring-foreground/10">
-            <AnimeCover
-              id={anime.id}
-              coverUrl={anime.coverUrl || undefined}
-              alt={`Key art for ${anime.title}`}
-              width={224}
-              height={336}
-              className="size-full"
+          <div className="flex w-56 shrink-0 flex-col gap-2 self-start">
+            <div className="aspect-2/3 w-full overflow-hidden rounded-md border bg-muted shadow-md ring-1 ring-foreground/10">
+              <AnimeCover
+                id={anime.id}
+                coverUrl={anime.coverUrl || undefined}
+                alt={`Key art for ${anime.title}`}
+                width={224}
+                height={336}
+                className="size-full"
+              />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+              {posterExternalLinks(anime.id, anime.title).map((link) => (
+                <Button
+                  key={link.label}
+                  type="button"
+                  variant="outline"
+                  title={link.label}
+                  aria-label={link.label}
+                  onClick={() => {
+                    void desktopRpc.request.openExternal({ url: link.url });
+                  }}
+                >
+                 {link.icon ? link.icon : <span className="text-[10px] font-semibold">{link.short}</span>}
+                </Button>
+              ))}
+            </div>
+            <AnimeListAction
+              mediaId={anime.id}
+              onList={anime.onList}
+              status={anime.status}
+              progress={anime.episodesWatched ?? 0}
+              notes={anime.notes ?? ""}
+              rewatching={Boolean(anime.rewatching)}
+              onAdded={onAdded}
             />
           </div>
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
@@ -287,13 +341,13 @@ function AnimeInfoBody({
                 keepMounted={false}
                 className="mt-0 flex min-h-0 flex-1 flex-col"
               >
-                <ScrollArea className="h-full min-h-0">
+                <ScrollArea className="h-full min-h-0 " viewportClassName=" px-2 pt-2">
                   <AnimeSeriesInfo
                     anime={{
                       ...anime,
                       yourScore: anime.score,
                     }}
-                    className="pr-3 pb-3"
+                    className="pb-3"
                   />
                 </ScrollArea>
               </TabsContent>
@@ -302,35 +356,12 @@ function AnimeInfoBody({
                 keepMounted={false}
                 className="mt-0 flex min-h-0 flex-1 flex-col"
               >
-                <ScrollArea className="h-full min-h-0">
+                <ScrollArea className="h-full min-h-0" viewportClassName=" px-2 pt-2">
                   {readOnly ? (
-                    <div className="flex flex-col gap-3 pr-3 pb-3">
+                    <div className="flex flex-col gap-3 pb-3">
                       <p className="text-sm text-muted-foreground">
                         Not in your list yet.
                       </p>
-                      <Button
-                        type="button"
-                        disabled={addFromSearch.isPending}
-                        onClick={() => {
-                          void addFromSearch
-                            .mutateAsync({
-                              mediaId: anime.id,
-                            })
-                            .then(async (result) => {
-                              await Promise.all([
-                                utils.anime.list.invalidate(),
-                                utils.anime.counts.invalidate(),
-                                utils.anime.listed.invalidate(),
-                                utils.anime.byId.invalidate({
-                                  id: result.id,
-                                }),
-                              ]);
-                              onAdded?.(result.id);
-                            });
-                        }}
-                      >
-                        Add to list
-                      </Button>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-6 pr-3 pb-3">
@@ -613,7 +644,7 @@ function AnimeInfoBody({
             errors={[form.formState.errors.root.serverError]}
           />
         ) : null}
-        <DialogClose render={<Button variant="ghost" type="button" />}>
+        <DialogClose render={<Button variant="ghost" type="button" />} className={"no-drag"}>
           Cancel
         </DialogClose>
         {readOnly ? (

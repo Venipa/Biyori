@@ -12,7 +12,8 @@
     "typecheck": "bun run --cwd apps/biyori typecheck"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "vite-plugin-svgr": "^5.2.0"
   },
   "peerDependencies": {
     "typescript": "^5"
