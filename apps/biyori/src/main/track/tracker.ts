@@ -8,10 +8,10 @@ import { loadAppSettings, subscribeSettings } from "../settings";
 import { syncDiscordPresence } from "../share/discord";
 import { setNowPlayingForHttp } from "../share/http";
 import { getNowPlayingMedia } from "./detect";
-import { loadCandidates, matchById, matchTitle } from "./match";
+import { loadCandidates, matchById, matchParsed } from "./match";
 import { parsePlayback } from "./parse";
 import { enqueueUpdate, initQueueFlush } from "./queue";
-import { applyRelation, refreshRelations } from "./relations";
+import { redirectEpisode, refreshRelations } from "./relations";
 import { canApplyProgress, progressPayload } from "./tracker-progress";
 import type { MatchedAnime, NowPlayingMedia, NowPlayingSnapshot, NowPlayingUser, PendingConfirm } from "./types";
 
@@ -208,9 +208,16 @@ async function runTick(): Promise<void> {
 	}
 
 	const candidates = await loadCandidates(db);
-	let match = matchTitle(parsed.title, candidates);
+	let match = matchParsed(
+		{
+			title: parsed.rawTitle,
+			season: parsed.season,
+			year: parsed.year,
+		},
+		candidates,
+	);
 	if (match && parsed.episode != null) {
-		const redirected = applyRelation(match.id, parsed.episode);
+		const redirected = redirectEpisode(match, parsed.episode);
 		parsed.episode = redirected.episode;
 		if (redirected.id !== match.id) {
 			match = matchById(redirected.id, candidates) ?? match;

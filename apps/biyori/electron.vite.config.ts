@@ -54,7 +54,12 @@ export default defineConfig({
 		...mainResolve,
 		build: {
 			externalizeDeps: {
-				exclude: ["@biyori/electron-trpc", "@biyori/worker"],
+				exclude: [
+					"@biyori/electron-trpc",
+					"@biyori/parser",
+					"@biyori/recognition",
+					"@biyori/worker",
+				],
 			},
 		},
 	},
@@ -62,7 +67,12 @@ export default defineConfig({
 		...mainResolve,
 		build: {
 			externalizeDeps: {
-				exclude: ["@biyori/electron-trpc", "@biyori/worker"],
+				exclude: [
+					"@biyori/electron-trpc",
+					"@biyori/parser",
+					"@biyori/recognition",
+					"@biyori/worker",
+				],
 			},
 		},
 	},

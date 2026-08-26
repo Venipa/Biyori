@@ -5,7 +5,7 @@ import { anime, listEntry } from "../db/schema";
 import { type Candidate, namesFrom } from "./match-core";
 
 export type { Candidate } from "./match-core";
-export { matchById, matchTitle } from "./match-core";
+export { matchById, matchParsed, matchTitle } from "./match-core";
 
 export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 	const rows = await db

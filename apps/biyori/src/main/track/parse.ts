@@ -1,5 +1,5 @@
-import { basename, dirname } from "node:path";
-import { parse } from "anitomy";
+import { basename } from "node:path";
+import { extendTitle, parseFilename as parseFilenameRaw, parsePath } from "@biyori/recognition";
 import type { NowPlayingMedia, ParsedPlayback } from "./types";
 
 const PLAYER_SUFFIX = /\s+-\s+(mpv|vlc media player|vlc|mpc-hc|mpc-be|potplayer|kmplayer|gom player).*$/i;
@@ -20,14 +20,6 @@ function ignoredTokens(raw: string | undefined): string[] {
 		.filter(Boolean);
 }
 
-function stripIgnored(value: string, ignored: string[]): string {
-	let next = value;
-	for (const token of ignored) {
-		next = next.split(token).join(" ");
-	}
-	return next.replace(/\s+/g, " ").trim();
-}
-
 function stripPlayerSuffix(value: string): string {
 	return value
 		.replace(PLAYER_SUFFIX, "")
@@ -36,44 +28,44 @@ function stripPlayerSuffix(value: string): string {
 		.trim();
 }
 
-function parseAnimeName(source: string, filePath: string | null, ignored: string[]): ParsedPlayback | null {
-	const parsed = parse(stripIgnored(source, ignored));
-	const title = parsed?.title?.trim();
-	if (!title) {
+function toPlayback(
+	parsed: ReturnType<typeof parseFilenameRaw>,
+	filePath: string | null,
+): ParsedPlayback | null {
+	if (!parsed?.title) {
 		return null;
 	}
-	const episode = parsed?.episode?.number;
-	const group = parsed?.release?.group?.trim() || null;
 	return {
-		title,
-		episode: episode && episode > 0 ? episode : null,
-		group,
+		title: extendTitle(parsed),
+		rawTitle: parsed.title,
+		season: parsed.season,
+		year: parsed.year,
+		episode: parsed.episode,
+		group: parsed.group,
 		filePath,
 	};
 }
 
-export function parsePlayback(media: NowPlayingMedia, options: ParsePlaybackOptions = {}): ParsedPlayback | null {
+export function parsePlayback(
+	media: NowPlayingMedia,
+	options: ParsePlaybackOptions = {},
+): ParsedPlayback | null {
 	const ignored = ignoredTokens(options.ignoredStrings);
 	if (media.filePath) {
-		const fromFile = parseAnimeName(basename(media.filePath), media.filePath, ignored);
+		const fromFile = toPlayback(parsePath(media.filePath, { ignored }), media.filePath);
 		if (fromFile) {
 			return fromFile;
-		}
-		const fromParent = parseAnimeName(basename(dirname(media.filePath)), media.filePath, ignored);
-		if (fromParent) {
-			return fromParent;
 		}
 	}
 	if (!media.title) {
 		return null;
 	}
-	return parseAnimeName(stripPlayerSuffix(media.title), media.filePath, ignored);
+	return toPlayback(
+		parseFilenameRaw(stripPlayerSuffix(media.title), { ignored }),
+		media.filePath,
+	);
 }
 
 export function parseFilename(filename: string): ParsedPlayback | null {
-	const fromFile = parseAnimeName(basename(filename), filename, []);
-	if (fromFile) {
-		return fromFile;
-	}
-	return parseAnimeName(basename(dirname(filename)), filename, []);
+	return toPlayback(parsePath(filename) ?? parseFilenameRaw(basename(filename)), filename);
 }

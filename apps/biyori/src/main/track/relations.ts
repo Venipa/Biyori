@@ -1,3 +1,8 @@
+import {
+	applyRelationRule,
+	redirectIfOutOfRange,
+	type RelationRule,
+} from "@biyori/recognition";
 import { eq } from "drizzle-orm";
 import type { DatabaseClient } from "../db";
 import { relationsCache } from "../db/schema";
@@ -6,14 +11,6 @@ import { trackedFetch } from "../http-stats";
 const RELATIONS_URL = "https://raw.githubusercontent.com/erengy/anime-relations/master/anime-relations.txt";
 const CACHE_ID = "anime-relations";
 const REFRESH_MS = 24 * 60 * 60 * 1000;
-
-type RelationRule = {
-	fromId: number;
-	fromStart: number;
-	fromEnd: number | null;
-	toId: number;
-	toStart: number;
-};
 
 let rules: RelationRule[] = [];
 let loadedAt = 0;
@@ -70,22 +67,14 @@ export function parseRelations(body: string): RelationRule[] {
 }
 
 export function applyRelation(id: number, episode: number): { id: number; episode: number } {
-	for (const rule of rules) {
-		if (rule.fromId !== id) {
-			continue;
-		}
-		if (episode < rule.fromStart) {
-			continue;
-		}
-		if (rule.fromEnd != null && episode > rule.fromEnd) {
-			continue;
-		}
-		return {
-			id: rule.toId,
-			episode: episode - rule.fromStart + rule.toStart,
-		};
-	}
-	return { id, episode };
+	return applyRelationRule(id, episode, rules);
+}
+
+export function redirectEpisode(
+	match: { id: number; episodes: number },
+	episode: number,
+): { id: number; episode: number } {
+	return redirectIfOutOfRange(match, episode, rules);
 }
 
 export async function refreshRelations(db: DatabaseClient): Promise<void> {

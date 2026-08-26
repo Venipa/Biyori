@@ -2,14 +2,14 @@ import { randomUUID } from "node:crypto";
 import { existsSync, type FSWatcher, watch } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { dirname, extname, join } from "node:path";
+import { recognizePath } from "@biyori/recognition";
 import { eq } from "drizzle-orm";
 import { shell } from "electron";
 import type { DatabaseClient } from "../db";
 import { anime, episodeFile } from "../db/schema";
 import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
-import { loadCandidates, matchTitle } from "./match";
-import { parseFilename } from "./parse";
+import { loadCandidates } from "./match";
 
 const VIDEO_EXT = new Set([".mkv", ".mp4", ".avi", ".webm", ".mov", ".wmv", ".flv", ".ts", ".m2ts", ".mpg", ".mpeg"]);
 
@@ -98,16 +98,13 @@ async function runScan(database: DatabaseClient): Promise<{ files: number; match
 		if (processed % YIELD_EVERY === 0) {
 			await yieldToEventLoop();
 		}
-		const parsed = parseFilename(path);
-		if (!parsed) {
+		const recognized = recognizePath(path, candidates);
+		if (!recognized?.match) {
 			continue;
 		}
-		const hit = matchTitle(parsed.title, candidates);
-		if (!hit) {
-			continue;
-		}
+		const hit = recognized.match;
 		matched += 1;
-		const episode = parsed.episode ?? 1;
+		const episode = recognized.parsed.episode ?? 1;
 		let size = 0;
 		try {
 			size = (await stat(path)).size;

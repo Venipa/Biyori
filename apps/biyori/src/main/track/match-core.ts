@@ -1,3 +1,9 @@
+import type { TitleParts } from "@biyori/recognition";
+import {
+	matchParsed as matchParsedFilename,
+	matchTitle as scoreTitle,
+	normalizeTitle,
+} from "@biyori/recognition";
 import type { MatchedAnime } from "./types";
 
 export type Candidate = {
@@ -28,54 +34,10 @@ export type Candidate = {
 	names: string[];
 };
 
-function normalize(value: string): string {
-	return value
-		.toLowerCase()
-		.replace(/[^\p{L}\p{N}]+/gu, " ")
-		.trim();
-}
-
-function bigrams(value: string): string[] {
-	const grams: string[] = [];
-	for (let i = 0; i < value.length - 1; i += 1) {
-		grams.push(value.slice(i, i + 2));
-	}
-	return grams;
-}
-
-function dice(left: string, right: string): number {
-	if (!left || !right) {
-		return 0;
-	}
-	if (left === right) {
-		return 1;
-	}
-	const a = bigrams(left);
-	const b = new Set(bigrams(right));
-	if (a.length === 0 || b.size === 0) {
-		return 0;
-	}
-	let hits = 0;
-	for (const gram of a) {
-		if (b.has(gram)) {
-			hits += 1;
-		}
-	}
-	return (2 * hits) / (a.length + b.size);
-}
-
 export function namesFrom(title: string, alternativeTitles: string): string[] {
-	return [title, ...alternativeTitles.split(/[,;]/)].map((item) => normalize(item)).filter(Boolean);
-}
-
-function statusBoost(status: string): number {
-	if (status === "Currently watching") {
-		return 0.12;
-	}
-	if (status === "Plan to watch") {
-		return 0.04;
-	}
-	return 0;
+	return [title, ...alternativeTitles.split(/[,;]/)]
+		.map((item) => normalizeTitle(item))
+		.filter(Boolean);
 }
 
 function toMatch(candidate: Candidate): MatchedAnime {
@@ -108,27 +70,13 @@ function toMatch(candidate: Candidate): MatchedAnime {
 }
 
 export function matchTitle(query: string, candidates: Candidate[]): MatchedAnime | null {
-	const needle = normalize(query);
-	if (!needle) {
-		return null;
-	}
-	let best: { candidate: Candidate; score: number } | null = null;
-	for (const candidate of candidates) {
-		let nameScore = 0;
-		for (const name of candidate.names) {
-			const exact = name === needle ? 1 : 0;
-			const contains = name.includes(needle) || needle.includes(name) ? 0.82 : 0;
-			nameScore = Math.max(nameScore, exact, contains, dice(name, needle));
-		}
-		const score = nameScore + statusBoost(candidate.status);
-		if (!best || score > best.score) {
-			best = { candidate, score };
-		}
-	}
-	if (!best || best.score < 0.62) {
-		return null;
-	}
-	return toMatch(best.candidate);
+	const hit = scoreTitle(query, candidates);
+	return hit ? toMatch(hit) : null;
+}
+
+export function matchParsed(parsed: TitleParts, candidates: Candidate[]): MatchedAnime | null {
+	const hit = matchParsedFilename(parsed, candidates);
+	return hit ? toMatch(hit) : null;
 }
 
 export function matchById(id: number, candidates: Candidate[]): MatchedAnime | null {

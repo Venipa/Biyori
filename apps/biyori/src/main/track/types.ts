@@ -12,6 +12,9 @@ export type NowPlayingMedia = {
 
 export type ParsedPlayback = {
 	title: string;
+	rawTitle: string;
+	season: number | null;
+	year: number | null;
 	episode: number | null;
 	group: string | null;
 	filePath: string | null;

@@ -21,6 +21,7 @@
         "@base-ui/react": "^1.7.0",
         "@better-fetch/fetch": "^1.3.1",
         "@biyori/electron-trpc": "workspace:*",
+        "@biyori/recognition": "workspace:*",
         "@biyori/worker": "workspace:*",
         "@electron-toolkit/preload": "^3.0.2",
         "@electron-toolkit/utils": "^4.0.0",
@@ -31,7 +32,6 @@
         "@trpc/client": "^11.18.0",
         "@trpc/react-query": "^11.18.0",
         "@trpc/server": "^11.18.0",
-        "anitomy": "^0.0.35",
         "better-sqlite3": "^13.0.3",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -88,6 +88,23 @@
         "@trpc/client": "^11.0.0",
         "@trpc/server": "^11.0.0",
         "electron": ">=39.0.0",
+      },
+    },
+    "packages/parser": {
+      "name": "@biyori/parser",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/node": "^22.19.1",
+      },
+    },
+    "packages/recognition": {
+      "name": "@biyori/recognition",
+      "version": "0.1.0",
+      "dependencies": {
+        "@biyori/parser": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/node": "^22.19.1",
       },
     },
     "packages/worker": {
@@ -188,6 +205,10 @@
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.5.10", "", { "os": "win32", "cpu": "x64" }, "sha512-M+2dgBsl3lXRiTfgPVc2p3anS4Tocojke4rzFLScZ2Y/wmF+36dRb1iHCLiyGqOzQGyTplZH1HnEYviiAqi3nA=="],
 
     "@biyori/electron-trpc": ["@biyori/electron-trpc@workspace:packages/electron-trpc"],
+
+    "@biyori/parser": ["@biyori/parser@workspace:packages/parser"],
+
+    "@biyori/recognition": ["@biyori/recognition@workspace:packages/recognition"],
 
     "@biyori/worker": ["@biyori/worker@workspace:packages/worker"],
 
@@ -622,8 +643,6 @@
     "ajv": ["ajv@6.15.0", "", { "dependencies": { "fast-deep-equal": "^3.1.1", "fast-json-stable-stringify": "^2.0.0", "json-schema-traverse": "^0.4.1", "uri-js": "^4.2.2" } }, "sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw=="],
 
     "ajv-formats": ["ajv-formats@3.0.1", "", { "dependencies": { "ajv": "^8.0.0" } }, "sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ=="],
-
-    "anitomy": ["anitomy@0.0.35", "", {}, "sha512-lwTWQAWKrgvQhlTssPDqz+1BVYJ7EqNVo7OTsqyND0SoVehOgdIdDZKeaAXI+D8z7xAV/fABWBZsVpbURF1MBg=="],
 
     "ansi-colors": ["ansi-colors@4.1.3", "", {}, "sha512-/6w/C21Pm1A7aZitlI5Ni/2J6FFQN8i1Cvz3kHABAAbw93v/NlvKdVOqz7CCWz/3iv/JplRSEEZ83XION15ovw=="],
 
