@@ -38,9 +38,9 @@ function AboutPage() {
 				<dt className='text-muted-foreground'>Build</dt>
 				<dd className='truncate font-mono text-xs'>{status.localHash ? status.localHash.slice(0, 12) : "..."}</dd>
 				<dt className='text-muted-foreground'>Updates</dt>
-				<dd>{status.message || "Not checked yet"}</dd>
+				<dd className={status.error ? "min-w-0 break-words text-destructive" : "min-w-0 break-words"}>{status.message || "Not checked yet"}</dd>
 			</dl>
-			{status.error ? <p className='text-sm text-destructive'>{status.error}</p> : null}
+			{status.error && status.error !== status.message ? <p className='text-sm text-destructive'>{status.error}</p> : null}
 			<div className='flex flex-wrap gap-2'>
 				<Button
 					type='button'

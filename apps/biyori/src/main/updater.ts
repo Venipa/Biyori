@@ -2,8 +2,10 @@ import { is } from "@electron-toolkit/utils";
 import { observable } from "@trpc/server/observable";
 import { app } from "electron";
 import { autoUpdater } from "electron-updater";
-import { channelWantsPrerelease, type GithubRelease, parseGithubChangelog } from "./github-releases";
+import { channelWantsPrerelease, type GithubRelease, parseGithubChangelog, sanitizeUpdateError } from "./github-releases";
+import { requestQuitAndInstall } from "./handlers/quit-handler";
 import { trackedFetch } from "./http-stats";
+import { log } from "./logger";
 
 export const UPDATE_GITHUB_REPO = "Venipa/biyori";
 export const UPDATE_STABLE_BASE_URL = `https://github.com/${UPDATE_GITHUB_REPO}/releases/latest/download`;
@@ -79,8 +81,22 @@ function githubRepo(): { owner: string; repo: string } {
 }
 
 function configureUpdater(): void {
+	const { owner, repo } = githubRepo();
+	autoUpdater.setFeedURL({ provider: "github", owner, repo });
 	autoUpdater.autoDownload = false;
 	autoUpdater.allowPrerelease = channelWantsPrerelease(localChannel());
+}
+
+function applyUpdateError(error: unknown, fallback: string): void {
+	log.error("updater", error);
+	const message = sanitizeUpdateError(error, fallback);
+	patch({
+		phase: "error",
+		error: message,
+		message,
+		updateAvailable: false,
+		updateReady: false,
+	});
 }
 
 export function getUpdateState(): AppUpdateState {
@@ -143,8 +159,7 @@ function hookStatus(): void {
 		});
 	});
 	autoUpdater.on("error", (error) => {
-		const message = error instanceof Error ? error.message : String(error);
-		patch({ phase: "error", error: message, message });
+		applyUpdateError(error, "Update check failed");
 	});
 }
 
@@ -200,14 +215,7 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 		await autoUpdater.checkForUpdates();
 		return state;
 	} catch (error) {
-		const message = error instanceof Error ? error.message : "Update check failed";
-		patch({
-			phase: "error",
-			error: message,
-			message,
-			updateAvailable: false,
-			updateReady: false,
-		});
+		applyUpdateError(error, "Update check failed");
 		return state;
 	} finally {
 		checking = false;
@@ -237,12 +245,7 @@ export async function downloadAppUpdate(): Promise<AppUpdateState> {
 		await autoUpdater.downloadUpdate();
 		return state;
 	} catch (error) {
-		const message = error instanceof Error ? error.message : "Download failed";
-		patch({
-			phase: "error",
-			error: message,
-			message,
-		});
+		applyUpdateError(error, "Download failed");
 		return state;
 	} finally {
 		downloading = false;
@@ -257,6 +260,5 @@ export async function applyAppUpdate(): Promise<void> {
 		phase: "ready",
 		message: "Restarting to apply update...",
 	});
-	const { requestQuitAndInstall } = await import("./handlers/quit-handler");
 	await requestQuitAndInstall();
 }

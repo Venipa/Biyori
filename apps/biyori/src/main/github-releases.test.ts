@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { channelWantsPrerelease, parseGithubChangelog, preprocessReleaseNotes } from "./github-releases";
+import { channelWantsPrerelease, parseGithubChangelog, preprocessReleaseNotes, sanitizeUpdateError } from "./github-releases";
 
 const stable = {
 	tag_name: "v1.0.0",
@@ -49,6 +49,14 @@ describe("github changelog", () => {
 	test("github error objects are not treated as changelog", () => {
 		const result = parseGithubChangelog({ message: "Not Found", documentation_url: "https://docs.github.com" }, "stable");
 		expect(result).toEqual({ ok: false, error: "Could not load changelog" });
+	});
+
+	test("strips http dumps from updater errors", () => {
+		const dump = new Error(
+			'Cannot parse releases feed: Error: Unable to find latest version on GitHub (https://github.com/Venipa/biyori/releases/latest), please ensure a production release exists: HttpError: 406 "method: GET url: https://github.com/Venipa/biyori/releases\\n\\n Data:\\n \\n " Headers: { "set-cookie": ["_gh_sess=secret"] } XML: <feed>',
+		);
+		expect(sanitizeUpdateError(dump)).toBe("No production GitHub release found for this channel");
+		expect(sanitizeUpdateError(dump)).not.toMatch(/set-cookie|Headers|<feed>/i);
 	});
 
 	test("channelWantsPrerelease", () => {
