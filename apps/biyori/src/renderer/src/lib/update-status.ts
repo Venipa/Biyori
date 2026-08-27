@@ -8,6 +8,7 @@ const idle: UpdateState = {
 	phase: "idle",
 	localVersion: "",
 	localChannel: "",
+	buildChannel: "",
 	localHash: "",
 	remoteVersion: null,
 	remoteHash: null,

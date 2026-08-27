@@ -191,7 +191,7 @@ function materializeItems(settings: AppSettings): TorrentItem[] {
 }
 
 export async function applyTorrentView(database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
-	const settings = await loadAppSettings(database);
+	const settings = loadAppSettings();
 	if (feedCache) {
 		feedCache.available = await loadAvailableEpisodes(database);
 	}
@@ -284,7 +284,7 @@ async function openTorrent(link: string, title: string, settings: AppSettings, m
 }
 
 async function ingestFeed(database: DatabaseClient, feedUrl: string, force: boolean): Promise<TorrentItem[]> {
-	const settings = await loadAppSettings(database);
+	const settings = loadAppSettings();
 	const response = await trackedFetch(feedUrl);
 	if (!response.ok) {
 		throw new Error(`RSS feed failed (${response.status})`);
@@ -373,7 +373,7 @@ async function trimTorrentArchive(database: DatabaseClient, maxCount: number): P
 }
 
 export async function checkTorrents(database: DatabaseClient = requiredDb(), force = false, feedUrl?: string): Promise<TorrentItem[]> {
-	const settings = await loadAppSettings(database);
+	const settings = loadAppSettings();
 	const url = (feedUrl ?? settings.rssFeedUrl).trim();
 	if (!url) {
 		feedCache = null;
@@ -384,7 +384,7 @@ export async function checkTorrents(database: DatabaseClient = requiredDb(), for
 }
 
 export async function searchTorrents(title: string, database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
-	const settings = await loadAppSettings(database);
+	const settings = loadAppSettings();
 	const template = settings.rssSearchUrl.trim() || settings.rssFeedUrl.trim();
 	if (!template) {
 		return getTorrentItems();
@@ -397,14 +397,14 @@ export async function downloadTorrent(guid: string, database: DatabaseClient = r
 	if (!item?.link) {
 		return;
 	}
-	const settings = await loadAppSettings(database);
+	const settings = loadAppSettings();
 	const candidates = await loadCandidates(database);
 	const match = item.animeId ? matchById(item.animeId, candidates) : null;
 	await openTorrent(item.link, item.title, settings, match);
 }
 
 export async function downloadSelectedTorrents(guids: string[], database: DatabaseClient = requiredDb()): Promise<void> {
-	const settings = await loadAppSettings(database);
+	const settings = loadAppSettings();
 	const selected = sortDownloadQueue(
 		items.filter((item) => guids.includes(item.guid)),
 		settings,
@@ -420,16 +420,16 @@ export function discardTorrent(guid: string): TorrentItem[] {
 }
 
 export async function discardAnimeFilter(animeId: number, title: string, database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
-	const settings = await loadAppSettings(database);
-	await patchAppSettings(database, {
+	const settings = loadAppSettings();
+	patchAppSettings({
 		torrentFilters: addDiscardAnimeFilter(settings.torrentFilters, animeId, title),
 	});
 	return applyTorrentView(database);
 }
 
 export async function preferFansubFilter(animeId: number, group: string, title: string, database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
-	const settings = await loadAppSettings(database);
-	await patchAppSettings(database, {
+	const settings = loadAppSettings();
+	patchAppSettings({
 		torrentFilters: setFansubFilter(settings.torrentFilters, animeId, group, title),
 	});
 	return applyTorrentView(database);
@@ -458,7 +458,7 @@ export async function restartTorrentPoll(): Promise<void> {
 	if (!db) {
 		return;
 	}
-	const settings = await loadAppSettings(db);
+	const settings = loadAppSettings();
 	if (!settings.checkTorrentsAutomatically || !settings.rssFeedUrl) {
 		return;
 	}

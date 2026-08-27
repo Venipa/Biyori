@@ -45,9 +45,10 @@ jobs:
             const isVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
             const id = process.env.REF_NAME && process.env.REF_NAME.split('v')[1] || process.env.REF_NAME
             const isRC = id.includes('-rc.')
+            const isAlpha = id.includes('-a.') || id.includes('-alpha.')
             core.setOutput("value", id);
             core.setOutput("ok", String(isVersion.test(id)))
-            core.setOutput("releaseType", isRC ? 'rc' : 'stable')
+            core.setOutput("releaseType", isAlpha ? 'alpha' : isRC ? 'beta' : 'stable')
 
       - if: github.ref_type == 'tag' && steps.getVersion.outputs.ok == 'true'
         name: set app version
@@ -101,7 +102,7 @@ jobs:
           title="v${{ steps.getVersion.outputs.value }} - "
           channel="${{ steps.getVersion.outputs.releaseType }}"
           prerelease_flag=()
-          if [ "$channel" = "rc" ]; then
+          if [ "$channel" = "beta" ] || [ "$channel" = "alpha" ]; then
             prerelease_flag=(--prerelease)
           fi
           if gh release view "$tag" >/dev/null 2>&1; then

@@ -4,7 +4,7 @@ import icon from "../../resources/icon.png?asset";
 import { attachQuitHandler, requestQuit } from "./handlers/quit-handler";
 import { attachTrayState, setTrayState } from "./handlers/tray-state";
 import { logger } from "./logger";
-import { boot, getDb, scheduleAfterInit } from "./services";
+import { boot, scheduleAfterInit } from "./services";
 import { loadAppSettings } from "./settings";
 import { isStartupLaunch, syncLoginItem } from "./startup";
 import { initElectronTrpc } from "./trpc-handler";
@@ -26,8 +26,7 @@ if (!app.requestSingleInstanceLock()) {
 
 		await boot();
 		initElectronTrpc();
-		const db = getDb();
-		const bootSettings = await loadAppSettings(db);
+		const bootSettings = loadAppSettings();
 
 		syncLoginItem(bootSettings);
 		const hidden = isStartupLaunch() && bootSettings.autostartTray;

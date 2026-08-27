@@ -1,4 +1,6 @@
+import semver from "semver";
 import { z } from "zod";
+import { cleanSemver, isVersionAllowedOnChannel, type ReleaseNoteEntry, type UpdateChannel } from "../shared/updater";
 
 export const githubReleaseSchema = z.object({
 	tag_name: z.string(),
@@ -13,10 +15,6 @@ export const githubReleaseSchema = z.object({
 export type GithubRelease = z.infer<typeof githubReleaseSchema>;
 
 const FULL_CHANGELOG_LINK = /(?:\*{2})?Full Changelog(?:\*{2})?:\s+(https:\/\/github\.com\/[^\s]+)/gi;
-
-export function channelWantsPrerelease(channel: string): boolean {
-	return channel !== "stable" && channel !== "dev";
-}
 
 export function preprocessReleaseNotes(content: string): string {
 	return content.replace(FULL_CHANGELOG_LINK, "[View on GitHub]($1)");
@@ -36,17 +34,31 @@ export function sanitizeUpdateError(error: unknown, fallback = "Update check fai
 	return firstLine;
 }
 
-export function parseGithubChangelog(payload: unknown, channel: string): { ok: true; items: GithubRelease[] } | { ok: false; error: string } {
+export function parseGithubChangelog(payload: unknown, channel: UpdateChannel): { ok: true; items: ReleaseNoteEntry[] } | { ok: false; error: string } {
 	const parsed = z.array(githubReleaseSchema).safeParse(payload);
 	if (!parsed.success) {
 		return { ok: false, error: "Could not load changelog" };
 	}
-	const wantPre = channelWantsPrerelease(channel);
-	const items = parsed.data
-		.filter((release) => !release.draft && release.prerelease === wantPre)
-		.map((release) => ({
-			...release,
+	const items: ReleaseNoteEntry[] = [];
+	for (const release of parsed.data) {
+		if (release.draft) {
+			continue;
+		}
+		if (channel === "stable" && release.prerelease) {
+			continue;
+		}
+		const version = cleanSemver(release.tag_name);
+		if (!version || !isVersionAllowedOnChannel(version, channel)) {
+			continue;
+		}
+		items.push({
+			version,
+			name: release.name,
 			body: release.body ? preprocessReleaseNotes(release.body) : release.body,
-		}));
+			publishedAt: release.published_at,
+			prerelease: release.prerelease,
+		});
+	}
+	items.sort((a, b) => semver.rcompare(a.version, b.version, { loose: true }));
 	return { ok: true, items };
 }

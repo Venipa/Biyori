@@ -8,7 +8,6 @@ import { app } from "electron";
 import { appDatabasePath } from "../lib/app-paths";
 import { logger as log } from "../logger";
 import * as schema from "./schema";
-import { seedIfEmpty } from "./seed";
 
 const hasMigrationJournal = (folder: string): boolean => {
 	return existsSync(join(folder, "meta", "_journal.json"));
@@ -66,7 +65,6 @@ export function createDatabase() {
 export async function initDatabase() {
 	try {
 		const db = createDatabase();
-		await seedIfEmpty(db);
 		return db;
 	} catch (err) {
 		log.error("initDatabase failed", err);

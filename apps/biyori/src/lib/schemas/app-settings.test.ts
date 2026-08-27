@@ -27,4 +27,9 @@ describe("parseAppSettings torrent filters", () => {
 			}),
 		).toEqual(filters);
 	});
+
+	test("maps legacy update channel names", () => {
+		expect(parseAppSettings({ updateChannel: "rc" }).updateChannel).toBe("beta");
+		expect(parseAppSettings({}).updateChannel).toBe("stable");
+	});
 });

@@ -1,5 +1,4 @@
-import { initSettings } from "../settings";
-import { getDb } from "./database.service";
+import { loadAppSettings } from "../settings";
 import { Service } from "./service";
 
 export default class SettingsService extends Service {
@@ -7,6 +6,6 @@ export default class SettingsService extends Service {
 	readonly order = 10;
 
 	onInit(): void {
-		initSettings(getDb());
+		loadAppSettings();
 	}
 }

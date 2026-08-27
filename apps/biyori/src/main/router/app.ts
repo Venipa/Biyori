@@ -193,8 +193,8 @@ export const appRouter = t.router({
 		}),
 		ensure: t.procedure.input(z.object({ id: z.number().int() })).mutation(async ({ ctx, input, signal }) => {
 			try {
-				const auth = await readAnilistAuth(ctx.db);
-				const settings = await loadAppSettings(ctx.db);
+				const auth = readAnilistAuth();
+				const settings = loadAppSettings();
 				const { id } = await ensureAnimeCached({
 					db: ctx.db,
 					id: input.id,
@@ -293,19 +293,19 @@ export const appRouter = t.router({
 		summary: t.procedure.query(async ({ ctx }) => loadStatistics(ctx.db)),
 	}),
 	settings: t.router({
-		get: t.procedure.query(async ({ ctx }) => {
-			return loadAppSettings(ctx.db);
+		get: t.procedure.query(() => {
+			return loadAppSettings();
 		}),
-		set: t.procedure.input(appSettingsPatchSchema).mutation(async ({ ctx, input }) => {
-			return patchAppSettings(ctx.db, input);
+		set: t.procedure.input(appSettingsPatchSchema).mutation(({ input }) => {
+			return patchAppSettings(input);
 		}),
-		addLibraryFolder: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+		addLibraryFolder: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(({ input }) => {
 			const path = normalizeFolderPath(input.path);
-			const current = await loadAppSettings(ctx.db);
+			const current = loadAppSettings();
 			if (folderPathExists(current.libraryFolders, path)) {
 				return current;
 			}
-			return patchAppSettings(ctx.db, {
+			return patchAppSettings({
 				libraryFolders: [...current.libraryFolders, { path }],
 			});
 		}),

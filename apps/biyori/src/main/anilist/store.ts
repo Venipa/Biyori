@@ -1,7 +1,5 @@
-import { eq } from "drizzle-orm";
 import { z } from "zod";
-import type { DatabaseClient } from "../db";
-import { appSetting } from "../db/schema";
+import { credentialsStore } from "../stores";
 
 export const anilistAuthSchema = z.object({
 	accessToken: z.string(),
@@ -19,34 +17,17 @@ export type AnilistPublicStatus = {
 	expiresAt: number | null;
 };
 
-const ANILIST_SETTING_KEY = "anilist";
-
-export async function readAnilistAuth(db: DatabaseClient): Promise<AnilistAuth | null> {
-	const rows = await db.select().from(appSetting).where(eq(appSetting.key, ANILIST_SETTING_KEY)).limit(1);
-	if (!rows[0]) {
-		return null;
-	}
-	try {
-		const parsed = anilistAuthSchema.safeParse(JSON.parse(rows[0].value));
-		if (!parsed.success) {
-			return null;
-		}
-		return parsed.data;
-	} catch {
-		return null;
-	}
+export function readAnilistAuth(): AnilistAuth | null {
+	const parsed = anilistAuthSchema.safeParse(credentialsStore.get("anilist"));
+	return parsed.success ? parsed.data : null;
 }
 
-export async function writeAnilistAuth(db: DatabaseClient, auth: AnilistAuth): Promise<void> {
-	const value = JSON.stringify(auth);
-	await db.insert(appSetting).values({ key: ANILIST_SETTING_KEY, value }).onConflictDoUpdate({
-		target: appSetting.key,
-		set: { value },
-	});
+export function writeAnilistAuth(auth: AnilistAuth): void {
+	credentialsStore.set("anilist", auth);
 }
 
-export async function clearAnilistAuth(db: DatabaseClient): Promise<void> {
-	await db.delete(appSetting).where(eq(appSetting.key, ANILIST_SETTING_KEY));
+export function clearAnilistAuth(): void {
+	credentialsStore.delete("anilist");
 }
 
 export function toPublicStatus(auth: AnilistAuth | null): AnilistPublicStatus {

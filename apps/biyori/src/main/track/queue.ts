@@ -175,7 +175,7 @@ export async function flushQueue(db: DatabaseClient): Promise<void> {
 }
 
 async function flushNext(db: DatabaseClient): Promise<void> {
-	const auth = await readAnilistAuth(db);
+	const auth = readAnilistAuth();
 	if (!auth || auth.expiresAt <= Date.now()) {
 		return;
 	}

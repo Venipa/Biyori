@@ -48,8 +48,8 @@ function mapAnilistError(error: unknown): never {
 	});
 }
 
-async function requireAuth(db: Parameters<typeof readAnilistAuth>[0]) {
-	const auth = await readAnilistAuth(db);
+function requireAuth() {
+	const auth = readAnilistAuth();
 	if (!auth || auth.expiresAt <= Date.now()) {
 		throw new TRPCError({
 			code: "UNAUTHORIZED",
@@ -60,8 +60,8 @@ async function requireAuth(db: Parameters<typeof readAnilistAuth>[0]) {
 }
 
 export const anilistRouter = t.router({
-	status: t.procedure.query(async ({ ctx }) => {
-		const auth = await readAnilistAuth(ctx.db);
+	status: t.procedure.query(() => {
+		const auth = readAnilistAuth();
 		return {
 			...toPublicStatus(auth),
 			loginError: getAnilistLoginError(),
@@ -86,12 +86,12 @@ export const anilistRouter = t.router({
 			});
 		}
 	}),
-	connectWithToken: t.procedure.input(anilistTokenSchema).mutation(async ({ ctx, input }) => {
+	connectWithToken: t.procedure.input(anilistTokenSchema).mutation(async ({ input }) => {
 		clearAnilistLoginError();
 		const token = normalizeAnilistToken(input.token);
 		try {
 			const viewer = await fetchViewer(token);
-			await writeAnilistAuth(ctx.db, {
+			writeAnilistAuth({
 				accessToken: token,
 				expiresAt: expiresAtFromToken(token),
 				userId: viewer.id,
@@ -99,17 +99,17 @@ export const anilistRouter = t.router({
 			});
 			requestAniListSync();
 			return {
-				...toPublicStatus(await readAnilistAuth(ctx.db)),
+				...toPublicStatus(readAnilistAuth()),
 				loginError: null as string | null,
 			};
 		} catch (error) {
 			mapAnilistError(error);
 		}
 	}),
-	disconnect: t.procedure.mutation(async ({ ctx }) => {
+	disconnect: t.procedure.mutation(() => {
 		clearAnilistLoginError();
 		abortAniListSync();
-		await clearAnilistAuth(ctx.db);
+		clearAnilistAuth();
 		return {
 			...toPublicStatus(null),
 			loginError: null as string | null,
@@ -137,10 +137,10 @@ export const anilistRouter = t.router({
 				forceRefresh: z.boolean().default(false),
 			}),
 		)
-		.query(async ({ ctx, input, signal }) => {
+		.query(async ({ input, signal }) => {
 			try {
-				const auth = await readAnilistAuth(ctx.db);
-				const settings = await loadAppSettings(ctx.db);
+				const auth = readAnilistAuth();
+				const settings = loadAppSettings();
 				return await fetchSeasonMedia({
 					token: auth?.accessToken,
 					season: input.season,
@@ -153,10 +153,10 @@ export const anilistRouter = t.router({
 				mapAnilistError(error);
 			}
 		}),
-	search: t.procedure.input(anilistSearchSchema).query(async ({ ctx, input }) => {
+	search: t.procedure.input(anilistSearchSchema).query(async ({ input }) => {
 		try {
-			const auth = await readAnilistAuth(ctx.db);
-			const settings = await loadAppSettings(ctx.db);
+			const auth = readAnilistAuth();
+			const settings = loadAppSettings();
 			return await searchAniListMedia({
 				token: auth?.accessToken,
 				query: input.q,
@@ -176,8 +176,8 @@ export const anilistRouter = t.router({
 		)
 		.mutation(async ({ ctx, input }) => {
 			try {
-				const auth = await requireAuth(ctx.db);
-				const settings = await loadAppSettings(ctx.db);
+				const auth = requireAuth();
+				const settings = loadAppSettings();
 				const status = input.status ?? settings.defaultAddToListStatus;
 				const saved = await saveMediaListEntry({
 					token: auth.accessToken,

@@ -97,7 +97,7 @@ export async function startAniListSyncIfAuthed(): Promise<void> {
 	if (!db) {
 		return;
 	}
-	const auth = await readAnilistAuth(db);
+	const auth = readAnilistAuth();
 	if (!auth || auth.expiresAt <= Date.now()) {
 		return;
 	}
@@ -115,7 +115,7 @@ async function runSync(): Promise<void> {
 	const { signal } = controller;
 
 	try {
-		const auth = await readAnilistAuth(db);
+		const auth = readAnilistAuth();
 		if (!auth || auth.expiresAt <= Date.now()) {
 			emit({
 				...IDLE,
@@ -132,7 +132,7 @@ async function runSync(): Promise<void> {
 		if (signal.aborted) {
 			return;
 		}
-		await writeAnilistAuth(db, {
+		writeAnilistAuth({
 			...auth,
 			userId: viewer.id,
 			username: viewer.name,

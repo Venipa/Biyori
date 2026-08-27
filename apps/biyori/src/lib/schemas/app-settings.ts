@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { listStatusSchema } from "../../shared/list";
+import { parseUpdateChannel } from "../../shared/updater";
 import { normalizeFolderPath } from "../folder-path";
 import { defaultMediaPlayerIds, defaultStreamingProviderIds } from "../recognition-catalog";
 import { isTorrentFeedUrl } from "../torrent-feeds";
@@ -75,6 +76,7 @@ export const appSettingsSchema = z.object({
 	httpPort: z.coerce.number().int().min(1).max(65535),
 	discordApplicationId: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
 	uiTheme: z.preprocess((value) => (typeof value === "string" && value.length > 0 ? value : "Default"), z.string().min(1, "Required")),
+	updateChannel: z.preprocess((value) => parseUpdateChannel(value), z.enum(["stable", "beta", "alpha"])),
 	fileSizeThreshold: z.coerce.number().int().min(0, "Required"),
 	mediaDetectionInterval: z.coerce.number().int().min(0, "Required"),
 	seasonsGroupBy: seasonGroupBySchema.default("airing"),
@@ -148,6 +150,7 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	httpPort: 17464,
 	discordApplicationId: "",
 	uiTheme: "Default",
+	updateChannel: "stable",
 	fileSizeThreshold: 10485760,
 	mediaDetectionInterval: 5,
 	seasonsGroupBy: "airing",

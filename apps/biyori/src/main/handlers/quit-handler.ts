@@ -69,9 +69,7 @@ export async function requestQuitAndInstall(): Promise<void> {
 }
 
 export function attachQuitHandler(window: BrowserWindow): void {
-	void loadAppSettings().then((settings) => {
-		closeToTrayEnabled = settings.closeToTray;
-	});
+	closeToTrayEnabled = loadAppSettings().closeToTray;
 	subscribeSettings((settings) => {
 		closeToTrayEnabled = settings.closeToTray;
 	});

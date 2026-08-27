@@ -34,10 +34,10 @@ function idleSnapshot(user: NowPlayingUser): NowPlayingSnapshot {
 	return { ...IDLE, progressRevision, user };
 }
 
-async function resolveNowPlayingUser(database: DatabaseClient, settings: AppSettings): Promise<NowPlayingUser> {
+async function resolveNowPlayingUser(settings: AppSettings): Promise<NowPlayingUser> {
 	const provider: DefaultService = settings.defaultService;
 	if (provider === "anilist") {
-		const auth = await readAnilistAuth(database);
+		const auth = readAnilistAuth();
 		return { name: auth?.username ?? "", provider };
 	}
 	return { name: "", provider };
@@ -104,7 +104,7 @@ async function applyProgress(match: MatchedAnime, episode: number): Promise<void
 	if (!db) {
 		return;
 	}
-	const settings = await loadAppSettings(db);
+	const settings = loadAppSettings();
 	if (!canApplyProgress(match, episode, settings)) {
 		return;
 	}
@@ -154,8 +154,8 @@ async function runTick(): Promise<void> {
 	if (!db) {
 		return;
 	}
-	const settings = await loadAppSettings(db);
-	const user = await resolveNowPlayingUser(db, settings);
+	const settings = loadAppSettings();
+	const user = await resolveNowPlayingUser(settings);
 	if (!settings.enableRecognition) {
 		delayElapsedSeconds = 0;
 		delayLastTickAt = 0;
@@ -361,7 +361,7 @@ export async function restartTracker(): Promise<void> {
 	if (!db) {
 		return;
 	}
-	const settings = await loadAppSettings(db);
+	const settings = loadAppSettings();
 	const interval = Math.max(1, settings.mediaDetectionInterval) * 1000;
 	startTimer = setTimeout(() => {
 		startTimer = null;

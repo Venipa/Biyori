@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { channelWantsPrerelease, parseGithubChangelog, preprocessReleaseNotes, sanitizeUpdateError } from "./github-releases";
+import { channelWantsPrerelease } from "../shared/updater";
+import { parseGithubChangelog, preprocessReleaseNotes, sanitizeUpdateError } from "./github-releases";
 
 const stable = {
 	tag_name: "v1.0.0",
@@ -20,25 +21,43 @@ const rc = {
 	html_url: "https://github.com/Venipa/biyori/releases/tag/v1.1.0-rc.1",
 };
 
+const alpha = {
+	...stable,
+	tag_name: "v1.2.0-a.1",
+	name: "1.2.0-a.1",
+	body: "alpha notes",
+	prerelease: true,
+	html_url: "https://github.com/Venipa/biyori/releases/tag/v1.2.0-a.1",
+};
+
 const draft = { ...rc, draft: true, tag_name: "v1.1.0-rc.2" };
 
 describe("github changelog", () => {
 	test("stable channel keeps published releases only", () => {
-		const result = parseGithubChangelog([stable, rc, draft], "stable");
+		const result = parseGithubChangelog([stable, rc, alpha, draft], "stable");
 		expect(result.ok).toBe(true);
 		if (!result.ok) {
 			return;
 		}
-		expect(result.items.map((item) => item.tag_name)).toEqual(["v1.0.0"]);
+		expect(result.items.map((item) => item.version)).toEqual(["1.0.0"]);
 	});
 
-	test("rc channel keeps published prereleases only", () => {
-		const result = parseGithubChangelog([stable, rc, draft], "rc");
+	test("beta channel includes rc and stable, not alpha", () => {
+		const result = parseGithubChangelog([stable, rc, alpha, draft], "beta");
 		expect(result.ok).toBe(true);
 		if (!result.ok) {
 			return;
 		}
-		expect(result.items.map((item) => item.tag_name)).toEqual(["v1.1.0-rc.1"]);
+		expect(result.items.map((item) => item.version)).toEqual(["1.1.0-rc.1", "1.0.0"]);
+	});
+
+	test("alpha channel includes a, rc, and stable", () => {
+		const result = parseGithubChangelog([stable, rc, alpha, draft], "alpha");
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+		expect(result.items.map((item) => item.version)).toEqual(["1.2.0-a.1", "1.1.0-rc.1", "1.0.0"]);
 	});
 
 	test("rewrites GitHub full changelog URLs to markdown links", () => {
@@ -61,8 +80,7 @@ describe("github changelog", () => {
 
 	test("channelWantsPrerelease", () => {
 		expect(channelWantsPrerelease("stable")).toBe(false);
-		expect(channelWantsPrerelease("dev")).toBe(false);
-		expect(channelWantsPrerelease("rc")).toBe(true);
-		expect(channelWantsPrerelease("canary")).toBe(true);
+		expect(channelWantsPrerelease("beta")).toBe(true);
+		expect(channelWantsPrerelease("alpha")).toBe(true);
 	});
 });

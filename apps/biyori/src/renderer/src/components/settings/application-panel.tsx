@@ -2,11 +2,13 @@ import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
+import { UpdateChannelToggle } from "@/mainview/components/update-channel-toggle";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/mainview/components/ui/field";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { Textarea } from "@/mainview/components/ui/textarea";
 import { listStatusSchema } from "@/shared/list";
+import { parseUpdateChannel } from "@/shared/updater";
 
 const TITLE_LANGUAGE_ITEMS = {
 	Romaji: "Romaji",
@@ -21,6 +23,7 @@ export function ApplicationPanel() {
 	const defaultAddToListStatusId = useId();
 	const autostartId = useId();
 	const closeToTrayId = useId();
+	const updateChannelId = useId();
 	const externalLinksId = useId();
 	const form = useFormContext<AppSettingsInput>();
 
@@ -116,6 +119,22 @@ export function ApplicationPanel() {
 						</FieldLegend>
 						<FormCheckbox control={form.control} name='autostart' id={autostartId} label='Autostart' />
 						<AutostartTrayField />
+					</FieldSet>
+					<FieldSet className='rounded-md border p-3'>
+						<FieldLegend variant='label' className='text-muted-foreground'>
+							Updates
+						</FieldLegend>
+						<Controller
+							control={form.control}
+							name='updateChannel'
+							render={({ field, fieldState }) => (
+								<Field data-invalid={fieldState.invalid || undefined}>
+									<FieldLabel htmlFor={updateChannelId}>Release channel:</FieldLabel>
+									<UpdateChannelToggle id={updateChannelId} value={parseUpdateChannel(field.value)} onValueChange={field.onChange} />
+									<FieldError errors={[fieldState.error]} />
+								</Field>
+							)}
+						/>
 					</FieldSet>
 					<FieldSet className='rounded-md border p-3'>
 						<FieldLegend variant='label' className='text-muted-foreground'>

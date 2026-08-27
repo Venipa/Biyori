@@ -75,7 +75,7 @@ export async function scanLibrary(database: DatabaseClient = requiredDb()): Prom
 }
 
 async function runScan(database: DatabaseClient): Promise<{ files: number; matched: number }> {
-	const settings = await loadAppSettings(database);
+	const settings = loadAppSettings();
 	const candidates = await loadCandidates(database);
 	const files: string[] = [];
 	const scannedRoots: string[] = [];
@@ -216,7 +216,7 @@ export async function restartLibraryWatch(): Promise<void> {
 	if (!db) {
 		return;
 	}
-	const settings = await loadAppSettings(db);
+	const settings = loadAppSettings();
 	if (!settings.realtimeMonitor) {
 		return;
 	}
