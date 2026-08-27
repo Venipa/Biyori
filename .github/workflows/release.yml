@@ -24,6 +24,7 @@ jobs:
     outputs:
       version: ${{ steps.getVersion.outputs.value }}
       version_ok: ${{ steps.getVersion.outputs.ok }}
+      channel: ${{ steps.getVersion.outputs.releaseType }}
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v7
@@ -70,6 +71,10 @@ jobs:
         env:
           VITE_ANILIST_CLIENT_ID: ${{ secrets.VITE_ANILIST_CLIENT_ID }}
           VITE_DISCORD_CLIENT_ID: ${{ secrets.VITE_DISCORD_CLIENT_ID }}
+          VITE_APP_UPDATE_CHANNEL: ${{ steps.getVersion.outputs.releaseType }}
+          VITE_APP_GIT_HASH: ${{ github.sha }}
+          VITE_REPO_OWNER: ${{ github.repository_owner }}
+          VITE_REPO_NAME: ${{ github.event.repository.name }}
 
       - name: Verify compile output
         shell: bash
@@ -94,10 +99,15 @@ jobs:
         run: |
           tag="${{ github.ref_name }}"
           title="v${{ steps.getVersion.outputs.value }} - "
+          channel="${{ steps.getVersion.outputs.releaseType }}"
+          prerelease_flag=()
+          if [ "$channel" = "rc" ]; then
+            prerelease_flag=(--prerelease)
+          fi
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "Release $tag already exists"
           else
-            gh release create "$tag" --draft --title "$title" --notes "Publishing assets…"
+            gh release create "$tag" --draft "${prerelease_flag[@]}" --title "$title" --notes "Publishing assets…"
           fi
 
   build-windows:
@@ -154,8 +164,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
-          VITE_ANILIST_CLIENT_ID: ${{ secrets.VITE_ANILIST_CLIENT_ID }}
-          VITE_DISCORD_CLIENT_ID: ${{ secrets.VITE_DISCORD_CLIENT_ID }}
 
   finalize-release:
     needs:
@@ -222,7 +230,12 @@ jobs:
         run: |
           tag="${{ steps.version.outputs.tag }}"
           version="${{ steps.version.outputs.version }}"
+          prerelease_flag=()
+          if [[ "$version" == *-* ]]; then
+            prerelease_flag=(--prerelease)
+          fi
           gh release edit "$tag" \
             --draft \
+            "${prerelease_flag[@]}" \
             --title "v$version - " \
             --notes-file release-notes.md

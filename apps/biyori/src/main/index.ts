@@ -10,47 +10,55 @@ import { isStartupLaunch, syncLoginItem } from "./startup";
 import { initElectronTrpc } from "./trpc-handler";
 import { windowManager } from "./windows";
 
-app.whenReady().then(async () => {
-	electronApp.setAppUserModelId("net.venipa.biyori");
-
-	app.on("browser-window-created", (_, window) => {
-		optimizer.watchWindowShortcuts(window);
+if (!app.requestSingleInstanceLock()) {
+	app.quit();
+} else {
+	app.on("second-instance", () => {
+		setTrayState("visible");
 	});
 
-	await boot();
-	initElectronTrpc();
-	const db = getDb();
-	const bootSettings = await loadAppSettings(db);
+	app.whenReady().then(async () => {
+		electronApp.setAppUserModelId("net.venipa.biyori");
 
-	syncLoginItem(bootSettings);
-	const hidden = isStartupLaunch() && bootSettings.autostartTray;
-	const mainWindow = windowManager.open("main", {
-		show: !hidden,
-		skipTaskbar: hidden,
-	});
-	if (hidden) {
-		mainWindow.hide();
-		mainWindow.setSkipTaskbar(true);
-	}
-	attachTrayState(mainWindow);
-	attachQuitHandler(mainWindow);
+		app.on("browser-window-created", (_, window) => {
+			optimizer.watchWindowShortcuts(window);
+		});
 
-	const tray = new Tray(icon);
-	tray.setToolTip("Biyori");
-	tray.setContextMenu(
-		Menu.buildFromTemplate([
-			{ label: "Show", click: () => setTrayState("visible") },
-			{ type: "separator" },
-			{
-				label: "Quit",
-				click: () => {
-					void requestQuit(true);
+		await boot();
+		initElectronTrpc();
+		const db = getDb();
+		const bootSettings = await loadAppSettings(db);
+
+		syncLoginItem(bootSettings);
+		const hidden = isStartupLaunch() && bootSettings.autostartTray;
+		const mainWindow = windowManager.open("main", {
+			show: !hidden,
+			skipTaskbar: hidden,
+		});
+		if (hidden) {
+			mainWindow.hide();
+			mainWindow.setSkipTaskbar(true);
+		}
+		attachTrayState(mainWindow);
+		attachQuitHandler(mainWindow);
+
+		const tray = new Tray(icon);
+		tray.setToolTip("Biyori");
+		tray.setContextMenu(
+			Menu.buildFromTemplate([
+				{ label: "Show", click: () => setTrayState("visible") },
+				{ type: "separator" },
+				{
+					label: "Quit",
+					click: () => {
+						void requestQuit(true);
+					},
 				},
-			},
-		]),
-	);
-	tray.on("click", () => setTrayState("visible"));
+			]),
+		);
+		tray.on("click", () => setTrayState("visible"));
 
-	scheduleAfterInit();
-	logger.info("started");
-});
+		scheduleAfterInit();
+		logger.info("started");
+	});
+}

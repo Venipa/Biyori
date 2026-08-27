@@ -4,12 +4,12 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run --cwd apps/biyori dev",
-    "build": "bun run --cwd apps/biyori build",
-    "release": "bun run --cwd apps/biyori build:win",
-    "release:compile": "bun run --cwd apps/biyori release:compile",
-    "release:pack:win": "bun run --cwd apps/biyori release:pack:win",
-    "typecheck": "bun --filter \"biyori\" typecheck"
+    "dev": "bun run --bun --cwd apps/biyori dev",
+    "build": "bun run --bun --cwd apps/biyori build",
+    "release": "bun run --bun --cwd apps/biyori build:win",
+    "release:compile": "bun run --bun --cwd apps/biyori release:compile",
+    "release:pack:win": "bun run --bun --cwd apps/biyori release:pack:win",
+    "typecheck": "bun --bun --filter \"biyori\" typecheck"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.10",

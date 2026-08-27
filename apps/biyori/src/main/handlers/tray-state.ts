@@ -17,6 +17,9 @@ export function setTrayState(state: "visible" | "hidden"): void {
 		return;
 	}
 	if (state === "visible") {
+		if (mainWindowRef.isMinimized()) {
+			mainWindowRef.restore();
+		}
 		if (!mainWindowRef.isVisible()) {
 			mainWindowRef.show();
 		}

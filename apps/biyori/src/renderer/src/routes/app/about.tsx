@@ -1,10 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { inferRouterOutputs } from "@trpc/server";
 import { RefreshCwIcon } from "lucide-react";
 import { useEffect } from "react";
 import { desktopRpc } from "@/desktop-rpc";
+import { MarkdownBody } from "@/mainview/components/markdown-body";
 import { Button } from "@/mainview/components/ui/button";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { trpc } from "@/mainview/trpc";
+import type { AppRouter } from "@/shared/app-router";
+
+type ChangelogData = inferRouterOutputs<AppRouter>["updater"]["changelog"];
 
 export const Route = createFileRoute("/app/about")({
 	component: AboutPage,
@@ -13,6 +18,7 @@ export const Route = createFileRoute("/app/about")({
 function AboutPage() {
 	const status = useUpdateStatus();
 	const { mutateAsync: checkForUpdates, isPending } = trpc.updater.check.useMutation();
+	const changelog = trpc.updater.changelog.useQuery();
 
 	useEffect(() => {
 		void checkForUpdates();
@@ -56,6 +62,35 @@ function AboutPage() {
 					</Button>
 				) : null}
 			</div>
+			<Changelog changelog={changelog.data} isLoading={changelog.isPending} queryError={changelog.error?.message ?? null} />
+		</div>
+	);
+}
+
+function Changelog({
+	changelog,
+	isLoading,
+	queryError,
+}: {
+	changelog: ChangelogData | undefined;
+	isLoading: boolean;
+	queryError: string | null;
+}) {
+	return (
+		<div className='flex max-w-2xl flex-col gap-3'>
+			<h2 className='text-sm font-semibold'>Changelog</h2>
+			{isLoading ? <p className='text-sm text-muted-foreground'>Loading changelog...</p> : null}
+			{queryError ? <p className='text-sm text-destructive'>Could not load changelog</p> : null}
+			{changelog && !changelog.ok ? <p className='text-sm text-destructive'>{changelog.error}</p> : null}
+			{changelog?.ok && changelog.items.length === 0 ? <p className='text-sm text-muted-foreground'>No releases for this channel</p> : null}
+			{changelog?.ok
+				? changelog.items.map((item) => (
+						<section key={item.tag_name} className='flex flex-col gap-1'>
+							<h3 className='text-sm font-medium'>{item.name || item.tag_name}</h3>
+							{item.body?.trim() ? <MarkdownBody markdown={item.body} /> : <p className='text-sm text-muted-foreground'>No notes</p>}
+						</section>
+					))
+				: null}
 		</div>
 	);
 }

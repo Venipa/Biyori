@@ -2,9 +2,13 @@ import { is } from "@electron-toolkit/utils";
 import { observable } from "@trpc/server/observable";
 import { app } from "electron";
 import { autoUpdater } from "electron-updater";
+import { channelWantsPrerelease, type GithubRelease, parseGithubChangelog } from "./github-releases";
+import { trackedFetch } from "./http-stats";
 
 export const UPDATE_GITHUB_REPO = "Venipa/biyori";
 export const UPDATE_STABLE_BASE_URL = `https://github.com/${UPDATE_GITHUB_REPO}/releases/latest/download`;
+
+export type ChangelogResult = { ok: true; items: GithubRelease[] } | { ok: false; error: string };
 
 export type AppUpdatePhase = "idle" | "checking" | "up-to-date" | "available" | "downloading" | "ready" | "error" | "dev";
 
@@ -54,7 +58,29 @@ function patch(partial: Partial<AppUpdateState>): void {
 }
 
 function localChannel(): string {
-	return is.dev ? "dev" : app.getVersion().includes("canary") ? "canary" : "stable";
+	if (is.dev) {
+		return "dev";
+	}
+	const baked = import.meta.env.VITE_APP_UPDATE_CHANNEL;
+	if (baked) {
+		return baked;
+	}
+	return app.getVersion().includes("-") ? "rc" : "stable";
+}
+
+function githubRepo(): { owner: string; repo: string } {
+	const owner = import.meta.env.VITE_REPO_OWNER;
+	const repo = import.meta.env.VITE_REPO_NAME;
+	if (owner && repo) {
+		return { owner, repo };
+	}
+	const [fallbackOwner, fallbackRepo] = UPDATE_GITHUB_REPO.split("/");
+	return { owner: fallbackOwner ?? "Venipa", repo: fallbackRepo ?? "biyori" };
+}
+
+function configureUpdater(): void {
+	autoUpdater.autoDownload = false;
+	autoUpdater.allowPrerelease = channelWantsPrerelease(localChannel());
 }
 
 export function getUpdateState(): AppUpdateState {
@@ -126,9 +152,29 @@ export async function refreshLocalUpdateInfo(): Promise<AppUpdateState> {
 	patch({
 		localVersion: app.getVersion(),
 		localChannel: localChannel(),
-		localHash: "",
+		localHash: import.meta.env.VITE_APP_GIT_HASH ?? "",
 	});
 	return state;
+}
+
+export async function loadChangelog(): Promise<ChangelogResult> {
+	const { owner, repo } = githubRepo();
+	const channel = localChannel();
+	try {
+		const response = await trackedFetch(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=20`, {
+			headers: {
+				Accept: "application/vnd.github+json",
+				"User-Agent": "biyori",
+			},
+		});
+		const payload: unknown = await response.json();
+		if (!response.ok) {
+			return { ok: false, error: "Could not load changelog" };
+		}
+		return parseGithubChangelog(payload, channel);
+	} catch {
+		return { ok: false, error: "Could not load changelog" };
+	}
 }
 
 export async function checkForAppUpdate(): Promise<AppUpdateState> {
@@ -137,6 +183,7 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 	}
 	checking = true;
 	hookStatus();
+	configureUpdater();
 	try {
 		await refreshLocalUpdateInfo();
 		if (is.dev) {
@@ -173,6 +220,7 @@ export async function downloadAppUpdate(): Promise<AppUpdateState> {
 	}
 	downloading = true;
 	hookStatus();
+	configureUpdater();
 	try {
 		if (is.dev) {
 			patch({
