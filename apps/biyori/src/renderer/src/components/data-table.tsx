@@ -8,6 +8,9 @@ declare module "@tanstack/react-table" {
 	interface ColumnMeta<TData, TValue> {
 		className?: string;
 	}
+	interface TableMeta<TData> {
+		playingId?: number | null;
+	}
 }
 
 function rowCells<TData>(row: Row<TData>, indent: boolean): ReactNode {

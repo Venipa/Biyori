@@ -23,6 +23,7 @@ import { anime, listEntry } from "../db/schema";
 import { loadAppSettings } from "../settings";
 import { abortAniListSync, getSyncSnapshot, requestAniListSync, subscribeSyncStatus } from "../sync";
 import { enqueueUpdate } from "../track/queue";
+import { noteManualListUpdate } from "../track/tracker";
 import { t } from "../trpc";
 
 function mapAnilistError(error: unknown): never {
@@ -236,6 +237,7 @@ export const anilistRouter = t.router({
 						...(input.dateCompleted !== undefined ? { dateCompleted: input.dateCompleted } : {}),
 					},
 				});
+				await noteManualListUpdate(input.animeId);
 				return { ok: true as const };
 			} catch (error) {
 				mapAnilistError(error);

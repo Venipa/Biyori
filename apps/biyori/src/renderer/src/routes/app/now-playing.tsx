@@ -121,7 +121,7 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 	const animeInfo = useAnimeInfoNav();
 	const match = snapshot.match;
 	const media = snapshot.media;
-	const detailQuery = trpc.anime.byId.useQuery({ id: match?.id ?? 0 }, { enabled: Boolean(match?.id), staleTime: 60_000 });
+	const detailQuery = trpc.anime.byId.useQuery({ id: match?.id ?? 0 }, { enabled: Boolean(match?.id) });
 	if (!match || !media) {
 		return null;
 	}
@@ -131,12 +131,12 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 	const group = snapshot.parsed?.group;
 	const totalEpisodes = detail?.episodes ?? match.episodes;
 	const total = totalEpisodes > 0 ? totalEpisodes : null;
-	const watched = detail?.episodesWatched ?? match.episodesWatched;
-	const progressValue = total != null && total > 0 ? Math.min(100, Math.round((watched / total) * 100)) : 80; // Default progress value to 80% if total is not available
+	const watched = match.episodesWatched;
+	const progressValue = total != null && total > 0 ? Math.min(100, Math.round((watched / total) * 100)) : 80;
 	const nowPlayingLine = formatNowPlayingLine(episode, group, detail?.type === "Movie");
 	const title = detail?.title ?? match.title;
-	const status = detail?.status ?? match.status;
-	const rewatching = detail?.rewatching ?? match.rewatching;
+	const status = match.status;
+	const rewatching = match.rewatching;
 	const airingStatus = detail?.airingStatus ?? match.airingStatus;
 
 	return (

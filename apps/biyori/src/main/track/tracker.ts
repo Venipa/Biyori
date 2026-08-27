@@ -10,6 +10,7 @@ import { setNowPlayingForHttp } from "../share/http";
 import { getNowPlayingMedia } from "./detect";
 import { loadCandidates, matchById, matchParsed } from "./match";
 import { parsePlayback } from "./parse";
+import { rememberPlaybackApplied, wasPlaybackApplied } from "./applied-playback";
 import { enqueueUpdate, initQueueFlush } from "./queue";
 import { redirectEpisode, refreshRelations } from "./relations";
 import { canApplyProgress, progressPayload } from "./tracker-progress";
@@ -113,7 +114,28 @@ async function applyProgress(match: MatchedAnime, episode: number): Promise<void
 		episode,
 		payload: progressPayload(match, episode),
 	});
+	if (lastFingerprint) {
+		appliedFingerprint = lastFingerprint;
+		rememberPlaybackApplied(lastFingerprint);
+	}
 	progressRevision += 1;
+}
+
+export async function noteManualListUpdate(animeId: number): Promise<void> {
+	if (lastFingerprint && snapshot.match?.id === animeId) {
+		appliedFingerprint = lastFingerprint;
+		rememberPlaybackApplied(lastFingerprint);
+	}
+	if (!db || snapshot.match?.id !== animeId) {
+		return;
+	}
+	const candidates = await loadCandidates(db);
+	const match = matchById(animeId, candidates);
+	if (!match) {
+		return;
+	}
+	progressRevision += 1;
+	emit({ ...snapshot, match, progressRevision });
 }
 
 async function tick(): Promise<void> {
@@ -232,11 +254,16 @@ async function runTick(): Promise<void> {
 		sessionStartedAt = delayLastTickAt;
 		pending = null;
 		pendingExit = null;
+		if (wasPlaybackApplied(key)) {
+			appliedFingerprint = key;
+		}
 		if (match && settings.notifyOnRecognized) {
 			setAppNotice(`Now playing: ${match.title}`);
 		} else if (!match && settings.notifyOnUnrecognized) {
 			setAppNotice(`Unrecognized: ${parsed.title}`);
 		}
+	} else if (wasPlaybackApplied(key)) {
+		appliedFingerprint = key;
 	}
 
 	const now = Date.now();
@@ -245,12 +272,14 @@ async function runTick(): Promise<void> {
 		delayElapsedSeconds += Math.max(0, (now - delayLastTickAt) / 1000);
 	}
 	delayLastTickAt = now;
-	const remaining = Math.max(0, Math.ceil(settings.recognitionDelaySeconds - delayElapsedSeconds));
+	const remaining =
+		appliedFingerprint === key ? 0 : Math.max(0, Math.ceil(settings.recognitionDelaySeconds - delayElapsedSeconds));
 	const episode = parsed.episode;
 
 	if (match && episode != null && remaining === 0 && appliedFingerprint !== key && !pending) {
 		if (!canApplyProgress(match, episode, settings)) {
 			appliedFingerprint = key;
+			rememberPlaybackApplied(key);
 		} else if (settings.waitUntilPlayerExits) {
 			pendingExit = {
 				animeId: match.id,
@@ -299,6 +328,9 @@ export async function confirmPendingUpdate(): Promise<void> {
 
 export async function skipPendingUpdate(): Promise<void> {
 	appliedFingerprint = lastFingerprint;
+	if (lastFingerprint) {
+		rememberPlaybackApplied(lastFingerprint);
+	}
 	pending = null;
 	emit({ ...snapshot, pendingConfirm: null });
 }

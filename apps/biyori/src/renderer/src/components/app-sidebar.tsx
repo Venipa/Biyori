@@ -1,12 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, HistoryIcon, ListIcon, PlayIcon, SearchIcon } from "lucide-react";
 import { desktopRpc } from "@/desktop-rpc";
+import { AnimeCover } from "@/mainview/components/anime-cover";
 import { Button } from "@/mainview/components/ui/button";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
-
-const primaryItems = [{ to: "/app/now-playing", label: "Now Playing", icon: PlayIcon }] as const;
 
 const listItems = [
 	{ to: "/app/anime-list", label: "Anime List", icon: ListIcon },
@@ -33,9 +32,7 @@ export function AppSidebar() {
 	return (
 		<nav aria-label='Main navigation' className='flex h-full min-h-0 w-56 shrink-0 flex-col gap-4 overflow-y-auto border-r bg-sidebar p-2'>
 			<div className='flex flex-col gap-0.5'>
-				{primaryItems.map((item) => (
-					<NavLink key={item.to} {...item} active={pathname === item.to} />
-				))}
+				<NowPlayingNavLink active={pathname === "/app/now-playing"} />
 			</div>
 			<div className='flex flex-col gap-0.5 border-t pt-2'>
 				{listItems.map((item) => (
@@ -66,6 +63,41 @@ export function AppSidebar() {
 				</div>
 			) : null}
 		</nav>
+	);
+}
+
+function NowPlayingNavLink({ active }: { active: boolean }) {
+	const snapshot = trpc.media.nowPlaying.useQuery().data;
+	const playing = Boolean(snapshot?.media);
+	const title = snapshot?.match?.title ?? snapshot?.parsed?.title ?? null;
+	const episode = snapshot?.parsed?.episode;
+	const subtitle = title ? (episode != null ? `${title} - Ep ${episode}` : title) : null;
+	const coverId = snapshot?.match?.id;
+	const coverUrl = snapshot?.match?.coverUrl;
+
+	return (
+		<Link
+			to='/app/now-playing'
+			aria-current={active ? "page" : undefined}
+			className={cn(
+				"relative isolate flex w-full overflow-hidden rounded-md border px-2 py-1.5 text-left text-sm transition-colors",
+				active ? "border-accent-foreground/15 bg-accent text-accent-foreground" : "border-transparent text-foreground/80 hover:bg-muted",
+			)}>
+			{playing && coverId ? (
+				<span aria-hidden className='pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]'>
+					<span className='absolute top-1/2 left-0 h-[220%] w-24 origin-left -translate-y-1/2 overflow-hidden blur-[8px] saturate-150 [mask-image:linear-gradient(to_right,black_10%,transparent_78%)]'>
+						<AnimeCover id={coverId} coverUrl={coverUrl || undefined} alt='' className='size-full' />
+					</span>
+				</span>
+			) : null}
+			<span className='relative z-10 flex min-w-0 w-full items-center gap-2'>
+				<PlayIcon className={cn("size-4 shrink-0 text-current", playing && "fill-current")} />
+				<span className='flex min-w-0 flex-1 flex-col'>
+					<span className='truncate'>Now Playing</span>
+					{playing && subtitle ? <span className='truncate text-[11px] leading-tight text-current/70'>{subtitle}</span> : null}
+				</span>
+			</span>
+		</Link>
 	);
 }
 

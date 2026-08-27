@@ -2,6 +2,10 @@ import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
 
 import { cn } from "@/mainview/lib/utils";
 
+function ProgressRoot({ className, ...props }: ProgressPrimitive.Root.Props) {
+	return <ProgressPrimitive.Root data-slot='progress' className={className} {...props} />;
+}
+
 function Progress({ className, children, value, ...props }: ProgressPrimitive.Root.Props) {
 	return (
 		<ProgressPrimitive.Root value={value} data-slot='progress' className={cn("flex flex-wrap gap-3", className)} {...props}>
@@ -31,4 +35,4 @@ function ProgressValue({ className, ...props }: ProgressPrimitive.Value.Props) {
 	return <ProgressPrimitive.Value className={cn("ml-auto text-sm text-muted-foreground tabular-nums", className)} data-slot='progress-value' {...props} />;
 }
 
-export { Progress, ProgressIndicator, ProgressLabel, ProgressTrack, ProgressValue };
+export { Progress, ProgressIndicator, ProgressLabel, ProgressRoot, ProgressTrack, ProgressValue };

@@ -1,10 +1,8 @@
-import { keepPreviousData } from "@tanstack/react-query";
-import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
-import type { inferRouterOutputs } from "@trpc/server";
-import { useEffect, useRef, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
+import { AnimeListProgress } from "@/mainview/components/anime-list-progress";
 import { DataTable } from "@/mainview/components/data-table";
 import {
 	ContextMenu,
@@ -18,19 +16,24 @@ import {
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
 import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
-import { Progress } from "@/mainview/components/ui/progress";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { animeMatchesListFilter } from "@/mainview/lib/anime-list-filter";
-import { formatTimeAgo } from "@/mainview/lib/format-date";
+import { formatLocalDateTime, formatTimeAgo } from "@/mainview/lib/format-date";
 import { useListFilterText } from "@/mainview/lib/list-filter";
+import { libraryEpisodeTooltip, listProgressRatio } from "@/mainview/lib/list-progress";
 import { requestAnimeDelete, type SelectedAnime, setOrderedAnimeIds, setSelectedAnime, useSelectedAnime } from "@/mainview/lib/selected-anime";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
+import { keepPreviousData } from "@tanstack/react-query";
+import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
+import type { inferRouterOutputs } from "@trpc/server";
+import { PlayIcon } from "lucide-react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 const tabs = listStatusSchema.options;
 
@@ -49,6 +52,29 @@ function toSelected(row: AnimeRow, status: ListStatus): SelectedAnime {
 	};
 }
 
+function ListTip({ tip, className, children }: { tip: string; className?: string; children: ReactNode }) {
+	if (!tip) {
+		return children;
+	}
+	return (
+		<Tooltip>
+			<TooltipTrigger delay={400} render={<span className={cn("block min-w-0", className)} />}>
+				{children}
+			</TooltipTrigger>
+			<TooltipContent className='whitespace-pre-line'>{tip}</TooltipContent>
+		</Tooltip>
+	);
+}
+
+function PlayingOrAiringCell({ playing, status }: { playing: boolean; status: string | null | undefined }) {
+	const tip = playing ? "Now playing" : status?.trim() || "Unknown";
+	return (
+		<ListTip tip={tip} className='flex justify-center'>
+			{playing ? <PlayIcon className='size-3.5 fill-current text-success' aria-label='Now playing' /> : <AiringStatusMark status={status} shape='square' nativeTitle={false} />}
+		</ListTip>
+	);
+}
+
 const columns: ColumnDef<AnimeRow>[] = [
 	{
 		id: "airingStatus",
@@ -56,69 +82,90 @@ const columns: ColumnDef<AnimeRow>[] = [
 		header: "",
 		enableSorting: true,
 		meta: { className: "w-8 min-w-8 max-w-8 px-2" },
-		cell: ({ row }) => (
-			<div className='flex justify-center'>
-				<AiringStatusMark status={row.original.airingStatus} shape='square' />
-			</div>
-		),
+		cell: ({ row, table }) => <PlayingOrAiringCell playing={table.options.meta?.playingId === row.original.id} status={row.original.airingStatus} />,
 	},
 	{
 		accessorKey: "title",
 		header: "Anime title",
-		cell: ({ row }) => <span className='max-w-0 truncate font-medium text-primary'>{row.original.title}</span>,
+		meta: { className: "w-full max-w-0" },
+		cell: ({ row }) => {
+			const nextAvailable = !!row.original.libraryEpisodes?.includes(row.original.episodesWatched + 1);
+			return (
+				<ListTip
+					tip={row.original.title}
+					className={cn("truncate font-medium", nextAvailable ? "text-primary" : "text-foreground", "[tr[data-playing]_&]:font-semibold [tr[data-playing]_&]:text-inherit")}>
+					{row.original.title}
+				</ListTip>
+			);
+		},
 	},
 	{
 		id: "progress",
-		accessorFn: (row) => (row.episodes > 0 ? row.episodesWatched / row.episodes : 0),
+		accessorFn: (row) => listProgressRatio(row.episodesWatched, row.episodes),
 		header: "Progress",
+		meta: { className: "min-w-[10rem]" },
 		cell: ({ row }) => {
-			const total = row.original.episodes;
-			const watched = row.original.episodesWatched;
-			const available = row.original.availableEpisode;
-			const aired = row.original.lastAiredEpisode;
-			const percent = total > 0 ? Math.round((watched / total) * 100) : 0;
-			const parts = [String(watched)];
-			if (available > 0) {
-				parts.push(String(available));
-			}
-			if (aired > 0 && aired !== available) {
-				parts.push(`${aired} aired`);
-			}
-			parts.push(String(total));
+			const finished = row.original.airingStatus === "Finished airing" || row.original.airingStatus === "Finished";
 			return (
-				<div className='flex items-center gap-2'>
-					<Progress value={percent} className='w-24 [&_[data-slot=progress-indicator]]:bg-success' />
-					<span className='text-xs tabular-nums text-muted-foreground'>{parts.join("/")}</span>
-				</div>
+				<ListTip
+					tip={libraryEpisodeTooltip({
+						watched: row.original.episodesWatched,
+						total: row.original.episodes,
+						aired: row.original.lastAiredEpisode,
+						finished,
+						libraryEpisodes: row.original.libraryEpisodes,
+					})}>
+					<AnimeListProgress
+						watched={row.original.episodesWatched}
+						total={row.original.episodes}
+						available={row.original.availableEpisode}
+						aired={row.original.lastAiredEpisode}
+						finished={finished}
+						status={(row.original.status as ListStatus) ?? "Currently watching"}
+					/>
+				</ListTip>
 			);
 		},
 	},
 	{
 		accessorKey: "score",
 		header: "Score",
-		cell: ({ row }) => <span className='text-right tabular-nums'>{row.original.score ? `${row.original.score}%` : "-"}</span>,
+		cell: ({ row }) => (
+			<span className={cn("text-right tabular-nums", row.original.score ? undefined : "text-muted-foreground")}>{row.original.score ? `${row.original.score}%` : "-"}</span>
+		),
 	},
 	{
 		accessorKey: "averageScore",
 		header: "Average",
-		cell: ({ row }) => <span className='text-right tabular-nums'>{row.original.averageScore}%</span>,
+		cell: ({ row }) => <span className={cn("text-right tabular-nums", row.original.averageScore ? undefined : "text-muted-foreground")}>{row.original.averageScore}%</span>,
 	},
-	{ accessorKey: "type", header: "Type" },
-	{ accessorKey: "season", header: "Season" },
+	{ accessorKey: "type", header: "Type", cell: ({ row }) => <span className={row.original.type ? undefined : "text-muted-foreground"}>{row.original.type || "-"}</span> },
+	{
+		accessorKey: "season",
+		header: "Season",
+		cell: ({ row }) => <span className={row.original.season ? undefined : "text-muted-foreground"}>{row.original.season || "-"}</span>,
+	},
 	{
 		accessorKey: "started",
 		header: "Started",
-		cell: ({ row }) => row.original.started ?? "-",
+		cell: ({ row }) => <span className={row.original.started ? undefined : "text-muted-foreground"}>{row.original.started ?? "-"}</span>,
 	},
 	{
 		accessorKey: "completed",
 		header: "Completed",
-		cell: ({ row }) => row.original.completed ?? "-",
+		cell: ({ row }) => <span className={row.original.completed ? undefined : "text-muted-foreground"}>{row.original.completed ?? "-"}</span>,
 	},
 	{
 		accessorKey: "lastUpdated",
 		header: "Last updated",
-		cell: ({ row }) => <span className='text-muted-foreground'>{formatTimeAgo(row.original.lastUpdated)}</span>,
+		cell: ({ row }) => {
+			const absolute = formatLocalDateTime(row.original.lastUpdated);
+			return (
+				<ListTip tip={absolute === "-" ? "" : absolute}>
+					<span className='text-muted-foreground'>{formatTimeAgo(row.original.lastUpdated)}</span>
+				</ListTip>
+			);
+		},
 	},
 ];
 
@@ -144,6 +191,10 @@ export function AnimeListView({
 }) {
 	const listQuery = trpc.anime.list.useQuery({ status: tab }, { placeholderData: keepPreviousData });
 	const countsQuery = trpc.anime.counts.useQuery();
+	const playingId =
+		trpc.media.nowPlaying.useQuery(undefined, {
+			select: (snapshot) => snapshot?.match?.id ?? null,
+		}).data ?? null;
 	const scan = trpc.library.scan.useMutation();
 	const playNext = trpc.library.playNext.useMutation();
 	const playRandom = trpc.library.playRandom.useMutation();
@@ -161,6 +212,7 @@ export function AnimeListView({
 		globalFilterFn: (row, _columnId, filterValue) => animeMatchesListFilter(row.original, String(filterValue ?? "")),
 		onSortingChange: setSorting,
 		state: { sorting, globalFilter: listFilter },
+		meta: { playingId },
 	});
 	const tableRef = useRef(table);
 	tableRef.current = table;
@@ -253,91 +305,99 @@ export function AnimeListView({
 	const menuAnime = menuRow ? toSelected(menuRow, tab) : null;
 
 	return (
-		<div className='flex h-full min-h-0 flex-col'>
-			<Tabs
-				value={tab}
-				onValueChange={(value) => {
-					onTabChange(value as ListStatus);
-				}}
-				className='flex h-full min-h-0 flex-col gap-0'>
-				<div className='shrink-0 border-b bg-card px-2 pt-2'>
-					<TabsList className='h-auto bg-transparent p-0'>
-						{tabs.map((item) => (
-							<TabsTrigger
-								key={item}
-								value={item}
-								className='rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none'>
-								{item} ({countsQuery.data?.[item] ?? 0})
-							</TabsTrigger>
-						))}
-					</TabsList>
-				</div>
+		<TooltipProvider delay={400}>
+			<div className='flex h-full min-h-0 flex-col'>
+				<Tabs
+					value={tab}
+					onValueChange={(value) => {
+						onTabChange(value as ListStatus);
+					}}
+					className='flex h-full min-h-0 flex-col gap-0'>
+					<div className='shrink-0 border-b bg-card px-2 pt-2'>
+						<TabsList className='h-auto bg-transparent p-0'>
+							{tabs.map((item) => (
+								<TabsTrigger
+									key={item}
+									value={item}
+									className='rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none'>
+									{item} ({countsQuery.data?.[item] ?? 0})
+								</TabsTrigger>
+							))}
+						</TabsList>
+					</div>
 
-				<TabsContent value={tab} className='m-0 min-h-0 flex-1'>
-					<ContextMenu>
-						<ContextMenuTrigger className='block h-full min-h-0'>
-							<ScrollArea className='h-full'>
-								{listQuery.isPending && !listQuery.data ? <TableRowsSkeleton columnCount={columns.length} /> : null}
-								{listQuery.error ? (
-									<Empty>
-										<EmptyTitle>Could not load list</EmptyTitle>
-										<EmptyDescription>{listQuery.error.message}</EmptyDescription>
-									</Empty>
-								) : null}
-								{listQuery.data && listQuery.data.length === 0 ? (
-									<Empty>
-										<EmptyTitle>No anime</EmptyTitle>
-										<EmptyDescription>Nothing in this list yet.</EmptyDescription>
-									</Empty>
-								) : null}
-								{listQuery.data && listQuery.data.length > 0 && filteredRows.length === 0 ? (
-									<Empty>
-										<EmptyTitle>No matches</EmptyTitle>
-										<EmptyDescription>Nothing matched the list filter.</EmptyDescription>
-									</Empty>
-								) : null}
-								{filteredRows.length > 0 ? (
-									<DataTable
-										table={table}
-										renderRow={(row, cells) => (
-											<TableRow
-												data-state={selected?.id === row.original.id ? "selected" : undefined}
-												className={cn("cursor-pointer", row.original.availableEpisode > row.original.episodesWatched && "bg-primary/8")}
-												onClick={() => {
-													selectRow(row.original);
-													onOpenAnime(row.original.id, "main");
-												}}
-												onContextMenu={() => {
-													selectRow(row.original);
-													setMenuRow(row.original);
-												}}>
-												{cells}
-											</TableRow>
-										)}
+					<TabsContent value={tab} className='m-0 min-h-0 flex-1'>
+						<ContextMenu>
+							<ContextMenuTrigger className='block h-full min-h-0'>
+								<ScrollArea className='h-full'>
+									{listQuery.isPending && !listQuery.data ? <TableRowsSkeleton columnCount={columns.length} /> : null}
+									{listQuery.error ? (
+										<Empty>
+											<EmptyTitle>Could not load list</EmptyTitle>
+											<EmptyDescription>{listQuery.error.message}</EmptyDescription>
+										</Empty>
+									) : null}
+									{listQuery.data && listQuery.data.length === 0 ? (
+										<Empty>
+											<EmptyTitle>No anime</EmptyTitle>
+											<EmptyDescription>Nothing in this list yet.</EmptyDescription>
+										</Empty>
+									) : null}
+									{listQuery.data && listQuery.data.length > 0 && filteredRows.length === 0 ? (
+										<Empty>
+											<EmptyTitle>No matches</EmptyTitle>
+											<EmptyDescription>Nothing matched the list filter.</EmptyDescription>
+										</Empty>
+									) : null}
+									{filteredRows.length > 0 ? (
+										<DataTable
+											table={table}
+											renderRow={(row, cells) => (
+												<TableRow
+													data-state={selected?.id === row.original.id ? "selected" : undefined}
+													data-playing={row.original.id === playingId ? "true" : undefined}
+													className={cn(
+														"cursor-pointer even:bg-muted/25",
+														row.original.id === playingId
+															? "bg-list-playing text-list-playing-foreground even:bg-list-playing hover:bg-list-playing data-[state=selected]:bg-list-playing"
+															: null,
+													)}
+													onClick={() => {
+														selectRow(row.original);
+														onOpenAnime(row.original.id, "main");
+													}}
+													onContextMenu={() => {
+														selectRow(row.original);
+														setMenuRow(row.original);
+													}}>
+													{cells}
+												</TableRow>
+											)}
+										/>
+									) : null}
+								</ScrollArea>
+							</ContextMenuTrigger>
+							<ContextMenuContent className='min-w-56'>
+								{menuAnime ? (
+									<AnimeItemCommands
+										parts={commandParts}
+										anime={menuAnime}
+										onInformation={() => {
+											onOpenAnime(menuAnime.id, "main");
+										}}
+										onEdit={() => {
+											onOpenAnime(menuAnime.id, "list");
+										}}
+										onDelete={() => {
+											requestAnimeDelete(menuAnime);
+										}}
 									/>
 								) : null}
-							</ScrollArea>
-						</ContextMenuTrigger>
-						<ContextMenuContent className='min-w-56'>
-							{menuAnime ? (
-								<AnimeItemCommands
-									parts={commandParts}
-									anime={menuAnime}
-									onInformation={() => {
-										onOpenAnime(menuAnime.id, "main");
-									}}
-									onEdit={() => {
-										onOpenAnime(menuAnime.id, "list");
-									}}
-									onDelete={() => {
-										requestAnimeDelete(menuAnime);
-									}}
-								/>
-							) : null}
-						</ContextMenuContent>
-					</ContextMenu>
-				</TabsContent>
-			</Tabs>
-		</div>
+							</ContextMenuContent>
+						</ContextMenu>
+					</TabsContent>
+				</Tabs>
+			</div>
+		</TooltipProvider>
 	);
 }

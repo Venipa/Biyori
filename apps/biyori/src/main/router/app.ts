@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
-import { desc, eq, max } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { folderPathExists, normalizeFolderPath } from "../../lib/folder-path";
 import { parseJsonArray } from "../../lib/parse-json-array";
@@ -143,19 +143,25 @@ export const appRouter = t.router({
 				.where(eq(listEntry.status, input.status))
 				.orderBy(desc(listEntry.lastUpdated));
 
-			const availableRows = await ctx.db
-				.select({
-					animeId: episodeFile.animeId,
-					availableEpisode: max(episodeFile.episode),
-				})
-				.from(episodeFile)
-				.groupBy(episodeFile.animeId);
-			const availableById = new Map(availableRows.map((row) => [row.animeId, row.availableEpisode ?? 0]));
+			const episodeRows = await ctx.db.select({ animeId: episodeFile.animeId, episode: episodeFile.episode }).from(episodeFile);
+			const libraryById = new Map<number, Set<number>>();
+			for (const file of episodeRows) {
+				const episodes = libraryById.get(file.animeId);
+				if (episodes) {
+					episodes.add(file.episode);
+					continue;
+				}
+				libraryById.set(file.animeId, new Set([file.episode]));
+			}
 
-			return rows.map((row) => ({
-				...row,
-				availableEpisode: availableById.get(row.id) ?? 0,
-			}));
+			return rows.map((row) => {
+				const libraryEpisodes = [...(libraryById.get(row.id) ?? [])];
+				return {
+					...row,
+					libraryEpisodes,
+					availableEpisode: libraryEpisodes.length > 0 ? Math.max(...libraryEpisodes) : 0,
+				};
+			});
 		}),
 		counts: t.procedure.query(async ({ ctx }) => {
 			const rows = await ctx.db.select({ status: listEntry.status }).from(listEntry);
