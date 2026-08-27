@@ -4,14 +4,14 @@ import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { folderPathExists, normalizeFolderPath } from "../../lib/folder-path";
 import { parseJsonArray } from "../../lib/parse-json-array";
-import { appSettingsPatchSchema } from "../../lib/schemas/app-settings";
+import { settingsFormPatchSchema } from "../../lib/schemas/app-settings";
 import { listStatusSchema } from "../../shared/list";
 import { readAnilistAuth } from "../anilist/store";
 import { ensureAnimeCached } from "../anilist/sync";
 import { anime, episodeFile, history, listEntry, syncQueue } from "../db/schema";
 import type { Anime } from "../db/types";
 import { getAppNotice, subscribeAppNotice } from "../notice";
-import { loadAppSettings, patchAppSettings } from "../settings";
+import { loadAppSettings, loadSettingsFormValues, patchAppSettings, patchSettingsForm } from "../settings";
 import { loadStatistics } from "../statistics";
 import {
 	applyTorrentView,
@@ -294,20 +294,21 @@ export const appRouter = t.router({
 	}),
 	settings: t.router({
 		get: t.procedure.query(() => {
-			return loadAppSettings();
+			return loadSettingsFormValues();
 		}),
-		set: t.procedure.input(appSettingsPatchSchema).mutation(({ input }) => {
-			return patchAppSettings(input);
+		set: t.procedure.input(settingsFormPatchSchema).mutation(({ input }) => {
+			return patchSettingsForm(input);
 		}),
 		addLibraryFolder: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(({ input }) => {
 			const path = normalizeFolderPath(input.path);
 			const current = loadAppSettings();
 			if (folderPathExists(current.libraryFolders, path)) {
-				return current;
+				return loadSettingsFormValues();
 			}
-			return patchAppSettings({
+			patchAppSettings({
 				libraryFolders: [...current.libraryFolders, { path }],
 			});
+			return loadSettingsFormValues();
 		}),
 	}),
 	media: t.router({

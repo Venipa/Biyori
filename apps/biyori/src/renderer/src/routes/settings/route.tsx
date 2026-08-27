@@ -3,7 +3,7 @@ import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } 
 import type { ReactNode } from "react";
 import { type FieldErrors, type FieldPath, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 import { desktopRpc } from "@/desktop-rpc";
-import { type AppSettings, type AppSettingsInput, appSettingsDefaultValues, appSettingsSchema } from "@/lib/schemas/app-settings";
+import { type SettingsFormInput, type SettingsFormValues, settingsFormDefaultValues, settingsFormSchema } from "@/lib/schemas/app-settings";
 import { pickDirtySettings } from "@/lib/settings-dirty";
 import { Button } from "@/mainview/components/ui/button";
 import { FieldError } from "@/mainview/components/ui/field";
@@ -71,7 +71,7 @@ function SettingsLayout() {
 			</SettingsChrome>
 		);
 	}
-	return <SettingsForm defaultValues={query.data ?? appSettingsDefaultValues} />;
+	return <SettingsForm defaultValues={query.data ?? settingsFormDefaultValues} />;
 }
 
 function SettingsChrome({ children, footer }: { children: ReactNode; footer: ReactNode }) {
@@ -118,9 +118,9 @@ function SettingsChrome({ children, footer }: { children: ReactNode; footer: Rea
 	);
 }
 
-function SettingsForm({ defaultValues }: { defaultValues: AppSettingsInput | AppSettings }) {
-	const form = useForm<AppSettingsInput, unknown, AppSettings>({
-		resolver: zodResolver(appSettingsSchema),
+function SettingsForm({ defaultValues }: { defaultValues: SettingsFormInput | SettingsFormValues }) {
+	const form = useForm<SettingsFormInput, unknown, SettingsFormValues>({
+		resolver: zodResolver(settingsFormSchema),
 		defaultValues,
 		shouldUnregister: false,
 	});
@@ -139,7 +139,7 @@ function SettingsForm({ defaultValues }: { defaultValues: AppSettingsInput | App
 function SettingsFormFooter() {
 	const navigate = useNavigate();
 	const saveSettings = trpc.settings.set.useMutation();
-	const form = useFormContext<AppSettingsInput, unknown, AppSettings>();
+	const form = useFormContext<SettingsFormInput, unknown, SettingsFormValues>();
 	const { isSubmitting, errors } = useFormState({
 		control: form.control,
 	});
@@ -182,7 +182,7 @@ function SettingsFormFooter() {
 							const section = settingsFieldSection[rootKey] ?? "application";
 							void navigate({ to: `/settings/${section}` });
 							if (path) {
-								void form.setFocus(path as FieldPath<AppSettingsInput>);
+								void form.setFocus(path as FieldPath<SettingsFormInput>);
 							}
 							form.setError("root.serverError", {
 								message: path ? `Fix ${path} in ${section}` : "Fix invalid settings",

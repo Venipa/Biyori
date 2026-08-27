@@ -321,3 +321,42 @@ export function parseTorrentFilterExport(value: unknown): TorrentFilter[] | null
 	const parsed = torrentFilterExportSchema.safeParse(value);
 	return parsed.success ? parsed.data.filters : null;
 }
+
+export const torrentFiltersFileSchema = z.object({
+	enabled: z.boolean().default(true),
+	filters: z.array(torrentFilterSchema),
+});
+
+export type TorrentFiltersFile = z.output<typeof torrentFiltersFileSchema>;
+
+export const torrentFiltersFileDefaultValues: TorrentFiltersFile = {
+	enabled: true,
+	filters: defaultTorrentFilters(),
+};
+
+function coerceTorrentFilters(value: unknown): TorrentFilter[] {
+	if (!Array.isArray(value)) {
+		return torrentFiltersFileDefaultValues.filters;
+	}
+	const parsed = z.array(torrentFilterSchema).safeParse(value);
+	if (parsed.success) {
+		return parsed.data;
+	}
+	const kept = value.flatMap((item) => {
+		const row = torrentFilterSchema.safeParse(item);
+		return row.success ? [row.data] : [];
+	});
+	return kept.length > 0 || value.length === 0 ? kept : torrentFiltersFileDefaultValues.filters;
+}
+
+export function parseTorrentFiltersFile(value: unknown): TorrentFiltersFile {
+	const direct = torrentFiltersFileSchema.safeParse(value);
+	if (direct.success) {
+		return direct.data;
+	}
+	const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+	return torrentFiltersFileSchema.parse({
+		enabled: typeof record.enabled === "boolean" ? record.enabled : true,
+		filters: coerceTorrentFilters(record.filters),
+	});
+}

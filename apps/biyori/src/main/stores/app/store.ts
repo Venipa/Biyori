@@ -1,35 +1,21 @@
 import type { Conf } from "electron-conf/main";
-import { type AppSettings, type AppSettingsPatch, appSettingsSchema, parseAppSettings } from "../../lib/schemas/app-settings";
-import { createEncryptedStore, createYmlStore } from "../lib/store/createYmlStore";
-import { syncLoginItem } from "../startup";
+import { type AppSettings, type AppSettingsPatch, appSettingsSchema, parseAppSettings } from "../../../lib/schemas/app-settings";
+import { createYmlStore } from "../../lib/store/createYmlStore";
+import { syncLoginItem } from "../../startup";
 import { appStoreMigrations } from "./migrations";
-
-export type CredentialsFile = {
-	anilist?: {
-		accessToken: string;
-		expiresAt: number;
-		userId: number;
-		username: string;
-	} | null;
-};
-
-const defaults = parseAppSettings(null);
 
 export const appStore: Conf<AppSettings> = createYmlStore<AppSettings>("app", {
 	ext: ".yml",
-	defaults,
+	defaults: parseAppSettings(null),
 	migrations: appStoreMigrations,
-});
-
-export const credentialsStore = createEncryptedStore<CredentialsFile>("credentials", {
-	defaults: {},
+	zodSchema: appSettingsSchema,
 });
 
 type SettingsListener = (settings: AppSettings) => void;
 
 const listeners = new Set<SettingsListener>();
 
-function omitUndefined(patch: AppSettingsPatch): Record<string, unknown> {
+function omitUndefined(patch: Record<string, unknown>): Record<string, unknown> {
 	const next: Record<string, unknown> = {};
 	for (const [key, value] of Object.entries(patch)) {
 		if (value !== undefined) {
@@ -57,7 +43,7 @@ export function patchAppSettings(patch: AppSettingsPatch): AppSettings {
 	return saveAppSettings(
 		appSettingsSchema.parse({
 			...loadAppSettings(),
-			...omitUndefined(patch),
+			...omitUndefined(patch as Record<string, unknown>),
 		}),
 	);
 }

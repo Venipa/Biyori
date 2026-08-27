@@ -3,11 +3,13 @@ import { type ConfOptions as Options, Conf as Store } from "electron-conf/main";
 import { Encryption } from "encryption.js";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import type { ZodType } from "zod";
 import { parse as deserialize, stringify as serialize } from "yaml";
 import { logger } from "../../logger";
 import { base64 } from "../base64";
 import { generateRandom } from "../randomString";
 import slugify, { type SlugifyOptions } from "../slug";
+import { ensureYamlSchemaComment, linkYmlStoreSchema, withYamlLanguageServerSchema } from "./yml-schema";
 
 const STORE_EXTENSION = ".biyori";
 const ENCRYPTION_ALGORITHM = "aes-256-cbc";
@@ -59,20 +61,34 @@ export function decryptPublicData<T extends Record<string, unknown> = Record<str
 	return decrypted;
 }
 
-export const createYmlStore = <T extends Record<string, unknown> = Record<string, unknown>>(name: string, options: Options<T> = {} as Options<T>) =>
-	new Store<T>({
+export type CreateYmlStoreOptions<T extends Record<string, unknown> = Record<string, unknown>> = Options<T> & {
+	zodSchema?: ZodType;
+};
+
+export const createYmlStore = <T extends Record<string, unknown> = Record<string, unknown>>(name: string, options: CreateYmlStoreOptions<T> = {} as CreateYmlStoreOptions<T>) => {
+	const { zodSchema, ...confOptions } = options;
+	const dir = confOptions.dir ?? getStoreUserData();
+	const ext = confOptions.ext ?? STORE_EXTENSION;
+	const schemaHref = zodSchema ? linkYmlStoreSchema(dir, name, zodSchema) : null;
+	const store = new Store<T>({
 		ext: STORE_EXTENSION,
-		...options,
+		...confOptions,
 		serializer: {
 			read(raw) {
 				return deserialize(raw);
 			},
 			write(value) {
-				return serialize(value);
+				const yaml = serialize(value);
+				return schemaHref ? withYamlLanguageServerSchema(yaml, schemaHref) : yaml;
 			},
 		},
 		name,
 	});
+	if (schemaHref) {
+		ensureYamlSchemaComment(path.join(dir, `${name}${ext}`), schemaHref);
+	}
+	return store;
+};
 
 export const createEncryptedStore = <T extends Record<string, unknown> = Record<string, unknown>>(name: string, options: Options<T> = {} as Options<T>) => {
 	const storeEncryptor = createEncryption(name);

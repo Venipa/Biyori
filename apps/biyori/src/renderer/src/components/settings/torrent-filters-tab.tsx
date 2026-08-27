@@ -2,7 +2,7 @@ import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, FilterIcon, FilterXIcon, Minu
 import { useId, useState } from "react";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { desktopRpc } from "@/desktop-rpc";
-import type { AppSettingsInput } from "@/lib/schemas/app-settings";
+import type { SettingsFormInput } from "@/lib/schemas/app-settings";
 import { cloneTorrentFilter, defaultTorrentFilters, parseTorrentFilterExport, type TorrentFilter, type TorrentFilterAction } from "@/lib/schemas/torrent-filter";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
 import {
@@ -42,7 +42,7 @@ function FilterActionIcon({ action }: { action: TorrentFilterAction }) {
 
 export function TorrentFiltersTab() {
 	const filterId = useId();
-	const form = useFormContext<AppSettingsInput>();
+	const form = useFormContext<SettingsFormInput>();
 	const filters = useFieldArray({
 		control: form.control,
 		name: "torrentFilters",

@@ -10,7 +10,7 @@ import { episodeFile, torrentArchive } from "./db/schema";
 import { trackedFetch } from "./http-stats";
 import { appFeedDir } from "./lib/app-paths";
 import { setAppNotice } from "./notice";
-import { loadAppSettings, patchAppSettings, subscribeSettings } from "./settings";
+import { loadAppSettings, loadTorrentFiltersFile, patchTorrentFiltersFile, subscribeFilters, subscribeSettings } from "./settings";
 import {
 	addDiscardAnimeFilter,
 	applyArchiveFilter,
@@ -161,18 +161,19 @@ export function getTorrentItems(): TorrentItem[] {
 	return items.filter((item) => !discardedGuids.has(item.guid) && item.state !== "discarded_hidden");
 }
 
-function materializeItems(settings: AppSettings): TorrentItem[] {
+function materializeItems(): TorrentItem[] {
 	const cache = feedCache;
 	if (!cache) {
 		items = [];
 		return emitTorrentItems();
 	}
+	const file = loadTorrentFiltersFile();
 	const filterItems: TorrentFilterItem[] = cache.rows.map((row) => ({
 		id: row.entry.guid,
 		state: "blank",
 		subject: toSubject(row, cache.available),
 	}));
-	applyTorrentFilters(filterItems, settings.torrentFilters, settings.torrentFilterEnabled);
+	applyTorrentFilters(filterItems, file.filters, file.enabled);
 	applyArchiveFilter(filterItems, cache.archivedTitles);
 	const byGuid = new Map(filterItems.map((item) => [item.id, item]));
 	const next: TorrentItem[] = [];
@@ -191,11 +192,10 @@ function materializeItems(settings: AppSettings): TorrentItem[] {
 }
 
 export async function applyTorrentView(database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
-	const settings = loadAppSettings();
 	if (feedCache) {
 		feedCache.available = await loadAvailableEpisodes(database);
 	}
-	return materializeItems(settings);
+	return materializeItems();
 }
 
 export function sortDownloadQueue(rows: TorrentItem[], settings: AppSettings): TorrentItem[] {
@@ -320,7 +320,7 @@ async function ingestFeed(database: DatabaseClient, feedUrl: string, force: bool
 		seenByGuid,
 		archivedTitles,
 	};
-	const visible = materializeItems(settings);
+	const visible = materializeItems();
 	const byGuid = new Map(items.map((item) => [item.guid, item]));
 	for (const row of rows) {
 		if (!freshGuids.has(row.entry.guid)) {
@@ -420,17 +420,17 @@ export function discardTorrent(guid: string): TorrentItem[] {
 }
 
 export async function discardAnimeFilter(animeId: number, title: string, database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
-	const settings = loadAppSettings();
-	patchAppSettings({
-		torrentFilters: addDiscardAnimeFilter(settings.torrentFilters, animeId, title),
+	const file = loadTorrentFiltersFile();
+	patchTorrentFiltersFile({
+		filters: addDiscardAnimeFilter(file.filters, animeId, title),
 	});
 	return applyTorrentView(database);
 }
 
 export async function preferFansubFilter(animeId: number, group: string, title: string, database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
-	const settings = loadAppSettings();
-	patchAppSettings({
-		torrentFilters: setFansubFilter(settings.torrentFilters, animeId, group, title),
+	const file = loadTorrentFiltersFile();
+	patchTorrentFiltersFile({
+		filters: setFansubFilter(file.filters, animeId, group, title),
 	});
 	return applyTorrentView(database);
 }
@@ -438,12 +438,16 @@ export async function preferFansubFilter(animeId: number, group: string, title: 
 export function initTorrents(database: DatabaseClient): void {
 	db = database;
 	void restartTorrentPoll();
-	subscribeSettings(() => {
+	const refreshView = (): void => {
 		void applyTorrentView(database).catch(() => {
 			/* ignore */
 		});
+	};
+	subscribeSettings(() => {
+		refreshView();
 		void restartTorrentPoll();
 	});
+	subscribeFilters(refreshView);
 }
 
 export async function restartTorrentPoll(): Promise<void> {
