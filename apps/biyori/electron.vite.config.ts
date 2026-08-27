@@ -1,9 +1,9 @@
-import { resolve } from "node:path";
 import styledJsxPlugin from "@rolldown/plugin-styled-jsx";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "electron-vite";
+import { resolve } from "node:path";
 import type { Plugin, PluginOption, UserConfig } from "vite";
 import svgr from "vite-plugin-svgr";
 
@@ -54,12 +54,8 @@ export default defineConfig({
 		...mainResolve,
 		build: {
 			externalizeDeps: {
-				exclude: [
-					"@biyori/electron-trpc",
-					"@biyori/parser",
-					"@biyori/recognition",
-					"@biyori/worker",
-				],
+				include: ["encryption.js", "lodash-es"],
+				exclude: ["@biyori/electron-trpc", "@biyori/parser", "@biyori/recognition", "@biyori/worker"],
 			},
 		},
 	},
@@ -67,12 +63,7 @@ export default defineConfig({
 		...mainResolve,
 		build: {
 			externalizeDeps: {
-				exclude: [
-					"@biyori/electron-trpc",
-					"@biyori/parser",
-					"@biyori/recognition",
-					"@biyori/worker",
-				],
+				exclude: ["@biyori/electron-trpc", "@biyori/parser", "@biyori/recognition", "@biyori/worker"],
 			},
 		},
 	},
