@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import path from "node:path";
 import { app } from "electron";
 import { type ConfOptions as Options, Conf as Store } from "electron-conf/main";
 import Encryption from "encryption.js";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { parse as deserialize, stringify as serialize } from "yaml";
 import { logger } from "../../logger";
 import { base64 } from "../base64";
@@ -10,6 +10,7 @@ import { generateRandom } from "../randomString";
 import slugify, { type SlugifyOptions } from "../slug";
 
 const STORE_EXTENSION = ".biyori";
+const ENCRYPTION_ALGORITHM = "aes-256-cbc";
 const slugifyOptions = {
 	lower: true,
 	replacement: "_",
@@ -23,7 +24,7 @@ logger.debug("getStoreUserData", getStoreUserData());
 export function getOrCreateEncryptionSecret(name: string): string {
 	const encryptionKeyPath = path.join(getStoreUserData(), `${slugify(name, slugifyOptions)}.key`);
 	const storeMasterSecret = base64.encode(name.padStart(32, "0"));
-	const enc = new Encryption({ secret: storeMasterSecret }); // secret requires 32 characters
+	const enc = new Encryption({ secret: storeMasterSecret, algorithm: ENCRYPTION_ALGORITHM }); // secret requires 32 characters
 	if (!existsSync(encryptionKeyPath)) writeFileSync(encryptionKeyPath, enc.encrypt({ name, secret: generateRandom(32) }));
 	const encryptionKey = readFileSync(encryptionKeyPath).toString("utf8");
 	const payload = enc.decrypt<{ name: string; secret: string }>(encryptionKey);
@@ -32,17 +33,17 @@ export function getOrCreateEncryptionSecret(name: string): string {
 	return payload.secret;
 }
 
-export function createEncryption(name: string, algorithm: "aes-256-gcm" | "aes-256-cbc" = "aes-256-cbc"): Encryption {
+export function createEncryption(name: string): Encryption {
 	return new Encryption({
 		secret: getOrCreateEncryptionSecret(name),
-		algorithm,
+		algorithm: ENCRYPTION_ALGORITHM,
 	});
 }
 
 function createPublicEncryption(): Encryption {
 	return new Encryption({
 		secret: "public-encryption".padStart(32, "0"),
-		algorithm: "aes-256-cbc",
+		algorithm: ENCRYPTION_ALGORITHM,
 	}); // for use for exporting user custom data for other user import
 }
 
@@ -74,7 +75,7 @@ export const createYmlStore = <T extends Record<string, unknown> = Record<string
 	});
 
 export const createEncryptedStore = <T extends Record<string, unknown> = Record<string, unknown>>(name: string, options: Options<T> = {} as Options<T>) => {
-	const storeEncryptor = createEncryption(name, "aes-256-cbc");
+	const storeEncryptor = createEncryption(name);
 	return new Store<T>({
 		ext: STORE_EXTENSION,
 		...options,
