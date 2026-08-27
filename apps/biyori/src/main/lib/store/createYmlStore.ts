@@ -1,6 +1,6 @@
 import { app } from "electron";
 import { type ConfOptions as Options, Conf as Store } from "electron-conf/main";
-import Encryption from "encryption.js";
+import { Encryption } from "encryption.js";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { parse as deserialize, stringify as serialize } from "yaml";
