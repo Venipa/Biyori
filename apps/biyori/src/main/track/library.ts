@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, type FSWatcher, watch } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
-import { dirname, extname, join } from "node:path";
-import { recognizePath } from "@biyori/recognition";
+import { basename, dirname, extname, join } from "node:path";
+import { parseFilename, parsePath, pathUnderRoot, recognizePath } from "@biyori/recognition";
 import { eq } from "drizzle-orm";
 import { shell } from "electron";
 import type { DatabaseClient } from "../db";
@@ -163,25 +163,76 @@ async function existsAsync(path: string): Promise<boolean> {
 	}
 }
 
+function episodeInRange(
+	parsed: { episode: number | null; episodeLow: number | null; episodeHigh: number | null },
+	episode: number,
+): boolean {
+	const low = parsed.episodeLow ?? parsed.episode;
+	const high = parsed.episodeHigh ?? parsed.episode;
+	if (low == null || high == null) {
+		return false;
+	}
+	return episode >= low && episode <= high;
+}
+
+async function seriesFolder(database: DatabaseClient, animeId: number): Promise<string> {
+	const rows = await database.select({ folder: anime.folder }).from(anime).where(eq(anime.id, animeId)).limit(1);
+	return rows[0]?.folder ?? "";
+}
+
 export async function listEpisodes(database: DatabaseClient, animeId: number): Promise<Array<{ episode: number; path: string }>> {
-	const rows = await database
-		.select({
-			episode: episodeFile.episode,
-			path: episodeFile.path,
-		})
-		.from(episodeFile)
-		.where(eq(episodeFile.animeId, animeId));
-	return rows.sort((a, b) => a.episode - b.episode);
+	const [folder, rows] = await Promise.all([
+		seriesFolder(database, animeId),
+		database
+			.select({
+				episode: episodeFile.episode,
+				path: episodeFile.path,
+			})
+			.from(episodeFile)
+			.where(eq(episodeFile.animeId, animeId)),
+	]);
+	return rows
+		.filter((row) => !folder || pathUnderRoot(row.path, folder))
+		.sort((a, b) => a.episode - b.episode);
+}
+
+async function findEpisodePath(database: DatabaseClient, animeId: number, episode: number): Promise<string | null> {
+	const [folder, indexed] = await Promise.all([
+		seriesFolder(database, animeId),
+		database.select().from(episodeFile).where(eq(episodeFile.animeId, animeId)),
+	]);
+	for (const row of indexed) {
+		if (row.episode !== episode) {
+			continue;
+		}
+		if (folder && !pathUnderRoot(row.path, folder)) {
+			continue;
+		}
+		if (existsSync(row.path)) {
+			return row.path;
+		}
+	}
+	if (!folder || !existsSync(folder)) {
+		return null;
+	}
+	const files: string[] = [];
+	await collectFiles(folder, loadAppSettings().fileSizeThreshold, files, { visited: 0 });
+	for (const path of files) {
+		const parsed = parsePath(path) ?? parseFilename(basename(path));
+		if (parsed && episodeInRange(parsed, episode)) {
+			return path;
+		}
+	}
+	return null;
 }
 
 export async function playEpisode(database: DatabaseClient, animeId: number, episode: number): Promise<{ ok: boolean; path: string | null }> {
-	const rows = await database.select().from(episodeFile).where(eq(episodeFile.animeId, animeId));
-	const hit = rows.find((row) => row.episode === episode) ?? null;
-	if (!hit || !existsSync(hit.path)) {
+	const path = await findEpisodePath(database, animeId, episode);
+	if (!path) {
 		return { ok: false, path: null };
 	}
-	const error = await shell.openPath(hit.path);
-	return { ok: error.length === 0, path: hit.path };
+	const error = await shell.openPath(path);
+	return { ok: error.length === 0, path };
 }
 
 export async function playNext(database: DatabaseClient, animeId: number, episodesWatched: number): Promise<{ ok: boolean; path: string | null; episode: number | null }> {

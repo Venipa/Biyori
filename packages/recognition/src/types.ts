@@ -9,6 +9,7 @@ export type TitleCandidate = {
 	names: string[];
 	episodes: number;
 	status?: string;
+	folder?: string;
 };
 
 export type RelationRule = {

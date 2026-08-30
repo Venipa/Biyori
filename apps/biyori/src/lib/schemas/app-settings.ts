@@ -5,7 +5,7 @@ import { normalizeFolderPath } from "../folder-path";
 import { defaultMediaPlayerIds, defaultStreamingProviderIds } from "../recognition-catalog";
 import { isTorrentFeedUrl } from "../torrent-feeds";
 import { anilistSeasonNameSchema, seasonGroupBySchema, seasonSortBySchema, seasonViewAsSchema } from "./seasons";
-import { torrentFiltersFileDefaultValues, torrentFilterSchema } from "./torrent-filter";
+import { torrentFilterSchema, torrentFiltersFileDefaultValues } from "./torrent-filter";
 
 export const titleLanguageSchema = z.enum(["Romaji", "English", "Native"]);
 export const torrentActionSchema = z.enum(["notify", "download"]);

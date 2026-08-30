@@ -2,6 +2,7 @@ import { basename } from "node:path";
 import { parseFilename, parsePath, type ParseOptions, type ParsedFilename } from "@biyori/parser";
 import { extendTitle } from "./extend-title";
 import { matchParsed } from "./match";
+import { candidatesInFolder } from "./path";
 import type { TitleCandidate } from "./types";
 
 export type Recognized<T extends TitleCandidate> = {
@@ -37,5 +38,6 @@ export function recognizePath<T extends TitleCandidate>(
 	candidates: T[],
 	options?: ParseOptions,
 ): Recognized<T> | null {
-	return fromParsed(parsePath(filePath, options) ?? parseFilename(basename(filePath), options), candidates);
+	const parsed = parsePath(filePath, options) ?? parseFilename(basename(filePath), options);
+	return fromParsed(parsed, candidatesInFolder(filePath, candidates));
 }

@@ -52,6 +52,24 @@ describe("matchParsed", () => {
 	test("a title with no season still matches", () => {
 		expect(matchTitle("Show", [s1, s4])?.id).toBe(1);
 	});
+
+	test("does not match another series that only shares Season 4", () => {
+		const slime: TitleCandidate = {
+			id: 10,
+			names: ["tensei shitara slime datta ken 4th season"],
+			episodes: 12,
+			status: "Currently watching",
+		};
+		const sao: TitleCandidate = {
+			id: 20,
+			names: ["sword art online season 4"],
+			episodes: 12,
+			status: "Plan to watch",
+		};
+		expect(matchParsed(parts("Tensei Shitara Slime Datta Ken", 4), [slime, sao])?.id).toBe(10);
+		expect(matchParsed(parts("Sword Art Online", 4), [slime, sao])?.id).toBe(20);
+		expect(matchTitle("Tensei Shitara Slime Datta Ken 4th Season", [slime, sao])?.id).toBe(10);
+	});
 });
 
 describe("recognizeFilename", () => {
@@ -67,6 +85,24 @@ describe("recognizeFilename", () => {
 		const result = recognizePath("D:/Anime/Show/Season 4/08.mkv", [s1, s4]);
 		expect(result?.parsed.episode).toBe(8);
 		expect(result?.match?.id).toBe(4);
+	});
+
+	test("stays in the series folder even when the filename is only an episode number", () => {
+		const slime: TitleCandidate = {
+			id: 10,
+			names: ["tensei shitara slime datta ken 4th season"],
+			episodes: 12,
+			folder: "D:/Anime/Tensei Shitara Slime Datta Ken 4th Season",
+		};
+		const sao: TitleCandidate = {
+			id: 20,
+			names: ["sword art online season 4"],
+			episodes: 12,
+			folder: "D:/Anime/Sword Art Online Season 4",
+		};
+		const result = recognizePath("D:/Anime/Tensei Shitara Slime Datta Ken 4th Season/05.mkv", [slime, sao]);
+		expect(result?.parsed.episode).toBe(5);
+		expect(result?.match?.id).toBe(10);
 	});
 });
 
