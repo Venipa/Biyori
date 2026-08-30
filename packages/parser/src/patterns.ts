@@ -10,6 +10,10 @@ export const SOURCE_TERM =
 
 export const AUDIO_TERM = /^(aac|flac|opus|mp3|dts|ac3|eac3|truehd|atmos|dual[\s-]?audio)$/i;
 
+export const AUDIO_CHANNEL = /^\d+\.\d+$/;
+
+export const LANGUAGE_TERM = /^(ja|jp|jpn|en|eng|english|chi|zho|zh|kor|ko|ru|fr|de|es|it|pt|und)$/i;
+
 export const CRC32 = /^[0-9a-f]{8}$/i;
 
 export const YEAR = /^(19|20)\d{2}$/;

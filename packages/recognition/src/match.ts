@@ -18,7 +18,9 @@ const ORDINAL_TO: Record<string, string> = {
 const SEASON_PHRASE = /\b(?:(\d+)(?:st|nd|rd|th) season|season (\d+)|series (\d+)|s(\d+))\b/g;
 const STRIP_SEASON = /\b(?:\d+(?:st|nd|rd|th)\s+season|season\s+\d+|series\s+\d+|s\d+)\b/g;
 const SEASON_IN_NAME = /\b(?:(\d+)(?:st|nd|rd|th)\s+season|(?:season|series)\s+(\d+)|s(\d{1,2}))\b/;
-const EXTRA_SEASON = /^(season \d+|\d+th season|\d{4}|s\d+)$/;
+const EXTRA_SEASON = /^(season \d+|\d+th season|s\d+)$/;
+const YEAR_SUFFIX = /^\d{4}$/;
+const LOOKUP_YEAR_TAIL = /(19|20)\d{2}$/;
 
 const lookupCache = new Map<string, string>();
 
@@ -95,6 +97,9 @@ function nameScore(name: string, needle: string, needleKey: string): number {
 	}
 	if (needle.includes(name)) {
 		const extra = needle.slice(needle.indexOf(name) + name.length).trim();
+		if (YEAR_SUFFIX.test(extra)) {
+			return 0.92;
+		}
 		return EXTRA_SEASON.test(extra) ? 0.35 : lengthRatio(name, needle) * 0.9;
 	}
 	return dice(baseName || name, baseNeedle || needle);
@@ -128,9 +133,14 @@ export function matchTitle<T extends TitleCandidate>(
 		return null;
 	}
 	const lookupKey = normalizeForLookup(query);
+	const lookupKeys = new Set([lookupKey]);
+	const withoutYear = lookupKey.replace(LOOKUP_YEAR_TAIL, "");
+	if (withoutYear) {
+		lookupKeys.add(withoutYear);
+	}
 	const exact: T[] = [];
 	for (const candidate of candidates) {
-		if (candidate.names.some((name) => normalizeForLookup(name) === lookupKey)) {
+		if (candidate.names.some((name) => lookupKeys.has(normalizeForLookup(name)))) {
 			exact.push(candidate);
 		}
 	}

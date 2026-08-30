@@ -1,7 +1,9 @@
 import { basename, dirname } from "node:path";
 import {
+	AUDIO_CHANNEL,
 	AUDIO_TERM,
 	CRC32,
+	LANGUAGE_TERM,
 	EPISODE_RANGE,
 	EPISODE_TOKEN,
 	NUMBER_VERSION,
@@ -64,6 +66,45 @@ function markMatch(token: Token, pattern: RegExp): RegExpMatchArray | null {
 	return match;
 }
 
+function isMetaPart(part: string): boolean {
+	return (
+		RESOLUTION.test(part) ||
+		VIDEO_TERM.test(part) ||
+		SOURCE_TERM.test(part) ||
+		AUDIO_TERM.test(part) ||
+		AUDIO_CHANNEL.test(part) ||
+		LANGUAGE_TERM.test(part)
+	);
+}
+
+function markEnclosedMeta(token: Token, videoTerms: string[]): string {
+	if (token.used || !token.enclosed) {
+		return "";
+	}
+	if (isMetaPart(token.text)) {
+		token.used = true;
+		if (VIDEO_TERM.test(token.text) || SOURCE_TERM.test(token.text)) {
+			videoTerms.push(token.text);
+		}
+		return RESOLUTION.test(token.text) ? token.text : "";
+	}
+	const parts = token.text.split(/[\s\-]+/).filter(Boolean);
+	if (parts.length < 2 || !parts.every(isMetaPart)) {
+		return "";
+	}
+	token.used = true;
+	let resolution = "";
+	for (const part of parts) {
+		if (RESOLUTION.test(part)) {
+			resolution = part;
+		}
+		if (VIDEO_TERM.test(part) || SOURCE_TERM.test(part)) {
+			videoTerms.push(part);
+		}
+	}
+	return resolution;
+}
+
 function looksLikeEpisodeTitle(title: string): boolean {
 	return /^\d{1,4}$/.test(title.trim());
 }
@@ -90,7 +131,23 @@ function parseTokens(tokens: Token[]): Omit<ParsedFilename, "fileName" | "fileEx
 		episodeHigh = high ?? low;
 	};
 
-	for (const token of tokens) {
+	let episodeAt = -1;
+	const markEpisodeToken = (index: number): void => {
+		if (episodeAt < 0) {
+			episodeAt = index;
+		}
+	};
+
+	for (let i = 0; i < tokens.length; i += 1) {
+		const token = tokens[i];
+		const enclosedRes = markEnclosedMeta(token, videoTerms);
+		if (enclosedRes) {
+			videoResolution ||= enclosedRes;
+			continue;
+		}
+		if (token.used) {
+			continue;
+		}
 		if (markMatch(token, RESOLUTION)) {
 			videoResolution = token.text;
 			continue;
@@ -108,6 +165,7 @@ function parseTokens(tokens: Token[]): Omit<ParsedFilename, "fileName" | "fileEx
 			season = toInt(seasonEpisode[1]);
 			setEpisode(toInt(seasonEpisode[2]), toInt(seasonEpisode[4]));
 			releaseVersion = toInt(seasonEpisode[3]) ?? releaseVersion;
+			markEpisodeToken(i);
 			continue;
 		}
 		const seasonOnly = markMatch(token, SEASON_TOKEN);
@@ -119,12 +177,14 @@ function parseTokens(tokens: Token[]): Omit<ParsedFilename, "fileName" | "fileEx
 		if (episodeOnly) {
 			setEpisode(toInt(episodeOnly[1]), toInt(episodeOnly[3]));
 			releaseVersion = toInt(episodeOnly[2]) ?? releaseVersion;
+			markEpisodeToken(i);
 			continue;
 		}
 		const range = markMatch(token, EPISODE_RANGE);
 		if (range) {
 			setEpisode(toInt(range[1]), toInt(range[3]));
 			releaseVersion = toInt(range[2]) ?? releaseVersion;
+			markEpisodeToken(i);
 		}
 	}
 
@@ -158,6 +218,7 @@ function parseTokens(tokens: Token[]): Omit<ParsedFilename, "fileName" | "fileEx
 			token.used = true;
 			setEpisode(toInt(numbered[1]), toInt(numbered[1]));
 			releaseVersion = toInt(numbered[2]) ?? releaseVersion;
+			markEpisodeToken(i);
 			continue;
 		}
 		if (YEAR.test(token.text)) {
@@ -167,7 +228,8 @@ function parseTokens(tokens: Token[]): Omit<ParsedFilename, "fileName" | "fileEx
 	}
 
 	if (episodeLow == null) {
-		for (const token of tokens) {
+		for (let i = 0; i < tokens.length; i += 1) {
+			const token = tokens[i];
 			if (token.used || token.enclosed) {
 				continue;
 			}
@@ -177,7 +239,20 @@ function parseTokens(tokens: Token[]): Omit<ParsedFilename, "fileName" | "fileEx
 			}
 			token.used = true;
 			setEpisode(value, value);
+			markEpisodeToken(i);
 			break;
+		}
+	}
+
+	if (episodeLow != null) {
+		for (const token of tokens) {
+			if (token.used || token.enclosed) {
+				continue;
+			}
+			const value = toInt(token.text);
+			if (value === episodeLow || value === episodeHigh) {
+				token.used = true;
+			}
 		}
 	}
 
@@ -193,8 +268,20 @@ function parseTokens(tokens: Token[]): Omit<ParsedFilename, "fileName" | "fileEx
 		}
 	}
 
+	if (!group && episodeAt >= 0) {
+		for (let i = tokens.length - 1; i > episodeAt; i -= 1) {
+			const token = tokens[i];
+			if (token.used || token.enclosed) {
+				continue;
+			}
+			token.used = true;
+			group = token.text.replace(/^-/, "");
+			break;
+		}
+	}
+
 	const title = tokens
-		.filter((token) => !token.used && !token.enclosed && !isSeasonWord(token.text))
+		.filter((token, index) => !token.used && !token.enclosed && !isSeasonWord(token.text) && (episodeAt < 0 || index < episodeAt))
 		.map((token) => token.text)
 		.join(" ")
 		.trim();

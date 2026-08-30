@@ -60,6 +60,21 @@ describe("parseFilename", () => {
 			episode: 3,
 		});
 	});
+
+	test("keeps anime title before SxxExx and drops episode title plus fansub", () => {
+		expect(
+			parseFilename(
+				"BLACK TORCH (2026) - S01E09 - 009 - ONE [WEBDL-1080p][8bit][x264][AAC 2.0][JA]-Erai-raws.mkv",
+			),
+		).toMatchObject({
+			title: "BLACK TORCH",
+			year: 2026,
+			season: 1,
+			episode: 9,
+			group: "Erai-raws",
+			videoResolution: "1080p",
+		});
+	});
 });
 
 describe("parsePath", () => {

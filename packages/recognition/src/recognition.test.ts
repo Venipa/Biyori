@@ -53,6 +53,16 @@ describe("matchParsed", () => {
 		expect(matchTitle("Show", [s1, s4])?.id).toBe(1);
 	});
 
+	test("matches a title with a year suffix against the yearless list name", () => {
+		const torch: TitleCandidate = {
+			id: 30,
+			names: ["black torch"],
+			episodes: 12,
+		};
+		expect(matchParsed(parts("BLACK TORCH", 1, 2026), [s1, torch])?.id).toBe(30);
+		expect(matchTitle("BLACK TORCH (2026)", [torch])?.id).toBe(30);
+	});
+
 	test("does not match another series that only shares Season 4", () => {
 		const slime: TitleCandidate = {
 			id: 10,

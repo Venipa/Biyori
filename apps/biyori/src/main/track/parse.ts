@@ -2,7 +2,8 @@ import { basename } from "node:path";
 import { extendTitle, parseFilename as parseFilenameRaw, parsePath } from "@biyori/recognition";
 import type { NowPlayingMedia, ParsedPlayback } from "./types";
 
-const PLAYER_SUFFIX = /\s+-\s+(mpv|vlc media player|vlc|mpc-hc|mpc-be|potplayer|kmplayer|gom player).*$/i;
+const PLAYER_SUFFIX =
+	/\s+-\s+(mpv\.net|mpv|vlc media player|vlc|mpc-hc64|mpc-hc|mpc-be|potplayer|kmplayer|gom player).*$/i;
 
 const STREAM_SUFFIX = /\s+[|-]\s+(crunchyroll|hidive|netflix|plex|jellyfin|youtube|bilibili|funimation).*$/i;
 
@@ -67,5 +68,6 @@ export function parsePlayback(
 }
 
 export function parseFilename(filename: string): ParsedPlayback | null {
-	return toPlayback(parsePath(filename) ?? parseFilenameRaw(basename(filename)), filename);
+	const stripped = stripPlayerSuffix(filename);
+	return toPlayback(parsePath(stripped) ?? parseFilenameRaw(basename(stripped)), filename);
 }
