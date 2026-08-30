@@ -8,6 +8,21 @@ export type ProgressInfo = {
 	bytesPerSecond: number;
 };
 
+export function formatTransferRate(bytesPerSecond: number): string {
+	if (!Number.isFinite(bytesPerSecond) || bytesPerSecond < 0) {
+		return "0 B/s";
+	}
+	const units = ["B/s", "KB/s", "MB/s", "GB/s"] as const;
+	let value = bytesPerSecond;
+	let unit = 0;
+	while (value >= 1024 && unit < units.length - 1) {
+		value /= 1024;
+		unit += 1;
+	}
+	const digits = unit === 0 ? 0 : value >= 10 ? 0 : 1;
+	return `${value.toFixed(digits)} ${units[unit]}`;
+}
+
 export type ReleaseNoteEntry = {
 	version: string;
 	name: string | null;

@@ -1,67 +1,92 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, type FSWatcher, watch } from "node:fs";
-import { readdir, stat } from "node:fs/promises";
-import { basename, dirname, extname, join } from "node:path";
-import { parseFilename, parsePath, pathUnderRoot, recognizePath } from "@biyori/recognition";
+import { dirname } from "node:path";
+import { pathUnderRoot } from "@biyori/recognition";
 import { eq } from "drizzle-orm";
 import { shell } from "electron";
 import type { DatabaseClient } from "../db";
 import { anime, episodeFile } from "../db/schema";
 import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
+import { getLibraryScanWorker } from "./scan-client";
+import type { ScanCandidate, ScanHit } from "./scan-core";
 import { loadCandidates } from "./match";
-
-const VIDEO_EXT = new Set([".mkv", ".mp4", ".avi", ".webm", ".mov", ".wmv", ".flv", ".ts", ".m2ts", ".mpg", ".mpeg"]);
-
-const YIELD_EVERY = 32;
 
 let db: DatabaseClient | null = null;
 const watchers: FSWatcher[] = [];
 let watchTimer: ReturnType<typeof setTimeout> | null = null;
 let scanInFlight: Promise<{ files: number; matched: number }> | null = null;
 
-function yieldToEventLoop(): Promise<void> {
-	return new Promise((resolve) => {
-		setTimeout(resolve, 0);
-	});
-}
-
-async function collectFiles(root: string, threshold: number, out: string[], state: { visited: number }): Promise<boolean> {
-	let entries: string[] = [];
-	try {
-		entries = await readdir(root);
-	} catch {
-		return false;
-	}
-	for (const name of entries) {
-		const full = join(root, name);
-		let fileStat;
-		try {
-			fileStat = await stat(full);
-		} catch {
-			continue;
-		}
-		state.visited += 1;
-		if (state.visited % YIELD_EVERY === 0) {
-			await yieldToEventLoop();
-		}
-		if (fileStat.isDirectory()) {
-			await collectFiles(full, threshold, out, state);
-			continue;
-		}
-		if (!VIDEO_EXT.has(extname(full).toLowerCase())) {
-			continue;
-		}
-		if (fileStat.size < threshold) {
-			continue;
-		}
-		out.push(full);
-	}
-	return true;
-}
-
 export function initLibrary(database: DatabaseClient): void {
 	db = database;
+}
+
+function toScanCandidates(candidates: Awaited<ReturnType<typeof loadCandidates>>): ScanCandidate[] {
+	return candidates.map((candidate) => ({
+		id: candidate.id,
+		names: candidate.names,
+		episodes: candidate.episodes,
+		folder: candidate.folder,
+		status: candidate.status,
+	}));
+}
+
+function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: ScanHit[]): void {
+	database.transaction((tx) => {
+		const stored = tx.select().from(episodeFile).all();
+		const byPath = new Map(stored.map((row) => [row.path, row]));
+		const assignedFolder = new Set<number>();
+		const hitPaths = new Set<string>();
+
+		for (const hit of hits) {
+			hitPaths.add(hit.path);
+			const existing = byPath.get(hit.path);
+			if (existing) {
+				tx.update(episodeFile)
+					.set({
+						animeId: hit.animeId,
+						episode: hit.episode,
+						size: hit.size,
+					})
+					.where(eq(episodeFile.id, existing.id))
+					.run();
+			} else {
+				tx.insert(episodeFile)
+					.values({
+						id: randomUUID(),
+						animeId: hit.animeId,
+						episode: hit.episode,
+						path: hit.path,
+						size: hit.size,
+					})
+					.run();
+			}
+			if (assignedFolder.has(hit.animeId)) {
+				continue;
+			}
+			const folderRow = tx.select({ folder: anime.folder }).from(anime).where(eq(anime.id, hit.animeId)).get();
+			if (folderRow && !folderRow.folder) {
+				tx.update(anime)
+					.set({ folder: dirname(hit.path) })
+					.where(eq(anime.id, hit.animeId))
+					.run();
+			}
+			assignedFolder.add(hit.animeId);
+		}
+
+		if (scannedRoots.length === 0) {
+			return;
+		}
+		for (const row of stored) {
+			const underScannedRoot = scannedRoots.some((root) => pathUnderRoot(row.path, root));
+			if (!underScannedRoot) {
+				continue;
+			}
+			if (!hitPaths.has(row.path)) {
+				tx.delete(episodeFile).where(eq(episodeFile.id, row.id)).run();
+			}
+		}
+	});
 }
 
 export async function scanLibrary(database: DatabaseClient = requiredDb()): Promise<{ files: number; matched: number }> {
@@ -77,102 +102,13 @@ export async function scanLibrary(database: DatabaseClient = requiredDb()): Prom
 async function runScan(database: DatabaseClient): Promise<{ files: number; matched: number }> {
 	const settings = loadAppSettings();
 	const candidates = await loadCandidates(database);
-	const files: string[] = [];
-	const scannedRoots: string[] = [];
-	const walkState = { visited: 0 };
-	for (const folder of settings.libraryFolders) {
-		if (!(await existsAsync(folder.path))) {
-			continue;
-		}
-		const ok = await collectFiles(folder.path, settings.fileSizeThreshold, files, walkState);
-		if (ok) {
-			scannedRoots.push(folder.path);
-		}
-	}
-	const seenPaths = new Set<string>();
-	let matched = 0;
-	let processed = 0;
-	for (const path of files) {
-		seenPaths.add(path);
-		processed += 1;
-		if (processed % YIELD_EVERY === 0) {
-			await yieldToEventLoop();
-		}
-		const recognized = recognizePath(path, candidates);
-		if (!recognized?.match) {
-			continue;
-		}
-		const hit = recognized.match;
-		matched += 1;
-		const episode = recognized.parsed.episode ?? 1;
-		let size = 0;
-		try {
-			size = (await stat(path)).size;
-		} catch {
-			continue;
-		}
-		const existing = await database.select({ id: episodeFile.id }).from(episodeFile).where(eq(episodeFile.path, path)).limit(1);
-		if (existing[0]) {
-			await database
-				.update(episodeFile)
-				.set({
-					animeId: hit.id,
-					episode,
-					size,
-				})
-				.where(eq(episodeFile.id, existing[0].id));
-		} else {
-			await database.insert(episodeFile).values({
-				id: randomUUID(),
-				animeId: hit.id,
-				episode,
-				path,
-				size,
-			});
-		}
-		if (!hit.folder) {
-			await database
-				.update(anime)
-				.set({ folder: dirname(path) })
-				.where(eq(anime.id, hit.id));
-			hit.folder = dirname(path);
-		}
-	}
-	if (scannedRoots.length === 0) {
-		return { files: files.length, matched };
-	}
-	const stored = await database.select().from(episodeFile);
-	for (const row of stored) {
-		const underScannedRoot = scannedRoots.some((root) => row.path.toLowerCase().startsWith(root.toLowerCase()));
-		if (!underScannedRoot) {
-			continue;
-		}
-		if (!seenPaths.has(row.path) || !(await existsAsync(row.path))) {
-			await database.delete(episodeFile).where(eq(episodeFile.id, row.id));
-		}
-	}
-	return { files: files.length, matched };
-}
-
-async function existsAsync(path: string): Promise<boolean> {
-	try {
-		await stat(path);
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-function episodeInRange(
-	parsed: { episode: number | null; episodeLow: number | null; episodeHigh: number | null },
-	episode: number,
-): boolean {
-	const low = parsed.episodeLow ?? parsed.episode;
-	const high = parsed.episodeHigh ?? parsed.episode;
-	if (low == null || high == null) {
-		return false;
-	}
-	return episode >= low && episode <= high;
+	const result = await getLibraryScanWorker().invoke.scan({
+		roots: settings.libraryFolders.map((folder) => folder.path),
+		threshold: settings.fileSizeThreshold,
+		candidates: toScanCandidates(candidates),
+	});
+	applyScanHits(database, result.scannedRoots, result.hits);
+	return { files: result.files, matched: result.hits.length };
 }
 
 async function seriesFolder(database: DatabaseClient, animeId: number): Promise<string> {
@@ -215,15 +151,11 @@ async function findEpisodePath(database: DatabaseClient, animeId: number, episod
 	if (!folder || !existsSync(folder)) {
 		return null;
 	}
-	const files: string[] = [];
-	await collectFiles(folder, loadAppSettings().fileSizeThreshold, files, { visited: 0 });
-	for (const path of files) {
-		const parsed = parsePath(path) ?? parseFilename(basename(path));
-		if (parsed && episodeInRange(parsed, episode)) {
-			return path;
-		}
-	}
-	return null;
+	return getLibraryScanWorker().invoke.findEpisode({
+		folder,
+		episode,
+		threshold: loadAppSettings().fileSizeThreshold,
+	});
 }
 
 export async function playEpisode(database: DatabaseClient, animeId: number, episode: number): Promise<{ ok: boolean; path: string | null }> {

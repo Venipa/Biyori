@@ -21,7 +21,7 @@ export const windowManager = new WindowManager({
 	update: {
 		title: "Update",
 		width: 480,
-		height: 360,
+		height: 400,
 		minWidth: 400,
 		minHeight: 300,
 		to: "/update",

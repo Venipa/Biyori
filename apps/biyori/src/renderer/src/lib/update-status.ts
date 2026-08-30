@@ -14,6 +14,7 @@ const idle: UpdateState = {
 	remoteHash: null,
 	updateAvailable: false,
 	updateReady: false,
+	progress: null,
 	message: "",
 	error: null,
 };

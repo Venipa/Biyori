@@ -10,6 +10,7 @@ import {
 	getVersionChannel,
 	isVersionAllowedOnChannel,
 	parseUpdateChannel,
+	type ProgressInfo,
 	type ReleaseNoteEntry,
 	type UpdateChannel,
 } from "../shared/updater";
@@ -35,6 +36,7 @@ export type AppUpdateState = {
 	remoteHash: string | null;
 	updateAvailable: boolean;
 	updateReady: boolean;
+	progress: ProgressInfo | null;
 	message: string;
 	error: string | null;
 };
@@ -53,6 +55,7 @@ let state: AppUpdateState = {
 	remoteHash: null,
 	updateAvailable: false,
 	updateReady: false,
+	progress: null,
 	message: "",
 	error: null,
 };
@@ -130,6 +133,7 @@ function applyUpdateError(error: unknown, fallback: string): void {
 		phase: "error",
 		error: message,
 		message,
+		progress: null,
 		updateAvailable: false,
 		updateReady: false,
 	});
@@ -174,6 +178,7 @@ function hookStatus(): void {
 			phase: "available",
 			updateAvailable: true,
 			remoteVersion: info.version,
+			progress: null,
 			message: `Update available: ${info.version}`,
 			error: null,
 		});
@@ -186,15 +191,27 @@ function hookStatus(): void {
 			phase: "up-to-date",
 			updateAvailable: false,
 			remoteVersion: info.version,
+			progress: null,
 			message: "You are up to date",
 			error: null,
 		});
 	});
-	autoUpdater.on("download-progress", () => {
+	autoUpdater.on("download-progress", (info) => {
 		if (ignoreUpdaterEvents) {
 			return;
 		}
-		patch({ phase: "downloading", message: "Downloading update...", error: null });
+		patch({
+			phase: "downloading",
+			progress: {
+				total: info.total,
+				delta: info.delta,
+				transferred: info.transferred,
+				percent: info.percent,
+				bytesPerSecond: info.bytesPerSecond,
+			},
+			message: "Downloading update...",
+			error: null,
+		});
 	});
 	autoUpdater.on("update-downloaded", (info) => {
 		if (ignoreUpdaterEvents) {
@@ -204,6 +221,7 @@ function hookStatus(): void {
 			phase: "ready",
 			updateAvailable: true,
 			updateReady: true,
+			progress: null,
 			remoteVersion: info.version,
 			message: "Update downloaded. Restart to apply.",
 			error: null,
@@ -326,6 +344,7 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 				phase: "dev",
 				updateAvailable: false,
 				updateReady: false,
+				progress: null,
 				remoteVersion: null,
 				remoteHash: null,
 				message: "Dev builds skip updates",
@@ -333,7 +352,7 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 			});
 			return state;
 		}
-		patch({ phase: "checking", message: "Checking for updates...", error: null });
+		patch({ phase: "checking", message: "Checking for updates...", progress: null, error: null });
 		const best = await resolveBestUpdate(channel);
 		if (!best) {
 			patch({
@@ -341,6 +360,7 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 				updateAvailable: false,
 				updateReady: false,
 				remoteVersion: null,
+				progress: null,
 				message: "You are up to date",
 				error: null,
 			});
@@ -351,6 +371,7 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 			updateAvailable: true,
 			updateReady: false,
 			remoteVersion: best.version,
+			progress: null,
 			message: `Update available: ${best.version}`,
 			error: null,
 		});
@@ -380,6 +401,7 @@ export async function downloadAppUpdate(): Promise<AppUpdateState> {
 		applyUpdaterFeed(lastUserChannel ?? (await resolveUserChannel()));
 		patch({
 			phase: "downloading",
+			progress: null,
 			message: "Downloading update...",
 			error: null,
 		});

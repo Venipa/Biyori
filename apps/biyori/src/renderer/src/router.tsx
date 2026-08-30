@@ -8,7 +8,8 @@ declare global {
 }
 
 function seedHash(): void {
-	const fromQuery = new URLSearchParams(window.location.search).get("to");
+	const params = new URLSearchParams(window.location.search);
+	const fromQuery = params.get("to");
 	const fromWindow = window.__BIYORI_START__;
 	const hash = window.location.hash.replace(/^#/, "");
 	const raw = fromQuery || fromWindow || hash || "/app/anime-list";
@@ -16,6 +17,11 @@ function seedHash(): void {
 	const next = `#${path}`;
 	if (window.location.hash !== next) {
 		window.location.hash = next;
+	}
+	if (fromQuery) {
+		params.delete("to");
+		const search = params.toString();
+		window.history.replaceState(window.history.state, "", `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`);
 	}
 }
 

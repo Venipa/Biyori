@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useBlocker, useNavigate } from "@tanstack/react-router";
 import { type ReactElement, useRef } from "react";
 import { AnimeDeleteDialog } from "@/mainview/components/anime-delete-dialog";
 import { AppAnimeInfoDialog } from "@/mainview/components/app-anime-info-dialog";
@@ -15,6 +15,10 @@ export const Route = createFileRoute("/app")({
 });
 
 function MainLayout(): ReactElement {
+	useBlocker({
+		shouldBlockFn: ({ next }) => next.fullPath === "/update",
+		enableBeforeUnload: false,
+	});
 	const utils = trpc.useUtils();
 	const navigate = useNavigate();
 	const settingsQuery = trpc.settings.get.useQuery();
