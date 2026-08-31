@@ -9,6 +9,7 @@ import type { DatabaseClient } from "./db";
 import { episodeFile, torrentArchive } from "./db/schema";
 import { trackedFetch } from "./http-stats";
 import { appFeedDir } from "./lib/app-paths";
+import { pushNotice } from "./activity";
 import { setAppNotice } from "./notice";
 import { loadAppSettings, loadTorrentFiltersFile, patchTorrentFiltersFile, subscribeFilters, subscribeSettings } from "./settings";
 import {
@@ -341,7 +342,9 @@ async function ingestFeed(database: DatabaseClient, feedUrl: string, force: bool
 		});
 		archivedTitles.add(row.entry.title);
 		if (announce && !force && !bootstrap) {
-			setAppNotice(`New torrent: ${row.entry.title}`);
+			const title = `New torrent: ${row.entry.title}`;
+			setAppNotice(title);
+			pushNotice({ source: "torrent", title });
 			if (settings.newTorrentAction === "download" && row.entry.link) {
 				await openTorrent(row.entry.link, row.entry.title, settings, row.match);
 			}

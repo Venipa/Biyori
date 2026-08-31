@@ -9,68 +9,62 @@ const STATUS_ITEMS: Record<ListStatus, string> = Object.fromEntries(listStatusSc
 
 type AnimeListActionProps = {
 	mediaId: number;
-	onList: boolean;
-	status?: string | null;
-	progress: number;
-	notes: string;
-	rewatching: boolean;
 	onAdded?: (id: number) => void;
 	size?: "sm" | "default";
 	className?: string;
 };
 
-export function AnimeListAction({ mediaId, onList, status, progress, notes, rewatching, onAdded, size, className }: AnimeListActionProps) {
+export function AnimeListAction({ mediaId, onAdded, size, className }: AnimeListActionProps) {
 	const utils = trpc.useUtils();
 	const addFromSearch = trpc.anilist.addFromSearch.useMutation();
-	const saveEntry = trpc.anilist.saveEntry.useMutation();
-	const parsedStatus = listStatusSchema.safeParse(status);
-	const listStatus = parsedStatus.success ? parsedStatus.data : "Plan to watch";
-	const busy = addFromSearch.isPending || saveEntry.isPending;
-
-	if (!onList) {
-		return (
-			<Button
-				type='button'
-				size={size}
-				className={cn("w-full", className)}
-				disabled={busy}
-				onClick={() => {
-					void addFromSearch.mutateAsync({ mediaId }).then((result) => {
-						void invalidateAnimeQueries(utils, "added", result.id);
-						onAdded?.(result.id);
-					});
-				}}>
-				Add to list
-			</Button>
-		);
-	}
 
 	return (
-		<Select
-			value={listStatus}
-			items={STATUS_ITEMS}
-			disabled={busy}
-			onValueChange={(value) => {
-				if (typeof value !== "string" || value === listStatus) {
-					return;
-				}
-				const next = listStatusSchema.safeParse(value);
-				if (!next.success) {
-					return;
-				}
-				void saveEntry
-					.mutateAsync({
-						animeId: mediaId,
-						status: next.data,
-						progress,
-						notes,
-						rewatching,
-					})
-					.then(() => {
-						void invalidateAnimeQueries(utils, "entrySaved", mediaId);
-					});
+		<Button
+			type='button'
+			size={size}
+			className={cn("w-full", className)}
+			disabled={addFromSearch.isPending}
+			onClick={() => {
+				void addFromSearch.mutateAsync({ mediaId }).then((result) => {
+					void invalidateAnimeQueries(utils, "added", result.id);
+					onAdded?.(result.id);
+				});
 			}}>
-			<SelectTrigger size={size} className={cn("w-full", className)} aria-label='List status'>
+			Add to list
+		</Button>
+	);
+}
+
+export function AnimeListStatusSelect({
+	value,
+	onValueChange,
+	id,
+	size,
+	className,
+	"aria-label": ariaLabel,
+}: {
+	value: string;
+	onValueChange: (value: ListStatus) => void;
+	id?: string;
+	size?: "sm" | "default";
+	className?: string;
+	"aria-label"?: string;
+}) {
+	return (
+		<Select
+			value={value}
+			items={STATUS_ITEMS}
+			onValueChange={(next) => {
+				if (typeof next !== "string") {
+					return;
+				}
+				const parsed = listStatusSchema.safeParse(next);
+				if (!parsed.success) {
+					return;
+				}
+				onValueChange(parsed.data);
+			}}>
+			<SelectTrigger id={id} size={size} className={cn("w-full", className)} aria-label={ariaLabel}>
 				<SelectValue />
 			</SelectTrigger>
 			<SelectContent alignItemWithTrigger={false} align='start'>

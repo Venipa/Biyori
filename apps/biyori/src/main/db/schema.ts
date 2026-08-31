@@ -96,3 +96,13 @@ export const mediaCache = sqliteTable("media_cache", {
 	fileName: text("file_name").notNull(),
 	fetchedAt: text("fetched_at").notNull(),
 });
+
+export const activity = sqliteTable("activity", {
+	id: text("id").primaryKey(),
+	kind: text("kind").notNull(),
+	source: text("source").notNull(),
+	title: text("title").notNull(),
+	body: text("body").notNull().default(""),
+	status: text("status").notNull(),
+	createdAt: text("created_at").notNull(),
+});

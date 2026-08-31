@@ -7,6 +7,7 @@ import { readAnilistAuth } from "../anilist/store";
 import { saveMediaListEntry } from "../anilist/sync";
 import type { DatabaseClient } from "../db";
 import { anime, history, listEntry, syncQueue } from "../db/schema";
+import { clearActivity, completeActivity, upsertActivity } from "../activity";
 import { setAppNotice } from "../notice";
 
 export const queuePayloadSchema = z.object({
@@ -211,7 +212,9 @@ async function flushNext(db: DatabaseClient): Promise<void> {
 
 	const payload = parsePayload(item.payload);
 	const remaining = await countQueued(db);
-	setAppNotice(remaining > 1 ? `Updating anime list... (${remaining} queued)` : "Updating anime list...");
+	const title = remaining > 1 ? `Updating anime list... (${remaining} queued)` : "Updating anime list...";
+	setAppNotice(title);
+	upsertActivity({ source: "list-update", title });
 
 	try {
 		const saved = await saveMediaListEntry({
@@ -254,12 +257,15 @@ async function flushNext(db: DatabaseClient): Promise<void> {
 		const left = await countQueued(db);
 		if (left === 0) {
 			setAppNotice("");
+			clearActivity("list-update");
 		} else {
 			flushAgain = true;
 			await yieldToEventLoop();
 		}
 	} catch {
-		setAppNotice("List update failed; will retry");
+		const title = "List update failed; will retry";
+		setAppNotice(title);
+		completeActivity({ source: "list-update", title, status: "error" });
 		/* stay queued; retry timer will try again */
 	}
 }

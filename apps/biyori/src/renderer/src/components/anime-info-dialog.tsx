@@ -5,7 +5,7 @@ import { Image } from "@/components/ui/image";
 import { desktopRpc } from "@/desktop-rpc";
 import { type AnimeInfoFormInput, type AnimeInfoFormValues, animeInfoFormSchema } from "@/lib/schemas/anime-list-entry";
 import { AnimeCover } from "@/mainview/components/anime-cover";
-import { AnimeListAction } from "@/mainview/components/anime-list-action";
+import { AnimeListAction, AnimeListStatusSelect } from "@/mainview/components/anime-list-action";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
 import { SaveBar } from "@/mainview/components/save-bar";
 import { Badge } from "@/mainview/components/ui/badge";
@@ -16,7 +16,6 @@ import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from
 import { Input } from "@/mainview/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Spinner } from "@/mainview/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
@@ -26,17 +25,12 @@ import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 import { getNeighborAnimeId } from "@/mainview/lib/selected-anime";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
-import { listStatusSchema } from "@/shared/list";
+import { listStatusSchema, type ListStatus } from "@/shared/list";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, FolderOpen } from "lucide-react";
 import { useId } from "react";
 import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
-
-const statusOptions = listStatusSchema.options.map((value) => ({
-	value,
-	label: value,
-}));
 
 function posterExternalLinks(id: number, title: string): Array<{ label: string; short: string; url: string; icon?: React.ReactNode }> {
 	const q = encodeURIComponent(title);
@@ -98,7 +92,7 @@ export function AnimeInfoDialog({
 			}}
 			modal>
 			<DialogContent
-				className='flex h-full mt-8 max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-b-none p-0 sm:max-w-3xl'
+				className='flex top-8 bottom-0 h-auto max-h-none translate-y-0 max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-b-none p-0 sm:max-w-3xl'
 				onKeyDownCapture={(event) => {
 					if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
 						return;
@@ -212,6 +206,12 @@ function AnimeInfoBody({
 			alternativeTitles: anime.alternativeTitles ?? "",
 		},
 	});
+	const setListStatus = (onChange: (value: ListStatus) => void, value: ListStatus) => {
+		onChange(value);
+		if (value === "Completed" && anime.episodes > 0) {
+			form.setValue("progress", anime.episodes, { shouldDirty: true });
+		}
+	};
 
 	return (
 		<FormProvider {...form}>
@@ -241,15 +241,23 @@ function AnimeInfoBody({
 								</Button>
 							))}
 						</div>
-						<AnimeListAction
-							mediaId={anime.id}
-							onList={anime.onList}
-							status={anime.status}
-							progress={anime.episodesWatched ?? 0}
-							notes={anime.notes ?? ""}
-							rewatching={Boolean(anime.rewatching)}
-							onAdded={onAdded}
-						/>
+						{readOnly ? (
+							<AnimeListAction mediaId={anime.id} onAdded={onAdded} />
+						) : (
+							<Controller
+								control={form.control}
+								name='status'
+								render={({ field }) => (
+									<AnimeListStatusSelect
+										value={field.value}
+										aria-label='List status'
+										onValueChange={(value) => {
+											setListStatus(field.onChange, value);
+										}}
+									/>
+								)}
+							/>
+						)}
 					</div>
 					<div className='flex min-h-0 min-w-0 flex-1 flex-col gap-2'>
 						<div className='flex min-h-14 shrink-0 items-end'>
@@ -301,33 +309,13 @@ function AnimeInfoBody({
 														render={({ field, fieldState }) => (
 															<Field data-invalid={fieldState.invalid || undefined}>
 																<FieldLabel htmlFor={statusId}>Status:</FieldLabel>
-																<Select
+																<AnimeListStatusSelect
+																	id={statusId}
 																	value={field.value}
-																	items={Object.fromEntries(statusOptions.map((option) => [option.value, option.label]))}
 																	onValueChange={(value) => {
-																		if (typeof value !== "string") {
-																			return;
-																		}
-																		field.onChange(value);
-																		if (value === "Completed" && anime.episodes > 0) {
-																			form.setValue("progress", anime.episodes, {
-																				shouldDirty: true,
-																			});
-																		}
-																	}}>
-																	<SelectTrigger id={statusId} className='w-full'>
-																		<SelectValue />
-																	</SelectTrigger>
-																	<SelectContent>
-																		<SelectGroup>
-																			{statusOptions.map((option) => (
-																				<SelectItem key={option.value} value={option.value}>
-																					{option.label}
-																				</SelectItem>
-																			))}
-																		</SelectGroup>
-																	</SelectContent>
-																</Select>
+																		setListStatus(field.onChange, value);
+																	}}
+																/>
 																<FieldError errors={[fieldState.error]} />
 															</Field>
 														)}

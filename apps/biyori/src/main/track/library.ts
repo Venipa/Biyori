@@ -6,6 +6,7 @@ import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
 import { dirname, join } from "node:path";
 import type { DatabaseClient } from "../db";
 import { anime, episodeFile } from "../db/schema";
+import { completeActivity, pushNotice, upsertActivity } from "../activity";
 import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
 import { hana, type ScanHit, type ScanProgress } from "./hana-client";
@@ -176,14 +177,16 @@ export async function scanLibraryQuick(database: DatabaseClient = requiredDb()):
 function onScanProgress(kind: "full" | "quick", progress: ScanProgress): void {
 	const prefix = kind === "quick" ? "Checking folders" : "Scanning library";
 	if (progress.phase === "walk") {
-		setAppNotice(`${prefix}... (${progress.files} files)`, { toast: false, busy: true });
+		const title = `${prefix}... (${progress.files} files)`;
+		setAppNotice(title, { toast: false, busy: true });
+		upsertActivity({ source: "library-scan", title });
 		return;
 	}
 	if (progress.phase === "match") {
-		setAppNotice(`Matching titles... (${progress.hits}/${progress.files})`, { toast: false, busy: true });
-		return;
+		const title = `Matching titles... (${progress.hits}/${progress.files})`;
+		setAppNotice(title, { toast: false, busy: true });
+		upsertActivity({ source: "library-scan", title });
 	}
-	setAppNotice(`Library scan: ${progress.files} files, ${progress.hits} matched`, { toast: false, busy: false });
 }
 
 async function runScan(database: DatabaseClient, roots: string[], kind: "full" | "quick" | "watch"): Promise<{ files: number; matched: number }> {
@@ -194,7 +197,9 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 	const settings = loadAppSettings();
 	const candidates = await loadCandidates(database);
 	if (kind !== "watch") {
-		setAppNotice(kind === "quick" ? "Checking known folders..." : "Scanning library...", { toast: false, busy: true });
+		const title = kind === "quick" ? "Checking known folders..." : "Scanning library...";
+		setAppNotice(title, { toast: false, busy: true });
+		upsertActivity({ source: "library-scan", title });
 	}
 	try {
 		const result = await hana.scan(
@@ -207,12 +212,16 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 		);
 		applyScanHits(database, result.scannedRoots, result.hits);
 		if (kind !== "watch") {
-			setAppNotice(`Library scan: ${result.files} files, ${result.hits.length} matched`, { toast: false, busy: false });
+			const title = `Library scan: ${result.files} files, ${result.hits.length} matched`;
+			setAppNotice(title, { toast: false, busy: false });
+			completeActivity({ source: "library-scan", title, status: "ok" });
 		}
 		return { files: result.files, matched: result.hits.length };
 	} catch (error) {
 		if (kind !== "watch") {
-			setAppNotice("Library scan failed", { toast: false, busy: false });
+			const title = "Library scan failed";
+			setAppNotice(title, { toast: false, busy: false });
+			completeActivity({ source: "library-scan", title, status: "error" });
 		}
 		throw error;
 	}
@@ -285,7 +294,9 @@ export async function playNext(database: DatabaseClient, animeId: number, episod
 	}
 	const played = await playEpisode(database, animeId, episode);
 	if (!played.ok) {
-		setAppNotice(`Could not find episode #${episode}`);
+		const title = `Could not find episode #${episode}`;
+		setAppNotice(title);
+		pushNotice({ source: "play-next", title });
 	}
 	return { ...played, episode };
 }

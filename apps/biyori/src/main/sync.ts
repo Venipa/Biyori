@@ -1,3 +1,4 @@
+import { completeActivity, clearActivity, upsertActivity } from "./activity";
 import { readAnilistAuth, writeAnilistAuth } from "./anilist/store";
 import { fetchViewer, syncAniListList } from "./anilist/sync";
 import type { DatabaseClient } from "./db";
@@ -57,6 +58,7 @@ function emitRunning(message: string, processed: number | null, total: number | 
 		total,
 		lastSuccessAt: snapshot.lastSuccessAt,
 	});
+	upsertActivity({ source: "anilist-sync", title: message });
 }
 
 export function getSyncSnapshot(): SyncSnapshot {
@@ -82,6 +84,7 @@ export function abortAniListSync(): void {
 		...IDLE,
 		lastSuccessAt: snapshot.lastSuccessAt,
 	});
+	clearActivity("anilist-sync");
 }
 
 export function requestAniListSync(): { accepted: true } {
@@ -117,12 +120,14 @@ async function runSync(): Promise<void> {
 	try {
 		const auth = readAnilistAuth();
 		if (!auth || auth.expiresAt <= Date.now()) {
+			const title = taggedMessage("Not connected");
 			emit({
 				...IDLE,
 				lastSuccessAt: snapshot.lastSuccessAt,
 				phase: "error",
-				message: taggedMessage("Not connected"),
+				message: title,
 			});
+			completeActivity({ source: "anilist-sync", title, status: "error" });
 			return;
 		}
 
@@ -159,18 +164,25 @@ async function runSync(): Promise<void> {
 			total: covers.length,
 			lastSuccessAt: Date.now(),
 		});
+		completeActivity({
+			source: "anilist-sync",
+			title: `AniList sync finished (${covers.length} titles)`,
+			status: "ok",
+		});
 	} catch (error) {
 		if (signal.aborted) {
 			return;
 		}
 		const message = error instanceof Error ? error.message : "Request failed";
+		const title = taggedMessage(message);
 		emit({
 			phase: "error",
-			message: taggedMessage(message),
+			message: title,
 			processed: snapshot.processed,
 			total: snapshot.total,
 			lastSuccessAt: snapshot.lastSuccessAt,
 		});
+		completeActivity({ source: "anilist-sync", title, status: "error" });
 	} finally {
 		running = false;
 		if (abortController === controller) {

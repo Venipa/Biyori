@@ -10,6 +10,7 @@ import { readAnilistAuth } from "../anilist/store";
 import { ensureAnimeCached } from "../anilist/sync";
 import { anime, episodeFile, history, listEntry, syncQueue } from "../db/schema";
 import type { Anime } from "../db/types";
+import { getActivitySnapshot, subscribeActivity } from "../activity";
 import { getAppNotice, subscribeAppNotice } from "../notice";
 import { loadAppSettings, loadSettingsFormValues, patchAppSettings, patchSettingsForm } from "../settings";
 import { loadStatistics } from "../statistics";
@@ -408,6 +409,17 @@ export const appRouter = t.router({
 			return observable<ReturnType<typeof getAppNotice>>((emit) => {
 				emit.next(getAppNotice());
 				return subscribeAppNotice((next) => {
+					emit.next(next);
+				});
+			});
+		}),
+	}),
+	activity: t.router({
+		snapshot: t.procedure.query(() => getActivitySnapshot()),
+		onChange: t.procedure.subscription(() => {
+			return observable<ReturnType<typeof getActivitySnapshot>>((emit) => {
+				emit.next(getActivitySnapshot());
+				return subscribeActivity((next) => {
 					emit.next(next);
 				});
 			});

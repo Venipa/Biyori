@@ -3,6 +3,7 @@ import { isPathInsideFolder } from "../../lib/folder-path";
 import type { AppSettings, DefaultService } from "../../lib/schemas/app-settings";
 import { readAnilistAuth } from "../anilist/store";
 import type { DatabaseClient } from "../db";
+import { pushNotice } from "../activity";
 import { setAppNotice } from "../notice";
 import { loadAppSettings, subscribeSettings } from "../settings";
 import { syncDiscordPresence } from "../share/discord";
@@ -260,9 +261,13 @@ async function runTick(): Promise<void> {
 			appliedFingerprint = key;
 		}
 		if (match && settings.notifyOnRecognized) {
-			setAppNotice(`Now playing: ${match.title}`);
+			const title = `Now playing: ${match.title}`;
+			setAppNotice(title);
+			pushNotice({ source: "playback", title });
 		} else if (!match && settings.notifyOnUnrecognized) {
-			setAppNotice(`Unrecognized: ${parsed.title}`);
+			const title = `Unrecognized: ${parsed.title}`;
+			setAppNotice(title);
+			pushNotice({ source: "playback", title });
 		}
 	} else if (wasPlaybackApplied(key)) {
 		appliedFingerprint = key;
@@ -322,6 +327,10 @@ export async function confirmPendingUpdate(): Promise<void> {
 	if (match && match.id === pending.animeId) {
 		appliedFingerprint = lastFingerprint;
 		await applyProgress(match, pending.episode);
+		pushNotice({
+			source: "watch-confirm",
+			title: `Updated ${pending.title} to episode ${pending.episode}`,
+		});
 	}
 	pending = null;
 	emit({ ...snapshot, pendingConfirm: null });

@@ -1,32 +1,43 @@
+import { useEffect } from "react";
 import {
 	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
 	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/mainview/components/ui/alert-dialog";
-import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
-import { trpc } from "@/mainview/trpc";
+import { WatchConfirmActions, useWatchConfirm } from "@/mainview/components/watch-confirm-actions";
+import { promoteWatchConfirm, resetWatchConfirmPromoted, useActivityPanelState, getActivityPanelState } from "@/mainview/lib/activity-panel";
+
+const CONFIRM_DIALOG_MS = 10_000;
 
 export function WatchConfirmDialog() {
-	const utils = trpc.useUtils();
-	const query = trpc.media.nowPlaying.useQuery();
-	const confirm = trpc.media.confirmUpdate.useMutation({
-		onSuccess: () => {
-			void invalidateAnimeQueries(utils, "watched");
-		},
-	});
-	const skip = trpc.media.skipUpdate.useMutation();
-	const pending = query.data?.pendingConfirm ?? null;
+	const { pending, confirm, skip } = useWatchConfirm();
+	const { watchConfirmPromoted } = useActivityPanelState();
+	const pendingKey = pending ? `${pending.animeId}:${pending.episode}` : "";
+
+	useEffect(() => {
+		if (!pendingKey) {
+			resetWatchConfirmPromoted();
+			return;
+		}
+		resetWatchConfirmPromoted();
+		const timer = setTimeout(() => {
+			promoteWatchConfirm();
+		}, CONFIRM_DIALOG_MS);
+		return () => {
+			clearTimeout(timer);
+		};
+	}, [pendingKey]);
+
+	const dialogOpen = Boolean(pending) && !watchConfirmPromoted;
 
 	return (
 		<AlertDialog
-			open={Boolean(pending)}
+			open={dialogOpen}
 			onOpenChange={(open) => {
-				if (!open && pending) {
+				if (!open && pending && !getActivityPanelState().watchConfirmPromoted) {
 					void skip.mutateAsync();
 				}
 			}}>
@@ -38,20 +49,15 @@ export function WatchConfirmDialog() {
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel
-						onClick={() => {
-							void skip.mutateAsync();
-						}}>
-						Skip
-					</AlertDialogCancel>
-					<AlertDialogAction
+					<WatchConfirmActions
 						disabled={confirm.isPending}
-						onClick={(event) => {
-							event.preventDefault();
+						onSkip={() => {
+							void skip.mutateAsync();
+						}}
+						onUpdate={() => {
 							void confirm.mutateAsync();
-						}}>
-						Update
-					</AlertDialogAction>
+						}}
+					/>
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>

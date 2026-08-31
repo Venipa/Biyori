@@ -75,6 +75,8 @@ export async function initDatabase() {
 export type DatabaseClient = ReturnType<typeof createDatabase>;
 
 export type {
+	Activity,
+	ActivityInsert,
 	Anime,
 	AnimeInsert,
 	AppSetting,

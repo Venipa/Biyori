@@ -1,5 +1,3 @@
-import { Notification } from "electron";
-
 export type AppNotice = {
 	message: string;
 	at: number;
@@ -16,7 +14,6 @@ export function getAppNotice(): AppNotice {
 }
 
 export function setAppNotice(message: string, options?: { toast?: boolean; busy?: boolean }): void {
-	const toast = options?.toast ?? true;
 	notice = {
 		message,
 		at: Date.now(),
@@ -24,12 +21,6 @@ export function setAppNotice(message: string, options?: { toast?: boolean; busy?
 	};
 	for (const listener of listeners) {
 		listener(notice);
-	}
-	if (toast && message) {
-		new Notification({
-			title: "Biyori",
-			body: message,
-		}).show();
 	}
 }
 
