@@ -160,6 +160,9 @@ jobs:
             throw "missing apps/biyori/drizzle"
           }
 
+      - name: Build Hana native
+        run: bun run --cwd packages/hana build:release
+
       - name: Pack Windows x64 release
         run: bun run release:pack:win
         env:

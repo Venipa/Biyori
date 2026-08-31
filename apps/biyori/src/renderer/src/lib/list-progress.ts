@@ -14,13 +14,7 @@ export function estimateEpisodeCount(knownTotal: number, lastKnown: number): num
 	return 0;
 }
 
-export function lastEpisodeNumber(input: {
-	total: number;
-	watched: number;
-	available: number;
-	aired: number;
-	finished: boolean;
-}): number {
+export function lastEpisodeNumber(input: { total: number; watched: number; available: number; aired: number; finished: boolean }): number {
 	if (input.finished) {
 		return input.total;
 	}
@@ -38,13 +32,7 @@ export type ListProgressLayout = {
 	availableEnd: number;
 };
 
-export function listProgressLayout(input: {
-	watched: number;
-	total: number;
-	available: number;
-	aired: number;
-	finished: boolean;
-}): ListProgressLayout {
+export function listProgressLayout(input: { watched: number; total: number; available: number; aired: number; finished: boolean }): ListProgressLayout {
 	const last = lastEpisodeNumber(input);
 	const estimated = estimateEpisodeCount(input.total, last);
 	let aired = 0;
@@ -107,13 +95,7 @@ export function collapseEpisodeRanges(episodes: number[]): Array<[number, number
 	return ranges;
 }
 
-export function libraryEpisodeTooltip(input: {
-	watched: number;
-	total: number;
-	aired: number;
-	finished: boolean;
-	libraryEpisodes?: number[];
-}): string {
+export function libraryEpisodeTooltip(input: { watched: number; total: number; aired: number; finished: boolean; libraryEpisodes?: number[] }): string {
 	const libraryEpisodes = input.libraryEpisodes ?? [];
 	const have = new Set(libraryEpisodes);
 	const maxLibrary = libraryEpisodes.length > 0 ? Math.max(...libraryEpisodes) : 0;

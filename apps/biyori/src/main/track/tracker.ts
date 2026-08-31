@@ -7,10 +7,10 @@ import { setAppNotice } from "../notice";
 import { loadAppSettings, subscribeSettings } from "../settings";
 import { syncDiscordPresence } from "../share/discord";
 import { setNowPlayingForHttp } from "../share/http";
+import { rememberPlaybackApplied, wasPlaybackApplied } from "./applied-playback";
 import { getNowPlayingMedia } from "./detect";
 import { loadCandidates, matchById, matchParsed } from "./match";
 import { parsePlayback } from "./parse";
-import { rememberPlaybackApplied, wasPlaybackApplied } from "./applied-playback";
 import { enqueueUpdate, initQueueFlush } from "./queue";
 import { redirectEpisode, refreshRelations } from "./relations";
 import { canApplyProgress, progressPayload } from "./tracker-progress";
@@ -145,6 +145,8 @@ async function tick(): Promise<void> {
 	tickInFlight = true;
 	try {
 		await runTick();
+	} catch {
+		/* hana/native failures must not stop the poll loop */
 	} finally {
 		tickInFlight = false;
 	}
@@ -210,7 +212,7 @@ async function runTick(): Promise<void> {
 		return;
 	}
 
-	const parsed = parsePlayback(media, {
+	const parsed = await parsePlayback(media, {
 		ignoredStrings: settings.ignoredStrings,
 	});
 	if (!parsed) {
@@ -272,8 +274,7 @@ async function runTick(): Promise<void> {
 		delayElapsedSeconds += Math.max(0, (now - delayLastTickAt) / 1000);
 	}
 	delayLastTickAt = now;
-	const remaining =
-		appliedFingerprint === key ? 0 : Math.max(0, Math.ceil(settings.recognitionDelaySeconds - delayElapsedSeconds));
+	const remaining = appliedFingerprint === key ? 0 : Math.max(0, Math.ceil(settings.recognitionDelaySeconds - delayElapsedSeconds));
 	const episode = parsed.episode;
 
 	if (match && episode != null && remaining === 0 && appliedFingerprint !== key && !pending) {

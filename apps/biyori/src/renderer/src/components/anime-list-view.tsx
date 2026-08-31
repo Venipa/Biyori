@@ -1,3 +1,8 @@
+import { keepPreviousData } from "@tanstack/react-query";
+import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
+import type { inferRouterOutputs } from "@trpc/server";
+import { PlayIcon } from "lucide-react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { desktopRpc } from "@/desktop-rpc";
@@ -29,11 +34,6 @@ import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
-import { keepPreviousData } from "@tanstack/react-query";
-import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
-import type { inferRouterOutputs } from "@trpc/server";
-import { PlayIcon } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
 
 const tabs = listStatusSchema.options;
 

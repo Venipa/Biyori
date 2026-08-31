@@ -19,11 +19,7 @@ describe("parseFilename playback", () => {
 	});
 
 	test("parses mpv.net window titles the same as the filename", () => {
-		expect(
-			parseFilename(
-				"BLACK TORCH (2026) - S01E09 - 009 - ONE [WEBDL-1080p][8bit][x264][AAC 2.0][JA]-Erai-raws - mpv.net",
-			),
-		).toMatchObject({
+		expect(parseFilename("BLACK TORCH (2026) - S01E09 - 009 - ONE [WEBDL-1080p][8bit][x264][AAC 2.0][JA]-Erai-raws - mpv.net")).toMatchObject({
 			title: "BLACK TORCH (2026)",
 			rawTitle: "BLACK TORCH",
 			season: 1,

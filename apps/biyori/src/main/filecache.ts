@@ -1,7 +1,7 @@
-import { app } from "electron";
-import Encryption from "encryption.js";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { app } from "electron";
+import Encryption from "encryption.js";
 import { base64 } from "./lib/base64";
 
 const cachePath = join(app.getPath("userData"), "cache");

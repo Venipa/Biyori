@@ -19,7 +19,8 @@ extraResources:
     to: drizzle
 asarUnpack:
   - resources/**
-  - "**/{better-sqlite3,anitomy}/**"
+  - "**/{better-sqlite3,anitomy,@biyori/hana}/**"
+  - "**/*.node"
   - "**/*favicon*"
   - "**/*32x32*"
   - "**/*16x16*"

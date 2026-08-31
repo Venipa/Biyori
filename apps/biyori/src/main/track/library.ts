@@ -8,8 +8,7 @@ import type { DatabaseClient } from "../db";
 import { anime, episodeFile } from "../db/schema";
 import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
-import { getLibraryScanWorker } from "./scan-client";
-import type { ScanCandidate, ScanHit } from "./scan-core";
+import { hana, type ScanHit, type ScanProgress } from "./hana-client";
 import { loadCandidates } from "./match";
 
 let db: DatabaseClient | null = null;
@@ -21,12 +20,18 @@ export function initLibrary(database: DatabaseClient): void {
 	db = database;
 }
 
-function toScanCandidates(candidates: Awaited<ReturnType<typeof loadCandidates>>): ScanCandidate[] {
+function toScanCandidates(candidates: Awaited<ReturnType<typeof loadCandidates>>): Array<{
+	id: number;
+	names: string[];
+	episodes: number;
+	folder: string;
+	status: string;
+}> {
 	return candidates.map((candidate) => ({
 		id: candidate.id,
 		names: candidate.names,
 		episodes: candidate.episodes,
-		folder: candidate.folder,
+		folder: candidate.folder ?? "",
 		status: candidate.status,
 	}));
 }
@@ -99,16 +104,38 @@ export async function scanLibrary(database: DatabaseClient = requiredDb()): Prom
 	return scanInFlight;
 }
 
+function onScanProgress(progress: ScanProgress): void {
+	if (progress.phase === "walk") {
+		setAppNotice(`Scanning library... (${progress.files} files)`, { toast: false, busy: true });
+		return;
+	}
+	if (progress.phase === "match") {
+		setAppNotice(`Matching titles... (${progress.hits}/${progress.files})`, { toast: false, busy: true });
+		return;
+	}
+	setAppNotice(`Library scan: ${progress.files} files, ${progress.hits} matched`, { toast: false, busy: false });
+}
+
 async function runScan(database: DatabaseClient): Promise<{ files: number; matched: number }> {
 	const settings = loadAppSettings();
 	const candidates = await loadCandidates(database);
-	const result = await getLibraryScanWorker().invoke.scan({
-		roots: settings.libraryFolders.map((folder) => folder.path),
-		threshold: settings.fileSizeThreshold,
-		candidates: toScanCandidates(candidates),
-	});
-	applyScanHits(database, result.scannedRoots, result.hits);
-	return { files: result.files, matched: result.hits.length };
+	setAppNotice("Scanning library...", { toast: false, busy: true });
+	try {
+		const result = await hana.scan(
+			{
+				roots: settings.libraryFolders.map((folder) => folder.path),
+				threshold: settings.fileSizeThreshold,
+				candidates: toScanCandidates(candidates),
+			},
+			onScanProgress,
+		);
+		applyScanHits(database, result.scannedRoots, result.hits);
+		setAppNotice(`Library scan: ${result.files} files, ${result.hits.length} matched`, { toast: false, busy: false });
+		return { files: result.files, matched: result.hits.length };
+	} catch (error) {
+		setAppNotice("Library scan failed", { toast: false, busy: false });
+		throw error;
+	}
 }
 
 async function seriesFolder(database: DatabaseClient, animeId: number): Promise<string> {
@@ -127,16 +154,11 @@ export async function listEpisodes(database: DatabaseClient, animeId: number): P
 			.from(episodeFile)
 			.where(eq(episodeFile.animeId, animeId)),
 	]);
-	return rows
-		.filter((row) => !folder || pathUnderRoot(row.path, folder))
-		.sort((a, b) => a.episode - b.episode);
+	return rows.filter((row) => !folder || pathUnderRoot(row.path, folder)).sort((a, b) => a.episode - b.episode);
 }
 
 async function findEpisodePath(database: DatabaseClient, animeId: number, episode: number): Promise<string | null> {
-	const [folder, indexed] = await Promise.all([
-		seriesFolder(database, animeId),
-		database.select().from(episodeFile).where(eq(episodeFile.animeId, animeId)),
-	]);
+	const [folder, indexed] = await Promise.all([seriesFolder(database, animeId), database.select().from(episodeFile).where(eq(episodeFile.animeId, animeId))]);
 	for (const row of indexed) {
 		if (row.episode !== episode) {
 			continue;
@@ -151,11 +173,15 @@ async function findEpisodePath(database: DatabaseClient, animeId: number, episod
 	if (!folder || !existsSync(folder)) {
 		return null;
 	}
-	return getLibraryScanWorker().invoke.findEpisode({
-		folder,
-		episode,
-		threshold: loadAppSettings().fileSizeThreshold,
-	});
+	try {
+		return await hana.findEpisode({
+			folder,
+			episode,
+			threshold: loadAppSettings().fileSizeThreshold,
+		});
+	} catch {
+		return null;
+	}
 }
 
 export async function playEpisode(database: DatabaseClient, animeId: number, episode: number): Promise<{ ok: boolean; path: string | null }> {

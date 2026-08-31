@@ -1,11 +1,11 @@
+import { Link, useRouterState } from "@tanstack/react-router";
+import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, HistoryIcon, ListIcon, PlayIcon, SearchIcon } from "lucide-react";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { Button } from "@/mainview/components/ui/button";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
-import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, HistoryIcon, ListIcon, PlayIcon, SearchIcon } from "lucide-react";
 
 const listItems = [
 	{ to: "/app/anime-list", label: "Anime List", icon: ListIcon },

@@ -3,6 +3,7 @@ import { app, type BrowserWindow } from "electron";
 import { autoUpdater } from "electron-updater";
 import { log } from "../logger";
 import { loadAppSettings, subscribeSettings } from "../settings";
+import { hana } from "../track/hana-client";
 import { windowManager } from "../windows";
 import { isAppQuitting, markAppQuitting, shouldCancelWindowClose } from "./quit-policy";
 import { setTrayState } from "./tray-state";
@@ -14,6 +15,7 @@ let cleanupPromise: Promise<void> | null = null;
 async function ensureCleanup(): Promise<void> {
 	if (!cleanupPromise) {
 		cleanupPromise = (async () => {
+			await hana.dispose();
 			windowManager.destroyAll();
 		})().catch((error) => {
 			log.error("Error while running app cleanup during quit", error);

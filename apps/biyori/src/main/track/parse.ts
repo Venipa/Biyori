@@ -1,9 +1,9 @@
 import { basename } from "node:path";
 import { extendTitle, parseFilename as parseFilenameRaw, parsePath } from "@biyori/recognition";
+import { hana } from "./hana-client";
 import type { NowPlayingMedia, ParsedPlayback } from "./types";
 
-const PLAYER_SUFFIX =
-	/\s+-\s+(mpv\.net|mpv|vlc media player|vlc|mpc-hc64|mpc-hc|mpc-be|potplayer|kmplayer|gom player).*$/i;
+const PLAYER_SUFFIX = /\s+-\s+(mpv\.net|mpv|vlc media player|vlc|mpc-hc64|mpc-hc|mpc-be|potplayer|kmplayer|gom player).*$/i;
 
 const STREAM_SUFFIX = /\s+[|-]\s+(crunchyroll|hidive|netflix|plex|jellyfin|youtube|bilibili|funimation).*$/i;
 
@@ -29,10 +29,7 @@ function stripPlayerSuffix(value: string): string {
 		.trim();
 }
 
-function toPlayback(
-	parsed: ReturnType<typeof parseFilenameRaw>,
-	filePath: string | null,
-): ParsedPlayback | null {
+function toPlayback(parsed: ReturnType<typeof parseFilenameRaw>, filePath: string | null): ParsedPlayback | null {
 	if (!parsed?.title) {
 		return null;
 	}
@@ -47,24 +44,33 @@ function toPlayback(
 	};
 }
 
-export function parsePlayback(
-	media: NowPlayingMedia,
-	options: ParsePlaybackOptions = {},
-): ParsedPlayback | null {
+export async function parsePlayback(media: NowPlayingMedia, options: ParsePlaybackOptions = {}): Promise<ParsedPlayback | null> {
 	const ignored = ignoredTokens(options.ignoredStrings);
-	if (media.filePath) {
-		const fromFile = toPlayback(parsePath(media.filePath, { ignored }), media.filePath);
-		if (fromFile) {
-			return fromFile;
-		}
-	}
-	if (!media.title) {
+	const input = media.filePath || media.title;
+	if (!input) {
 		return null;
 	}
-	return toPlayback(
-		parseFilenameRaw(stripPlayerSuffix(media.title), { ignored }),
-		media.filePath,
-	);
+	try {
+		const parsed = await hana.parse({
+			input,
+			path: Boolean(media.filePath),
+			ignored,
+		});
+		if (!parsed) {
+			return null;
+		}
+		return {
+			title: parsed.title,
+			rawTitle: parsed.rawTitle,
+			season: parsed.season,
+			year: parsed.year,
+			episode: parsed.episode,
+			group: parsed.group,
+			filePath: media.filePath,
+		};
+	} catch {
+		return null;
+	}
 }
 
 export function parseFilename(filename: string): ParsedPlayback | null {

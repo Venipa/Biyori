@@ -95,15 +95,7 @@ function AboutPage() {
 	);
 }
 
-function Changelog({
-	changelog,
-	isLoading,
-	queryError,
-}: {
-	changelog: ChangelogData | undefined;
-	isLoading: boolean;
-	queryError: boolean;
-}) {
+function Changelog({ changelog, isLoading, queryError }: { changelog: ChangelogData | undefined; isLoading: boolean; queryError: boolean }) {
 	return (
 		<div className='flex max-w-2xl flex-col gap-3'>
 			<h2 className='text-sm font-semibold'>Changelog</h2>

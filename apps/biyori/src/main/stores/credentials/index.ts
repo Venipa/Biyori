@@ -1,2 +1,2 @@
 export { credentialsStoreMigrations } from "./migrations";
-export { credentialsStore, type CredentialsFile } from "./store";
+export { type CredentialsFile, credentialsStore } from "./store";

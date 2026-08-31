@@ -1,16 +1,9 @@
+import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describe, expect, test } from "bun:test";
 import { z } from "zod";
-import {
-	ensureYamlSchemaComment,
-	jsonSchemaFromZod,
-	linkYmlStoreSchema,
-	storeJsonSchemaFileName,
-	withYamlLanguageServerSchema,
-	yamlLanguageServerHref,
-} from "./yml-schema";
+import { ensureYamlSchemaComment, jsonSchemaFromZod, linkYmlStoreSchema, storeJsonSchemaFileName, withYamlLanguageServerSchema, yamlLanguageServerHref } from "./yml-schema";
 
 describe("yml store schema", () => {
 	test("names the sidecar after the store", () => {

@@ -61,7 +61,7 @@ export const STREAMING_PROVIDERS: readonly StreamingProviderOption[] = [
 	{ id: "youtube", label: "YouTube", titlePattern: "YouTube" },
 ];
 
-const BROWSER_PROCESSES = new Set(["chrome", "msedge", "firefox", "brave", "opera", "chromium"]);
+export const BROWSER_PROCESSES = new Set(["chrome", "msedge", "firefox", "brave", "opera", "chromium"]);
 
 export function defaultMediaPlayerIds(): string[] {
 	return MEDIA_PLAYERS.map((player) => player.id);

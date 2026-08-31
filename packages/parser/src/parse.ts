@@ -3,11 +3,12 @@ import {
 	AUDIO_CHANNEL,
 	AUDIO_TERM,
 	CRC32,
-	LANGUAGE_TERM,
 	EPISODE_RANGE,
 	EPISODE_TOKEN,
-	NUMBER_VERSION,
+	isSeasonWord,
+	LANGUAGE_TERM,
 	NTH_SEASON,
+	NUMBER_VERSION,
 	RESOLUTION,
 	SEASON_EPISODE,
 	SEASON_TOKEN,
@@ -16,18 +17,11 @@ import {
 	VIDEO_EXT,
 	VIDEO_TERM,
 	YEAR,
-	isSeasonWord,
 } from "./patterns";
-import { tokenize, type Token } from "./tokenize";
+import { type Token, tokenize } from "./tokenize";
 import type { ParsedFilename, ParseOptions } from "./types";
 
-const INVALID_DIRS = new Set([
-	"anime",
-	"download",
-	"downloads",
-	"extra",
-	"extras",
-]);
+const INVALID_DIRS = new Set(["anime", "download", "downloads", "extra", "extras"]);
 
 function stripIgnored(value: string, ignored: string[]): string {
 	let next = value;
@@ -67,14 +61,7 @@ function markMatch(token: Token, pattern: RegExp): RegExpMatchArray | null {
 }
 
 function isMetaPart(part: string): boolean {
-	return (
-		RESOLUTION.test(part) ||
-		VIDEO_TERM.test(part) ||
-		SOURCE_TERM.test(part) ||
-		AUDIO_TERM.test(part) ||
-		AUDIO_CHANNEL.test(part) ||
-		LANGUAGE_TERM.test(part)
-	);
+	return RESOLUTION.test(part) || VIDEO_TERM.test(part) || SOURCE_TERM.test(part) || AUDIO_TERM.test(part) || AUDIO_CHANNEL.test(part) || LANGUAGE_TERM.test(part);
 }
 
 function markEnclosedMeta(token: Token, videoTerms: string[]): string {
@@ -88,7 +75,7 @@ function markEnclosedMeta(token: Token, videoTerms: string[]): string {
 		}
 		return RESOLUTION.test(token.text) ? token.text : "";
 	}
-	const parts = token.text.split(/[\s\-]+/).filter(Boolean);
+	const parts = token.text.split(/[\s-]+/).filter(Boolean);
 	if (parts.length < 2 || !parts.every(isMetaPart)) {
 		return "";
 	}
@@ -300,10 +287,7 @@ function parseTokens(tokens: Token[]): Omit<ParsedFilename, "fileName" | "fileEx
 	};
 }
 
-export function parseFilename(
-	name: string,
-	options: ParseOptions = {},
-): ParsedFilename | null {
+export function parseFilename(name: string, options: ParseOptions = {}): ParsedFilename | null {
 	const source = stripIgnored(name, options.ignored ?? []);
 	if (!source) {
 		return null;
@@ -334,11 +318,7 @@ export function parseFilename(
 	};
 }
 
-function mergeFromDir(
-	current: ParsedFilename | null,
-	dirName: string,
-	options: ParseOptions,
-): ParsedFilename | null {
+function mergeFromDir(current: ParsedFilename | null, dirName: string, options: ParseOptions): ParsedFilename | null {
 	if (!dirName || isInvalidDir(dirName)) {
 		return current;
 	}
@@ -367,10 +347,7 @@ function mergeFromDir(
 	return next.title ? next : current;
 }
 
-export function parsePath(
-	filePath: string,
-	options: ParseOptions = {},
-): ParsedFilename | null {
+export function parsePath(filePath: string, options: ParseOptions = {}): ParsedFilename | null {
 	let current = parseFilename(basename(filePath), options);
 	let folder = dirname(filePath);
 	for (let depth = 0; depth < 2; depth += 1) {

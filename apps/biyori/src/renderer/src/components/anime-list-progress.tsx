@@ -55,9 +55,7 @@ export function AnimeListProgress({ watched, total, available, aired, finished, 
 				</ProgressTrack>
 			</ProgressRoot>
 			<span className='grid w-[3.75rem] shrink-0 grid-cols-[1fr_auto_1fr] items-center text-xs tabular-nums'>
-				<span className={cn("text-right", watched <= 0 ? "text-muted-foreground" : invalid || completedShort ? "text-primary" : undefined)}>
-					{label.watched}
-				</span>
+				<span className={cn("text-right", watched <= 0 ? "text-muted-foreground" : invalid || completedShort ? "text-primary" : undefined)}>{label.watched}</span>
 				<span className='px-0.5 text-center text-muted-foreground'>/</span>
 				<span className={total > 0 ? undefined : "text-muted-foreground"}>{label.total}</span>
 			</span>

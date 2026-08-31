@@ -3,8 +3,10 @@ node_modules
 
 # output
 out
-dist
+/dist
 *.tgz
+packages/hana/target
+packages/hana/**/*.node
 
 # code coverage
 coverage

@@ -1,5 +1,5 @@
 import { basename } from "node:path";
-import { parseFilename, parsePath, type ParseOptions, type ParsedFilename } from "@biyori/parser";
+import { type ParsedFilename, type ParseOptions, parseFilename, parsePath } from "@biyori/parser";
 import { extendTitle } from "./extend-title";
 import { matchParsed } from "./match";
 import { candidatesInFolder } from "./path";
@@ -11,10 +11,7 @@ export type Recognized<T extends TitleCandidate> = {
 	match: T | null;
 };
 
-function fromParsed<T extends TitleCandidate>(
-	parsed: ParsedFilename | null,
-	candidates: T[],
-): Recognized<T> | null {
+function fromParsed<T extends TitleCandidate>(parsed: ParsedFilename | null, candidates: T[]): Recognized<T> | null {
 	if (!parsed?.title) {
 		return null;
 	}
@@ -25,19 +22,11 @@ function fromParsed<T extends TitleCandidate>(
 	};
 }
 
-export function recognizeFilename<T extends TitleCandidate>(
-	name: string,
-	candidates: T[],
-	options?: ParseOptions,
-): Recognized<T> | null {
+export function recognizeFilename<T extends TitleCandidate>(name: string, candidates: T[], options?: ParseOptions): Recognized<T> | null {
 	return fromParsed(parseFilename(name, options), candidates);
 }
 
-export function recognizePath<T extends TitleCandidate>(
-	filePath: string,
-	candidates: T[],
-	options?: ParseOptions,
-): Recognized<T> | null {
+export function recognizePath<T extends TitleCandidate>(filePath: string, candidates: T[], options?: ParseOptions): Recognized<T> | null {
 	const parsed = parsePath(filePath, options) ?? parseFilename(basename(filePath), options);
 	return fromParsed(parsed, candidatesInFolder(filePath, candidates));
 }

@@ -18,11 +18,7 @@ const s4: TitleCandidate = {
 	status: "Plan to watch",
 };
 
-function parts(
-	title: string,
-	season: number | null = null,
-	year: number | null = null,
-): TitleParts {
+function parts(title: string, season: number | null = null, year: number | null = null): TitleParts {
 	return { title, season, year };
 }
 

@@ -1,9 +1,5 @@
 import type { TitleParts } from "@biyori/recognition";
-import {
-	matchParsed as matchParsedFilename,
-	matchTitle as scoreTitle,
-	normalizeTitle,
-} from "@biyori/recognition";
+import { matchParsed as matchParsedFilename, normalizeTitle, matchTitle as scoreTitle } from "@biyori/recognition";
 import type { MatchedAnime } from "./types";
 
 export type Candidate = {
@@ -35,9 +31,7 @@ export type Candidate = {
 };
 
 export function namesFrom(title: string, alternativeTitles: string): string[] {
-	return [title, ...alternativeTitles.split(/[,;]/)]
-		.map((item) => normalizeTitle(item))
-		.filter(Boolean);
+	return [title, ...alternativeTitles.split(/[,;]/)].map((item) => normalizeTitle(item)).filter(Boolean);
 }
 
 function toMatch(candidate: Candidate): MatchedAnime {

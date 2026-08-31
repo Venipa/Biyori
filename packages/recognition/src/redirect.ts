@@ -1,10 +1,6 @@
 import type { RelationRule } from "./types";
 
-export function applyRelationRule(
-	id: number,
-	episode: number,
-	rules: RelationRule[],
-): { id: number; episode: number } {
+export function applyRelationRule(id: number, episode: number, rules: RelationRule[]): { id: number; episode: number } {
 	for (const rule of rules) {
 		if (rule.fromId !== id) {
 			continue;
@@ -23,11 +19,7 @@ export function applyRelationRule(
 	return { id, episode };
 }
 
-export function redirectIfOutOfRange(
-	match: { id: number; episodes: number },
-	episode: number,
-	rules: RelationRule[],
-): { id: number; episode: number } {
+export function redirectIfOutOfRange(match: { id: number; episodes: number }, episode: number, rules: RelationRule[]): { id: number; episode: number } {
 	if (match.episodes <= 0 || episode <= match.episodes) {
 		return { id: match.id, episode };
 	}

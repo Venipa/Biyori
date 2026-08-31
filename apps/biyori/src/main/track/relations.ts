@@ -1,8 +1,4 @@
-import {
-	applyRelationRule,
-	redirectIfOutOfRange,
-	type RelationRule,
-} from "@biyori/recognition";
+import { applyRelationRule, type RelationRule, redirectIfOutOfRange } from "@biyori/recognition";
 import { eq } from "drizzle-orm";
 import type { DatabaseClient } from "../db";
 import { relationsCache } from "../db/schema";
@@ -70,10 +66,7 @@ export function applyRelation(id: number, episode: number): { id: number; episod
 	return applyRelationRule(id, episode, rules);
 }
 
-export function redirectEpisode(
-	match: { id: number; episodes: number },
-	episode: number,
-): { id: number; episode: number } {
+export function redirectEpisode(match: { id: number; episodes: number }, episode: number): { id: number; episode: number } {
 	return redirectIfOutOfRange(match, episode, rules);
 }
 

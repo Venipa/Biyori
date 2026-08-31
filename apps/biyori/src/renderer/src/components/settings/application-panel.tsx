@@ -2,11 +2,11 @@ import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
-import { UpdateChannelToggle } from "@/mainview/components/update-channel-toggle";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/mainview/components/ui/field";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { Textarea } from "@/mainview/components/ui/textarea";
+import { UpdateChannelToggle } from "@/mainview/components/update-channel-toggle";
 import { listStatusSchema } from "@/shared/list";
 import { parseUpdateChannel } from "@/shared/updater";
 

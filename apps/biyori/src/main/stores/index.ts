@@ -4,7 +4,7 @@ import { loadAppSettings, patchAppSettings } from "./app";
 import { loadTorrentFiltersFile, patchTorrentFiltersFile } from "./filters";
 
 export { appStore, appStoreMigrations, loadAppSettings, patchAppSettings, saveAppSettings, subscribeSettings } from "./app";
-export { credentialsStore, credentialsStoreMigrations, type CredentialsFile } from "./credentials";
+export { type CredentialsFile, credentialsStore, credentialsStoreMigrations } from "./credentials";
 export { filtersStore, filtersStoreMigrations, loadTorrentFiltersFile, patchTorrentFiltersFile, saveTorrentFiltersFile, subscribeFilters } from "./filters";
 
 function omitUndefined(patch: Record<string, unknown>): Record<string, unknown> {

@@ -1,2 +1,2 @@
 export { parseFilename, parsePath } from "./parse";
-export type { ParseOptions, ParsedFilename } from "./types";
+export type { ParsedFilename, ParseOptions } from "./types";

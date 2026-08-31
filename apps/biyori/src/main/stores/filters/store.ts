@@ -1,5 +1,5 @@
 import type { Conf } from "electron-conf/main";
-import { type TorrentFiltersFile, parseTorrentFiltersFile, torrentFiltersFileDefaultValues, torrentFiltersFileSchema } from "../../../lib/schemas/torrent-filter";
+import { parseTorrentFiltersFile, type TorrentFiltersFile, torrentFiltersFileDefaultValues, torrentFiltersFileSchema } from "../../../lib/schemas/torrent-filter";
 import { createYmlStore } from "../../lib/store/createYmlStore";
 import { filtersStoreMigrations } from "./migrations";
 

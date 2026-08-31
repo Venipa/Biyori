@@ -123,11 +123,7 @@ function scoreCandidate<T extends TitleCandidate>(candidate: T, needle: string, 
 	return score >= 0.7 ? score - 0.2 : score;
 }
 
-export function matchTitle<T extends TitleCandidate>(
-	query: string,
-	candidates: T[],
-	season?: number | null,
-): T | null {
+export function matchTitle<T extends TitleCandidate>(query: string, candidates: T[], season?: number | null): T | null {
 	const needle = normalizeTitle(query);
 	if (!needle) {
 		return null;
@@ -168,9 +164,6 @@ export function matchTitle<T extends TitleCandidate>(
 	return best.candidate;
 }
 
-export function matchParsed<T extends TitleCandidate>(
-	parsed: TitleParts,
-	candidates: T[],
-): T | null {
+export function matchParsed<T extends TitleCandidate>(parsed: TitleParts, candidates: T[]): T | null {
 	return matchTitle(extendTitle(parsed), candidates, parsed.season);
 }

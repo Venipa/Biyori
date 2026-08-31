@@ -9,8 +9,8 @@ import {
 	electronUpdaterChannelFor,
 	getVersionChannel,
 	isVersionAllowedOnChannel,
-	parseUpdateChannel,
 	type ProgressInfo,
+	parseUpdateChannel,
 	type ReleaseNoteEntry,
 	type UpdateChannel,
 } from "../shared/updater";

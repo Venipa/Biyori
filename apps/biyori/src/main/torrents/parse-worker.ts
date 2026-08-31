@@ -1,4 +1,4 @@
-import { recognizeFilename, type ParsedFilename } from "@biyori/recognition";
+import { type ParsedFilename, recognizeFilename } from "@biyori/recognition";
 import { createWorkerServe, defineProcedure } from "@biyori/worker";
 import type { Candidate } from "../track/match-core";
 import { matchById } from "../track/match-core";
@@ -41,10 +41,7 @@ function torrentCategory(entry: RssEntry, episodeLow: number | null, episodeHigh
 	return "Anime";
 }
 
-function episodeRange(
-	title: string,
-	parsed: ParsedFilename | null,
-): { low: number | null; high: number | null } {
+function episodeRange(title: string, parsed: ParsedFilename | null): { low: number | null; high: number | null } {
 	if (parsed?.episodeLow != null && parsed.episodeHigh != null) {
 		return { low: parsed.episodeLow, high: parsed.episodeHigh };
 	}
@@ -66,9 +63,7 @@ const server = createWorkerServe({
 			return feed.map((entry) => {
 				const recognized = recognizeFilename(entry.title, input.candidates);
 				const parsed = recognized?.parsed ?? null;
-				const match = recognized?.match
-					? (matchById(recognized.match.id, input.candidates) ?? null)
-					: null;
+				const match = recognized?.match ? (matchById(recognized.match.id, input.candidates) ?? null) : null;
 				const range = episodeRange(entry.title, parsed);
 				const resolution = parsed?.videoResolution ?? "";
 				const named = resolution || (resolutionHeight(entry.title) ? `${resolutionHeight(entry.title)}p` : "");

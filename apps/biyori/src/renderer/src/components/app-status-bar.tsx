@@ -23,9 +23,10 @@ export function AppStatusBar() {
 		},
 	});
 	const snapshot = statusQuery.data;
-	const running = snapshot?.phase === "running";
+	const notice = noticeQuery.data;
+	const running = snapshot?.phase === "running" || Boolean(notice?.busy);
 	const failed = snapshot?.phase === "error";
-	const message = snapshot?.message || noticeQuery.data?.message || "";
+	const message = snapshot?.message || notice?.message || "";
 
 	return (
 		<div className='flex h-6 shrink-0 items-stretch border-t bg-muted/40 text-[11px] leading-none'>
