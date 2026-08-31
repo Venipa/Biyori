@@ -141,6 +141,16 @@ jobs:
       - name: Setup MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Install Rust (windows-msvc)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Hana cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/hana
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -163,8 +173,18 @@ jobs:
       - name: Build Hana native
         run: bun run --cwd packages/hana build:release
 
+      - name: Verify Hana Windows addon
+        shell: pwsh
+        run: |
+          $addon = "packages/hana/dist/hana.win32-x64-msvc.node"
+          if (-not (Test-Path -LiteralPath $addon)) {
+            throw "missing $addon (napi build did not produce the Windows addon)"
+          }
+          Get-Item -LiteralPath $addon | Format-List Name, Length, LastWriteTime
+
       - name: Pack Windows x64 release
-        run: bun run release:pack:win
+        working-directory: apps/biyori
+        run: bunx electron-builder --win --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
