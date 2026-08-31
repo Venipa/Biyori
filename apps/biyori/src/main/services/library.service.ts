@@ -1,6 +1,6 @@
 import { logger as log } from "../logger";
 import { subscribeSettings } from "../settings";
-import { initLibrary, restartLibraryWatch, scanLibrary } from "../track/library";
+import { initLibrary, restartLibraryWatch, scanLibraryQuick } from "../track/library";
 import { getDb } from "./database.service";
 import { Service } from "./service";
 
@@ -19,7 +19,7 @@ export default class LibraryService extends Service {
 		const database = getDb();
 		void restartLibraryWatch();
 		setTimeout(() => {
-			void scanLibrary(database).catch((error) => {
+			void scanLibraryQuick(database).catch((error) => {
 				log.error("[afterInit] scan failed", error);
 			});
 		}, 3000);

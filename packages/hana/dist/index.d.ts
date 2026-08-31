@@ -12,6 +12,11 @@ export type ParseInput = {
 	ignored?: string[];
 };
 
+export type ParseTogetherInput = {
+	inputs: string[];
+	ignored?: string[];
+};
+
 export type ParseResult = {
 	title: string;
 	rawTitle: string;
@@ -72,6 +77,7 @@ export type NowPlaying = {
 
 export declare class Hana {
 	parse(input: ParseInput): Promise<ParseResult | null>;
+	parseTogether(input: ParseTogetherInput): Promise<(ParseResult | null)[]>;
 	scan(input: ScanInput, onProgress?: (progress: ScanProgress) => void): Promise<ScanResult>;
 	findEpisode(input: FindEpisodeInput): Promise<string | null>;
 	nowPlaying(input: NowPlayingInput): Promise<NowPlaying | null>;

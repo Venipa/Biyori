@@ -1,8 +1,9 @@
 use crate::detect::now_playing;
-use crate::parse::parse_query;
+use crate::parse::{parse_query, parse_together_query};
 use crate::scan::{find_episode, scan_library};
 use crate::types::{
-	FindEpisodeInput, NowPlaying, NowPlayingInput, ParseInput, ParseResult, ScanInput, ScanProgress, ScanResult,
+	FindEpisodeInput, NowPlaying, NowPlayingInput, ParseInput, ParseResult, ParseTogetherInput, ScanInput,
+	ScanProgress, ScanResult,
 };
 use napi::bindgen_prelude::*;
 use napi::threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode};
@@ -37,6 +38,30 @@ impl Task for ParseTask {
 #[napi]
 pub fn parse(input: ParseInput) -> AsyncTask<ParseTask> {
 	AsyncTask::new(ParseTask { input })
+}
+
+pub struct ParseTogetherTask {
+	input: ParseTogetherInput,
+}
+
+#[napi]
+impl Task for ParseTogetherTask {
+	type Output = Vec<Option<ParseResult>>;
+	type JsValue = Vec<Option<ParseResult>>;
+
+	fn compute(&mut self) -> Result<Self::Output> {
+		let input = self.input.clone();
+		panic_to_err(move || parse_together_query(&input))
+	}
+
+	fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+		Ok(output)
+	}
+}
+
+#[napi(js_name = "parseTogether")]
+pub fn parse_together_js(input: ParseTogetherInput) -> AsyncTask<ParseTogetherTask> {
+	AsyncTask::new(ParseTogetherTask { input })
 }
 
 pub struct ScanTask {

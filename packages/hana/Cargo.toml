@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 description = "Hana. native subsidary for the Biyori."
+license = "Apache-2.0"
 
 [lib]
 name = "hana"
@@ -11,8 +12,8 @@ crate-type = ["cdylib", "rlib"]
 path = "src/lib.rs"
 
 [dependencies]
-anitomy-ng = "1"
 jwalk = "0.8"
+regex = { version = "1", default-features = false, features = ["std"] }
 napi = { version = "2", default-features = false, features = ["napi4"] }
 napi-derive = "2"
 serde_json = "1"

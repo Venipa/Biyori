@@ -1,7 +1,8 @@
 use crate::identify::identify;
-use crate::parse::parse_file_path;
-use crate::types::{FindEpisodeInput, ScanHit, ScanInput, ScanProgress, ScanResult};
+use crate::parse::parse_file_paths;
+use crate::types::{FindEpisodeInput, Parsed, ScanHit, ScanInput, ScanProgress, ScanResult};
 use jwalk::WalkDir;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
@@ -21,31 +22,61 @@ fn is_video(path: &Path) -> bool {
 		.unwrap_or(false)
 }
 
+fn push_video(path: PathBuf, threshold: u64, out: &mut Vec<VideoFile>, on_file: &mut impl FnMut(u32)) {
+	if !is_video(&path) {
+		return;
+	}
+	let Ok(meta) = path.metadata() else {
+		return;
+	};
+	if meta.len() < threshold {
+		return;
+	}
+	out.push(VideoFile {
+		size: meta.len(),
+		path,
+	});
+	on_file(out.len() as u32);
+}
+
 fn collect_files(root: &Path, threshold: u64, out: &mut Vec<VideoFile>, mut on_file: impl FnMut(u32)) -> bool {
 	if !root.exists() {
 		return false;
+	}
+	if root.is_file() {
+		push_video(root.to_path_buf(), threshold, out, &mut on_file);
+		return true;
 	}
 	for entry in WalkDir::new(root).into_iter().flatten() {
 		if !entry.file_type().is_file() {
 			continue;
 		}
-		let path = entry.path();
-		if !is_video(&path) {
-			continue;
-		}
-		let Ok(meta) = path.metadata() else {
-			continue;
-		};
-		if meta.len() < threshold {
-			continue;
-		}
-		out.push(VideoFile {
-			size: meta.len(),
-			path,
-		});
-		on_file(out.len() as u32);
+		push_video(entry.path(), threshold, out, &mut on_file);
 	}
 	true
+}
+
+fn parent_dir(path: &Path) -> PathBuf {
+	path.parent().map(Path::to_path_buf).unwrap_or_else(|| PathBuf::from("."))
+}
+
+fn parse_videos(files: &[VideoFile]) -> Vec<Option<Parsed>> {
+	let mut groups: BTreeMap<PathBuf, Vec<usize>> = BTreeMap::new();
+	for (index, file) in files.iter().enumerate() {
+		groups.entry(parent_dir(&file.path)).or_default().push(index);
+	}
+	let mut out = vec![None; files.len()];
+	for indexes in groups.values() {
+		let paths: Vec<String> = indexes
+			.iter()
+			.map(|index| files[*index].path.to_string_lossy().into_owned())
+			.collect();
+		let inputs: Vec<&str> = paths.iter().map(String::as_str).collect();
+		for (index, parsed) in indexes.iter().zip(parse_file_paths(&inputs)) {
+			out[*index] = parsed;
+		}
+	}
+	out
 }
 
 struct ProgressGate {
@@ -112,9 +143,9 @@ pub fn scan_library(input: ScanInput, mut report: impl FnMut(ScanProgress)) -> S
 		files: total,
 		hits: 0,
 	});
-	for file in &files {
+	for (file, parsed) in files.iter().zip(parse_videos(&files)) {
 		let display = file.path.to_string_lossy().to_string();
-		let Some(parsed) = parse_file_path(&display) else {
+		let Some(parsed) = parsed else {
 			continue;
 		};
 		let Some(anime_id) = identify(&parsed, &input.candidates, Some(&display)) else {
@@ -155,15 +186,18 @@ pub fn find_episode(input: FindEpisodeInput) -> Option<String> {
 	}
 	let mut files: Vec<VideoFile> = Vec::new();
 	collect_files(Path::new(&input.folder), input.threshold.max(0) as u64, &mut files, |_| {});
-	for file in files {
-		let display = file.path.to_string_lossy().to_string();
-		let Some(parsed) = parse_file_path(&display) else {
+	for (file, parsed) in files.iter().zip(parse_videos(&files)) {
+		let Some(parsed) = parsed else {
 			continue;
 		};
-		let low = parsed.episode_low.or(parsed.episode)?;
-		let high = parsed.episode_high.or(parsed.episode)?;
+		let Some(low) = parsed.episode_low.or(parsed.episode) else {
+			continue;
+		};
+		let Some(high) = parsed.episode_high.or(parsed.episode) else {
+			continue;
+		};
 		if input.episode >= low && input.episode <= high {
-			return Some(display);
+			return Some(file.path.to_string_lossy().into_owned());
 		}
 	}
 	None
@@ -234,6 +268,34 @@ mod tests {
 	}
 
 	#[test]
+	fn scan_uses_folder_batch_for_episode_numbers() {
+		let root = temp_root("batch");
+		let dir = root.join("Frieren (01-12) [Batch]");
+		let ep5 = write_video(&dir, "Frieren - 05 [1080p].mkv", 64);
+		let ep6 = write_video(&dir, "Frieren - 06 [1080p].mkv", 64);
+		let result = scan_library(
+			ScanInput {
+				roots: vec![root.to_string_lossy().to_string()],
+				threshold: 1,
+				candidates: vec![Candidate {
+					id: 30,
+					names: vec!["frieren".into()],
+					episodes: 12,
+					folder: None,
+					status: None,
+				}],
+			},
+			 |_| {},
+		);
+		assert_eq!(result.hits.len(), 2);
+		let hit5 = result.hits.iter().find(|hit| Path::new(&hit.path) == ep5).unwrap();
+		let hit6 = result.hits.iter().find(|hit| Path::new(&hit.path) == ep6).unwrap();
+		assert_eq!(hit5.episode, 5);
+		assert_eq!(hit6.episode, 6);
+		let _ = fs::remove_dir_all(root);
+	}
+
+	#[test]
 	fn find_episode_returns_matching_file() {
 		let folder = temp_root("ep");
 		write_video(&folder, "04.mkv", 32);
@@ -244,6 +306,30 @@ mod tests {
 			threshold: 1,
 		});
 		assert_eq!(found.as_deref().map(Path::new), Some(wanted.as_path()));
+		let _ = fs::remove_dir_all(folder);
+	}
+
+	#[test]
+	fn scan_accepts_a_single_file_root() {
+		let folder = temp_root("one");
+		let file = write_video(&folder, "Show - 03.mkv", 32);
+		let result = scan_library(
+			ScanInput {
+				roots: vec![file.to_string_lossy().to_string()],
+				threshold: 1,
+				candidates: vec![Candidate {
+					id: 40,
+					names: vec!["show".into()],
+					episodes: 12,
+					folder: None,
+					status: None,
+				}],
+			},
+			 |_| {},
+		);
+		assert_eq!(result.files, 1);
+		assert_eq!(result.hits.len(), 1);
+		assert_eq!(result.hits[0].episode, 3);
 		let _ = fs::remove_dir_all(folder);
 	}
 }

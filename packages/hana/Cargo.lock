@@ -12,15 +12,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anitomy-ng"
-version = "1.0.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aff08ced4baef2fde0964c575a5c63b0e7babe70e9843bd118f0c29cc745dc74"
-dependencies = [
- "regex",
-]
-
-[[package]]
 name = "bitflags"
 version = "2.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -123,11 +114,11 @@ checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
 name = "hana"
 version = "0.1.0"
 dependencies = [
- "anitomy-ng",
  "jwalk",
  "napi",
  "napi-build",
  "napi-derive",
+ "regex",
  "serde_json",
  "sysinfo",
  "windows 0.58.0",

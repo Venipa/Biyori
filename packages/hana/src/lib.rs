@@ -1,3 +1,4 @@
+mod anitomy;
 pub mod detect;
 pub mod identify;
 #[cfg(not(test))]

@@ -93,6 +93,13 @@ pub struct ParseInput {
 
 #[napi(object)]
 #[derive(Debug, Clone)]
+pub struct ParseTogetherInput {
+	pub inputs: Vec<String>,
+	pub ignored: Option<Vec<String>>,
+}
+
+#[napi(object)]
+#[derive(Debug, Clone)]
 pub struct NowPlayingInput {
 	#[napi(js_name = "processNames")]
 	pub process_names: Vec<String>,

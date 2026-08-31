@@ -49,6 +49,14 @@ class Hana {
 		}
 	}
 
+	async parseTogether(input) {
+		try {
+			return await binding().parseTogether(input);
+		} catch (error) {
+			throw toError(error);
+		}
+	}
+
 	async scan(input, onProgress) {
 		try {
 			const progress =
