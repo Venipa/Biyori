@@ -94,4 +94,19 @@ class Hana {
 
 const hana = new Hana();
 
-module.exports = { Hana, hana };
+function readVersion() {
+	try {
+		const native = binding();
+		const value = typeof native.version === "function" ? native.version() : native.version;
+		if (typeof value === "string" && value) {
+			return value;
+		}
+	} catch {
+		// addon missing in unit tests
+	}
+	return require("../package.json").version;
+}
+
+const version = readVersion();
+
+module.exports = { Hana, hana, version };

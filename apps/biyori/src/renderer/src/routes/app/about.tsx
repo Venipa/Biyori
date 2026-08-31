@@ -24,6 +24,7 @@ export const Route = createFileRoute("/app/about")({
 
 function AboutPage() {
 	const status = useUpdateStatus();
+	const about = trpc.about.useQuery();
 	const settingsQuery = trpc.settings.get.useQuery();
 	const utils = trpc.useUtils();
 	const { mutateAsync: checkForUpdates, isPending: isChecking } = trpc.updater.check.useMutation();
@@ -54,6 +55,8 @@ function AboutPage() {
 					</dd>
 					<dt className='text-muted-foreground'>Build</dt>
 					<dd className='truncate font-mono text-xs'>{status.localHash ? status.localHash.slice(0, 12) : "..."}</dd>
+					<dt className='text-muted-foreground'>Hana</dt>
+					<dd>{about.data?.hanaVersion || "..."}</dd>
 					<dt className='text-muted-foreground'>Updates</dt>
 					<dd className={status.error ? "min-w-0 break-words text-destructive" : "min-w-0 break-words"}>{status.message || "Not checked yet"}</dd>
 				</dl>

@@ -17,6 +17,7 @@ export type WindowDefinition = {
 	singleton?: boolean;
 	saveState?: boolean;
 	alwaysOnTop?: boolean;
+	modal?: boolean;
 };
 
 export type OpenWindowOptions = {
@@ -56,6 +57,7 @@ function centerOnParent(win: BrowserWindow, parent: BrowserWindow): void {
 
 export class WindowManager<TId extends string> {
 	private readonly windows = new Map<TId, WindowEntry>();
+	private readonly modalListeners = new Set<(open: boolean) => void>();
 
 	constructor(private readonly definitions: Record<TId, WindowDefinition>) {}
 
@@ -66,6 +68,37 @@ export class WindowManager<TId extends string> {
 			return null;
 		}
 		return entry.win;
+	}
+
+	hasModalChild(): boolean {
+		for (const [id, entry] of this.windows) {
+			if (id === "main" || entry.win.isDestroyed()) {
+				continue;
+			}
+			if (this.definitions[id]?.modal) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	subscribeModalChild(listener: (open: boolean) => void): () => void {
+		this.modalListeners.add(listener);
+		listener(this.hasModalChild());
+		return () => {
+			this.modalListeners.delete(listener);
+		};
+	}
+
+	focusModalChild(): void {
+		for (const [id, entry] of this.windows) {
+			if (id === "main" || entry.win.isDestroyed() || !this.definitions[id]?.modal) {
+				continue;
+			}
+			entry.win.show();
+			entry.win.focus();
+			return;
+		}
 	}
 
 	open(id: TId, options: OpenWindowOptions = {}): BrowserWindow {
@@ -82,11 +115,19 @@ export class WindowManager<TId extends string> {
 		const parent = id === "main" ? undefined : (this.get("main" as TId) ?? undefined);
 		const skipTaskbar = options.skipTaskbar ?? false;
 		const alwaysOnTop = definition.alwaysOnTop ?? false;
+		const modal = Boolean(definition.modal && parent);
 		const win = this.createChrome({
-			...definition,
+			title: definition.title,
+			width: definition.width,
+			height: definition.height,
+			minWidth: definition.minWidth,
+			minHeight: definition.minHeight,
+			maxWidth: definition.maxWidth,
+			maxHeight: definition.maxHeight,
 			show,
 			skipTaskbar,
 			alwaysOnTop,
+			modal,
 			parent,
 		});
 
@@ -95,7 +136,9 @@ export class WindowManager<TId extends string> {
 			if (this.windows.get(id)?.win === win) {
 				this.windows.delete(id);
 			}
+			this.emitModalChild();
 		});
+		this.emitModalChild();
 
 		if (definition.saveState) {
 			attachWindowState(win, String(id), {
@@ -123,6 +166,13 @@ export class WindowManager<TId extends string> {
 		this.windows.clear();
 	}
 
+	private emitModalChild(): void {
+		const open = this.hasModalChild();
+		for (const listener of this.modalListeners) {
+			listener(open);
+		}
+	}
+
 	private createChrome(options: {
 		title: string;
 		width: number;
@@ -134,11 +184,22 @@ export class WindowManager<TId extends string> {
 		show: boolean;
 		skipTaskbar: boolean;
 		alwaysOnTop: boolean;
+		modal: boolean;
 		parent?: BrowserWindow;
 	}): BrowserWindow {
 		const ctor: BrowserWindowConstructorOptions = {
-			...options,
+			title: options.title,
+			width: options.width,
+			height: options.height,
+			minWidth: options.minWidth,
+			minHeight: options.minHeight,
+			maxWidth: options.maxWidth,
+			maxHeight: options.maxHeight,
 			show: false,
+			skipTaskbar: options.skipTaskbar,
+			alwaysOnTop: options.alwaysOnTop,
+			modal: options.modal,
+			parent: options.parent,
 			center: !options.parent,
 			frame: false,
 			autoHideMenuBar: true,

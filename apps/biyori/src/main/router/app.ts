@@ -25,6 +25,7 @@ import {
 	searchTorrents,
 	subscribeTorrentItems,
 } from "../torrents";
+import { hanaVersion } from "../track/hana-client";
 import { listEpisodes, playEpisode, playNext, playRandom, scanLibrary } from "../track/library";
 import { countQueued } from "../track/queue";
 import { confirmPendingUpdate, getNowPlayingSnapshot, nowPlayingObservable, skipPendingUpdate } from "../track/tracker";
@@ -114,6 +115,9 @@ async function loadAnimeDetail(db: Pick<import("../db").DatabaseClient, "select"
 }
 
 export const appRouter = t.router({
+	about: t.procedure.query(() => ({
+		hanaVersion,
+	})),
 	anime: t.router({
 		list: t.procedure.input(z.object({ status: listStatusSchema })).query(async ({ ctx, input }) => {
 			const rows = await ctx.db

@@ -1,17 +1,14 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { type FieldErrors, type FieldPath, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
-import { desktopRpc } from "@/desktop-rpc";
 import { type SettingsFormInput, type SettingsFormValues, settingsFormDefaultValues, settingsFormSchema } from "@/lib/schemas/app-settings";
-import { pickDirtySettings } from "@/lib/settings-dirty";
-import { Button } from "@/mainview/components/ui/button";
-import { FieldError } from "@/mainview/components/ui/field";
+import { SettingsSaveBar } from "@/mainview/components/settings/settings-save-bar";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
-import { settingsFieldSection, settingsSections } from "@/mainview/lib/settings-nav";
+import { settingsSections } from "@/mainview/lib/settings-nav";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import type { ReactNode } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 
 export const Route = createFileRoute("/settings")({
 	beforeLoad: ({ location }) => {
@@ -22,59 +19,24 @@ export const Route = createFileRoute("/settings")({
 	component: SettingsLayout,
 });
 
-function firstErrorPath(errors: FieldErrors): string | null {
-	for (const [key, value] of Object.entries(errors)) {
-		if (!value || key === "root") {
-			continue;
-		}
-		if (typeof value === "object" && "message" in value && value.message && "type" in value) {
-			return key;
-		}
-		if (typeof value === "object") {
-			const nested = firstErrorPath(value as FieldErrors);
-			if (nested) {
-				return `${key}.${nested}`;
-			}
-		}
-	}
-	return null;
-}
-
 function SettingsLayout() {
 	const query = trpc.settings.get.useQuery(undefined, {
 		refetchOnWindowFocus: false,
 	});
 	if (query.isPending && !query.data) {
 		return (
-			<SettingsChrome
-				footer={
-					<div className='flex items-center justify-end gap-2 border-t bg-muted/50 px-4 py-3'>
-						<Button
-							variant='outline'
-							type='button'
-							onClick={() => {
-								void desktopRpc.request.closeSettings({});
-							}}>
-							Cancel
-						</Button>
-						<Button type='button' disabled>
-							OK
-						</Button>
-					</div>
-				}>
-				<div className='flex flex-col gap-3 p-4'>
-					<Skeleton className='h-5 w-40' />
-					<Skeleton className='h-9 w-full' />
-					<Skeleton className='h-9 w-full' />
-					<Skeleton className='h-24 w-full' />
-				</div>
+			<SettingsChrome>
+				<Skeleton className='h-5 w-40' />
+				<Skeleton className='h-9 w-full' />
+				<Skeleton className='h-9 w-full' />
+				<Skeleton className='h-24 w-full' />
 			</SettingsChrome>
 		);
 	}
 	return <SettingsForm defaultValues={query.data ?? settingsFormDefaultValues} />;
 }
 
-function SettingsChrome({ children, footer }: { children: ReactNode; footer: ReactNode }) {
+function SettingsChrome({ children, overlay }: { children: ReactNode; overlay?: ReactNode }) {
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
 	});
@@ -83,7 +45,7 @@ function SettingsChrome({ children, footer }: { children: ReactNode; footer: Rea
 	return (
 		<div className='flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-background text-foreground'>
 			<div className='flex min-h-0 flex-1 overflow-hidden'>
-				<ScrollArea className='h-full w-40 shrink-0 border-r bg-muted/40'>
+				<ScrollArea className='h-full w-48 shrink-0 bg-background'>
 					<nav aria-label='Settings sections' className='flex flex-col gap-0.5 p-2'>
 						{settingsSections.map((item) => {
 							const href = `/settings/${item.id}`;
@@ -104,16 +66,19 @@ function SettingsChrome({ children, footer }: { children: ReactNode; footer: Rea
 						})}
 					</nav>
 				</ScrollArea>
-				<div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
-					<div className='border-b bg-muted px-4 py-2'>
-						<h2 className='text-sm font-semibold text-foreground/90'>{active?.label ?? "Settings"}</h2>
+				<div className='relative flex min-h-0 min-w-0 flex-1 flex-col p-3'>
+					<div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border bg-muted/30'>
+						<div className='flex shrink-0 flex-col gap-0.5 px-4 py-3'>
+							<h2 className='text-lg font-semibold tracking-tight'>{active?.label ?? "Settings"}</h2>
+							{active?.description ? <p className='text-sm text-muted-foreground'>{active.description}</p> : null}
+						</div>
+						<ScrollArea className='min-h-0 flex-1' viewportClassName='rounded-none pb-20 pt-1'>
+							<div className='flex flex-col gap-4 p-4 pt-0'>{children}</div>
+						</ScrollArea>
 					</div>
-					<ScrollArea className='min-h-0 flex-1' viewportClassName='pb-20'>
-						{children}
-					</ScrollArea>
+					{overlay}
 				</div>
 			</div>
-			{footer}
 		</div>
 	);
 }
@@ -127,71 +92,9 @@ function SettingsForm({ defaultValues }: { defaultValues: SettingsFormInput | Se
 
 	return (
 		<FormProvider {...form}>
-			<SettingsChrome footer={<SettingsFormFooter />}>
-				<div className='p-4'>
-					<Outlet />
-				</div>
+			<SettingsChrome overlay={<SettingsSaveBar />}>
+				<Outlet />
 			</SettingsChrome>
 		</FormProvider>
-	);
-}
-
-function SettingsFormFooter() {
-	const navigate = useNavigate();
-	const saveSettings = trpc.settings.set.useMutation();
-	const form = useFormContext<SettingsFormInput, unknown, SettingsFormValues>();
-	const { isSubmitting, errors } = useFormState({
-		control: form.control,
-	});
-
-	return (
-		<div className='flex items-center justify-end gap-2 border-t bg-muted/50 px-4 py-3'>
-			<FieldError errors={[errors.root?.serverError]} />
-			<Button
-				variant='outline'
-				type='button'
-				onClick={() => {
-					void desktopRpc.request.closeSettings({});
-				}}>
-				Cancel
-			</Button>
-			<Button
-				type='button'
-				disabled={isSubmitting}
-				onClick={() => {
-					void form.handleSubmit(
-						async (data) => {
-							try {
-								const patch = pickDirtySettings(data, form.formState.dirtyFields, form.formState.defaultValues ?? {});
-								if (Object.keys(patch).length === 0) {
-									await desktopRpc.request.closeSettings({});
-									return;
-								}
-								const saved = await saveSettings.mutateAsync(patch);
-								form.reset(saved);
-								await desktopRpc.request.closeSettings({});
-							} catch (error) {
-								form.setError("root.serverError", {
-									message: error instanceof Error ? error.message : "Could not save settings",
-								});
-							}
-						},
-						(submitErrors) => {
-							const path = firstErrorPath(submitErrors);
-							const rootKey = path?.split(".")[0] ?? "";
-							const section = settingsFieldSection[rootKey] ?? "application";
-							void navigate({ to: `/settings/${section}` });
-							if (path) {
-								void form.setFocus(path as FieldPath<SettingsFormInput>);
-							}
-							form.setError("root.serverError", {
-								message: path ? `Fix ${path} in ${section}` : "Fix invalid settings",
-							});
-						},
-					)();
-				}}>
-				OK
-			</Button>
-		</div>
 	);
 }

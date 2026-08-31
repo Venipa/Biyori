@@ -5,11 +5,11 @@ import { useFieldArray, useFormContext, useFormState } from "react-hook-form";
 import { folderDisplayName } from "@/lib/folder-path";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
+import { SettingsSectionCard } from "@/mainview/components/settings/settings-section-card";
 import { Button } from "@/mainview/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/mainview/components/ui/empty";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLegend, FieldSet } from "@/mainview/components/ui/field";
+import { Field, FieldError } from "@/mainview/components/ui/field";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { folderPathExists, pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 
 type LibraryFolderRow = {
@@ -110,9 +110,7 @@ function LibraryFoldersField() {
 	}
 
 	return (
-		<FieldSet className='group rounded-lg border p-4'>
-			<FieldLegend variant='label'>Library folders</FieldLegend>
-			<FieldDescription>These folders are scanned and monitored for new episodes.</FieldDescription>
+		<>
 			<Field>
 				{rows.length === 0 ? (
 					emptyLibraryFolders
@@ -159,7 +157,7 @@ function LibraryFoldersField() {
 					Add library folder
 				</Button>
 			</Field>
-		</FieldSet>
+		</>
 	);
 }
 
@@ -168,19 +166,13 @@ export function LibraryPanel() {
 	const form = useFormContext<AppSettingsInput>();
 
 	return (
-		<Tabs defaultValue='folders'>
-			<TabsList>
-				<TabsTrigger value='folders'>Folders</TabsTrigger>
-			</TabsList>
-			<TabsContent value='folders' className='pt-4'>
-				<FieldGroup>
-					<LibraryFoldersField />
-					<FieldSet className='rounded-lg border p-4'>
-						<FieldLegend variant='label'>Real-time monitor</FieldLegend>
-						<FormCheckbox control={form.control} name='realtimeMonitor' id={realtimeId} label='Detect new files and folders under library folders' />
-					</FieldSet>
-				</FieldGroup>
-			</TabsContent>
-		</Tabs>
+		<>
+			<SettingsSectionCard title='Library folders' description='These folders are scanned and monitored for new episodes.'>
+				<LibraryFoldersField />
+			</SettingsSectionCard>
+			<SettingsSectionCard title='Real-time monitor' description='Watch library folders for new files without waiting for a full scan.'>
+				<FormCheckbox control={form.control} name='realtimeMonitor' id={realtimeId} label='Detect new files and folders under library folders' />
+			</SettingsSectionCard>
+		</>
 	);
 }

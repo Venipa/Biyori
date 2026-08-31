@@ -89,3 +89,4 @@ export declare class Hana {
 }
 
 export declare const hana: Hana;
+export declare const version: string;

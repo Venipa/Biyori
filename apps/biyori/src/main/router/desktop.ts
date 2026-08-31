@@ -1,4 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { observable } from "@trpc/server/observable";
 import { app, dialog, Menu, shell } from "electron";
 import { z } from "zod";
 import { requestQuit } from "../handlers/quit-handler";
@@ -33,6 +34,17 @@ export const desktopRouter = t.router({
 	closeUpdate: t.procedure.mutation(() => {
 		windowManager.close("update");
 		return { ok: true as const };
+	}),
+	focusModalChild: t.procedure.mutation(() => {
+		windowManager.focusModalChild();
+		return { ok: true as const };
+	}),
+	onParentDimmed: t.procedure.subscription(() => {
+		return observable<boolean>((emit) => {
+			return windowManager.subscribeModalChild((open) => {
+				emit.next(open);
+			});
+		});
 	}),
 	minimizeWindow: t.procedure.mutation(({ ctx }) => {
 		requireWindow(ctx.getBrowserWindow).minimize();

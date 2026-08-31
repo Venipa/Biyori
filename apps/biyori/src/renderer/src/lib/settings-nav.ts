@@ -1,13 +1,13 @@
 import { AppWindowIcon, DownloadIcon, FolderIcon, GlobeIcon, ScanEyeIcon, Share2Icon, SlidersHorizontalIcon } from "lucide-react";
 
 export const settingsSections = [
-	{ id: "services", label: "Services", icon: GlobeIcon },
-	{ id: "library", label: "Library", icon: FolderIcon },
-	{ id: "application", label: "Application", icon: AppWindowIcon },
-	{ id: "recognition", label: "Recognition", icon: ScanEyeIcon },
-	{ id: "sharing", label: "Sharing", icon: Share2Icon },
-	{ id: "torrents", label: "Torrents", icon: DownloadIcon },
-	{ id: "advanced", label: "Advanced", icon: SlidersHorizontalIcon },
+	{ id: "services", label: "Services", description: "List providers and account login.", icon: GlobeIcon },
+	{ id: "library", label: "Library", description: "Folders Biyori scans for episodes.", icon: FolderIcon },
+	{ id: "application", label: "Application", description: "Titles, startup, updates, and tray.", icon: AppWindowIcon },
+	{ id: "recognition", label: "Recognition", description: "Match playing media to your list.", icon: ScanEyeIcon },
+	{ id: "sharing", label: "Sharing", description: "Discord presence and local HTTP.", icon: Share2Icon },
+	{ id: "torrents", label: "Torrents", description: "Feeds, downloads, and filters.", icon: DownloadIcon },
+	{ id: "advanced", label: "Advanced", description: "Low-level options. Change with care.", icon: SlidersHorizontalIcon },
 ] as const;
 
 export type SettingsSectionId = (typeof settingsSections)[number]["id"];
@@ -18,6 +18,7 @@ export const settingsFieldSection: Record<string, SettingsSectionId> = {
 	defaultAddToListStatus: "application",
 	autostart: "application",
 	autostartTray: "application",
+	updateChannel: "application",
 	closeToTray: "application",
 	externalLinks: "application",
 	libraryFolders: "library",

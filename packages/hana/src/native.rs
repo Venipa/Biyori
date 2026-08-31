@@ -146,3 +146,8 @@ impl Task for NowPlayingTask {
 pub fn now_playing_js(input: NowPlayingInput) -> AsyncTask<NowPlayingTask> {
 	AsyncTask::new(NowPlayingTask { input })
 }
+
+#[napi]
+pub fn version() -> String {
+	crate::VERSION.into()
+}
