@@ -26,6 +26,10 @@ export type ParseResult = {
 	episodeLow: number | null;
 	episodeHigh: number | null;
 	group: string | null;
+	videoResolution: string;
+	videoTerm: string;
+	releaseVersion: number;
+	fileExtension: string;
 };
 
 export type ScanHit = {

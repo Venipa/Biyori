@@ -22,6 +22,14 @@ pub struct Parsed {
 	#[napi(js_name = "episodeHigh")]
 	pub episode_high: Option<i32>,
 	pub group: Option<String>,
+	#[napi(js_name = "videoResolution")]
+	pub video_resolution: String,
+	#[napi(js_name = "videoTerm")]
+	pub video_term: String,
+	#[napi(js_name = "releaseVersion")]
+	pub release_version: i32,
+	#[napi(js_name = "fileExtension")]
+	pub file_extension: String,
 }
 
 #[napi(object)]
@@ -38,6 +46,14 @@ pub struct ParseResult {
 	#[napi(js_name = "episodeHigh")]
 	pub episode_high: Option<i32>,
 	pub group: Option<String>,
+	#[napi(js_name = "videoResolution")]
+	pub video_resolution: String,
+	#[napi(js_name = "videoTerm")]
+	pub video_term: String,
+	#[napi(js_name = "releaseVersion")]
+	pub release_version: i32,
+	#[napi(js_name = "fileExtension")]
+	pub file_extension: String,
 }
 
 #[napi(object)]

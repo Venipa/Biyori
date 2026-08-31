@@ -33,6 +33,40 @@ fn first_i32(value: &str) -> Option<i32> {
 	digits.parse().ok()
 }
 
+fn first_kind<'a>(elements: &'a [Element], kind: ElementKind) -> Option<&'a str> {
+	elements
+		.iter()
+		.find(|element| element.kind == kind)
+		.map(|element| element.value.as_str())
+}
+
+fn is_bit_depth(value: &str) -> bool {
+	let lower = value.to_ascii_lowercase();
+	lower
+		.strip_suffix("bit")
+		.is_some_and(|rest| !rest.is_empty() && rest.chars().all(|ch| ch.is_ascii_digit()))
+}
+
+// ponytail: first codec-ish VideoTerm, then Source; join all terms if filters need 8bit+x264
+fn video_term(elements: &[Element]) -> String {
+	elements
+		.iter()
+		.filter(|element| element.kind == ElementKind::VideoTerm && !is_bit_depth(&element.value))
+		.map(|element| element.value.as_str())
+		.next()
+		.or_else(|| first_kind(elements, ElementKind::VideoTerm))
+		.or_else(|| first_kind(elements, ElementKind::Source))
+		.unwrap_or("")
+		.to_string()
+}
+
+fn release_version(elements: &[Element]) -> i32 {
+	first_kind(elements, ElementKind::ReleaseVersion)
+		.and_then(first_i32)
+		.filter(|value| *value > 0)
+		.unwrap_or(1)
+}
+
 fn episode_range(elements: &[Element]) -> (Option<i32>, Option<i32>) {
 	let mut numbers: Vec<i32> = elements
 		.iter()
@@ -61,10 +95,7 @@ pub fn elements_to_parsed(elements: &[Element]) -> Option<Parsed> {
 		.iter()
 		.find(|element| element.kind == ElementKind::Year)
 		.and_then(|element| first_i32(&element.value));
-	let group = elements
-		.iter()
-		.find(|element| element.kind == ElementKind::ReleaseGroup)
-		.map(|element| element.value.clone());
+	let group = first_kind(elements, ElementKind::ReleaseGroup).map(str::to_string);
 	Some(Parsed {
 		title,
 		season,
@@ -73,6 +104,14 @@ pub fn elements_to_parsed(elements: &[Element]) -> Option<Parsed> {
 		episode_low: low,
 		episode_high: high,
 		group,
+		video_resolution: first_kind(elements, ElementKind::VideoResolution)
+			.unwrap_or("")
+			.to_string(),
+		video_term: video_term(elements),
+		release_version: release_version(elements),
+		file_extension: first_kind(elements, ElementKind::FileExtension)
+			.unwrap_or("")
+			.to_ascii_lowercase(),
 	})
 }
 
@@ -132,6 +171,10 @@ fn to_parse_result(parsed: Parsed) -> crate::types::ParseResult {
 		episode_low: parsed.episode_low,
 		episode_high: parsed.episode_high,
 		group: parsed.group,
+		video_resolution: parsed.video_resolution,
+		video_term: parsed.video_term,
+		release_version: parsed.release_version,
+		file_extension: parsed.file_extension,
 	}
 }
 
@@ -174,7 +217,25 @@ mod tests {
 		assert_eq!(parsed.season, Some(1));
 		assert_eq!(parsed.year, Some(2026));
 		assert_eq!(parsed.episode, Some(9));
+		assert_eq!(parsed.video_resolution, "1080p");
+		assert_eq!(parsed.video_term, "x264");
+		assert_eq!(parsed.release_version, 1);
+		assert_eq!(parsed.file_extension, "mkv");
 		assert_eq!(extend_title(&parsed), "BLACK TORCH (2026)");
+	}
+
+	#[test]
+	fn parse_query_fills_video_fields() {
+		let result = parse_query(&crate::types::ParseInput {
+			input: "[Group] Show (2013) - 08v2 [720p][x264].mkv".into(),
+			path: Some(false),
+			ignored: None,
+		})
+		.expect("parse");
+		assert_eq!(result.video_resolution, "720p");
+		assert_eq!(result.video_term, "x264");
+		assert_eq!(result.release_version, 2);
+		assert_eq!(result.file_extension, "mkv");
 	}
 
 	#[test]
