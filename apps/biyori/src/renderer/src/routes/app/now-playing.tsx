@@ -1,6 +1,3 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, ExternalLinkIcon, PlayCircleIcon, SearchIcon } from "lucide-react";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
@@ -15,6 +12,9 @@ import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import type { inferRouterOutputs } from "@trpc/server";
+import { CircleAlertIcon, ExternalLinkIcon, PlayCircleIcon, SearchIcon } from "lucide-react";
 
 export const Route = createFileRoute("/app/now-playing")({
 	validateSearch: animeInfoSearchSchema,
@@ -119,6 +119,7 @@ function IdleNowPlaying() {
 
 function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 	const animeInfo = useAnimeInfoNav();
+	const playNext = trpc.library.playNext.useMutation();
 	const match = snapshot.match;
 	const media = snapshot.media;
 	const detailQuery = trpc.anime.byId.useQuery({ id: match?.id ?? 0 }, { enabled: Boolean(match?.id) });
@@ -132,8 +133,12 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 	const totalEpisodes = detail?.episodes ?? match.episodes;
 	const total = totalEpisodes > 0 ? totalEpisodes : null;
 	const watched = match.episodesWatched;
+	const isMovie = detail?.type === "Movie";
+	const currentEpisode = episode ?? watched;
+	const nextEpisode = currentEpisode + 1;
+	const canWatchNext = !isMovie && (total == null || nextEpisode <= total);
 	const progressValue = total != null && total > 0 ? Math.min(100, Math.round((watched / total) * 100)) : 80;
-	const nowPlayingLine = formatNowPlayingLine(episode, group, detail?.type === "Movie");
+	const nowPlayingLine = formatNowPlayingLine(episode, group, isMovie);
 	const title = detail?.title ?? match.title;
 	const status = match.status;
 	const rewatching = match.rewatching;
@@ -201,6 +206,20 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 							}}>
 							Edit list
 						</Button>
+						{canWatchNext ? (
+							<Button
+								type='button'
+								size='sm'
+								disabled={playNext.isPending}
+								onClick={() => {
+									void playNext.mutateAsync({
+										animeId: match.id,
+										episodesWatched: currentEpisode,
+									});
+								}}>
+								Watch next episode
+							</Button>
+						) : null}
 						<Button type='button' variant='ghost' size='sm' render={<a href={`https://anilist.co/anime/${match.id}`} target='_blank' rel='noreferrer noopener' />}>
 							AniList
 							<ExternalLinkIcon data-icon='inline-end' />
