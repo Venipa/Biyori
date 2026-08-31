@@ -1,7 +1,7 @@
 use crate::identify::identify;
 use crate::parse::parse_file_paths;
 use crate::types::{FindEpisodeInput, Parsed, ScanHit, ScanInput, ScanProgress, ScanResult};
-use jwalk::WalkDir;
+use dua_core::{walk, Options, Order};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -22,21 +22,16 @@ fn is_video(path: &Path) -> bool {
 		.unwrap_or(false)
 }
 
-fn push_video(path: PathBuf, threshold: u64, out: &mut Vec<VideoFile>, on_file: &mut impl FnMut(u32)) {
-	if !is_video(&path) {
+fn push_video(path: PathBuf, size: u64, threshold: u64, out: &mut Vec<VideoFile>, on_file: &mut impl FnMut(u32)) {
+	if !is_video(&path) || size < threshold {
 		return;
 	}
-	let Ok(meta) = path.metadata() else {
-		return;
-	};
-	if meta.len() < threshold {
-		return;
-	}
-	out.push(VideoFile {
-		size: meta.len(),
-		path,
-	});
+	out.push(VideoFile { size, path });
 	on_file(out.len() as u32);
+}
+
+fn walk_threads() -> usize {
+	std::thread::available_parallelism().map(std::num::NonZero::get).unwrap_or(4)
 }
 
 fn collect_files(root: &Path, threshold: u64, out: &mut Vec<VideoFile>, mut on_file: impl FnMut(u32)) -> bool {
@@ -44,14 +39,19 @@ fn collect_files(root: &Path, threshold: u64, out: &mut Vec<VideoFile>, mut on_f
 		return false;
 	}
 	if root.is_file() {
-		push_video(root.to_path_buf(), threshold, out, &mut on_file);
+		let size = root.metadata().map(|meta| meta.len()).unwrap_or(0);
+		push_video(root.to_path_buf(), size, threshold, out, &mut on_file);
 		return true;
 	}
-	for entry in WalkDir::new(root).into_iter().flatten() {
-		if !entry.file_type().is_file() {
+	for item in walk(root, walk_threads(), Order::ParentFirst, Options::default(), |_| true) {
+		let Ok(entry) = item else {
+			continue;
+		};
+		if !entry.file_type.is_file() {
 			continue;
 		}
-		push_video(entry.path(), threshold, out, &mut on_file);
+		let size = entry.metadata.as_ref().map(|meta| meta.len()).unwrap_or(0);
+		push_video(entry.path(), size, threshold, out, &mut on_file);
 	}
 	true
 }
