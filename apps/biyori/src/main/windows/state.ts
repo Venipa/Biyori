@@ -1,6 +1,7 @@
-import { type BrowserWindow, screen } from "electron";
+import { type BrowserWindow, type Rectangle, screen } from "electron";
 import { createYmlStore } from "../lib/store/createYmlStore";
 import { logger } from "../logger";
+import { clampRectToWorkArea } from "./work-area";
 
 type SavedWindowState = {
 	x?: number;
@@ -12,14 +13,20 @@ type SavedWindowState = {
 
 const log = logger.child("window-state");
 
-function isOnDisplay(state: SavedWindowState): boolean {
-	if (typeof state.x !== "number" || typeof state.y !== "number") {
-		return false;
+export function clampBoundsToWorkArea(bounds: Rectangle): Rectangle {
+	return clampRectToWorkArea(bounds, screen.getDisplayMatching(bounds).workArea);
+}
+
+export function clampWindowToWorkArea(win: BrowserWindow): void {
+	if (win.isDestroyed() || win.isMinimized() || win.isMaximized() || win.isFullScreen()) {
+		return;
 	}
-	return screen.getAllDisplays().some((display) => {
-		const { x, y, width, height } = display.bounds;
-		return state.x! >= x && state.y! >= y && state.x! + state.width <= x + width && state.y! + state.height <= y + height;
-	});
+	const current = win.getBounds();
+	const next = clampBoundsToWorkArea(current);
+	if (next.x === current.x && next.y === current.y && next.width === current.width && next.height === current.height) {
+		return;
+	}
+	win.setBounds(next);
 }
 
 export function attachWindowState(win: BrowserWindow, name: string, defaults: { width: number; height: number }): void {
@@ -32,15 +39,18 @@ export function attachWindowState(win: BrowserWindow, name: string, defaults: { 
 		maximized: Boolean(store.get("maximized", false)),
 	};
 
-	if (isOnDisplay(restored)) {
-		win.setBounds({
-			x: restored.x!,
-			y: restored.y!,
-			width: restored.width,
-			height: restored.height,
-		});
+	if (typeof restored.x === "number" && typeof restored.y === "number") {
+		win.setBounds(
+			clampBoundsToWorkArea({
+				x: restored.x,
+				y: restored.y,
+				width: restored.width,
+				height: restored.height,
+			}),
+		);
 	} else {
 		win.setSize(restored.width, restored.height);
+		clampWindowToWorkArea(win);
 	}
 
 	if (restored.maximized) {

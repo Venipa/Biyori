@@ -32,6 +32,18 @@ describe("parseAppSettings torrent filters", () => {
 		expect(parseAppSettings({ updateChannel: "rc" }).updateChannel).toBe("beta");
 		expect(parseAppSettings({}).updateChannel).toBe("stable");
 	});
+
+	test("defaults missing uiZoom to 100", () => {
+		expect(parseAppSettings({}).uiZoom).toBe(100);
+	});
+
+	test("keeps a valid uiZoom percent", () => {
+		expect(parseAppSettings({ uiZoom: 125 }).uiZoom).toBe(125);
+	});
+
+	test("falls back when uiZoom is out of range", () => {
+		expect(parseAppSettings({ uiZoom: 200 }).uiZoom).toBe(100);
+	});
 });
 
 describe("parseTorrentFiltersFile", () => {

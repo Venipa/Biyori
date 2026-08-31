@@ -3,7 +3,7 @@ name = "hana"
 version = "0.1.0"
 edition = "2021"
 publish = false
-description = "Hana. native subsidary for the Biyori."
+description = "Hana. native subsidary for Biyori."
 license = "Apache-2.0"
 
 [lib]

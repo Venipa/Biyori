@@ -15,6 +15,7 @@ export type SettingsSectionId = (typeof settingsSections)[number]["id"];
 export const settingsFieldSection: Record<string, SettingsSectionId> = {
 	defaultService: "services",
 	titleLanguage: "application",
+	uiZoom: "application",
 	defaultAddToListStatus: "application",
 	autostart: "application",
 	autostartTray: "application",

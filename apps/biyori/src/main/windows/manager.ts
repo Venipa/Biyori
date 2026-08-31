@@ -4,6 +4,7 @@ import { BrowserWindow, type BrowserWindowConstructorOptions, shell } from "elec
 import icon from "../../../resources/icon.png?asset";
 import { attachTrpcWindow } from "../trpc-handler";
 import { attachWindowState } from "./state";
+import { attachWindowZoom, startWindowZoomSync } from "./zoom";
 
 export type WindowDefinition = {
 	title: string;
@@ -59,7 +60,17 @@ export class WindowManager<TId extends string> {
 	private readonly windows = new Map<TId, WindowEntry>();
 	private readonly modalListeners = new Set<(open: boolean) => void>();
 
-	constructor(private readonly definitions: Record<TId, WindowDefinition>) {}
+	constructor(private readonly definitions: Record<TId, WindowDefinition>) {
+		startWindowZoomSync((fn) => this.forEachWindow(fn));
+	}
+
+	forEachWindow(fn: (win: BrowserWindow) => void): void {
+		for (const entry of this.windows.values()) {
+			if (!entry.win.isDestroyed()) {
+				fn(entry.win);
+			}
+		}
+	}
 
 	get(id: TId): BrowserWindow | null {
 		const entry = this.windows.get(id);
@@ -226,6 +237,7 @@ export class WindowManager<TId extends string> {
 		});
 
 		attachTrpcWindow(win);
+		attachWindowZoom(win);
 		return win;
 	}
 }

@@ -22,8 +22,18 @@ const LIST_STATUS_OPTIONS = listStatusSchema.options.map((status) => ({
 	label: status,
 }));
 
+const UI_ZOOM_OPTIONS = [
+	{ value: "75", label: "75%" },
+	{ value: "90", label: "90%" },
+	{ value: "100", label: "100%" },
+	{ value: "110", label: "110%" },
+	{ value: "125", label: "125%" },
+	{ value: "150", label: "150%" },
+] as const;
+
 export function ApplicationPanel() {
 	const titleLanguageId = useId();
+	const uiZoomId = useId();
 	const defaultAddToListStatusId = useId();
 	const autostartId = useId();
 	const closeToTrayId = useId();
@@ -45,6 +55,25 @@ export function ApplicationPanel() {
 								value={typeof field.value === "string" ? field.value : "Romaji"}
 								onValueChange={field.onChange}
 								options={TITLE_LANGUAGE_OPTIONS}
+								aria-invalid={fieldState.invalid}
+							/>
+							<FieldError errors={[fieldState.error]} />
+						</Field>
+					)}
+				/>
+			</SettingsSectionCard>
+			<SettingsSectionCard title='Display' description='Interface size. OS display scale is unchanged.'>
+				<Controller
+					control={form.control}
+					name='uiZoom'
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid || undefined}>
+							<FieldLabel htmlFor={uiZoomId}>Zoom</FieldLabel>
+							<SettingsToggleGroup
+								id={uiZoomId}
+								value={String(typeof field.value === "number" ? field.value : 100)}
+								onValueChange={(value) => field.onChange(Number(value))}
+								options={UI_ZOOM_OPTIONS}
 								aria-invalid={fieldState.invalid}
 							/>
 							<FieldError errors={[fieldState.error]} />
