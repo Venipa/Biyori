@@ -1,29 +1,47 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.10/schema.json",
-	"formatter": {
-		"indentStyle": "tab",
-		"formatWithErrors": true,
-		"indentWidth": 2,
-		"lineWidth": 180,
-		"attributePosition": "auto"
-	},
-	"files": {
-		"includes": ["./apps/**", "./packages/**", "!**/*.generated.d.ts", "!**/*.gen.ts", "!**/public", "!**/{dist,out,build,node_modules,public,drizzle}"]
-	},
-	"javascript": {
-		"formatter": {
-			"jsxQuoteStyle": "single",
-			"quoteStyle": "double",
-			"bracketSameLine": true
-		},
-		"parser": {
-			"unsafeParameterDecoratorsEnabled": true
-		}
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"preset": "recommended"
-		}
-	}
+  "$schema": "https://biomejs.dev/schemas/2.5.10/schema.json",
+  "formatter": {
+    "indentStyle": "tab",
+    "formatWithErrors": true,
+    "indentWidth": 2,
+    "lineWidth": 180,
+    "attributePosition": "auto"
+  },
+  "files": {
+    "includes": [
+      "./apps/**",
+      "./packages/**",
+      "!**/*.generated.d.ts",
+      "!**/*.gen.ts",
+      "!**/public",
+      "!**/{dist,out,build,node_modules,public,drizzle}"
+    ]
+  },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "single",
+      "quoteStyle": "double",
+      "bracketSameLine": true
+    },
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    },
+    "formatter": {
+      "enabled": true
+    },
+    "linter": {
+      "enabled": true
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended"
+    }
+  }
 }

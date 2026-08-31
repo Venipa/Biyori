@@ -4,5 +4,10 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.biome": "explicit",
     "source.organizeImports.biome": "explicit"
+  },
+  "css.lint.unknownAtRules": "ignore",
+  "css.lint.unknownProperties": "ignore",
+  "[css]": {
+    "editor.defaultFormatter": "biomejs.biome"
   }
 }
