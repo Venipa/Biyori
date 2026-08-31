@@ -190,6 +190,7 @@ async function flushNext(db: DatabaseClient): Promise<void> {
 	const rows = await db
 		.select({
 			id: anime.id,
+			title: anime.title,
 			status: listEntry.status,
 			rewatching: listEntry.rewatching,
 			episodesWatched: listEntry.episodesWatched,
@@ -212,9 +213,14 @@ async function flushNext(db: DatabaseClient): Promise<void> {
 
 	const payload = parsePayload(item.payload);
 	const remaining = await countQueued(db);
+	const progress = payload.progress ?? row.episodesWatched;
 	const title = remaining > 1 ? `Updating anime list... (${remaining} queued)` : "Updating anime list...";
 	setAppNotice(title);
-	upsertActivity({ source: "list-update", title });
+	upsertActivity({
+		source: "list-update",
+		title: `Update ${row.title}`,
+		body: remaining > 1 ? `Update to episode ${progress} · ${remaining} queued` : `Update to episode ${progress}`,
+	});
 
 	try {
 		const saved = await saveMediaListEntry({
@@ -265,7 +271,12 @@ async function flushNext(db: DatabaseClient): Promise<void> {
 	} catch {
 		const title = "List update failed; will retry";
 		setAppNotice(title);
-		completeActivity({ source: "list-update", title, status: "error" });
+		completeActivity({
+			source: "list-update",
+			title: `Update ${row.title}`,
+			body: "Failed; will retry",
+			status: "error",
+		});
 		/* stay queued; retry timer will try again */
 	}
 }

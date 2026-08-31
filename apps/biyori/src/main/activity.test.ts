@@ -19,15 +19,21 @@ describe("activity center", () => {
 		expect(getActivitySnapshot().live).toEqual([{ source: "library-scan", title: "Matching...", body: "" }]);
 	});
 
+	test("upsert keeps title and body", () => {
+		upsertActivity({ source: "list-update", title: "Update One Piece", body: "Update to episode 1125" });
+		expect(getActivitySnapshot().live).toEqual([{ source: "list-update", title: "Update One Piece", body: "Update to episode 1125" }]);
+	});
+
 	test("complete persists one row and clears live", () => {
 		upsertActivity({ source: "library-scan", title: "Scanning..." });
-		completeActivity({ source: "library-scan", title: "Library scan: 3 files, 2 matched", status: "ok" });
+		completeActivity({ source: "library-scan", title: "Library scan", body: "3 files, 2 matched", status: "ok" });
 		const next = getActivitySnapshot();
 		expect(next.live).toEqual([]);
 		expect(next.items).toHaveLength(1);
 		expect(next.items[0]?.kind).toBe("activity");
 		expect(next.items[0]?.status).toBe("ok");
-		expect(next.items[0]?.title).toBe("Library scan: 3 files, 2 matched");
+		expect(next.items[0]?.title).toBe("Library scan");
+		expect(next.items[0]?.body).toBe("3 files, 2 matched");
 	});
 
 	test("drops rows older than 7 days", () => {

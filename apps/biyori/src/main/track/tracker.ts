@@ -263,11 +263,11 @@ async function runTick(): Promise<void> {
 		if (match && settings.notifyOnRecognized) {
 			const title = `Now playing: ${match.title}`;
 			setAppNotice(title);
-			pushNotice({ source: "playback", title });
+			pushNotice({ source: "playback", title: match.title, body: "Now playing" });
 		} else if (!match && settings.notifyOnUnrecognized) {
 			const title = `Unrecognized: ${parsed.title}`;
 			setAppNotice(title);
-			pushNotice({ source: "playback", title });
+			pushNotice({ source: "playback", title: parsed.title, body: "Unrecognized" });
 		}
 	} else if (wasPlaybackApplied(key)) {
 		appliedFingerprint = key;
@@ -329,7 +329,8 @@ export async function confirmPendingUpdate(): Promise<void> {
 		await applyProgress(match, pending.episode);
 		pushNotice({
 			source: "watch-confirm",
-			title: `Updated ${pending.title} to episode ${pending.episode}`,
+			title: `Update ${pending.title}`,
+			body: `Updated to episode ${pending.episode}`,
 		});
 	}
 	pending = null;

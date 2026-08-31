@@ -58,7 +58,11 @@ function emitRunning(message: string, processed: number | null, total: number | 
 		total,
 		lastSuccessAt: snapshot.lastSuccessAt,
 	});
-	upsertActivity({ source: "anilist-sync", title: message });
+	upsertActivity({
+		source: "anilist-sync",
+		title: "AniList",
+		body: processed != null && total != null && total > 0 ? `Synchronizing (${Math.round((processed / total) * 100)}%)` : "Synchronizing",
+	});
 }
 
 export function getSyncSnapshot(): SyncSnapshot {
@@ -127,7 +131,7 @@ async function runSync(): Promise<void> {
 				phase: "error",
 				message: title,
 			});
-			completeActivity({ source: "anilist-sync", title, status: "error" });
+			completeActivity({ source: "anilist-sync", title: "AniList", body: "Not connected", status: "error" });
 			return;
 		}
 
@@ -166,7 +170,8 @@ async function runSync(): Promise<void> {
 		});
 		completeActivity({
 			source: "anilist-sync",
-			title: `AniList sync finished (${covers.length} titles)`,
+			title: "AniList",
+			body: `Finished · ${covers.length} titles`,
 			status: "ok",
 		});
 	} catch (error) {
@@ -182,7 +187,7 @@ async function runSync(): Promise<void> {
 			total: snapshot.total,
 			lastSuccessAt: snapshot.lastSuccessAt,
 		});
-		completeActivity({ source: "anilist-sync", title, status: "error" });
+		completeActivity({ source: "anilist-sync", title: "AniList", body: message, status: "error" });
 	} finally {
 		running = false;
 		if (abortController === controller) {

@@ -179,13 +179,13 @@ function onScanProgress(kind: "full" | "quick", progress: ScanProgress): void {
 	if (progress.phase === "walk") {
 		const title = `${prefix}... (${progress.files} files)`;
 		setAppNotice(title, { toast: false, busy: true });
-		upsertActivity({ source: "library-scan", title });
+		upsertActivity({ source: "library-scan", title: prefix, body: `${progress.files} files` });
 		return;
 	}
 	if (progress.phase === "match") {
 		const title = `Matching titles... (${progress.hits}/${progress.files})`;
 		setAppNotice(title, { toast: false, busy: true });
-		upsertActivity({ source: "library-scan", title });
+		upsertActivity({ source: "library-scan", title: "Matching titles", body: `${progress.hits}/${progress.files} matched` });
 	}
 }
 
@@ -199,7 +199,7 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 	if (kind !== "watch") {
 		const title = kind === "quick" ? "Checking known folders..." : "Scanning library...";
 		setAppNotice(title, { toast: false, busy: true });
-		upsertActivity({ source: "library-scan", title });
+		upsertActivity({ source: "library-scan", title: kind === "quick" ? "Checking folders" : "Scanning library", body: "Starting" });
 	}
 	try {
 		const result = await hana.scan(
@@ -214,14 +214,19 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 		if (kind !== "watch") {
 			const title = `Library scan: ${result.files} files, ${result.hits.length} matched`;
 			setAppNotice(title, { toast: false, busy: false });
-			completeActivity({ source: "library-scan", title, status: "ok" });
+			completeActivity({
+				source: "library-scan",
+				title: "Library scan",
+				body: `${result.files} files, ${result.hits.length} matched`,
+				status: "ok",
+			});
 		}
 		return { files: result.files, matched: result.hits.length };
 	} catch (error) {
 		if (kind !== "watch") {
 			const title = "Library scan failed";
 			setAppNotice(title, { toast: false, busy: false });
-			completeActivity({ source: "library-scan", title, status: "error" });
+			completeActivity({ source: "library-scan", title: "Library scan", body: "Failed", status: "error" });
 		}
 		throw error;
 	}
@@ -283,7 +288,7 @@ export async function playEpisode(database: DatabaseClient, animeId: number, epi
 }
 
 export async function playNext(database: DatabaseClient, animeId: number, episodesWatched: number): Promise<{ ok: boolean; path: string | null; episode: number | null }> {
-	const rows = await database.select({ episodes: anime.episodes }).from(anime).where(eq(anime.id, animeId)).limit(1);
+	const rows = await database.select({ episodes: anime.episodes, title: anime.title }).from(anime).where(eq(anime.id, animeId)).limit(1);
 	const total = rows[0]?.episodes ?? 0;
 	let episode = episodesWatched + 1;
 	if (episode < 1) {
@@ -296,7 +301,11 @@ export async function playNext(database: DatabaseClient, animeId: number, episod
 	if (!played.ok) {
 		const title = `Could not find episode #${episode}`;
 		setAppNotice(title);
-		pushNotice({ source: "play-next", title });
+		pushNotice({
+			source: "play-next",
+			title: rows[0]?.title ?? "Play next",
+			body: `Could not find episode #${episode}`,
+		});
 	}
 	return { ...played, episode };
 }

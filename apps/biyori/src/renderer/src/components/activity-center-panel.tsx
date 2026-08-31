@@ -57,20 +57,28 @@ function ActivityStatus({ status }: { status: "live" | "ok" | "error" }) {
 function ActivityRow({
 	source,
 	title,
+	body,
 	status,
 	trailing,
 }: {
 	source: string;
 	title: string;
+	body?: string;
 	status: "live" | "ok" | "error";
 	trailing?: ReactNode;
 }) {
 	const hover = status !== "live" || Boolean(trailing);
+	const subtitle = body?.trim() ? body : null;
 	return (
-		<div className={cn("mx-1 flex h-8 cursor-default items-center gap-2 rounded-md px-2", hover ? "hover:bg-muted/60" : null)}>
+		<div className={cn("mx-1 flex cursor-default items-start gap-2 rounded-md px-2 py-1.5", hover ? "hover:bg-muted/60" : null)}>
 			<SourceGlyph source={source} />
-			<p className={cn("min-w-0 flex-1 truncate text-xs", status === "error" ? "text-destructive" : "text-foreground")}>{title}</p>
-			{trailing ? trailing : <ActivityStatus status={status} />}
+			<div className='flex min-w-0 flex-1 flex-col gap-0.5'>
+				<div className='flex min-w-0 items-center gap-2'>
+					<p className={cn("min-w-0 flex-1 truncate text-xs", status === "error" ? "text-destructive" : "text-foreground")}>{title}</p>
+					{trailing ? trailing : <ActivityStatus status={status} />}
+				</div>
+				{subtitle ? <p className='truncate text-[11px] text-muted-foreground'>{subtitle}</p> : null}
+			</div>
 		</div>
 	);
 }
@@ -87,8 +95,8 @@ export function ActivityCenterPanel({
 	onUpdate,
 }: {
 	open: boolean;
-	live: Array<{ source: string; title: string }>;
-	items: Array<{ id: string; source: string; title: string; status: "ok" | "error" }>;
+	live: Array<{ source: string; title: string; body?: string }>;
+	items: Array<{ id: string; source: string; title: string; body?: string; status: "ok" | "error" }>;
 	pending: { title: string; episode: number } | null;
 	showPending: boolean;
 	confirmPending: boolean;
@@ -101,20 +109,20 @@ export function ActivityCenterPanel({
 	const subtitle = inProgress > 0 ? (inProgress === 1 ? "1 in progress" : `${inProgress} in progress`) : "7-day history";
 
 	return (
-		<div className='pointer-events-none absolute right-0 bottom-6 overflow-hidden'>
+		<div className='pointer-events-none absolute right-0 bottom-6 z-40 overflow-hidden'>
 			<AnimatePresence>
 				{open ? (
 					<motion.div
 						key='activity-center'
 						role='dialog'
 						aria-label='Activity'
-						className='pointer-events-auto flex w-[min(22rem,100vw)] cursor-default flex-col overflow-hidden rounded-t-xl rounded-b-none border border-b-0 bg-card shadow-lg'
+						className='pointer-events-auto flex max-h-[min(24rem,calc(100dvh-5.5rem))] w-[min(22rem,100vw)] cursor-default flex-col overflow-hidden rounded-t-xl rounded-b-none border border-b-0 bg-card/80 shadow-lg backdrop-blur-md'
 						initial={panelMotion.initial}
 						animate={panelMotion.animate}
 						exit={panelMotion.exit}
 						transition={panelMotion.transition}>
-						<div className='flex h-9 shrink-0 items-center gap-2 border-b px-2'>
-							<div className='min-w-0 flex-1'>
+						<div className='flex shrink-0 items-center gap-2 border-b px-3 py-2'>
+							<div className='flex min-w-0 flex-1 flex-col gap-0.5'>
 								<p className='truncate text-xs font-medium'>Activity</p>
 								<p className='truncate text-[11px] text-muted-foreground'>{subtitle}</p>
 							</div>
@@ -132,7 +140,7 @@ export function ActivityCenterPanel({
 								<XIcon />
 							</Button>
 						</div>
-						<ScrollArea className='max-h-72'>
+						<ScrollArea className='min-h-0 max-h-72 overflow-hidden' viewportClassName='max-h-72 overflow-y-auto'>
 							{empty ? (
 								<p className='px-3 py-2 text-xs text-muted-foreground'>Nothing yet.</p>
 							) : (
@@ -140,16 +148,17 @@ export function ActivityCenterPanel({
 									{showPending && pending ? (
 										<ActivityRow
 											source='watch-confirm'
-											title={`Update ${pending.title} to episode ${pending.episode}?`}
+											title={`Update ${pending.title}`}
+											body={`Update to episode ${pending.episode}`}
 											status='live'
 											trailing={<WatchConfirmActions size='xs' disabled={confirmPending} onSkip={onSkip} onUpdate={onUpdate} />}
 										/>
 									) : null}
 									{live.map((row) => (
-										<ActivityRow key={row.source} source={row.source} title={row.title} status='live' />
+										<ActivityRow key={row.source} source={row.source} title={row.title} body={row.body} status='live' />
 									))}
 									{items.map((row) => (
-										<ActivityRow key={row.id} source={row.source} title={row.title} status={row.status} />
+										<ActivityRow key={row.id} source={row.source} title={row.title} body={row.body} status={row.status} />
 									))}
 								</div>
 							)}

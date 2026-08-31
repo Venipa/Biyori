@@ -61,7 +61,7 @@ export function AppStatusBar() {
 	}, [open]);
 
 	return (
-		<div className='relative'>
+		<div className='relative z-40'>
 			<ActivityCenterPanel
 				open={open}
 				live={live}
