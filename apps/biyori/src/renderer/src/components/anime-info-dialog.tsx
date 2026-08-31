@@ -1,8 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { inferRouterOutputs } from "@trpc/server";
-import { FolderOpen } from "lucide-react";
-import { useId } from "react";
-import { Controller, useForm } from "react-hook-form";
 import AniDBIcon from "@/assets/anidb.png";
 import AnilistIcon from "@/assets/anilist.svg?react";
 import MyAnimeListIcon from "@/assets/mal.svg?react";
@@ -12,6 +7,8 @@ import { type AnimeInfoFormInput, type AnimeInfoFormValues, animeInfoFormSchema 
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeListAction } from "@/mainview/components/anime-list-action";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
+import { SaveBar } from "@/mainview/components/save-bar";
+import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTitle } from "@/mainview/components/ui/dialog";
@@ -21,6 +18,7 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
+import { Spinner } from "@/mainview/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { useHeldOpenPayload } from "@/mainview/lib/held-open-payload";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
@@ -29,6 +27,11 @@ import { getNeighborAnimeId } from "@/mainview/lib/selected-anime";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { listStatusSchema } from "@/shared/list";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { inferRouterOutputs } from "@trpc/server";
+import { CircleAlertIcon, FolderOpen } from "lucide-react";
+import { useId } from "react";
+import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 
 const statusOptions = listStatusSchema.options.map((value) => ({
 	value,
@@ -95,7 +98,7 @@ export function AnimeInfoDialog({
 			}}
 			modal>
 			<DialogContent
-				className='flex h-full max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-none p-0 sm:max-w-3xl'
+				className='flex h-full mt-8 max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-b-none p-0 sm:max-w-3xl'
 				onKeyDownCapture={(event) => {
 					if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
 						return;
@@ -191,9 +194,6 @@ function AnimeInfoBody({
 	const altTitlesId = useId();
 	const folderId = useId();
 	const fansubId = useId();
-	const utils = trpc.useUtils();
-	const saveEntry = trpc.anilist.saveEntry.useMutation();
-	const setLocal = trpc.anime.setLocal.useMutation();
 	const parsedStatus = listStatusSchema.safeParse(anime.status);
 	const episodeMax = anime.episodes > 0 ? anime.episodes : 9999;
 	const form = useForm<AnimeInfoFormInput, unknown, AnimeInfoFormValues>({
@@ -214,11 +214,11 @@ function AnimeInfoBody({
 	});
 
 	return (
-		<>
+		<FormProvider {...form}>
 			<div className='flex min-h-0 flex-1 flex-col'>
 				<div className='relative h-40 w-full shrink-0 overflow-hidden bg-muted'>
 					{anime.bannerUrl ? <AnimeCover id={anime.id} kind='banner' sourceUrl={anime.bannerUrl} alt='' className='size-full' /> : null}
-					<div className='pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-popover to-transparent' />
+					<div className='pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-popover to-transparent' />
 				</div>
 
 				<div className='relative z-10 -mt-14 flex min-h-0 flex-1 gap-4 px-4'>
@@ -256,7 +256,7 @@ function AnimeInfoBody({
 							<h2 className='text-balance text-lg font-semibold text-foreground drop-shadow-sm'>{anime.title}</h2>
 						</div>
 						<Tabs defaultValue={infoTab} className='flex min-h-0 flex-1 flex-col gap-2'>
-							<TabsList className='shrink-0'>
+							<TabsList className='shrink-0' variant='line'>
 								<TabsTrigger value='main'>Main information</TabsTrigger>
 								<TabsTrigger value='list'>My list and settings</TabsTrigger>
 							</TabsList>
@@ -272,7 +272,7 @@ function AnimeInfoBody({
 								</ScrollArea>
 							</TabsContent>
 							<TabsContent value='list' keepMounted={false} className='mt-0 flex min-h-0 flex-1 flex-col'>
-								<ScrollArea className='h-full min-h-0' viewportClassName=' px-2 pt-2'>
+								<ScrollArea className='h-full min-h-0' viewportClassName='px-2 pt-2 pb-16'>
 									{readOnly ? (
 										<div className='flex flex-col gap-3 pb-3'>
 											<p className='text-sm text-muted-foreground'>Not in your list yet.</p>
@@ -469,53 +469,92 @@ function AnimeInfoBody({
 					</div>
 				</div>
 			</div>
-			<DialogFooter className='h-16 shrink-0 rounded-b-none'>
-				{form.formState.errors.root?.serverError ? <FieldError errors={[form.formState.errors.root.serverError]} /> : null}
-				<DialogClose render={<Button variant='ghost' type='button' />} className={"no-drag"}>
-					Cancel
-				</DialogClose>
-				{readOnly ? (
+			{readOnly ? (
+				<DialogFooter className='h-16 shrink-0 rounded-b-none'>
+					<DialogClose render={<Button variant='ghost' type='button' />} className='no-drag'>
+						Cancel
+					</DialogClose>
 					<Button type='button' onClick={onClose}>
 						OK
 					</Button>
-				) : (
-					<Button
-						type='button'
-						disabled={!form.formState.isDirty || form.formState.isSubmitting || saveEntry.isPending || setLocal.isPending}
-						onClick={() => {
-							void form.handleSubmit(async (data) => {
-								try {
-									await saveEntry.mutateAsync({
-										animeId: anime.id,
-										status: data.status,
-										progress: data.progress,
-										notes: data.notes,
-										rewatching: data.rewatching,
-										score: data.score ?? null,
-										timesRewatched: data.timesRewatched,
-										dateStarted: data.dateStarted,
-										dateCompleted: data.dateCompleted,
-									});
-									await setLocal.mutateAsync({
-										id: anime.id,
-										folder: data.folder,
-										fansub: data.fansub,
-										alternativeTitles: data.alternativeTitles,
-									});
-									form.reset(data);
-									onClose();
-									void invalidateAnimeQueries(utils, "entrySaved", anime.id);
-								} catch (error) {
-									form.setError("root.serverError", {
-										message: error instanceof Error ? error.message : "Could not save list entry",
-									});
-								}
-							})();
-						}}>
-						Save changes
-					</Button>
-				)}
-			</DialogFooter>
-		</>
+				</DialogFooter>
+			) : (
+				<AnimeInfoSaveBar animeId={anime.id} />
+			)}
+		</FormProvider>
+	);
+}
+
+function AnimeInfoSaveBar({ animeId }: { animeId: number }) {
+	const form = useFormContext<AnimeInfoFormInput, unknown, AnimeInfoFormValues>();
+	const { isDirty, isSubmitting, errors, dirtyFields } = useFormState({
+		control: form.control,
+	});
+	const utils = trpc.useUtils();
+	const saveEntry = trpc.anilist.saveEntry.useMutation();
+	const setLocal = trpc.anime.setLocal.useMutation();
+	const changeCount = Object.keys(dirtyFields).length;
+	const serverError = errors.root?.serverError;
+	const pending = isSubmitting || saveEntry.isPending || setLocal.isPending;
+	const open = isDirty || Boolean(serverError) || pending;
+
+	return (
+		<SaveBar open={open} variant='docked' className='mx-4'>
+			<Badge variant={serverError ? "destructive" : "secondary"} className='shrink-0'>
+				<CircleAlertIcon data-icon='inline-start' />
+				{changeCount}
+			</Badge>
+			<div className='flex min-w-0 flex-1 flex-col gap-0.5'>
+				<p className='truncate text-sm font-medium'>{serverError ? "Could not save" : changeCount === 1 ? "1 unsaved change" : `${changeCount} unsaved changes`}</p>
+				<FieldError errors={[serverError]} />
+			</div>
+			<div className='flex shrink-0 items-center gap-2'>
+				<Button
+					variant='ghost'
+					type='button'
+					disabled={pending}
+					onClick={() => {
+						form.clearErrors("root.serverError");
+						form.reset();
+					}}>
+					Discard
+				</Button>
+				<Button
+					type='button'
+					disabled={pending || !isDirty}
+					onClick={() => {
+						void form.handleSubmit(async (data) => {
+							try {
+								await saveEntry.mutateAsync({
+									animeId,
+									status: data.status,
+									progress: data.progress,
+									notes: data.notes,
+									rewatching: data.rewatching,
+									score: data.score ?? null,
+									timesRewatched: data.timesRewatched,
+									dateStarted: data.dateStarted,
+									dateCompleted: data.dateCompleted,
+								});
+								await setLocal.mutateAsync({
+									id: animeId,
+									folder: data.folder,
+									fansub: data.fansub,
+									alternativeTitles: data.alternativeTitles,
+								});
+								form.reset(data);
+								void invalidateAnimeQueries(utils, "entrySaved", animeId);
+							} catch (error) {
+								form.setError("root.serverError", {
+									message: error instanceof Error ? error.message : "Could not save list entry",
+								});
+							}
+						})();
+					}}>
+					{pending ? <Spinner data-icon='inline-start' /> : null}
+					Save
+				</Button>
+			</div>
+		</SaveBar>
 	);
 }
