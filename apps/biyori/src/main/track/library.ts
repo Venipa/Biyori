@@ -1,9 +1,9 @@
-import { randomUUID } from "node:crypto";
-import { existsSync, statSync, type FSWatcher, watch } from "node:fs";
-import { dirname, join } from "node:path";
 import { pathUnderRoot } from "@biyori/recognition";
 import { eq } from "drizzle-orm";
 import { shell } from "electron";
+import { randomUUID } from "node:crypto";
+import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
+import { dirname, join } from "node:path";
 import type { DatabaseClient } from "../db";
 import { anime, episodeFile } from "../db/schema";
 import { setAppNotice } from "../notice";
@@ -186,11 +186,7 @@ function onScanProgress(kind: "full" | "quick", progress: ScanProgress): void {
 	setAppNotice(`Library scan: ${progress.files} files, ${progress.hits} matched`, { toast: false, busy: false });
 }
 
-async function runScan(
-	database: DatabaseClient,
-	roots: string[],
-	kind: "full" | "quick" | "watch",
-): Promise<{ files: number; matched: number }> {
+async function runScan(database: DatabaseClient, roots: string[], kind: "full" | "quick" | "watch"): Promise<{ files: number; matched: number }> {
 	const existing = roots.filter((root) => existsSync(root));
 	if (existing.length === 0) {
 		return { files: 0, matched: 0 };
