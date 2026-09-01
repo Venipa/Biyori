@@ -10,6 +10,7 @@ import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Spinner } from "@/mainview/components/ui/spinner";
 import { UpdateChannelToggle } from "@/mainview/components/update-channel-toggle";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
+import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { getVersionChannel, parseUpdateChannel, UPDATE_CHANNEL_LABELS, type UpdateChannel } from "@/shared/updater";
@@ -42,7 +43,7 @@ function AboutPage() {
 	}
 
 	return (
-		<ScrollArea className='flex h-full flex-col gap-6 p-4'>
+		<ScrollArea className='h-full' viewportClassName='flex flex-col gap-6 p-4'>
 			<div>
 				<h1 className='text-lg font-semibold'>About Biyori</h1>
 				<p className='text-sm text-muted-foreground'>Anime list tracker powered by AniList.</p>
@@ -59,7 +60,7 @@ function AboutPage() {
 					<dt className='text-muted-foreground'>Hana</dt>
 					<dd>{about.data?.hanaVersion || "..."}</dd>
 					<dt className='text-muted-foreground'>Updates</dt>
-					<dd className={status.error ? "min-w-0 break-words text-destructive" : "min-w-0 break-words"}>{status.message || "Not checked yet"}</dd>
+					<dd className={cn("min-w-0 break-words", status.error ? "text-destructive" : "")}>{status.message || "Not checked yet"}</dd>
 				</dl>
 				<Field>
 					<FieldLabel>Update channel</FieldLabel>
