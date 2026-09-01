@@ -41,7 +41,7 @@ export default function Layout({ children }: LayoutProps<"/">) {
 		<html lang='en' className={inter.className} suppressHydrationWarning>
 			<body className='flex min-h-screen flex-col'>
 				<Provider>{children}</Provider>
-				{isProduction && <Script src='https://app.rybbit.io/api/script.js' data-site-id='4' strategy='afterInteractive' />}
+				{isProduction && <Script src='https://rybbit.venipa.net/api/script.js' data-site-id='4' strategy='afterInteractive' />}
 			</body>
 		</html>
 	);
