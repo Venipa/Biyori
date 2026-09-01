@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { Provider } from "@/components/provider";
 import { assetPath } from "@/lib/paths";
 import { appDescription, appName, appTagline, siteUrl } from "@/lib/shared";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./global.css";
 
 const inter = Inter({
@@ -34,12 +35,13 @@ export const metadata: Metadata = {
 		description: appDescription,
 	},
 };
-
+const isProduction = process.env.NODE_ENV === "production";
 export default function Layout({ children }: LayoutProps<"/">) {
 	return (
 		<html lang='en' className={inter.className} suppressHydrationWarning>
 			<body className='flex min-h-screen flex-col'>
 				<Provider>{children}</Provider>
+				{isProduction && <Script src='https://app.rybbit.io/api/script.js' data-site-id='4' strategy='afterInteractive' />}
 			</body>
 		</html>
 	);
