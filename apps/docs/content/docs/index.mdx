@@ -1,0 +1,30 @@
+---
+title: Overview
+description: Desktop anime list tracker powered by AniList
+---
+
+**Biyori** is an Electron app for tracking anime: AniList lists, a local library scan, playback matching, torrent RSS, Discord presence, and a local now-playing HTTP endpoint.
+
+## Quick links
+
+<Cards>
+  <Card title="Install" href="/docs/install" />
+  <Card title="AniList" href="/docs/anilist" />
+  <Card title="Library" href="/docs/library" />
+  <Card title="Now playing" href="/docs/now-playing" />
+  <Card title="Torrents" href="/docs/torrents" />
+  <Card title="Sharing" href="/docs/sharing" />
+  <Card title="Build from source" href="/docs/build" />
+  <Card title="Changelog" href="/changelog" />
+</Cards>
+
+## Stack
+
+- Electron + React (renderer)
+- tRPC for main to renderer IPC
+- SQLite (Drizzle) for local data
+- Hana native worker/core
+
+## License
+
+Apache-2.0. See `LICENSE` in the repository root.

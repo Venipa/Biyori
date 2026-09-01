@@ -1,0 +1,41 @@
+---
+title: Build from source
+description: Develop and package Biyori
+---
+
+## Requirements
+
+- [Bun](https://bun.sh/) 1.4+
+- Node.js 24.x (Electron toolchain)
+- Rust (Hana native worker/core on Windows pack)
+
+```bash
+bun install
+bun run dev
+```
+
+## Workspace layout
+
+| Path | Package |
+| --- | --- |
+| `apps/biyori` | Electron app |
+| `apps/docs` | This documentation site |
+| `packages/hana` | Native worker/core |
+| `packages/recognition` | Title matching |
+
+## Useful scripts
+
+```bash
+bun run dev
+bun run docs:dev
+bun run typecheck
+```
+
+## Packaging
+
+```bash
+bun run release:compile
+bun run --cwd apps/biyori release:pack:win
+```
+
+GitHub Actions (`.github/workflows/release.yml`) compiles once, then packs Windows with electron-builder.

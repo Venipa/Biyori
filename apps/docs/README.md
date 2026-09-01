@@ -1,0 +1,40 @@
+# Docs site
+
+Fumadocs site for Biyori.
+
+## Env (build-time)
+
+| Variable | Example | Notes |
+| --- | --- | --- |
+| `REPO_OWNER` | from Actions | GitHub owner |
+| `REPO_NAME` | from Actions | Repository name |
+| `REPO_URL` | `https://github.com/owner/repo` | Parsed if owner/name omitted |
+| `REPO_TITLE` | `Biyori` | Display title |
+| `REPO_BRANCH` | default branch | For blob/edit links |
+| `REPO_STARS` | from Actions | Stargazer count for hero |
+| `NEXT_PUBLIC_URL` | Pages base URL | Sets Next `basePath` |
+| `GITHUB_TOKEN` | Actions token | Higher GitHub API rate limit |
+
+CI sets these in `.github/workflows/docs.yml`.
+
+## Local
+
+```bash
+bun install
+# optional: cp apps/docs/.env.docs.local.example apps/docs/.env.docs.local
+bun run docs:dev
+```
+
+Open http://localhost:3000 (no basePath).
+
+When `NEXT_PUBLIC_URL` is unset, OG/meta use `http://localhost:3000/...` instead of production Pages. Set `NEXT_PUBLIC_URL` (or `GITHUB_PAGES=true` via `build:pages`) to mirror the `/repo` deploy prefix.
+
+Env file: `apps/docs/.env.docs.local` (gitignored). Loaded via `next.config.mjs` / `build:pages`.
+
+## Static build (GitHub Pages)
+
+```bash
+REPO_OWNER=Venipa REPO_NAME=biyori REPO_TITLE=Biyori \
+NEXT_PUBLIC_URL=https://venipa.github.io/biyori \
+bun run docs:build:pages
+```

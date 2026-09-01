@@ -9,7 +9,10 @@
     "release": "bun run --bun --cwd apps/biyori build:win",
     "release:compile": "bun run --bun --cwd apps/biyori release:compile",
     "release:pack:win": "bun run --bun --cwd apps/biyori release:pack:win",
-    "typecheck": "bun --bun --filter \"biyori\" typecheck"
+    "typecheck": "bun --bun --filter \"biyori\" typecheck",
+    "docs:dev": "bun run --cwd apps/docs dev",
+    "docs:build": "bun run --cwd apps/docs build",
+    "docs:build:pages": "bun run --cwd apps/docs build:pages"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.10",

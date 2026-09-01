@@ -10,11 +10,14 @@
   "files": {
     "includes": [
       "./apps/**",
+      "!./apps/docs/**",
       "./packages/**",
       "!**/*.generated.d.ts",
       "!**/*.gen.ts",
       "!**/public",
-      "!**/{dist,out,build,node_modules,public,drizzle}"
+      "!**/{dist,out,build,node_modules,public,drizzle}",
+      "!**/.next",
+      "!**/.source"
     ]
   },
   "javascript": {

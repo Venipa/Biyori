@@ -1,0 +1,12 @@
+---
+title: Now playing
+description: Detect playback and confirm episode matches
+---
+
+The **Now playing** view shows the current media player title, parsed episode, and the matched series when recognition succeeds.
+
+Confirm or correct a match when the dialog appears so list progress stays accurate.
+
+## HTTP snapshot
+
+If **Settings -> Sharing** has the local HTTP server enabled, `GET http://127.0.0.1:<port>/` returns JSON for the current snapshot (`playing`, `title`, `episode`, `player`, `id`). Bind is localhost only.
