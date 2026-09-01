@@ -93,6 +93,7 @@ export function AnimeInfoDialog({
 			}}
 			modal>
 			<DialogContent
+				from='bottom'
 				className='flex top-8 bottom-0 h-auto max-h-none translate-y-0 max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-b-none p-0 sm:max-w-3xl'
 				onKeyDownCapture={(event) => {
 					if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {

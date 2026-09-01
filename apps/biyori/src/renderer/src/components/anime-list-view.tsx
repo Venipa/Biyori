@@ -1,12 +1,10 @@
-import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
-import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon, XIcon } from "lucide-react";
-import { startTransition, useEffect, useRef, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
 import { AnimeListProgress } from "@/mainview/components/anime-list-progress";
 import { DataTable } from "@/mainview/components/data-table";
+import { PlaceholderView } from "@/mainview/components/placeholder-view";
+import { Button } from "@/mainview/components/ui/button";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -18,8 +16,6 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
-import { PlaceholderView } from "@/mainview/components/placeholder-view";
-import { Button } from "@/mainview/components/ui/button";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
@@ -32,7 +28,11 @@ import { requestAnimeDelete, type SelectedAnime, setOrderedAnimeIds, setSelected
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
-import { type AnimeListTab, ANIME_LIST_SEARCH_TAB, type ListStatus, listStatusSchema } from "@/shared/list";
+import { ANIME_LIST_SEARCH_TAB, type AnimeListTab, type ListStatus, listStatusSchema } from "@/shared/list";
+import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
+import type { inferRouterOutputs } from "@trpc/server";
+import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon, XIcon } from "lucide-react";
+import { startTransition, useEffect, useRef, useState } from "react";
 
 const tabs = listStatusSchema.options;
 
@@ -80,7 +80,7 @@ const columns: ColumnDef<AnimeRow>[] = [
 	{
 		id: "airingStatus",
 		accessorKey: "airingStatus",
-		header: "",
+		header: () => <span className='sr-only'>Airing status</span>,
 		enableSorting: true,
 		meta: { className: "w-8 min-w-8 max-w-8 px-2" },
 		cell: ({ row, table }) => <PlayingOrAiringCell playing={table.options.meta?.playingId === row.original.id} status={row.original.airingStatus} />,
@@ -94,7 +94,11 @@ const columns: ColumnDef<AnimeRow>[] = [
 			return (
 				<span
 					title={row.original.title}
-					className={cn("block min-w-0 truncate font-medium", nextAvailable ? "text-primary" : "text-foreground", "[tr[data-playing]_&]:font-semibold [tr[data-playing]_&]:text-inherit")}>
+					className={cn(
+						"block min-w-0 truncate font-medium text-sm",
+						nextAvailable ? "text-primary" : "text-foreground",
+						"[tr[data-playing]_&]:font-semibold [tr[data-playing]_&]:text-inherit",
+					)}>
 					{row.original.title}
 				</span>
 			);
@@ -342,110 +346,108 @@ export function AnimeListView({
 
 	return (
 		<div className='flex h-full min-h-0 flex-col'>
-				<Tabs
-					value={tab}
-					onValueChange={(value) => {
-						onTabChange(value as AnimeListTab);
-					}}
-					className='flex h-full min-h-0 flex-col gap-0'>
-					<div className='shrink-0 border-b bg-card px-2 pt-2'>
-						<TabsList className='h-auto bg-transparent p-0'>
-							{searching || onSearchTab ? (
-								<div className='flex items-center'>
-									<TabsTrigger
-										value={ANIME_LIST_SEARCH_TAB}
-										className='rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none'>
-										Search ({filteredRows.length})
-									</TabsTrigger>
-									<Button
-										type='button'
-										variant='ghost'
-										size='icon-xs'
-										aria-label='Clear search'
-										onClick={() => {
-											startTransition(() => {
-												onTabChange(lastListTab.current);
-												clearListFilterText();
-											});
-										}}>
-										<XIcon />
-									</Button>
-								</div>
-							) : null}
-							{tabs.map((item) => (
+			<Tabs
+				value={tab}
+				onValueChange={(value) => {
+					onTabChange(value as AnimeListTab);
+				}}
+				className='flex h-full min-h-0 flex-col gap-0'>
+				<div className='shrink-0 border-b bg-card px-2 pt-2'>
+					<TabsList className='h-auto bg-transparent p-0'>
+						{searching || onSearchTab ? (
+							<div className='flex items-center'>
 								<TabsTrigger
-									key={item}
-									value={item}
+									value={ANIME_LIST_SEARCH_TAB}
 									className='rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none'>
-									{item} ({countsQuery.data?.[item] ?? 0})
+									Search ({filteredRows.length})
 								</TabsTrigger>
-							))}
-						</TabsList>
-					</div>
+								<Button
+									type='button'
+									variant='ghost'
+									size='icon-xs'
+									aria-label='Clear search'
+									onClick={() => {
+										startTransition(() => {
+											onTabChange(lastListTab.current);
+											clearListFilterText();
+										});
+									}}>
+									<XIcon />
+								</Button>
+							</div>
+						) : null}
+						{tabs.map((item) => (
+							<TabsTrigger
+								key={item}
+								value={item}
+								className='rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none'>
+								{item} ({countsQuery.data?.[item] ?? 0})
+							</TabsTrigger>
+						))}
+					</TabsList>
+				</div>
 
-					<TabsContent value={tab} className='m-0 min-h-0 flex-1'>
-						<ContextMenu>
-							<ContextMenuTrigger className='block h-full min-h-0'>
-								<ScrollArea className='h-full'>
-									{listQuery.isPending && !listQuery.data ? <TableRowsSkeleton columnCount={columns.length} /> : null}
-									{listQuery.error ? <PlaceholderView icon={CircleAlertIcon} title='Could not load list' description={listQuery.error.message} /> : null}
-									{listQuery.data && listQuery.data.length === 0 ? (
-										<PlaceholderView icon={ListIcon} title='No anime' description='Nothing in this list yet.' />
-									) : null}
-									{listQuery.data && listQuery.data.length > 0 && filteredRows.length === 0 ? (
-										<PlaceholderView icon={FilterIcon} title='No matches' description='Nothing matched the list filter.' />
-									) : null}
-									{filteredRows.length > 0 ? (
-										<DataTable
-											table={table}
-											compact
-											groupBy={groupedSearch ? (row) => rowListStatus(row.original, statusFallback) : undefined}
-											groupOrder={tabs}
-											renderRow={(row, cells) => (
-												<TableRow
-													data-state={selected?.id === row.original.id ? "selected" : undefined}
-													data-playing={row.original.id === playingId ? "true" : undefined}
-													className={cn(
-														"cursor-pointer even:bg-muted/25",
-														row.original.id === playingId
-															? "bg-list-playing text-list-playing-foreground even:bg-list-playing hover:bg-list-playing data-[state=selected]:bg-list-playing"
-															: null,
-													)}
-													onClick={() => {
-														selectRow(row.original);
-														onOpenAnime(row.original.id, "main");
-													}}
-													onContextMenu={() => {
-														selectRow(row.original);
-														setMenuRow(row.original);
-													}}>
-													{cells}
-												</TableRow>
-											)}
-										/>
-									) : null}
-								</ScrollArea>
-							</ContextMenuTrigger>
-							<ContextMenuContent className='min-w-56'>
-								{menuAnime ? (
-									<AnimeItemCommands
-										parts={commandParts}
-										anime={menuAnime}
-										onInformation={() => {
-											onOpenAnime(menuAnime.id, "main");
-										}}
-										onEdit={() => {
-											onOpenAnime(menuAnime.id, "list");
-										}}
-										onDelete={() => {
-											requestAnimeDelete(menuAnime);
-										}}
+				<TabsContent value={tab} className='m-0 min-h-0 flex-1'>
+					<ContextMenu>
+						<ContextMenuTrigger className='block h-full min-h-0'>
+							<ScrollArea className='h-full'>
+								{listQuery.isPending && !listQuery.data ? <TableRowsSkeleton columnCount={columns.length} /> : null}
+								{listQuery.error ? <PlaceholderView icon={CircleAlertIcon} title='Could not load list' description={listQuery.error.message} /> : null}
+								{listQuery.data && listQuery.data.length === 0 ? <PlaceholderView icon={ListIcon} title='No anime' description='Nothing in this list yet.' /> : null}
+								{listQuery.data && listQuery.data.length > 0 && filteredRows.length === 0 ? (
+									<PlaceholderView icon={FilterIcon} title='No matches' description='Nothing matched the list filter.' />
+								) : null}
+								{filteredRows.length > 0 ? (
+									<DataTable
+										table={table}
+										compact
+										groupBy={groupedSearch ? (row) => rowListStatus(row.original, statusFallback) : undefined}
+										groupOrder={tabs}
+										renderRow={(row, cells) => (
+											<TableRow
+												data-state={selected?.id === row.original.id ? "selected" : undefined}
+												data-playing={row.original.id === playingId ? "true" : undefined}
+												className={cn(
+													"cursor-pointer even:bg-muted/25",
+													row.original.id === playingId
+														? "bg-list-playing text-list-playing-foreground even:bg-list-playing hover:bg-list-playing data-[state=selected]:bg-list-playing"
+														: null,
+												)}
+												onClick={() => {
+													selectRow(row.original);
+													onOpenAnime(row.original.id, "main");
+												}}
+												onContextMenu={() => {
+													selectRow(row.original);
+													setMenuRow(row.original);
+												}}>
+												{cells}
+											</TableRow>
+										)}
 									/>
 								) : null}
-							</ContextMenuContent>
-						</ContextMenu>
-					</TabsContent>
-				</Tabs>
-			</div>
+							</ScrollArea>
+						</ContextMenuTrigger>
+						<ContextMenuContent className='min-w-56'>
+							{menuAnime ? (
+								<AnimeItemCommands
+									parts={commandParts}
+									anime={menuAnime}
+									onInformation={() => {
+										onOpenAnime(menuAnime.id, "main");
+									}}
+									onEdit={() => {
+										onOpenAnime(menuAnime.id, "list");
+									}}
+									onDelete={() => {
+										requestAnimeDelete(menuAnime);
+									}}
+								/>
+							) : null}
+						</ContextMenuContent>
+					</ContextMenu>
+				</TabsContent>
+			</Tabs>
+		</div>
 	);
 }

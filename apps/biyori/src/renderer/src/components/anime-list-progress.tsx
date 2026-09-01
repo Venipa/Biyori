@@ -1,8 +1,8 @@
-import type { CSSProperties } from "react";
 import { ProgressIndicator, ProgressRoot, ProgressTrack } from "@/mainview/components/ui/progress";
 import { listProgressLabel, listProgressLayout } from "@/mainview/lib/list-progress";
 import { cn } from "@/mainview/lib/utils";
 import type { ListStatus } from "@/shared/list";
+import type { CSSProperties } from "react";
 
 type AnimeListProgressProps = {
 	watched: number;
@@ -47,7 +47,7 @@ export function AnimeListProgress({ watched, total, available, aired, finished, 
 						"--list-progress-available-width": `${Math.max(0, layout.availableEnd - layout.availableStart) * 100}%`,
 					} as CSSProperties
 				}>
-				<ProgressTrack className='relative h-4 w-full overflow-hidden rounded-sm'>
+				<ProgressTrack className='relative h-3 w-full overflow-hidden rounded-sm'>
 					<span className='pointer-events-none absolute bottom-0 left-0 h-[3px] w-full bg-muted-foreground/35' />
 					<span className='pointer-events-none absolute bottom-0 left-0 h-[3px] w-(--list-progress-aired) bg-destructive' />
 					<ProgressIndicator className={cn("transition-none", watchedBarClass(status))} />

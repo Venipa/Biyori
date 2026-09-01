@@ -1,22 +1,11 @@
-import {
-	BellIcon,
-	CheckIcon,
-	CircleAlertIcon,
-	DownloadIcon,
-	FolderSearchIcon,
-	ListIcon,
-	PlayIcon,
-	RefreshCwIcon,
-	TvIcon,
-	XIcon,
-} from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import type { ComponentType, ReactNode } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Spinner } from "@/mainview/components/ui/spinner";
 import { WatchConfirmActions } from "@/mainview/components/watch-confirm-actions";
 import { cn } from "@/mainview/lib/utils";
+import { BellIcon, CheckIcon, CircleAlertIcon, DownloadIcon, FolderSearchIcon, ListIcon, PlayIcon, RefreshCwIcon, TvIcon, XIcon } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import type { ComponentType, ReactNode } from "react";
 
 const SOURCE_ICONS: Record<string, ComponentType<{ className?: string }>> = {
 	"library-scan": FolderSearchIcon,
@@ -54,19 +43,7 @@ function ActivityStatus({ status }: { status: "live" | "ok" | "error" }) {
 	return <CheckIcon className='size-3.5 shrink-0 text-muted-foreground' aria-label='Done' />;
 }
 
-function ActivityRow({
-	source,
-	title,
-	body,
-	status,
-	trailing,
-}: {
-	source: string;
-	title: string;
-	body?: string;
-	status: "live" | "ok" | "error";
-	trailing?: ReactNode;
-}) {
+function ActivityRow({ source, title, body, status, trailing }: { source: string; title: string; body?: string; status: "live" | "ok" | "error"; trailing?: ReactNode }) {
 	const hover = status !== "live" || Boolean(trailing);
 	const subtitle = body?.trim() ? body : null;
 	return (
