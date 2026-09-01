@@ -1,9 +1,19 @@
+import { appName, appTagline } from "@/lib/shared";
+import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { ImageResponse } from "next/og";
-import { appDescription, appName, appTagline, brandColor, brandColorRgb } from "@/lib/shared";
+import type { ReactNode } from "react";
 
-export type OgImageType = "screenshot" | "render" | "render-auto";
+const PILLS = ["List", "Library", "Torrents"] as const;
+
+const charcoal = {
+	field: "#0a0a0a",
+	spot: "#db1717",
+	ink: "#f4f4f5",
+	mute: "#a3a3a3",
+	line: "rgba(255,255,255,0.14)",
+	pillFill: "rgba(14,14,14,0.9)",
+} as const;
 
 async function getLogoDataUrl(): Promise<string> {
 	const data = await readFile(join(process.cwd(), "public/logo.png"));
@@ -15,7 +25,7 @@ async function getScreenshotDataUrl(): Promise<string> {
 	return `data:image/png;base64,${data.toString("base64")}`;
 }
 
-function DocsOg({ title, description, logoSrc, screenshotSrc }: { title: string; description?: string; logoSrc: string; screenshotSrc: string }) {
+function OgField({ children }: { children: ReactNode }) {
 	return (
 		<div
 			style={{
@@ -24,32 +34,119 @@ function DocsOg({ title, description, logoSrc, screenshotSrc }: { title: string;
 				width: "100%",
 				height: "100%",
 				overflow: "hidden",
-				background: "#0f1115",
-				color: "#fafafa",
+				background: charcoal.field,
+				color: charcoal.ink,
 			}}>
-			{/* eslint-disable-next-line @next/next/no-img-element */}
-			<img
-				src={screenshotSrc}
-				alt=''
-				width={920}
-				height={520}
+			<div
 				style={{
+					display: "flex",
 					position: "absolute",
-					right: -80,
-					bottom: -120,
-					opacity: 0.45,
-					transform: "rotate(-6deg)",
-					borderRadius: 16,
-					border: "1px solid rgba(255,255,255,0.1)",
+					width: 1600,
+					height: 1600,
+					borderRadius: 800,
+					background: charcoal.spot,
+					opacity: 0.22,
+					top: -420,
+					left: "50%",
+					marginLeft: -800,
 				}}
 			/>
 			<div
 				style={{
+					display: "flex",
 					position: "absolute",
-					inset: 0,
-					backgroundImage: "linear-gradient(90deg, #0f1115 28%, rgba(15,17,21,0.82) 58%, rgba(15,17,21,0.25) 100%)",
+					inset: 48,
+					border: `1px solid ${charcoal.line}`,
+					borderRadius: 28,
 				}}
 			/>
+			{children}
+		</div>
+	);
+}
+
+function Pill({ label, fontSize, padY, padX }: { label: string; fontSize: number; padY: number; padX: number }) {
+	return (
+		<div
+			style={{
+				display: "flex",
+				alignItems: "center",
+				border: `1px solid ${charcoal.line}`,
+				background: charcoal.pillFill,
+				borderRadius: 999,
+				padding: `${padY}px ${padX}px`,
+				fontSize,
+				fontWeight: 600,
+				letterSpacing: 0.4,
+				color: charcoal.ink,
+			}}>
+			{label}
+		</div>
+	);
+}
+
+function HomeOg({ logoSrc, screenshotSrc }: { logoSrc: string; screenshotSrc: string }) {
+	const shotW = 1680;
+	const shotH = 948;
+	return (
+		<OgField>
+			<div
+				style={{
+					display: "flex",
+					position: "absolute",
+					left: "50%",
+					bottom: -220,
+					marginLeft: -(shotW / 2),
+					width: shotW,
+					height: shotH,
+					background: charcoal.field,
+					opacity: 0.82,
+					transform: "rotate(0deg) skewX(0deg) scale(1)",
+					transformOrigin: "840px 948px",
+					borderRadius: 16,
+					border: `2px solid ${charcoal.line}`,
+					overflow: "hidden",
+				}}>
+				{/* biome-ignore lint: ImageResponse has no next/image */}
+				<img
+					src={screenshotSrc}
+					alt=''
+					width={shotW}
+					height={shotH}
+					style={{
+						width: shotW,
+						height: shotH,
+						opacity: 0.55,
+					}}
+				/>
+			</div>
+			<div
+				style={{
+					display: "flex",
+					position: "relative",
+					flexDirection: "column",
+					alignItems: "center",
+					width: "100%",
+					height: "100%",
+					padding: "80px 120px 0",
+				}}>
+				{/* biome-ignore lint: ImageResponse has no next/image */}
+				<img src={logoSrc} alt='' width={168} height={168} style={{ borderRadius: 36 }} />
+				<div style={{ marginTop: 32, fontSize: 168, fontWeight: 800, letterSpacing: -3, lineHeight: 1 }}>{appName}</div>
+				<div style={{ marginTop: 16, fontSize: 36, fontWeight: 500, color: charcoal.mute }}>{appTagline}</div>
+				<div style={{ display: "flex", marginTop: 40, gap: 16 }}>
+					{PILLS.map((label) => (
+						<Pill key={label} label={label} fontSize={28} padY={14} padX={32} />
+					))}
+				</div>
+			</div>
+		</OgField>
+	);
+}
+
+function DocsOg({ title, description, logoSrc }: { title: string; description?: string; logoSrc: string }) {
+	return (
+		<OgField>
 			<div
 				style={{
 					display: "flex",
@@ -58,93 +155,37 @@ function DocsOg({ title, description, logoSrc, screenshotSrc }: { title: string;
 					justifyContent: "center",
 					width: "100%",
 					height: "100%",
-					padding: "64px 72px",
+					padding: "72px 80px",
 				}}>
-				<div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-					{/* eslint-disable-next-line @next/next/no-img-element */}
-					<img src={logoSrc} alt='' width={52} height={52} style={{ borderRadius: 12 }} />
-					<span style={{ fontSize: 28, fontWeight: 800 }}>{appName}</span>
-				</div>
-				<div style={{ marginTop: 40, fontSize: 64, fontWeight: 800, lineHeight: 1.1, maxWidth: 760 }}>{title}</div>
-				{description ? <div style={{ marginTop: 20, fontSize: 28, color: "#a1a1aa", maxWidth: 720 }}>{description}</div> : null}
-				<div
-					style={{
-						marginTop: 36,
-						width: 96,
-						height: 6,
-						borderRadius: 999,
-						background: brandColor,
-					}}
-				/>
-			</div>
-		</div>
-	);
-}
-
-function HomeOg({ logoSrc, screenshotSrc }: { logoSrc: string; screenshotSrc: string }) {
-	return (
-		<div
-			style={{
-				display: "flex",
-				position: "relative",
-				width: "100%",
-				height: "100%",
-				overflow: "hidden",
-				background: "#0f1115",
-				color: "#fafafa",
-				padding: "48px 56px",
-				alignItems: "center",
-				justifyContent: "space-between",
-			}}>
-			<div style={{ display: "flex", flexDirection: "column", width: 480, maxWidth: 480 }}>
 				<div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-					{/* eslint-disable-next-line @next/next/no-img-element */}
-					<img src={logoSrc} alt='' width={72} height={72} style={{ borderRadius: 16 }} />
-					<div style={{ display: "flex", flexDirection: "column" }}>
-						<div style={{ fontSize: 36, fontWeight: 800 }}>{appName}</div>
-						<div style={{ marginTop: 4, fontSize: 18, fontWeight: 600, color: `rgb(${brandColorRgb})` }}>{appTagline}</div>
-					</div>
+					{/* biome-ignore lint: ImageResponse has no next/image */}
+					<img src={logoSrc} alt='' width={48} height={48} style={{ borderRadius: 12 }} />
+					<div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.4 }}>{appName}</div>
 				</div>
-				<div style={{ marginTop: 28, fontSize: 24, color: "#a1a1aa", lineHeight: 1.4 }}>{appDescription}</div>
+				<div style={{ marginTop: 48, fontSize: 64, fontWeight: 800, letterSpacing: -1.6, lineHeight: 1.08, maxWidth: 980 }}>{title}</div>
+				{description ? <div style={{ marginTop: 20, fontSize: 28, color: charcoal.mute, maxWidth: 880, lineHeight: 1.35 }}>{description}</div> : null}
 			</div>
-			{/* eslint-disable-next-line @next/next/no-img-element */}
-			<img
-				src={screenshotSrc}
-				alt=''
-				width={620}
-				height={350}
-				style={{
-					borderRadius: 12,
-					border: "1px solid rgba(255,255,255,0.14)",
-					transform: "rotate(-2deg)",
-				}}
-			/>
-		</div>
+		</OgField>
 	);
 }
 
-export async function createOgImage({
-	title,
-	description,
-}: {
-	title: string;
-	description?: string;
-	logo?: "svg" | "png";
-	image?: string;
-	imageType?: OgImageType;
-	color?: string;
-}) {
-	const [logoSrc, screenshotSrc] = await Promise.all([getLogoDataUrl(), getScreenshotDataUrl()]);
-	return new ImageResponse(<DocsOg title={title} description={description} logoSrc={logoSrc} screenshotSrc={screenshotSrc} />, {
+export async function createOgImage({ title, description }: { title: string; description?: string }) {
+	const logoSrc = await getLogoDataUrl();
+	return new ImageResponse(<DocsOg title={title} description={description} logoSrc={logoSrc} />, {
 		width: 1200,
 		height: 630,
 	});
 }
 
+export const homeOgSize = {
+	width: 2400,
+	height: 1260,
+} as const;
+
 export async function createHomeOgImage() {
 	const [logoSrc, screenshotSrc] = await Promise.all([getLogoDataUrl(), getScreenshotDataUrl()]);
 	return new ImageResponse(<HomeOg logoSrc={logoSrc} screenshotSrc={screenshotSrc} />, {
-		width: 1200,
-		height: 630,
+		width: homeOgSize.width,
+		height: homeOgSize.height,
 	});
 }
