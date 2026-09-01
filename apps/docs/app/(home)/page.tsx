@@ -8,6 +8,8 @@ import { getLatestReleasesByChannel, getLatestReleaseUrl, getRepositoryUrl, grou
 import { assetPath } from "@/lib/paths";
 import { appDescription, appName, appTagline, changelogRoute, docsRoute, formatStarCount, repoStars } from "@/lib/shared";
 
+const appScreenshot = "/app-screenshot-1.png";
+
 const features = [
 	{
 		title: "AniList",
@@ -57,6 +59,24 @@ export default async function HomePage() {
 	return (
 		<main className='mx-auto flex w-full max-w-6xl flex-1 flex-col gap-16 px-4 py-12 md:gap-20 md:py-16'>
 			<section className='relative overflow-hidden rounded-2xl border bg-fd-card'>
+				<div aria-hidden className='pointer-events-none absolute inset-0 z-0 overflow-hidden'>
+					<div className='absolute -bottom-[8%] -left-[10%] w-[85%] max-w-3xl [perspective:1600px] md:-bottom-[6%] md:-left-[4%] md:w-[72%]'>
+						<div className='origin-center opacity-55 shadow-2xl shadow-black/30 [transform:rotateX(14deg)_rotateY(22deg)_rotateZ(-3deg)_scale(1.08)] [transform-style:preserve-3d] dark:opacity-50'>
+							<Image
+								src={assetPath(appScreenshot)}
+								alt=''
+								width={1277}
+								height={721}
+								className='h-auto w-full rounded-xl border border-white/10'
+								sizes='(max-width: 768px) 90vw, 720px'
+								priority
+							/>
+						</div>
+					</div>
+					<div className='absolute inset-0 bg-gradient-to-r from-transparent via-fd-card/40 to-fd-card' />
+					<div className='absolute inset-0 bg-gradient-to-t from-fd-card/85 via-transparent to-fd-card/55' />
+				</div>
+
 				<div className='relative z-10 grid items-start gap-10 px-6 py-12 md:px-12 md:py-16 lg:grid-cols-[1.15fr_0.85fr]'>
 					<div className='flex flex-col items-start text-left'>
 						<div className='mb-6 inline-flex items-center gap-3.5'>
@@ -102,6 +122,17 @@ export default async function HomePage() {
 
 					<ReleaseDownloadPanel releases={releases} />
 				</div>
+			</section>
+
+			<section className='overflow-hidden rounded-2xl border bg-fd-card'>
+				<Image
+					src={assetPath(appScreenshot)}
+					alt='Biyori anime list'
+					width={1277}
+					height={721}
+					className='h-auto w-full'
+					sizes='(max-width: 1152px) 100vw, 1152px'
+				/>
 			</section>
 
 			<section>
