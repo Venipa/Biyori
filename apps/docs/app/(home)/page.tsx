@@ -1,12 +1,12 @@
-import { buttonVariants } from "fumadocs-ui/components/ui/button";
-import { BookOpenIcon, ClapperboardIcon, DownloadIcon, FolderSearchIcon, ListIcon, RadioIcon, ScrollTextIcon, SearchIcon, StarIcon } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
 import { ReleaseDownloadPanel } from "@/components/release-download-panel";
 import { cn } from "@/lib/cn";
 import { getLatestReleasesByChannel, getLatestReleaseUrl, getRepositoryUrl, groupDownloadsByPlatform, pickPrimaryDownload } from "@/lib/github";
 import { assetPath } from "@/lib/paths";
 import { appDescription, appName, appTagline, changelogRoute, docsRoute, formatStarCount, repoStars } from "@/lib/shared";
+import { buttonVariants } from "fumadocs-ui/components/ui/button";
+import { BookOpenIcon, ClapperboardIcon, DownloadIcon, FolderSearchIcon, ListIcon, RadioIcon, ScrollTextIcon, SearchIcon, StarIcon } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 
 const appScreenshot = "/app-screenshot-1.png";
 
@@ -61,7 +61,7 @@ export default async function HomePage() {
 			<section className='relative overflow-hidden rounded-2xl border bg-fd-card'>
 				<div aria-hidden className='pointer-events-none absolute inset-0 z-0 overflow-hidden'>
 					<div className='absolute -bottom-[8%] -left-[10%] w-[85%] max-w-3xl [perspective:1600px] md:-bottom-[6%] md:-left-[4%] md:w-[72%]'>
-						<div className='origin-center opacity-55 shadow-2xl shadow-black/30 [transform:rotateX(14deg)_rotateY(22deg)_rotateZ(-3deg)_scale(1.08)] [transform-style:preserve-3d] dark:opacity-50'>
+						<div className='origin-center opacity-10 shadow-2xl shadow-black/30 [transform:rotateX(14deg)_rotateY(22deg)_rotateZ(-3deg)_scale(1.08)] [transform-style:preserve-3d] dark:opacity-50'>
 							<Image
 								src={assetPath(appScreenshot)}
 								alt=''
@@ -125,14 +125,7 @@ export default async function HomePage() {
 			</section>
 
 			<section className='overflow-hidden rounded-2xl border bg-fd-card'>
-				<Image
-					src={assetPath(appScreenshot)}
-					alt='Biyori anime list'
-					width={1277}
-					height={721}
-					className='h-auto w-full'
-					sizes='(max-width: 1152px) 100vw, 1152px'
-				/>
+				<Image src={assetPath(appScreenshot)} alt='Biyori anime list' width={1277} height={721} className='h-auto w-full' sizes='(max-width: 1152px) 100vw, 1152px' />
 			</section>
 
 			<section>
