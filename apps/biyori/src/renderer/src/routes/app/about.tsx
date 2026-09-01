@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import type { inferRouterOutputs } from "@trpc/server";
-import { AlertCircleIcon, RefreshCwIcon, ScrollTextIcon } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { desktopRpc } from "@/desktop-rpc";
 import { MarkdownBody } from "@/mainview/components/markdown-body";
 import { Alert, AlertDescription, AlertTitle } from "@/mainview/components/ui/alert";
@@ -15,6 +13,9 @@ import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { getVersionChannel, parseUpdateChannel, UPDATE_CHANNEL_LABELS, type UpdateChannel } from "@/shared/updater";
+import { createFileRoute } from "@tanstack/react-router";
+import type { inferRouterOutputs } from "@trpc/server";
+import { AlertCircleIcon, RefreshCwIcon, ScrollTextIcon } from "lucide-react";
 
 type ChangelogData = inferRouterOutputs<AppRouter>["updater"]["changelog"];
 
@@ -41,7 +42,7 @@ function AboutPage() {
 	}
 
 	return (
-		<div className='flex h-full flex-col gap-6 overflow-auto p-4'>
+		<ScrollArea className='flex h-full flex-col gap-6 p-4'>
 			<div>
 				<h1 className='text-lg font-semibold'>About Biyori</h1>
 				<p className='text-sm text-muted-foreground'>Anime list tracker powered by AniList.</p>
@@ -94,7 +95,7 @@ function AboutPage() {
 				) : null}
 			</div>
 			<Changelog changelog={changelog.data} isLoading={changelog.isPending} queryError={changelog.isError} />
-		</div>
+		</ScrollArea>
 	);
 }
 
