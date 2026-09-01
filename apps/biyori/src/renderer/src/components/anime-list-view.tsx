@@ -29,6 +29,7 @@ import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { ANIME_LIST_SEARCH_TAB, type AnimeListTab, type ListStatus, listStatusSchema } from "@/shared/list";
+import { log } from "@biyori/logger";
 import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon, XIcon } from "lucide-react";
@@ -206,6 +207,7 @@ export function AnimeListView({
 		lastListTab.current = tab;
 	}
 	const listStatus = onSearchTab ? lastListTab.current : statusFallback;
+	const utils = trpc.useUtils();
 	const listQuery = trpc.anime.list.useQuery(groupedSearch ? {} : { status: listStatus }, {
 		placeholderData: (previousData) => {
 			if (!previousData) {
@@ -416,6 +418,11 @@ export function AnimeListView({
 												onClick={() => {
 													selectRow(row.original);
 													onOpenAnime(row.original.id, "main");
+												}}
+												onPointerEnter={() => {
+													void utils.anime.byId.prefetch({ id: row.original.id }, { staleTime: 30_000 }).then(() => {
+														log.debug("prefetch", row.original.id);
+													});
 												}}
 												onContextMenu={() => {
 													selectRow(row.original);

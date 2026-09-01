@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { trpc } from "@/mainview/trpc";
 
 type OpenAnimeInfoOptions = {
 	id: number;
@@ -45,13 +46,15 @@ export function useAnimeInfoOpen(): AnimeInfoOpen | undefined {
 
 export function useAnimeInfoNav() {
 	const navigate = useNavigate();
+	const utils = trpc.useUtils();
 
 	const open = useCallback((options: OpenAnimeInfoOptions) => {
+		void utils.anime.byId.prefetch({ id: options.id }, { staleTime: 30_000 });
 		setAnimeInfoOpen({
 			id: options.id,
 			infoTab: options.infoTab,
 		});
-	}, []);
+	}, [utils]);
 
 	const close = useCallback(() => {
 		setAnimeInfoOpen(undefined);
@@ -72,11 +75,12 @@ export function useAnimeInfoNav() {
 	}, [navigate]);
 
 	const navigateTo = useCallback((id: number) => {
+		void utils.anime.byId.prefetch({ id }, { staleTime: 30_000 });
 		setAnimeInfoOpen({
 			id,
 			infoTab: current?.infoTab,
 		});
-	}, []);
+	}, [utils]);
 
 	return useMemo(() => ({ open, close, navigateTo }), [open, close, navigateTo]);
 }

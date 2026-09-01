@@ -16,17 +16,14 @@ import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from
 import { Input } from "@/mainview/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Spinner } from "@/mainview/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
-import { useHeldOpenPayload } from "@/mainview/lib/held-open-payload";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 import { getNeighborAnimeId } from "@/mainview/lib/selected-anime";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
-import { log } from "@biyori/logger";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, FolderOpen } from "lucide-react";
@@ -62,39 +59,32 @@ function toDateInput(value: string | null | undefined): string {
 }
 
 export function AnimeInfoDialog({
-	id,
-	ensuring = false,
+	open,
+	anime,
 	ensureError,
 	infoTab,
 	onOpenChange,
+	onOpenChangeComplete,
 	onNavigate,
 }: {
-	id: number | undefined;
-	ensuring?: boolean;
+	open: boolean;
+	anime: AnimeDetail | null;
 	ensureError?: string;
 	infoTab?: "main" | "list";
 	onOpenChange: (open: boolean) => void;
+	onOpenChangeComplete?: (open: boolean) => void;
 	onNavigate?: (id: number) => void;
 }) {
-	const open = Boolean(id) || ensuring || Boolean(ensureError);
-	const { payload: queryId, onOpenChangeComplete: onIdCloseComplete } = useHeldOpenPayload(id);
-	const { payload: heldInfoTab, onOpenChangeComplete: onTabCloseComplete } = useHeldOpenPayload(id || ensuring ? (infoTab ?? "main") : undefined);
-	const byIdQuery = trpc.anime.byId.useQuery({ id: queryId ?? 0 }, { enabled: Boolean(queryId) });
-	const anime = byIdQuery.data ?? null;
-	const loading = !anime && (ensuring || (Boolean(queryId) && (byIdQuery.isLoading || byIdQuery.isFetching) && !ensureError));
-	log.debug("AnimeInfoDialog", { anime, ensureError });
 	return (
 		<Dialog
 			open={open}
 			onOpenChange={onOpenChange}
-			onOpenChangeComplete={(isOpen) => {
-				onIdCloseComplete(isOpen);
-				onTabCloseComplete(isOpen);
-			}}
+			onOpenChangeComplete={onOpenChangeComplete}
 			modal>
 			<DialogContent
 				from='bottom'
-				className='flex top-8 bottom-0 h-auto max-h-none translate-y-0 max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-b-none p-0 sm:max-w-3xl'
+				showCloseButton={false}
+				className='flex max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-b-none p-0 sm:max-w-3xl'
 				onKeyDownCapture={(event) => {
 					if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
 						return;
@@ -103,10 +93,10 @@ export function AnimeInfoDialog({
 					if (target instanceof HTMLElement && target.closest("input, textarea, select, [data-slot=select-content], [contenteditable=true]")) {
 						return;
 					}
-					if (!id || !onNavigate) {
+					if (!anime || !onNavigate) {
 						return;
 					}
-					const nextId = getNeighborAnimeId(id, event.key === "ArrowRight" ? 1 : -1);
+					const nextId = getNeighborAnimeId(anime.id, event.key === "ArrowRight" ? 1 : -1);
 					if (!nextId) {
 						return;
 					}
@@ -116,13 +106,11 @@ export function AnimeInfoDialog({
 				}}>
 				<DialogTitle className='sr-only'>{anime?.title ?? "Anime Information"}</DialogTitle>
 
-				{loading ? <AnimeInfoLoading /> : null}
-
-				{anime && !loading ? (
+				{anime ? (
 					<AnimeInfoBody
-						key={`${anime.id}-${heldInfoTab ?? "main"}-${anime.onList}`}
+						key={anime.id}
 						anime={anime}
-						infoTab={heldInfoTab ?? "main"}
+						infoTab={infoTab ?? "main"}
 						readOnly={!anime.onList}
 						onClose={() => {
 							onOpenChange(false);
@@ -133,7 +121,7 @@ export function AnimeInfoDialog({
 					/>
 				) : null}
 
-				{!anime && !loading ? (
+				{!anime ? (
 					<DialogFooter className='mt-0 rounded-b-none p-0!'>
 						{ensureError ? <p className='mr-auto text-sm text-destructive'>{ensureError}</p> : null}
 						<DialogClose render={<Button variant='outline' />}>Cancel</DialogClose>
@@ -144,25 +132,6 @@ export function AnimeInfoDialog({
 				) : null}
 			</DialogContent>
 		</Dialog>
-	);
-}
-
-function AnimeInfoLoading() {
-	return (
-		<div className='flex min-h-0 flex-1 flex-col'>
-			<div className='relative h-40 w-full shrink-0 bg-muted'>
-				<Skeleton className='size-full rounded-none' />
-				<div className='pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-popover to-transparent' />
-			</div>
-			<div className='relative z-10 -mt-14 flex min-h-0 flex-1 gap-4 px-4 pb-4'>
-				<Skeleton className='aspect-2/3 w-56 shrink-0 self-start rounded-md' />
-				<div className='flex min-h-0 min-w-0 flex-1 flex-col gap-3'>
-					<Skeleton className='mt-auto h-6 w-2/3' />
-					<Skeleton className='h-8 w-64' />
-					<Skeleton className='min-h-0 flex-1 w-full' />
-				</div>
-			</div>
-		</div>
 	);
 }
 

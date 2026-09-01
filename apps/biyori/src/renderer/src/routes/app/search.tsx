@@ -93,6 +93,7 @@ function SearchPage() {
 	const { q, id: openIdRaw } = Route.useSearch();
 	const openId = useAnimeInfoOpen()?.id ?? parseAnimeInfoId(openIdRaw);
 	const animeInfo = useAnimeInfoNav();
+	const utils = trpc.useUtils();
 	const query = trpc.anilist.search.useQuery({ q, page: 1 }, { enabled: (q ?? "").trim().length > 0 });
 	const listedQuery = trpc.anime.listed.useQuery();
 	const listed = listedQuery.data;
@@ -151,6 +152,9 @@ function SearchPage() {
 												id: row.original.id,
 												infoTab: "main",
 											});
+										}}
+										onPointerEnter={() => {
+											void utils.anime.byId.prefetch({ id: row.original.id }, { staleTime: 30_000 });
 										}}
 										onContextMenu={() => {
 											setMenuRow(row.original);

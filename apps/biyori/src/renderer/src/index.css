@@ -92,6 +92,8 @@
 	--sidebar-border: oklch(0.9 0.005 260);
 	--sidebar-ring: oklch(0.6 0.1 262);
 	--text-sm: 0.825rem;
+	--text-md: 0.835rem;
+	--text-default: 0.835rem;
 }
 
 .dark {
@@ -167,6 +169,36 @@
 .app-region-no-drag {
 	app-region: no-drag;
 	-webkit-app-region: no-drag;
+}
+
+@keyframes dialog-from-bottom-in {
+	from {
+		opacity: 0;
+		translate: 0 8px;
+	}
+	to {
+		opacity: 1;
+		translate: 0 0;
+	}
+}
+
+@keyframes dialog-from-bottom-out {
+	from {
+		opacity: 1;
+		translate: 0 0;
+	}
+	to {
+		opacity: 0;
+		translate: 0 8px;
+	}
+}
+
+[data-slot="dialog-content"].dialog-from-bottom[data-open] {
+	animation: dialog-from-bottom-in 200ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+[data-slot="dialog-content"].dialog-from-bottom[data-closed] {
+	animation: dialog-from-bottom-out 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .spinner > div > span {
