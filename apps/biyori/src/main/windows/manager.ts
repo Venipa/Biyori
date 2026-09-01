@@ -32,19 +32,18 @@ type WindowEntry = {
 };
 
 function loadAppUrl(win: BrowserWindow, to?: string): void {
+	const hash = to ? (to.startsWith("/") ? to : `/${to}`) : "";
 	const rendererUrl = process.env.ELECTRON_RENDERER_URL;
 	if (is.dev && rendererUrl) {
 		const url = new URL(rendererUrl);
-		if (to) {
-			url.searchParams.set("to", to);
+		if (hash) {
+			url.hash = hash;
 		}
 		void win.loadURL(url.toString());
 		return;
 	}
 
-	void win.loadFile(join(__dirname, "../renderer/index.html"), {
-		query: to ? { to } : {},
-	});
+	void win.loadFile(join(__dirname, "../renderer/index.html"), hash ? { hash } : {});
 }
 
 function centerOnParent(win: BrowserWindow, parent: BrowserWindow): void {
@@ -165,7 +164,12 @@ export class WindowManager<TId extends string> {
 	}
 
 	close(id: TId): void {
-		this.get(id)?.close();
+		const win = this.get(id);
+		if (!win) {
+			return;
+		}
+		win.hide();
+		win.close();
 	}
 
 	destroyAll(): void {

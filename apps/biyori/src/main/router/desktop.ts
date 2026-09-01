@@ -62,6 +62,7 @@ export const desktopRouter = t.router({
 	closeWindow: t.procedure.mutation(({ ctx }) => {
 		const win = requireWindow(ctx.getBrowserWindow);
 		if (win.isClosable()) {
+			win.hide();
 			win.close();
 		}
 		return { ok: true as const };

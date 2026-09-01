@@ -1,8 +1,9 @@
 import { AiringStatusMark } from "@/components/airing-status";
+import { Badge } from "@/components/ui/badge";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
 import { AnimeListProgress } from "@/mainview/components/anime-list-progress";
-import { DataTable } from "@/mainview/components/data-table";
+import { DataTable, resizableTableOptions } from "@/mainview/components/data-table";
 import { PlaceholderView } from "@/mainview/components/placeholder-view";
 import { Button } from "@/mainview/components/ui/button";
 import {
@@ -25,6 +26,7 @@ import { formatLocalDateTime, formatTimeAgo } from "@/mainview/lib/format-date";
 import { clearListFilterText, useListFilterText } from "@/mainview/lib/list-filter";
 import { libraryEpisodeTooltip, listProgressRatio } from "@/mainview/lib/list-progress";
 import { requestAnimeDelete, type SelectedAnime, setOrderedAnimeIds, setSelectedAnime, useSelectedAnime } from "@/mainview/lib/selected-anime";
+import { usePersistedColumnSizing } from "@/mainview/lib/table-column-sizing";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
@@ -83,13 +85,19 @@ const columns: ColumnDef<AnimeRow>[] = [
 		accessorKey: "airingStatus",
 		header: () => <span className='sr-only'>Airing status</span>,
 		enableSorting: true,
-		meta: { className: "w-8 min-w-8 max-w-8 px-2" },
+		enableResizing: false,
+		size: 32,
+		minSize: 32,
+		maxSize: 32,
+		meta: { className: "px-2" },
 		cell: ({ row, table }) => <PlayingOrAiringCell playing={table.options.meta?.playingId === row.original.id} status={row.original.airingStatus} />,
 	},
 	{
 		accessorKey: "title",
 		header: "Anime title",
-		meta: { className: "w-full max-w-0" },
+		size: 280,
+		minSize: 120,
+		meta: { className: "min-w-0" },
 		cell: ({ row }) => {
 			const nextAvailable = !!row.original.libraryEpisodes?.includes(row.original.episodesWatched + 1);
 			return (
@@ -109,7 +117,8 @@ const columns: ColumnDef<AnimeRow>[] = [
 		id: "progress",
 		accessorFn: (row) => listProgressRatio(row.episodesWatched, row.episodes),
 		header: "Progress",
-		meta: { className: "min-w-[10rem]" },
+		size: 180,
+		minSize: 120,
 		cell: ({ row }) => {
 			const finished = row.original.airingStatus === "Finished airing" || row.original.airingStatus === "Finished";
 			return (
@@ -230,16 +239,19 @@ export function AnimeListView({
 	const selected = useSelectedAnime();
 	const [sorting, setSorting] = useState<SortingState>([{ id: "lastUpdated", desc: true }]);
 	const [menuRow, setMenuRow] = useState<AnimeRow | null>(null);
+	const { columnSizing, onColumnSizingChange } = usePersistedColumnSizing("anime-list");
 	const table = useReactTable({
 		data: listQuery.data ?? EMPTY_ROWS,
 		columns,
+		...resizableTableOptions,
 		getCoreRowModel: getCoreRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getRowId: (row) => String(row.id),
 		globalFilterFn: (row, _columnId, filterValue) => animeMatchesListFilter(row.original, String(filterValue ?? "")),
 		onSortingChange: setSorting,
-		state: { sorting, globalFilter: listFilter },
+		onColumnSizingChange,
+		state: { sorting, globalFilter: listFilter, columnSizing },
 		meta: { playingId },
 	});
 	const tableRef = useRef(table);
@@ -361,7 +373,10 @@ export function AnimeListView({
 								<TabsTrigger
 									value={ANIME_LIST_SEARCH_TAB}
 									className='rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none'>
-									Search ({filteredRows.length})
+									Search{" "}
+									<Badge variant='outline' size='sm'>
+										{filteredRows.length}
+									</Badge>
 								</TabsTrigger>
 								<Button
 									type='button'

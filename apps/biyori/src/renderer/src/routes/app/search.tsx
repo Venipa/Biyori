@@ -7,7 +7,8 @@ import { AiringStatusMark } from "@/components/airing-status";
 import { anilistSearchRouteSchema } from "@/lib/schemas/anilist-search";
 import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
-import { DataTable } from "@/mainview/components/data-table";
+import { DataTable, resizableTableOptions } from "@/mainview/components/data-table";
+import { usePersistedColumnSizing } from "@/mainview/lib/table-column-sizing";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -41,6 +42,8 @@ const columns: ColumnDef<SearchRow>[] = [
 	{
 		accessorKey: "title",
 		header: "Anime title",
+		size: 280,
+		minSize: 120,
 		cell: ({ row }) => (
 			<div className='flex min-w-0 items-center gap-2'>
 				<AiringStatusMark status={row.original.status} shape='square' />
@@ -106,14 +109,17 @@ function SearchPage() {
 	}, [listedById, query.data?.items]);
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [menuRow, setMenuRow] = useState<SearchRow | null>(null);
+	const { columnSizing, onColumnSizingChange } = usePersistedColumnSizing("search");
 	const table = useReactTable({
 		data: items,
 		columns,
+		...resizableTableOptions,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getRowId: (row) => String(row.id),
 		onSortingChange: setSorting,
-		state: { sorting },
+		onColumnSizingChange,
+		state: { sorting, columnSizing },
 	});
 	const hasQuery = (q ?? "").trim().length > 0;
 	const menuStatus = menuRow ? parseListStatus(listedById.get(menuRow.id)) : null;

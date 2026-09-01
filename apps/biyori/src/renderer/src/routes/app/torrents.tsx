@@ -5,7 +5,7 @@ import { type ReactElement, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import { desktopRpc } from "@/desktop-rpc";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
-import { DataTable } from "@/mainview/components/data-table";
+import { DataTable, resizableTableOptions } from "@/mainview/components/data-table";
 import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
 import {
@@ -24,6 +24,7 @@ import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { formatLocalDateTime } from "@/mainview/lib/format-date";
+import { usePersistedColumnSizing } from "@/mainview/lib/table-column-sizing";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
@@ -103,12 +104,16 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>(() => selectionFrom(items));
 	const [menuRow, setMenuRow] = useState<TorrentRow | null>(null);
+	const { columnSizing, onColumnSizingChange } = usePersistedColumnSizing("torrents");
 
 	const columns: ColumnDef<TorrentRow>[] = [
 		{
 			id: "select",
 			enableSorting: false,
-			meta: { className: "w-8 min-w-8 max-w-8" },
+			enableResizing: false,
+			size: 36,
+			minSize: 36,
+			maxSize: 36,
 			header: ({ table }) => (
 				<Checkbox
 					aria-label='Select all torrents'
@@ -134,8 +139,10 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 		{
 			accessorKey: "animeTitle",
 			header: "Anime title",
+			size: 240,
+			minSize: 120,
 			cell: ({ row }) => (
-				<div className='flex min-w-40 max-w-72 items-center gap-2'>
+				<div className='flex min-w-0 items-center gap-2'>
 					<AiringStatusMark status={row.original.matched ? row.original.airingStatus || null : null} shape='dot' />
 					<span className='truncate font-medium'>{row.original.animeTitle}</span>
 				</div>
@@ -215,13 +222,15 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 	const table = useReactTable({
 		data: items,
 		columns,
+		...resizableTableOptions,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getRowId: (row) => row.guid,
 		enableRowSelection: true,
 		onSortingChange: setSorting,
 		onRowSelectionChange: setRowSelection,
-		state: { sorting, rowSelection },
+		onColumnSizingChange,
+		state: { sorting, rowSelection, columnSizing },
 	});
 
 	const selected = table.getSelectedRowModel().rows;

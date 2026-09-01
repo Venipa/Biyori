@@ -4,6 +4,12 @@ import { Fragment, type ReactNode } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 import { cn } from "@/mainview/lib/utils";
 
+export const resizableTableOptions = {
+	enableColumnResizing: true,
+	columnResizeMode: "onChange" as const,
+	defaultColumn: { minSize: 64, size: 140 },
+};
+
 declare module "@tanstack/react-table" {
 	interface ColumnMeta<TData, TValue> {
 		className?: string;
@@ -15,7 +21,10 @@ declare module "@tanstack/react-table" {
 
 function rowCells<TData>(row: Row<TData>, indent: boolean): ReactNode {
 	return row.getVisibleCells().map((cell, index) => (
-		<TableCell key={cell.id} className={cn(cell.column.columnDef.meta?.className, indent && index === 0 && "pl-8")}>
+		<TableCell
+			key={cell.id}
+			className={cn("overflow-hidden", cell.column.columnDef.meta?.className, indent && index === 0 && "pl-8")}
+			style={{ width: cell.column.getSize() }}>
 			{flexRender(cell.column.columnDef.cell, cell.getContext())}
 		</TableCell>
 	));
@@ -47,15 +56,15 @@ function SortGlyph({ sorted }: { sorted: false | "asc" | "desc" }) {
 function SortableHead<TData>({ header }: { header: Header<TData, unknown> }) {
 	const content = header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext());
 	if (!header.column.getCanSort()) {
-		return content;
+		return <div className='min-w-0 truncate pr-3'>{content}</div>;
 	}
 	const sorted = header.column.getIsSorted();
 	return (
 		<button
 			type='button'
-			className='inline-flex items-center gap-1 rounded-sm text-left font-medium hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
+			className='inline-flex h-full min-w-0 w-full items-center gap-1 pr-3 text-left font-medium focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
 			onClick={header.column.getToggleSortingHandler()}>
-			{content}
+			<span className='truncate'>{content}</span>
 			<SortGlyph sorted={sorted} />
 		</button>
 	);
@@ -140,15 +149,47 @@ export function DataTable<TData>({
 	}
 
 	return (
-		<Table containerClassName='overflow-visible' className={cn(compact ? "[&_th]:h-8 [&_td]:py-1" : undefined)}>
-			<TableHeader className='sticky top-0 z-20 bg-card [&_th]:bg-card'>
+		<Table
+			containerClassName='overflow-x-auto overflow-y-visible'
+			className={cn("table-fixed", compact ? "[&_th]:h-8 [&_td]:py-1" : undefined)}
+			style={{ width: table.getTotalSize() }}>
+			<TableHeader className='sticky top-0 z-20 bg-card'>
 				{table.getHeaderGroups().map((headerGroup) => (
 					<TableRow key={headerGroup.id} className='hover:bg-transparent'>
-						{headerGroup.headers.map((header) => (
-							<TableHead key={header.id} colSpan={header.colSpan} className={header.column.columnDef.meta?.className}>
-								<SortableHead header={header} />
-							</TableHead>
-						))}
+						{headerGroup.headers.map((header) => {
+							const sorted = header.column.getIsSorted();
+							return (
+								<TableHead
+									key={header.id}
+									colSpan={header.colSpan}
+									aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
+									className={cn(
+										"relative overflow-visible bg-card transition-colors hover:bg-muted/60",
+										sorted && "bg-muted/70 hover:bg-muted",
+										header.column.columnDef.meta?.className,
+									)}
+									style={{ width: header.getSize() }}>
+									<SortableHead header={header} />
+									{header.column.getCanResize() ? (
+										<button
+											type='button'
+											tabIndex={-1}
+											aria-label={`Resize ${header.column.id} column`}
+											className={cn(
+												"absolute inset-y-0 -right-2 z-10 w-4 cursor-col-resize touch-none border-0 bg-transparent p-0",
+												"after:pointer-events-none after:absolute after:inset-y-2 after:right-2 after:w-px after:bg-transparent hover:after:bg-border",
+												header.column.getIsResizing() && "after:bg-primary",
+											)}
+											onMouseDown={header.getResizeHandler()}
+											onTouchStart={header.getResizeHandler()}
+											onClick={(event) => {
+												event.stopPropagation();
+											}}
+										/>
+									) : null}
+								</TableHead>
+							);
+						})}
 					</TableRow>
 				))}
 			</TableHeader>

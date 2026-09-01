@@ -1,6 +1,8 @@
+import { type ColumnDef, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
 import { ArrowUpIcon, FileTextIcon } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { DataTable, resizableTableOptions } from "@/mainview/components/data-table";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -14,76 +16,55 @@ import {
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/mainview/components/ui/context-menu";
 import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
+import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
+import { usePersistedColumnSizing } from "@/mainview/lib/table-column-sizing";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 
 type HistoryRow = inferRouterOutputs<AppRouter>["history"]["list"]["queued"][number];
 type HistoryKind = "history" | "queued";
+type HistoryTableRow = HistoryRow & { queued: boolean };
+
+const HISTORY_GROUP_ORDER = ["Queued for update", "History"] as const;
 
 const clearLabels = {
 	history: "history",
 	queued: "queue",
 } as const;
 
-function HistorySection({
-	label,
-	rows,
-	queued,
-	onOpen,
-	onMenu,
-}: {
-	label: string;
-	rows: HistoryRow[];
-	queued: boolean;
-	onOpen: (row: HistoryRow) => void;
-	onMenu: (row: HistoryRow) => void;
-}) {
-	if (rows.length === 0) {
-		return null;
-	}
+const columns: ColumnDef<HistoryTableRow>[] = [
+	{
+		accessorKey: "title",
+		header: "Anime title",
+		size: 280,
+		minSize: 120,
+		enableSorting: false,
+		cell: ({ row }) => (
+			<div className='flex min-w-0 items-center gap-2'>
+				{row.original.queued ? <ArrowUpIcon className='size-3.5 shrink-0 text-primary' /> : <FileTextIcon className='size-3.5 shrink-0 text-muted-foreground' />}
+				<span className='truncate text-primary'>{row.original.title}</span>
+			</div>
+		),
+	},
+	{
+		accessorKey: "episode",
+		header: "Details",
+		size: 140,
+		enableSorting: false,
+		cell: ({ row }) => <span className='text-muted-foreground'>Episode: {row.original.episode}</span>,
+	},
+	{
+		accessorKey: "lastModified",
+		header: "Last modified",
+		size: 180,
+		enableSorting: false,
+		cell: ({ row }) => <span className='text-muted-foreground'>{row.original.lastModified}</span>,
+	},
+];
 
-	return (
-		<>
-			<TableRow className='hover:bg-transparent'>
-				<TableCell colSpan={3} className='py-1.5 text-sm font-medium text-primary'>
-					{label}
-				</TableCell>
-			</TableRow>
-			{rows.map((row) => (
-				<TableRow
-					key={`${row.kind}:${row.id}`}
-					className={row.animeId > 0 ? "cursor-pointer" : undefined}
-					onClick={() => {
-						onOpen(row);
-					}}
-					onContextMenu={() => {
-						onMenu(row);
-					}}>
-					<TableCell>
-						<div className='flex items-center gap-2 truncate'>
-							{queued ? <ArrowUpIcon className='size-3.5 shrink-0 text-primary' /> : <FileTextIcon className='size-3.5 shrink-0 text-muted-foreground' />}
-							<button
-								type='button'
-								disabled={row.animeId <= 0}
-								className='truncate rounded-sm text-left text-primary focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-default'
-								onClick={(event) => {
-									event.stopPropagation();
-									onOpen(row);
-								}}>
-								{row.title}
-							</button>
-						</div>
-					</TableCell>
-					<TableCell className='text-muted-foreground'>Episode: {row.episode}</TableCell>
-					<TableCell className='text-muted-foreground'>{row.lastModified}</TableCell>
-				</TableRow>
-			))}
-		</>
-	);
-}
+const EMPTY_ROWS: HistoryTableRow[] = [];
 
 export function HistoryView() {
 	const query = trpc.history.list.useQuery();
@@ -99,9 +80,26 @@ export function HistoryView() {
 
 	const remove = trpc.history.remove.useMutation({ onSuccess: refresh });
 	const clear = trpc.history.clear.useMutation({ onSuccess: refresh });
-	const queued = query.data?.queued ?? [];
-	const history = query.data?.history ?? [];
-	const isEmpty = queued.length === 0 && history.length === 0;
+	const queued = query.data?.queued;
+	const history = query.data?.history;
+	const rows = useMemo(() => {
+		if (!queued && !history) {
+			return EMPTY_ROWS;
+		}
+		return [...(queued ?? []).map((row) => ({ ...row, queued: true })), ...(history ?? []).map((row) => ({ ...row, queued: false }))];
+	}, [queued, history]);
+	const isEmpty = rows.length === 0;
+	const { columnSizing, onColumnSizingChange } = usePersistedColumnSizing("history");
+
+	const table = useReactTable({
+		data: rows,
+		columns,
+		...resizableTableOptions,
+		getCoreRowModel: getCoreRowModel(),
+		getRowId: (row) => `${row.kind}:${row.id}`,
+		onColumnSizingChange,
+		state: { columnSizing },
+	});
 
 	function openInfo(row: HistoryRow): void {
 		if (row.animeId <= 0) {
@@ -132,19 +130,24 @@ export function HistoryView() {
 			<ContextMenu>
 				<ContextMenuTrigger className='block h-full min-h-0'>
 					<ScrollArea className='h-full'>
-						<Table containerClassName='overflow-visible'>
-							<TableHeader className='sticky top-0 z-20 bg-card [&_th]:bg-card'>
-								<TableRow className='hover:bg-transparent'>
-									<TableHead>Anime title</TableHead>
-									<TableHead>Details</TableHead>
-									<TableHead>Last modified</TableHead>
+						<DataTable
+							table={table}
+							compact
+							groupBy={(row) => (row.original.queued ? "Queued for update" : "History")}
+							groupOrder={HISTORY_GROUP_ORDER}
+							renderRow={(row, cells) => (
+								<TableRow
+									className={row.original.animeId > 0 ? "cursor-pointer" : undefined}
+									onClick={() => {
+										openInfo(row.original);
+									}}
+									onContextMenu={() => {
+										setMenuRow(row.original);
+									}}>
+									{cells}
 								</TableRow>
-							</TableHeader>
-							<TableBody>
-								<HistorySection label='Queued for update' rows={queued} queued onOpen={openInfo} onMenu={setMenuRow} />
-								<HistorySection label='History' rows={history} queued={false} onOpen={openInfo} onMenu={setMenuRow} />
-							</TableBody>
-						</Table>
+							)}
+						/>
 					</ScrollArea>
 				</ContextMenuTrigger>
 				<ContextMenuContent className='min-w-48'>
@@ -169,14 +172,14 @@ export function HistoryView() {
 					</ContextMenuItem>
 					<ContextMenuSeparator />
 					<ContextMenuItem
-						disabled={history.length === 0}
+						disabled={!history || history.length === 0}
 						onClick={() => {
 							setClearKind("history");
 						}}>
 						Clear history...
 					</ContextMenuItem>
 					<ContextMenuItem
-						disabled={queued.length === 0}
+						disabled={!queued || queued.length === 0}
 						onClick={() => {
 							setClearKind("queued");
 						}}>

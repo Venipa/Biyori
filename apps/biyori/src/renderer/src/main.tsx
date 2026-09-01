@@ -5,16 +5,14 @@ import { AppTitleBar } from "@/components/app-titlebar";
 import { ParentWindowScrim } from "@/components/parent-window-scrim";
 import "./index.css";
 import { initTheme } from "./lib/theme";
+import { rendererRoutePath } from "./lib/start-path";
 import { router } from "./router";
 import { TrpcProvider } from "./trpc-provider";
 
 initTheme();
 
 function windowChromeTitle(): string {
-	const to = new URLSearchParams(window.location.search).get("to") ?? "";
-	const hash = window.location.hash.replace(/^#/, "");
-	const start = window.__BIYORI_START__ ?? "";
-	const path = to || hash || start;
+	const path = rendererRoutePath();
 	if (path.includes("/settings")) {
 		return "Settings";
 	}

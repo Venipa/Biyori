@@ -93,7 +93,7 @@
 	--sidebar-ring: oklch(0.6 0.1 262);
 	--text-sm: 0.825rem;
 	--text-md: 0.835rem;
-	--text-default: 0.835rem;
+	--text-base: 0.85rem;
 }
 
 .dark {

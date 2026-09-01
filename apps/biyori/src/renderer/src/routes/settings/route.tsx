@@ -1,39 +1,35 @@
-import { type SettingsFormInput, type SettingsFormValues, settingsFormDefaultValues, settingsFormSchema } from "@/lib/schemas/app-settings";
+import { type SettingsFormInput, type SettingsFormValues, settingsFormSchema } from "@/lib/schemas/app-settings";
 import { SettingsSaveBar } from "@/mainview/components/settings/settings-save-bar";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
+import { ipcTrpc } from "@/desktop-rpc";
 import { settingsSections } from "@/mainview/lib/settings-nav";
 import { cn } from "@/mainview/lib/utils";
-import { trpc } from "@/mainview/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 
 export const Route = createFileRoute("/settings")({
-	beforeLoad: ({ location }) => {
-		if (location.pathname === "/settings" || location.pathname === "/settings/") {
-			throw redirect({ to: "/settings/services" });
-		}
-	},
+	loader: () => ipcTrpc.settings.get.query(),
+	pendingComponent: SettingsPending,
 	component: SettingsLayout,
 });
 
+function SettingsPending() {
+	return (
+		<SettingsChrome>
+			<Skeleton className='h-5 w-40' />
+			<Skeleton className='h-9 w-full' />
+			<Skeleton className='h-9 w-full' />
+			<Skeleton className='h-24 w-full' />
+		</SettingsChrome>
+	);
+}
+
 function SettingsLayout() {
-	const query = trpc.settings.get.useQuery(undefined, {
-		refetchOnWindowFocus: false,
-	});
-	if (query.isPending && !query.data) {
-		return (
-			<SettingsChrome>
-				<Skeleton className='h-5 w-40' />
-				<Skeleton className='h-9 w-full' />
-				<Skeleton className='h-9 w-full' />
-				<Skeleton className='h-24 w-full' />
-			</SettingsChrome>
-		);
-	}
-	return <SettingsForm defaultValues={query.data ?? settingsFormDefaultValues} />;
+	const defaultValues = Route.useLoaderData();
+	return <SettingsForm defaultValues={defaultValues} />;
 }
 
 function SettingsChrome({ children, overlay }: { children: ReactNode; overlay?: ReactNode }) {

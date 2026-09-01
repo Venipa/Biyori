@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { rendererRoutePath } from "@/mainview/lib/start-path";
 import { trpc } from "@/mainview/trpc";
 
 function isAuxiliaryWindow(): boolean {
-	const to = new URLSearchParams(window.location.search).get("to") ?? "";
-	const hash = window.location.hash.replace(/^#/, "");
-	const start = window.__BIYORI_START__ ?? "";
-	const path = to || hash || start;
+	const path = rendererRoutePath();
 	return path.includes("/settings") || path.includes("/update");
 }
 
