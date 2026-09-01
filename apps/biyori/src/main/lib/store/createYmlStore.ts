@@ -1,11 +1,11 @@
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { logger } from "@biyori/logger";
 import { app } from "electron";
 import { type ConfOptions as Options, Conf as Store } from "electron-conf/main";
 import { Encryption } from "encryption.js";
 import { parse as deserialize, stringify as serialize } from "yaml";
 import type { ZodType } from "zod";
-import { logger } from "../../logger";
 import { base64 } from "../base64";
 import { generateRandom } from "../randomString";
 import slugify, { type SlugifyOptions } from "../slug";

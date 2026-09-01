@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronLeftIcon, ChevronRightIcon, RefreshCwIcon } from "lucide-react";
+import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon, CircleAlertIcon, FilterIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import type { AnilistSeasonName, SeasonGroupBy, SeasonItem, SeasonSortBy, SeasonViewAs } from "@/lib/schemas/seasons";
@@ -18,7 +18,7 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
-import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
+import { PlaceholderView } from "@/mainview/components/placeholder-view";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
@@ -388,23 +388,12 @@ function SeasonsPage() {
 						))}
 					</div>
 				) : null}
-				{query.error ? (
-					<Empty>
-						<EmptyTitle>Could not load season</EmptyTitle>
-						<EmptyDescription>{query.error.message}</EmptyDescription>
-					</Empty>
-				) : null}
+				{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Could not load season' description={query.error.message} /> : null}
 				{query.data && (query.data.items?.length ?? 0) === 0 ? (
-					<Empty>
-						<EmptyTitle>No titles</EmptyTitle>
-						<EmptyDescription>Nothing listed for this season.</EmptyDescription>
-					</Empty>
+					<PlaceholderView icon={CalendarDaysIcon} title='No titles' description='Nothing listed for this season.' />
 				) : null}
 				{query.data && (query.data.items?.length ?? 0) > 0 && filtered.length === 0 ? (
-					<Empty>
-						<EmptyTitle>No matches</EmptyTitle>
-						<EmptyDescription>Nothing matched the list filter.</EmptyDescription>
-					</Empty>
+					<PlaceholderView icon={FilterIcon} title='No matches' description='Nothing matched the list filter.' />
 				) : null}
 				{groups.map((group) => (
 					<section key={group.key} className='border-b last:border-b-0'>

@@ -1,4 +1,4 @@
-import { logger as log } from "../logger";
+import { logger as log } from "@biyori/logger";
 
 export type LifecycleFn = () => void | Promise<void>;
 export type LifecyclePhase = "beforeLoad" | "onInit" | "afterInit";

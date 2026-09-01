@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { animeInfoSearchSchema, parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
 import { AnimeListView } from "@/mainview/components/anime-list-view";
 import { useAnimeInfoNav, useAnimeInfoOpen } from "@/mainview/lib/anime-info-nav";
-import { listStatusSchema } from "@/shared/list";
+import { animeListTabSchema } from "@/shared/list";
 
 const searchSchema = animeInfoSearchSchema.extend({
-	tab: listStatusSchema.optional(),
+	tab: animeListTabSchema.optional(),
 });
 
 export const Route = createFileRoute("/app/anime-list")({

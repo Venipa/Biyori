@@ -120,7 +120,7 @@ export const appRouter = t.router({
 		hanaVersion,
 	})),
 	anime: t.router({
-		list: t.procedure.input(z.object({ status: listStatusSchema })).query(async ({ ctx, input }) => {
+		list: t.procedure.input(z.object({ status: listStatusSchema.optional() })).query(async ({ ctx, input }) => {
 			const rows = await ctx.db
 				.select({
 					id: anime.id,
@@ -145,7 +145,7 @@ export const appRouter = t.router({
 				})
 				.from(listEntry)
 				.innerJoin(anime, eq(listEntry.animeId, anime.id))
-				.where(eq(listEntry.status, input.status))
+				.where(input.status ? eq(listEntry.status, input.status) : undefined)
 				.orderBy(desc(listEntry.lastUpdated));
 
 			const episodeRows = await ctx.db.select({ animeId: episodeFile.animeId, episode: episodeFile.episode }).from(episodeFile);

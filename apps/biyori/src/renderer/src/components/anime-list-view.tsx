@@ -1,10 +1,8 @@
-import { keepPreviousData } from "@tanstack/react-query";
 import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
-import { PlayIcon } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon, XIcon } from "lucide-react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
 import { AnimeListProgress } from "@/mainview/components/anime-list-progress";
@@ -20,25 +18,27 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
-import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
+import { PlaceholderView } from "@/mainview/components/placeholder-view";
+import { Button } from "@/mainview/components/ui/button";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { animeMatchesListFilter } from "@/mainview/lib/anime-list-filter";
 import { formatLocalDateTime, formatTimeAgo } from "@/mainview/lib/format-date";
-import { useListFilterText } from "@/mainview/lib/list-filter";
+import { clearListFilterText, useListFilterText } from "@/mainview/lib/list-filter";
 import { libraryEpisodeTooltip, listProgressRatio } from "@/mainview/lib/list-progress";
 import { requestAnimeDelete, type SelectedAnime, setOrderedAnimeIds, setSelectedAnime, useSelectedAnime } from "@/mainview/lib/selected-anime";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
-import { type ListStatus, listStatusSchema } from "@/shared/list";
+import { type AnimeListTab, ANIME_LIST_SEARCH_TAB, type ListStatus, listStatusSchema } from "@/shared/list";
 
 const tabs = listStatusSchema.options;
 
 type AnimeRow = inferRouterOutputs<AppRouter>["anime"]["list"][number];
 export type AnimeInfoTab = "main" | "list";
+const EMPTY_ROWS: AnimeRow[] = [];
 
 function toSelected(row: AnimeRow, status: ListStatus): SelectedAnime {
 	return {
@@ -52,26 +52,27 @@ function toSelected(row: AnimeRow, status: ListStatus): SelectedAnime {
 	};
 }
 
-function ListTip({ tip, className, children }: { tip: string; className?: string; children: ReactNode }) {
-	if (!tip) {
-		return children;
-	}
-	return (
-		<Tooltip>
-			<TooltipTrigger delay={400} render={<span className={cn("block min-w-0", className)} />}>
-				{children}
-			</TooltipTrigger>
-			<TooltipContent className='whitespace-pre-line'>{tip}</TooltipContent>
-		</Tooltip>
-	);
+function listStatusFallback(tab: AnimeListTab): ListStatus {
+	return tab === ANIME_LIST_SEARCH_TAB ? "Currently watching" : tab;
+}
+
+function rowListStatus(row: AnimeRow, fallback: ListStatus): ListStatus {
+	const parsed = listStatusSchema.safeParse(row.status);
+	return parsed.success ? parsed.data : fallback;
 }
 
 function PlayingOrAiringCell({ playing, status }: { playing: boolean; status: string | null | undefined }) {
-	const tip = playing ? "Now playing" : status?.trim() || "Unknown";
+	if (playing) {
+		return (
+			<span className='flex justify-center' title='Now playing'>
+				<PlayIcon className='size-3.5 fill-current text-success' aria-label='Now playing' />
+			</span>
+		);
+	}
 	return (
-		<ListTip tip={tip} className='flex justify-center'>
-			{playing ? <PlayIcon className='size-3.5 fill-current text-success' aria-label='Now playing' /> : <AiringStatusMark status={status} shape='square' nativeTitle={false} />}
-		</ListTip>
+		<span className='flex justify-center'>
+			<AiringStatusMark status={status} shape='square' />
+		</span>
 	);
 }
 
@@ -91,11 +92,11 @@ const columns: ColumnDef<AnimeRow>[] = [
 		cell: ({ row }) => {
 			const nextAvailable = !!row.original.libraryEpisodes?.includes(row.original.episodesWatched + 1);
 			return (
-				<ListTip
-					tip={row.original.title}
-					className={cn("truncate font-medium", nextAvailable ? "text-primary" : "text-foreground", "[tr[data-playing]_&]:font-semibold [tr[data-playing]_&]:text-inherit")}>
+				<span
+					title={row.original.title}
+					className={cn("block min-w-0 truncate font-medium", nextAvailable ? "text-primary" : "text-foreground", "[tr[data-playing]_&]:font-semibold [tr[data-playing]_&]:text-inherit")}>
 					{row.original.title}
-				</ListTip>
+				</span>
 			);
 		},
 	},
@@ -107,8 +108,9 @@ const columns: ColumnDef<AnimeRow>[] = [
 		cell: ({ row }) => {
 			const finished = row.original.airingStatus === "Finished airing" || row.original.airingStatus === "Finished";
 			return (
-				<ListTip
-					tip={libraryEpisodeTooltip({
+				<span
+					className='block min-w-0'
+					title={libraryEpisodeTooltip({
 						watched: row.original.episodesWatched,
 						total: row.original.episodes,
 						aired: row.original.lastAiredEpisode,
@@ -123,7 +125,7 @@ const columns: ColumnDef<AnimeRow>[] = [
 						finished={finished}
 						status={(row.original.status as ListStatus) ?? "Currently watching"}
 					/>
-				</ListTip>
+				</span>
 			);
 		},
 	},
@@ -161,9 +163,9 @@ const columns: ColumnDef<AnimeRow>[] = [
 		cell: ({ row }) => {
 			const absolute = formatLocalDateTime(row.original.lastUpdated);
 			return (
-				<ListTip tip={absolute === "-" ? "" : absolute}>
-					<span className='text-muted-foreground'>{formatTimeAgo(row.original.lastUpdated)}</span>
-				</ListTip>
+				<span className='text-muted-foreground' title={absolute === "-" ? undefined : absolute}>
+					{formatTimeAgo(row.original.lastUpdated)}
+				</span>
 			);
 		},
 	},
@@ -184,12 +186,33 @@ export function AnimeListView({
 	onTabChange,
 	onOpenAnime,
 }: {
-	tab: ListStatus;
+	tab: AnimeListTab;
 	openAnimeId: number | undefined;
-	onTabChange: (tab: ListStatus) => void;
+	onTabChange: (tab: AnimeListTab) => void;
 	onOpenAnime: (id: number, infoTab?: AnimeInfoTab) => void;
 }) {
-	const listQuery = trpc.anime.list.useQuery({ status: tab }, { placeholderData: keepPreviousData });
+	const listFilter = useListFilterText();
+	const searching = listFilter.trim().length > 0;
+	const onSearchTab = tab === ANIME_LIST_SEARCH_TAB;
+	const groupedSearch = searching && onSearchTab;
+	const statusFallback = listStatusFallback(tab);
+	const lastListTab = useRef<ListStatus>(statusFallback);
+	const wasSearching = useRef(searching);
+	if (tab !== ANIME_LIST_SEARCH_TAB) {
+		lastListTab.current = tab;
+	}
+	const listStatus = onSearchTab ? lastListTab.current : statusFallback;
+	const listQuery = trpc.anime.list.useQuery(groupedSearch ? {} : { status: listStatus }, {
+		placeholderData: (previousData) => {
+			if (!previousData) {
+				return previousData;
+			}
+			if (groupedSearch) {
+				return previousData;
+			}
+			return previousData.filter((row) => row.status === listStatus);
+		},
+	});
 	const countsQuery = trpc.anime.counts.useQuery();
 	const playingId =
 		trpc.media.nowPlaying.useQuery(undefined, {
@@ -199,11 +222,10 @@ export function AnimeListView({
 	const playNext = trpc.library.playNext.useMutation();
 	const playRandom = trpc.library.playRandom.useMutation();
 	const selected = useSelectedAnime();
-	const listFilter = useListFilterText();
 	const [sorting, setSorting] = useState<SortingState>([{ id: "lastUpdated", desc: true }]);
 	const [menuRow, setMenuRow] = useState<AnimeRow | null>(null);
 	const table = useReactTable({
-		data: listQuery.data ?? [],
+		data: listQuery.data ?? EMPTY_ROWS,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
@@ -220,16 +242,30 @@ export function AnimeListView({
 	selectedRef.current = selected;
 
 	const filteredRows = table.getFilteredRowModel().rows;
-	const visualIds = filteredRows.map((row) => row.original.id);
-	const _visualIdsKey = visualIds.join("\0");
+	const visualIds = groupedSearch
+		? tabs.flatMap((status) => filteredRows.filter((row) => row.original.status === status).map((row) => row.original.id))
+		: filteredRows.map((row) => row.original.id);
+	const visualIdsKey = visualIds.join("\0");
 
 	function selectRow(row: AnimeRow) {
-		setSelectedAnime(toSelected(row, tab));
+		setSelectedAnime(toSelected(row, rowListStatus(row, statusFallback)));
 	}
 
 	useEffect(() => {
-		setOrderedAnimeIds(visualIds);
-	}, [visualIds]);
+		const started = searching && !wasSearching.current;
+		wasSearching.current = searching;
+		if (started) {
+			onTabChange(ANIME_LIST_SEARCH_TAB);
+			return;
+		}
+		if (!searching && tab === ANIME_LIST_SEARCH_TAB) {
+			onTabChange(lastListTab.current);
+		}
+	}, [searching, tab, onTabChange]);
+
+	useEffect(() => {
+		setOrderedAnimeIds(visualIdsKey === "" ? [] : visualIdsKey.split("\0").map(Number));
+	}, [visualIdsKey]);
 
 	useEffect(() => {
 		if (!openAnimeId || !listQuery.data) {
@@ -237,9 +273,9 @@ export function AnimeListView({
 		}
 		const openRow = listQuery.data.find((row) => row.id === openAnimeId);
 		if (openRow && selected?.id !== openAnimeId) {
-			setSelectedAnime(toSelected(openRow, tab));
+			setSelectedAnime(toSelected(openRow, rowListStatus(openRow, statusFallback)));
 		}
-	}, [openAnimeId, listQuery.data, selected?.id, tab]);
+	}, [openAnimeId, listQuery.data, selected?.id, statusFallback]);
 
 	useEffect(() => {
 		return () => {
@@ -274,7 +310,7 @@ export function AnimeListView({
 			}
 			if (event.key === "Delete") {
 				event.preventDefault();
-				requestAnimeDelete(toSelected(row, tab));
+				requestAnimeDelete(toSelected(row, rowListStatus(row, statusFallback)));
 			}
 			if (event.ctrlKey && event.key.toLowerCase() === "o" && row.folder) {
 				event.preventDefault();
@@ -300,21 +336,42 @@ export function AnimeListView({
 		return () => {
 			window.removeEventListener("keydown", onKeyDown);
 		};
-	}, [tab, scan, playNext, playRandom]);
+	}, [statusFallback, scan, playNext, playRandom]);
 
-	const menuAnime = menuRow ? toSelected(menuRow, tab) : null;
+	const menuAnime = menuRow ? toSelected(menuRow, rowListStatus(menuRow, statusFallback)) : null;
 
 	return (
-		<TooltipProvider delay={400}>
-			<div className='flex h-full min-h-0 flex-col'>
+		<div className='flex h-full min-h-0 flex-col'>
 				<Tabs
 					value={tab}
 					onValueChange={(value) => {
-						onTabChange(value as ListStatus);
+						onTabChange(value as AnimeListTab);
 					}}
 					className='flex h-full min-h-0 flex-col gap-0'>
 					<div className='shrink-0 border-b bg-card px-2 pt-2'>
 						<TabsList className='h-auto bg-transparent p-0'>
+							{searching || onSearchTab ? (
+								<div className='flex items-center'>
+									<TabsTrigger
+										value={ANIME_LIST_SEARCH_TAB}
+										className='rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none'>
+										Search ({filteredRows.length})
+									</TabsTrigger>
+									<Button
+										type='button'
+										variant='ghost'
+										size='icon-xs'
+										aria-label='Clear search'
+										onClick={() => {
+											startTransition(() => {
+												onTabChange(lastListTab.current);
+												clearListFilterText();
+											});
+										}}>
+										<XIcon />
+									</Button>
+								</div>
+							) : null}
 							{tabs.map((item) => (
 								<TabsTrigger
 									key={item}
@@ -331,27 +388,19 @@ export function AnimeListView({
 							<ContextMenuTrigger className='block h-full min-h-0'>
 								<ScrollArea className='h-full'>
 									{listQuery.isPending && !listQuery.data ? <TableRowsSkeleton columnCount={columns.length} /> : null}
-									{listQuery.error ? (
-										<Empty>
-											<EmptyTitle>Could not load list</EmptyTitle>
-											<EmptyDescription>{listQuery.error.message}</EmptyDescription>
-										</Empty>
-									) : null}
+									{listQuery.error ? <PlaceholderView icon={CircleAlertIcon} title='Could not load list' description={listQuery.error.message} /> : null}
 									{listQuery.data && listQuery.data.length === 0 ? (
-										<Empty>
-											<EmptyTitle>No anime</EmptyTitle>
-											<EmptyDescription>Nothing in this list yet.</EmptyDescription>
-										</Empty>
+										<PlaceholderView icon={ListIcon} title='No anime' description='Nothing in this list yet.' />
 									) : null}
 									{listQuery.data && listQuery.data.length > 0 && filteredRows.length === 0 ? (
-										<Empty>
-											<EmptyTitle>No matches</EmptyTitle>
-											<EmptyDescription>Nothing matched the list filter.</EmptyDescription>
-										</Empty>
+										<PlaceholderView icon={FilterIcon} title='No matches' description='Nothing matched the list filter.' />
 									) : null}
 									{filteredRows.length > 0 ? (
 										<DataTable
 											table={table}
+											compact
+											groupBy={groupedSearch ? (row) => rowListStatus(row.original, statusFallback) : undefined}
+											groupOrder={tabs}
 											renderRow={(row, cells) => (
 												<TableRow
 													data-state={selected?.id === row.original.id ? "selected" : undefined}
@@ -398,6 +447,5 @@ export function AnimeListView({
 					</TabsContent>
 				</Tabs>
 			</div>
-		</TooltipProvider>
 	);
 }

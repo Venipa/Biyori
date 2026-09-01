@@ -1,3 +1,4 @@
+import { log } from "@biyori/logger";
 import { is } from "@electron-toolkit/utils";
 import { observable } from "@trpc/server/observable";
 import { app } from "electron";
@@ -17,7 +18,6 @@ import {
 import { parseGithubChangelog, sanitizeUpdateError } from "./github-releases";
 import { requestQuitAndInstall } from "./handlers/quit-handler";
 import { trackedFetch } from "./http-stats";
-import { log } from "./logger";
 import { loadAppSettings, subscribeSettings } from "./settings";
 
 export const UPDATE_GITHUB_REPO = "Venipa/biyori";

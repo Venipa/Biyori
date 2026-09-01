@@ -1,4 +1,4 @@
-import { log } from "../logger";
+import { log } from "@biyori/logger";
 import { checkForAppUpdate } from "../updater";
 import { Service } from "./service";
 

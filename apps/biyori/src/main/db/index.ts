@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { logger as log } from "@biyori/logger";
 import { is } from "@electron-toolkit/utils";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { app } from "electron";
 import { appDatabasePath } from "../lib/app-paths";
-import { logger as log } from "../logger";
 import * as schema from "./schema";
 
 const hasMigrationJournal = (folder: string): boolean => {

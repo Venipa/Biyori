@@ -55,7 +55,7 @@ export default defineConfig({
 		build: {
 			externalizeDeps: {
 				include: ["encryption.js", "lodash-es", "@biyori/hana"],
-				exclude: ["@biyori/electron-trpc", "@biyori/parser", "@biyori/recognition", "@biyori/worker"],
+				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/worker"],
 			},
 		},
 	},
@@ -63,7 +63,7 @@ export default defineConfig({
 		...mainResolve,
 		build: {
 			externalizeDeps: {
-				exclude: ["@biyori/electron-trpc", "@biyori/parser", "@biyori/recognition", "@biyori/worker"],
+				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/worker"],
 			},
 		},
 	},

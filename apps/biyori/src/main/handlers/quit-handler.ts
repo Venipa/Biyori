@@ -1,7 +1,7 @@
+import { log } from "@biyori/logger";
 import { is, platform } from "@electron-toolkit/utils";
 import { app, type BrowserWindow } from "electron";
 import { autoUpdater } from "electron-updater";
-import { log } from "../logger";
 import { loadAppSettings, subscribeSettings } from "../settings";
 import { hana } from "../track/hana-client";
 import { windowManager } from "../windows";

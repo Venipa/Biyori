@@ -1,4 +1,4 @@
-import { logger as log } from "../logger";
+import { logger as log } from "@biyori/logger";
 import { subscribeSettings } from "../settings";
 import { initLibrary, restartLibraryWatch, scanLibraryQuick } from "../track/library";
 import { getDb } from "./database.service";

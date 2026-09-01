@@ -22,6 +22,7 @@
         "@better-fetch/fetch": "^1.3.1",
         "@biyori/electron-trpc": "workspace:*",
         "@biyori/hana": "workspace:*",
+        "@biyori/logger": "workspace:*",
         "@biyori/recognition": "workspace:*",
         "@biyori/worker": "workspace:*",
         "@electron-toolkit/preload": "^3.0.2",
@@ -104,6 +105,10 @@
       "devDependencies": {
         "@napi-rs/cli": "^2.18.4",
       },
+    },
+    "packages/logger": {
+      "name": "@biyori/logger",
+      "version": "0.1.0",
     },
     "packages/parser": {
       "name": "@biyori/parser",
@@ -222,6 +227,8 @@
     "@biyori/electron-trpc": ["@biyori/electron-trpc@workspace:packages/electron-trpc"],
 
     "@biyori/hana": ["@biyori/hana@workspace:packages/hana"],
+
+    "@biyori/logger": ["@biyori/logger@workspace:packages/logger"],
 
     "@biyori/parser": ["@biyori/parser@workspace:packages/parser"],
 

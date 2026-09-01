@@ -61,18 +61,53 @@ function SortableHead<TData>({ header }: { header: Header<TData, unknown> }) {
 	);
 }
 
+function GroupHeader({ colSpan, children }: { colSpan: number; children: ReactNode }) {
+	return (
+		<TableRow className='hover:bg-transparent'>
+			<TableCell colSpan={colSpan} className='py-1 text-sm font-medium text-primary'>
+				{children}
+			</TableCell>
+		</TableRow>
+	);
+}
+
+function orderedGroupKeys(keys: Iterable<string>, groupOrder: readonly string[] | undefined): string[] {
+	const seen = new Set(keys);
+	const ordered: string[] = [];
+	if (groupOrder) {
+		for (const key of groupOrder) {
+			if (seen.has(key)) {
+				ordered.push(key);
+			}
+		}
+	}
+	for (const key of keys) {
+		if (!ordered.includes(key)) {
+			ordered.push(key);
+		}
+	}
+	return ordered;
+}
+
 export function DataTable<TData>({
 	table,
 	onRowClick,
 	renderRow,
+	groupBy,
+	groupOrder,
 	groupLabel,
+	compact = false,
 }: {
 	table: TanstackTable<TData>;
 	onRowClick?: (row: Row<TData>) => void;
 	renderRow?: (row: Row<TData>, cells: ReactNode) => ReactNode;
+	groupBy?: (row: Row<TData>) => string;
+	groupOrder?: readonly string[];
 	groupLabel?: (groupingValue: unknown) => ReactNode;
+	compact?: boolean;
 }) {
 	const colSpan = table.getVisibleLeafColumns().length;
+	const leaves = table.getRowModel().rows.filter((row) => row.depth === 0);
 
 	function renderLeaf(row: Row<TData>, indent = false): ReactNode {
 		const cells = rowCells(row, indent);
@@ -82,8 +117,30 @@ export function DataTable<TData>({
 		return <DefaultRow key={row.id} row={row} cells={cells} onRowClick={onRowClick} />;
 	}
 
+	function renderGroups(): ReactNode {
+		const buckets = new Map<string, Row<TData>[]>();
+		for (const row of leaves) {
+			if (row.getIsGrouped() || !groupBy) {
+				continue;
+			}
+			const key = groupBy(row);
+			const bucket = buckets.get(key);
+			if (bucket) {
+				bucket.push(row);
+			} else {
+				buckets.set(key, [row]);
+			}
+		}
+		return orderedGroupKeys(buckets.keys(), groupOrder).map((key) => (
+			<Fragment key={key}>
+				<GroupHeader colSpan={colSpan}>{groupLabel ? groupLabel(key) : key}</GroupHeader>
+				{(buckets.get(key) ?? []).map((row) => renderLeaf(row))}
+			</Fragment>
+		));
+	}
+
 	return (
-		<Table containerClassName='overflow-visible'>
+		<Table containerClassName='overflow-visible' className={cn(compact ? "[&_th]:h-8 [&_td]:py-1" : undefined)}>
 			<TableHeader className='sticky top-0 z-20 bg-card [&_th]:bg-card'>
 				{table.getHeaderGroups().map((headerGroup) => (
 					<TableRow key={headerGroup.id} className='hover:bg-transparent'>
@@ -96,24 +153,19 @@ export function DataTable<TData>({
 				))}
 			</TableHeader>
 			<TableBody>
-				{table
-					.getRowModel()
-					.rows.filter((row) => row.depth === 0)
-					.map((row) => {
-						if (row.getIsGrouped()) {
-							return (
-								<Fragment key={row.id}>
-									<TableRow className='hover:bg-transparent'>
-										<TableCell colSpan={colSpan} className='py-1.5 text-sm font-medium text-primary'>
-											{groupLabel ? groupLabel(row.groupingValue) : String(row.groupingValue)}
-										</TableCell>
-									</TableRow>
-									{row.subRows.map((subRow) => renderLeaf(subRow, true))}
-								</Fragment>
-							);
-						}
-						return renderLeaf(row);
-					})}
+				{groupBy
+					? renderGroups()
+					: leaves.map((row) => {
+							if (row.getIsGrouped()) {
+								return (
+									<Fragment key={row.id}>
+										<GroupHeader colSpan={colSpan}>{groupLabel ? groupLabel(row.groupingValue) : String(row.groupingValue)}</GroupHeader>
+										{row.subRows.map((subRow) => renderLeaf(subRow, true))}
+									</Fragment>
+								);
+							}
+							return renderLeaf(row);
+						})}
 			</TableBody>
 		</Table>
 	);

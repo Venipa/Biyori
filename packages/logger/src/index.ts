@@ -1,5 +1,3 @@
-import { format } from "date-fns";
-
 /** Off is never emitted; only used to silence Logger.level. */
 export enum LogLevel {
 	Off = 0,
@@ -38,6 +36,11 @@ export function formatLogArgs(objects: unknown[]): string {
 		.join(" ");
 }
 
+function formatTime(d: Date): string {
+	const pad = (n: number, w = 2) => String(n).padStart(w, "0");
+	return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
+}
+
 export class Logger {
 	static level = LogLevel.Debug;
 	static outputs: LogOutput[] = [];
@@ -71,7 +74,7 @@ export class Logger {
 
 	private emit(func: (...args: unknown[]) => void, level: LogLevel, objects: unknown[]) {
 		if (level > Logger.level) return;
-		const prefix = this.source ? `${format(new Date(), "HH:mm:ss'.'SSS")} [${this.source}]` : null;
+		const prefix = this.source ? `${formatTime(new Date())} [${this.source}]` : null;
 		func(...(prefix ? [prefix, ...objects] : objects));
 		for (const output of Logger.outputs) {
 			output(this.source, level, objects);

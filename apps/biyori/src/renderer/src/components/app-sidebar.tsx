@@ -3,12 +3,13 @@ import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, HistoryIcon, ListIcon, P
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { Button } from "@/mainview/components/ui/button";
+import { useListFilterText } from "@/mainview/lib/list-filter";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
+import { ANIME_LIST_SEARCH_TAB } from "@/shared/list";
 
 const listItems = [
-	{ to: "/app/anime-list", label: "Anime List", icon: ListIcon },
 	{ to: "/app/history", label: "History", icon: HistoryIcon },
 	{ to: "/app/statistics", label: "Statistics", icon: BarChart3Icon },
 ] as const;
@@ -35,6 +36,7 @@ export function AppSidebar() {
 				<NowPlayingNavLink active={pathname === "/app/now-playing"} />
 			</div>
 			<div className='flex flex-col gap-0.5 border-t pt-2'>
+				<AnimeListNavLink active={pathname === "/app/anime-list"} />
 				{listItems.map((item) => (
 					<NavLink key={item.to} {...item} active={pathname === item.to} badge={item.to === "/app/history" ? queuedCount : undefined} />
 				))}
@@ -120,6 +122,24 @@ function NowPlayingNavLink({ active }: { active: boolean }) {
 				))}
 			</span>
 		</Button>
+	);
+}
+
+function AnimeListNavLink({ active }: { active: boolean }) {
+	const listFilter = useListFilterText();
+	const searching = listFilter.trim().length > 0;
+	return (
+		<Link
+			to='/app/anime-list'
+			search={searching ? { tab: ANIME_LIST_SEARCH_TAB } : true}
+			aria-current={active ? "page" : undefined}
+			className={cn(
+				"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
+				active ? "border border-accent-foreground/15 bg-accent text-accent-foreground" : "border border-transparent text-foreground/80 hover:bg-muted",
+			)}>
+			<ListIcon className='size-4 shrink-0 text-current' />
+			<span className='flex-1 truncate'>Anime List</span>
+		</Link>
 	);
 }
 

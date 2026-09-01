@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type ColumnDef, getCoreRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
-import { SearchIcon } from "lucide-react";
+import { CircleAlertIcon, SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import { anilistSearchRouteSchema } from "@/lib/schemas/anilist-search";
@@ -19,7 +19,7 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
-import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
+import { PlaceholderView } from "@/mainview/components/placeholder-view";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
@@ -70,6 +70,8 @@ const columns: ColumnDef<SearchRow>[] = [
 	},
 ];
 
+const SEARCH_GROUP_ORDER = ["Not in list", ...listStatusSchema.options, "In list"] as const;
+
 const commandParts = {
 	Item: ContextMenuItem,
 	Sub: ContextMenuSub,
@@ -96,12 +98,10 @@ function SearchPage() {
 	const listed = listedQuery.data;
 	const listedById = useMemo(() => new Map((listed ?? []).map((row) => [row.id, row.status])), [listed]);
 	const items = useMemo(() => {
-		return (query.data?.items ?? [])
-			.map((item) => ({
-				...item,
-				inList: listedById.has(item.id),
-			}))
-			.sort((left, right) => Number(right.inList) - Number(left.inList));
+		return (query.data?.items ?? []).map((item) => ({
+			...item,
+			inList: listedById.has(item.id),
+		}));
 	}, [listedById, query.data?.items]);
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [menuRow, setMenuRow] = useState<SearchRow | null>(null);
@@ -123,28 +123,25 @@ function SearchPage() {
 				<ContextMenuTrigger className='block h-full min-h-0'>
 					<ScrollArea className='h-full'>
 						{!hasQuery ? (
-							<Empty className='h-full'>
-								<SearchIcon className='size-8 text-muted-foreground' />
-								<EmptyTitle>Search AniList</EmptyTitle>
-								<EmptyDescription>Type a title in the toolbar and press Enter.</EmptyDescription>
-							</Empty>
+							<PlaceholderView icon={SearchIcon} title='Search AniList' description='Type a title in the toolbar and submit.' />
 						) : null}
 						{hasQuery && query.isPending && items.length === 0 ? <TableRowsSkeleton columnCount={columns.length} /> : null}
-						{query.error ? (
-							<Empty>
-								<EmptyTitle>Search failed</EmptyTitle>
-								<EmptyDescription>{query.error.message}</EmptyDescription>
-							</Empty>
-						) : null}
+						{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Search failed' description={query.error.message} /> : null}
 						{hasQuery && !query.isPending && !query.error && items.length === 0 ? (
-							<Empty>
-								<EmptyTitle>No results</EmptyTitle>
-								<EmptyDescription>Nothing matched "{q}".</EmptyDescription>
-							</Empty>
+							<PlaceholderView icon={SearchIcon} title='No results' description={`Nothing matched "${q}".`} />
 						) : null}
 						{items.length > 0 ? (
 							<DataTable
 								table={table}
+								compact
+								groupBy={(row) => {
+									if (!row.original.inList) {
+										return "Not in list";
+									}
+									const parsed = listStatusSchema.safeParse(listedById.get(row.original.id));
+									return parsed.success ? parsed.data : "In list";
+								}}
+								groupOrder={SEARCH_GROUP_ORDER}
 								renderRow={(row, cells) => (
 									<TableRow
 										data-state={openId === row.original.id ? "selected" : undefined}

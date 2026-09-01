@@ -25,7 +25,8 @@ import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 import { getNeighborAnimeId } from "@/mainview/lib/selected-anime";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
-import { listStatusSchema, type ListStatus } from "@/shared/list";
+import { type ListStatus, listStatusSchema } from "@/shared/list";
+import { log } from "@biyori/logger";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, FolderOpen } from "lucide-react";
@@ -81,7 +82,7 @@ export function AnimeInfoDialog({
 	const byIdQuery = trpc.anime.byId.useQuery({ id: queryId ?? 0 }, { enabled: Boolean(queryId) });
 	const anime = byIdQuery.data ?? null;
 	const loading = !anime && (ensuring || (Boolean(queryId) && (byIdQuery.isLoading || byIdQuery.isFetching) && !ensureError));
-
+	log.debug("AnimeInfoDialog", { anime, ensureError });
 	return (
 		<Dialog
 			open={open}

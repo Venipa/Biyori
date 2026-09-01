@@ -1,6 +1,6 @@
+import { logger } from "@biyori/logger";
 import { type BrowserWindow, type Rectangle, screen } from "electron";
 import { createYmlStore } from "../lib/store/createYmlStore";
-import { logger } from "../logger";
 import { clampRectToWorkArea } from "./work-area";
 
 type SavedWindowState = {

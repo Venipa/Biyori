@@ -1,9 +1,9 @@
+import { logger } from "@biyori/logger";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { app, Menu, Tray } from "electron";
 import icon from "../../resources/icon.png?asset";
 import { attachQuitHandler, requestQuit } from "./handlers/quit-handler";
 import { attachTrayState, setTrayState } from "./handlers/tray-state";
-import { logger } from "./logger";
 import { boot, scheduleAfterInit } from "./services";
 import { loadAppSettings } from "./settings";
 import { isStartupLaunch, syncLoginItem } from "./startup";
