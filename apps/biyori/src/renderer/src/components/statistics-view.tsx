@@ -1,7 +1,8 @@
-import type { ReactElement } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { trpc } from "@/mainview/trpc";
+import type { ReactElement } from "react";
 
 function StatRow({ label, value }: { label: string; value: string | number }): ReactElement {
 	return (
@@ -46,7 +47,7 @@ export function StatisticsView(): ReactElement {
 	const data = query.data;
 
 	return (
-		<div className='flex h-full min-h-0 flex-col gap-5 overflow-auto px-6 py-5'>
+		<ScrollArea viewportClassName='flex min-h-0 flex-col gap-5 px-6 py-5'>
 			{query.isPending && !data ? (
 				<div>
 					<Skeleton className='mb-2 h-5 w-64' />
@@ -96,6 +97,6 @@ export function StatisticsView(): ReactElement {
 					</section>
 				</>
 			) : null}
-		</div>
+		</ScrollArea>
 	);
 }

@@ -7,7 +7,7 @@ import { cn } from "@/mainview/lib/utils";
 type ScrollAreaProps = ScrollAreaPrimitive.Root.Props & { viewportClassName?: string };
 function ScrollArea({ className, children, viewportClassName, ...props }: ScrollAreaProps) {
 	return (
-		<ScrollAreaPrimitive.Root data-slot='scroll-area' className={cn("group/scroll-area relative", className)} {...props}>
+		<ScrollAreaPrimitive.Root data-slot='scroll-area' className={cn("group/scroll-area relative h-full", className)} {...props}>
 			<ScrollAreaPrimitive.Viewport
 				data-slot='scroll-area-viewport'
 				className={cn(
