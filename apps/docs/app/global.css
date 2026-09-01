@@ -7,18 +7,23 @@
 	--color-fd-foreground: oklch(0.2 0.01 260);
 	--color-fd-muted: oklch(0.965 0.003 260);
 	--color-fd-muted-foreground: oklch(0.5 0.01 260);
+
 	--color-fd-popover: oklch(1 0 0);
 	--color-fd-popover-foreground: oklch(0.2 0.01 260);
 	--color-fd-card: oklch(1 0 0);
 	--color-fd-card-foreground: oklch(0.2 0.01 260);
 	--color-fd-border: oklch(0.9 0.005 260);
-	--color-fd-primary: oklch(0.4 0.13 262);
+
+	--color-fd-primary: oklch(0.6029 0.2038 29.234); /* #db1717 in oklch */
 	--color-fd-primary-foreground: oklch(0.985 0 0);
-	--color-fd-secondary: oklch(0.96 0.004 260);
-	--color-fd-secondary-foreground: oklch(0.28 0.02 260);
-	--color-fd-accent: oklch(0.9 0.045 250);
-	--color-fd-accent-foreground: oklch(0.3 0.09 262);
-	--color-fd-ring: oklch(0.6 0.1 262);
+
+	--color-fd-secondary: oklch(0.6029 0.08 29.234 / 0.09); /* primarish, very faint */
+	--color-fd-secondary-foreground: oklch(0.28 0.02 29.234 / 0.9); /* primarish foreground */
+
+	--color-fd-accent: oklch(0.6029 0.12 29.234 / 0.13); /* primarish, more visible */
+	--color-fd-accent-foreground: oklch(0.3 0.03 29.234 / 0.92);
+
+	--color-fd-ring: oklch(0.6029 0.2038 29.234 / 0.22); /* primarish strong */
 }
 
 .dark {
@@ -26,18 +31,23 @@
 	--color-fd-foreground: oklch(0.985 0 0);
 	--color-fd-muted: oklch(0.269 0 0);
 	--color-fd-muted-foreground: oklch(0.708 0 0);
+
 	--color-fd-popover: oklch(0.205 0 0);
 	--color-fd-popover-foreground: oklch(0.985 0 0);
 	--color-fd-card: oklch(0.205 0 0);
 	--color-fd-card-foreground: oklch(0.985 0 0);
 	--color-fd-border: oklch(1 0 0 / 10%);
-	--color-fd-primary: oklch(0.688 0.243 264.376);
+
+	--color-fd-primary: oklch(0.6029 0.2038 29.234); /* #db1717 in oklch */
 	--color-fd-primary-foreground: oklch(0.985 0 0);
-	--color-fd-secondary: oklch(0.269 0 0);
+
+	--color-fd-secondary: oklch(0.6029 0.08 29.234 / 0.09); /* primarish, very faint */
 	--color-fd-secondary-foreground: oklch(0.985 0 0);
-	--color-fd-accent: oklch(0.269 0 0);
+
+	--color-fd-accent: oklch(0.6029 0.12 29.234 / 0.13); /* primarish, more visible */
 	--color-fd-accent-foreground: oklch(0.985 0 0);
-	--color-fd-ring: oklch(0.556 0 0);
+
+	--color-fd-ring: oklch(0.6029 0.2038 29.234 / 0.33);
 }
 
 html {
