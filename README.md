@@ -6,7 +6,7 @@
 
 Desktop anime tracker for AniList lists, local library scanning, playback matching, torrent RSS, Discord presence, and a local now-playing HTTP endpoint.
 
-Docs: [venipa.github.io/biyori](https://venipa.github.io/biyori) (or `bun run docs:dev` locally).
+Docs: [venipa.github.io/Biyori](https://venipa.github.io/Biyori) (or `bun run docs:dev` locally).
 
 ## Features
 
