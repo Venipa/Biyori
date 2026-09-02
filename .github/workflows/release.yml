@@ -254,13 +254,33 @@ jobs:
           fi
           ls -la "${files[@]}"
 
+      # Outside Mac App Store: Developer ID Application + notarize
+      # Secrets: MACOS_DEVELOPER_ID_APPLICATION_P12 (+ _PASSWORD),
+      #          APPLE_NOTARY_API_KEY_P8, APPLE_NOTARY_API_KEY_ID, APPLE_NOTARY_API_ISSUER_ID
+      - name: Prepare Apple notarization key
+        run: |
+          mkdir -p .secrets
+          echo "${{ secrets.APPLE_NOTARY_API_KEY_P8 }}" > .secrets/AuthKey.p8
+          chmod 600 .secrets/AuthKey.p8
+
+      # Outside Mac App Store: Developer ID Application + notarize
+      # Secrets: MACOS_DEVELOPER_ID_APPLICATION_P12 (+ _PASSWORD),
+      #          APPLE_NOTARY_API_KEY_P8, APPLE_NOTARY_API_KEY_ID, APPLE_NOTARY_API_ISSUER_ID
       - name: Pack macOS arm64 release
         working-directory: apps/biyori
         run: bunx electron-builder --mac --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+          CSC_LINK: ${{ secrets.MACOS_DEVELOPER_ID_APPLICATION_P12 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_DEVELOPER_ID_APPLICATION_PASSWORD }}
+          APPLE_API_KEY: ${{ format('{0}/.secrets/AuthKey.p8', github.workspace) }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
+
+      - if: always()
+        name: Cleanup Apple secrets
+        run: rm -rf .secrets
 
   build-linux:
     needs: compile
