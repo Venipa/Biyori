@@ -5,7 +5,7 @@ import { anime, listEntry } from "../db/schema";
 import { type Candidate, namesFrom } from "./match-core";
 
 export type { Candidate } from "./match-core";
-export { matchById, matchParsed, matchTitle } from "./match-core";
+export { matchById, matchParsed, matchTitle, namesFrom, similarParsed } from "./match-core";
 
 export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 	const rows = await db
@@ -13,6 +13,7 @@ export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 			id: anime.id,
 			title: anime.title,
 			alternativeTitles: anime.alternativeTitles,
+			userSynonyms: anime.userSynonyms,
 			type: anime.type,
 			coverUrl: anime.coverUrl,
 			bannerUrl: anime.bannerUrl,
@@ -42,6 +43,7 @@ export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 		id: row.id,
 		title: row.title,
 		alternativeTitles: row.alternativeTitles,
+		userSynonyms: row.userSynonyms,
 		type: row.type,
 		coverUrl: row.coverUrl,
 		bannerUrl: row.bannerUrl,
@@ -63,6 +65,6 @@ export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 		timesRewatched: row.timesRewatched,
 		dateStarted: row.dateStarted,
 		dateCompleted: row.dateCompleted,
-		names: namesFrom(row.title, row.alternativeTitles),
+		names: namesFrom(row.title, row.alternativeTitles, row.userSynonyms),
 	}));
 }

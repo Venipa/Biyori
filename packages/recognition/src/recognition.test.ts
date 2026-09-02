@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { extendTitle } from "./extend-title";
-import { matchParsed, matchTitle } from "./match";
+import { matchParsed, matchTitle, rankTitles } from "./match";
 import { recognizeFilename, recognizePath } from "./recognize";
 import { redirectIfOutOfRange } from "./redirect";
 import type { TitleCandidate, TitleParts } from "./types";
@@ -75,6 +75,14 @@ describe("matchParsed", () => {
 		expect(matchParsed(parts("Tensei Shitara Slime Datta Ken", 4), [slime, sao])?.id).toBe(10);
 		expect(matchParsed(parts("Sword Art Online", 4), [slime, sao])?.id).toBe(20);
 		expect(matchTitle("Tensei Shitara Slime Datta Ken 4th Season", [slime, sao])?.id).toBe(10);
+	});
+});
+
+describe("rankTitles", () => {
+	test("returns close titles when auto-match is unique-ambiguous", () => {
+		const ranked = rankTitles("show", [s1, s4]);
+		expect(ranked.length).toBeGreaterThan(0);
+		expect(ranked[0]?.candidate.id).toBe(1);
 	});
 });
 

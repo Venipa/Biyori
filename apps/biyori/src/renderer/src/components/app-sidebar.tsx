@@ -1,5 +1,3 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, HistoryIcon, ListIcon, PlayIcon, SearchIcon } from "lucide-react";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { Button } from "@/mainview/components/ui/button";
@@ -8,6 +6,8 @@ import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import { ANIME_LIST_SEARCH_TAB } from "@/shared/list";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, HistoryIcon, ListIcon, PlayIcon, SearchIcon } from "lucide-react";
 
 const listItems = [
 	{ to: "/app/history", label: "History", icon: HistoryIcon },
@@ -98,6 +98,7 @@ function NowPlayingNavLink({ active }: { active: boolean }) {
 		<Button
 			variant={active ? "secondary" : "ghost"}
 			render={<Link to='/app/now-playing' aria-current={active ? "page" : undefined} />}
+			nativeButton={false}
 			className={cn(
 				"relative isolate h-auto min-h-8 w-full justify-start overflow-hidden py-1.5",
 				showCover ? "items-stretch" : "items-start",

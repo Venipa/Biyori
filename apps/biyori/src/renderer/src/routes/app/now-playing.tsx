@@ -15,7 +15,7 @@ import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, ExternalLinkIcon, PlayCircleIcon, SearchIcon } from "lucide-react";
+import { CircleAlertIcon, CircleHelpIcon, ExternalLinkIcon, PlayCircleIcon, SearchIcon } from "lucide-react";
 
 export const Route = createFileRoute("/app/now-playing")({
 	validateSearch: animeInfoSearchSchema,
@@ -30,6 +30,9 @@ type ContinueWatchingItem = {
 	animeId: number;
 	title: string;
 	nextEpisode: number;
+	coverUrl?: string;
+	type?: string;
+	episodes?: number;
 };
 type UpcomingItem = {
 	id: number;
@@ -72,8 +75,9 @@ function IdleNowPlaying() {
 	const queued = historyQuery.data?.queued ?? [];
 	const history = historyQuery.data?.history ?? [];
 	const listed = listedQuery.data ?? [];
+	const listedById = new Map(listed.map((row) => [row.id, row]));
 	const skipStatus = new Set(listed.filter((row) => row.status === "Completed" || row.status === "Dropped").map((row) => row.id));
-	const continueWatching = buildContinueWatching([...queued, ...history], skipStatus);
+	const continueWatching = buildContinueWatching([...queued, ...history], listedById, skipStatus);
 	const upcoming = buildUpcoming(listed, skipStatus);
 	const watchedLastWeek = countWatchedLastWeek([...queued, ...history]);
 	const historyPending = historyQuery.isPending && !historyQuery.data;
@@ -101,9 +105,11 @@ function IdleNowPlaying() {
 						<div>
 							<h2 className='mb-1 text-sm font-semibold'>Continue watching</h2>
 							<Separator className='mb-2' />
-							<ul className='grid grid-cols-1 gap-0.5 @lg:grid-cols-2 @lg:gap-2'>
+							<ul
+								aria-label='Continue watching'
+								className='flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]'>
 								{continueWatching.map((item) => (
-									<li key={item.animeId}>
+									<li key={item.animeId} className='w-[200px] shrink-0 snap-start'>
 										<ContinueWatchingCard
 											item={item}
 											disabled={playNext.isPending}
@@ -153,19 +159,29 @@ function IdleNowPlaying() {
 }
 
 function ContinueWatchingCard({ item, disabled, onPlay }: { item: ContinueWatchingItem; disabled: boolean; onPlay: () => void }) {
+	const total = item.episodes != null && item.episodes > 0 ? item.episodes : null;
 	return (
-		<Card size='sm' className='bg-transparent py-0 ring-0 @lg:bg-card @lg:ring-1'>
+		<Card size='sm' className='overflow-hidden py-0'>
 			<Button
 				type='button'
 				variant='ghost'
-				className='h-auto w-full min-w-0 justify-start gap-2 rounded-lg px-2 py-1 text-left font-normal whitespace-normal @lg:rounded-xl @lg:py-2'
+				className='h-auto w-full min-w-0 flex-col items-stretch p-0 text-left font-normal whitespace-normal'
 				disabled={disabled}
 				onClick={onPlay}>
-				<AnimeCover id={item.animeId} alt='' lazy width={40} height={60} className='aspect-2/3 w-7 shrink-0 overflow-hidden rounded-sm bg-muted @lg:w-10 @lg:rounded-md' />
-				<CardHeader className='flex min-w-0 flex-1 flex-row items-center gap-1 p-0 @lg:flex-col @lg:items-stretch @lg:gap-0.5'>
-					<CardTitle className='min-w-0 truncate'>{item.title}</CardTitle>
-					<CardDescription className='shrink-0 @sm:hidden'>#{item.nextEpisode}</CardDescription>
-					<CardDescription className='hidden truncate @sm:block'>Episode {item.nextEpisode}</CardDescription>
+				<span className='relative block aspect-square h-[200px] w-full overflow-hidden bg-muted'>
+					<AnimeCover id={item.animeId} kind='cover' coverUrl={item.coverUrl} alt='' lazy className='size-full' />
+				</span>
+				<CardHeader className='flex flex-col items-stretch gap-0.5 p-2'>
+					<CardTitle className='truncate'>{item.title}</CardTitle>
+					<CardDescription className='truncate'>
+						Next episode {item.nextEpisode}
+						{total != null ? ` of ${total}` : ""}
+					</CardDescription>
+					{item.type ? (
+						<div className='flex flex-wrap gap-1'>
+							<Badge variant='outline'>{item.type}</Badge>
+						</div>
+					) : null}
 				</CardHeader>
 			</Button>
 		</Card>
@@ -312,10 +328,20 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 
 function UnrecognizedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 	const navigate = useNavigate();
+	const animeInfo = useAnimeInfoNav();
+	const utils = trpc.useUtils();
+	const chooseMatch = trpc.media.chooseMatch.useMutation({
+		onSuccess: () => {
+			void utils.media.nowPlaying.invalidate();
+			void utils.anime.list.invalidate();
+			void utils.anime.listed.invalidate();
+		},
+	});
 	const title = snapshot.parsed?.title ?? snapshot.media?.title ?? "Unknown title";
 	const episode = snapshot.parsed?.episode;
 	const group = snapshot.parsed?.group;
 	const searchQuery = title.trim();
+	const similar = snapshot.similar ?? [];
 
 	return (
 		<>
@@ -339,7 +365,11 @@ function UnrecognizedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 			<Alert variant='destructive'>
 				<CircleAlertIcon />
 				<AlertTitle>Unable to match this title</AlertTitle>
-				<AlertDescription>Biyori could not identify this episode against your list. Search AniList and add it, or check the filename.</AlertDescription>
+				<AlertDescription>
+					{similar.length > 0
+						? "Biyori could not identify this episode. Choose the correct anime from the list below, or search AniList."
+						: "Biyori could not identify this episode against your list. Search AniList and add it, or check the filename."}
+				</AlertDescription>
 				{searchQuery ? (
 					<AlertAction>
 						<Button
@@ -359,6 +389,29 @@ function UnrecognizedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 				) : null}
 			</Alert>
 
+			{similar.length > 0 ? (
+				<section className='flex flex-col gap-2'>
+					<h2 className='text-sm font-semibold'>Similar titles</h2>
+					<Separator />
+					<ul className='flex flex-col gap-2'>
+						{similar.map((item) => (
+							<li key={item.id}>
+								<SimilarTitleCard
+									item={item}
+									disabled={chooseMatch.isPending}
+									onChoose={() => {
+										void chooseMatch.mutateAsync({ animeId: item.id });
+									}}
+									onInfo={() => {
+										animeInfo.open({ id: item.id, infoTab: "list" });
+									}}
+								/>
+							</li>
+						))}
+					</ul>
+				</section>
+			) : null}
+
 			{snapshot.media?.filePath || snapshot.parsed?.filePath ? (
 				<div>
 					<h2 className='mb-1 text-sm font-semibold'>Source</h2>
@@ -370,7 +423,45 @@ function UnrecognizedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 	);
 }
 
-function buildContinueWatching(rows: HistoryRow[], skipAnimeIds: ReadonlySet<number>): ContinueWatchingItem[] {
+function SimilarTitleCard({
+	item,
+	disabled,
+	onChoose,
+	onInfo,
+}: {
+	item: NonNullable<NowPlayingSnapshot["similar"]>[number];
+	disabled: boolean;
+	onChoose: () => void;
+	onInfo: () => void;
+}) {
+	return (
+		<Card size='sm' className='py-0'>
+			<div className='flex items-stretch'>
+				<Button
+					type='button'
+					variant='ghost'
+					className='h-auto min-w-0 flex-1 items-center justify-start gap-3 rounded-xl px-2 py-2 text-left font-normal'
+					disabled={disabled}
+					onClick={onChoose}>
+					<AnimeCover id={item.id} coverUrl={item.coverUrl || undefined} alt='' lazy width={40} height={60} className='aspect-2/3 w-10 shrink-0 overflow-hidden rounded-md bg-muted' />
+					<span className='flex min-w-0 flex-col gap-0.5'>
+						<span className='truncate text-sm font-medium'>{item.title}</span>
+						{item.type ? <span className='text-xs text-muted-foreground'>{item.type}</span> : null}
+					</span>
+				</Button>
+				<Button type='button' variant='ghost' size='icon' className='m-1 shrink-0 self-center' aria-label={`Open ${item.title}`} disabled={disabled} onClick={onInfo}>
+					<CircleHelpIcon />
+				</Button>
+			</div>
+		</Card>
+	);
+}
+
+function buildContinueWatching(
+	rows: HistoryRow[],
+	listedById: ReadonlyMap<number, ListedRow>,
+	skipAnimeIds: ReadonlySet<number>,
+): ContinueWatchingItem[] {
 	const seen = new Set<number>();
 	const items: ContinueWatchingItem[] = [];
 	for (const row of rows) {
@@ -378,10 +469,14 @@ function buildContinueWatching(rows: HistoryRow[], skipAnimeIds: ReadonlySet<num
 			continue;
 		}
 		seen.add(row.animeId);
+		const listed = listedById.get(row.animeId);
 		items.push({
 			animeId: row.animeId,
-			title: row.title,
+			title: listed?.title ?? row.title,
 			nextEpisode: row.episode + 1,
+			coverUrl: listed?.coverUrl,
+			type: listed?.type,
+			episodes: listed?.episodes,
 		});
 		if (items.length >= CONTINUE_WATCHING_LIMIT) {
 			break;

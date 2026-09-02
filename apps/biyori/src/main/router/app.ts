@@ -34,7 +34,7 @@ import {
 import { hanaVersion } from "../track/hana-client";
 import { listEpisodes, playEpisode, playNext, playRandom, scanLibrary } from "../track/library";
 import { countQueued } from "../track/queue";
-import { confirmPendingUpdate, getNowPlayingSnapshot, nowPlayingObservable, skipPendingUpdate } from "../track/tracker";
+import { chooseNowPlayingMatch, confirmPendingUpdate, getNowPlayingSnapshot, nowPlayingObservable, skipPendingUpdate } from "../track/tracker";
 import { t } from "../trpc";
 import { anilistRouter } from "./anilist";
 import { coversRouter } from "./covers";
@@ -64,6 +64,7 @@ async function loadAnimeDetail(db: Pick<import("../db").DatabaseClient, "select"
 			id: anime.id,
 			title: anime.title,
 			alternativeTitles: anime.alternativeTitles,
+			userSynonyms: anime.userSynonyms,
 			type: anime.type,
 			episodes: anime.episodes,
 			averageScore: anime.averageScore,
@@ -131,6 +132,7 @@ export const appRouter = t.router({
 					id: anime.id,
 					title: anime.title,
 					alternativeTitles: anime.alternativeTitles,
+					userSynonyms: anime.userSynonyms,
 					type: anime.type,
 					episodes: anime.episodes,
 					averageScore: anime.averageScore,
@@ -194,6 +196,12 @@ export const appRouter = t.router({
 					title: anime.title,
 					status: listEntry.status,
 					airingStatus: anime.airingStatus,
+					type: anime.type,
+					episodes: anime.episodes,
+					episodesWatched: listEntry.episodesWatched,
+					season: anime.season,
+					coverUrl: anime.coverUrl,
+					bannerUrl: anime.bannerUrl,
 				})
 				.from(anime)
 				.innerJoin(listEntry, eq(listEntry.animeId, anime.id));
@@ -247,7 +255,8 @@ export const appRouter = t.router({
 					id: z.number().int(),
 					folder: z.string(),
 					fansub: z.string(),
-					alternativeTitles: z.string(),
+					userSynonyms: z.string().optional(),
+					alternativeTitles: z.string().optional(),
 				}),
 			)
 			.mutation(async ({ ctx, input }) => {
@@ -256,7 +265,7 @@ export const appRouter = t.router({
 					.set({
 						folder: input.folder.trim(),
 						fansub: input.fansub.trim(),
-						alternativeTitles: input.alternativeTitles.trim(),
+						userSynonyms: (input.userSynonyms ?? "").trim(),
 					})
 					.where(eq(anime.id, input.id));
 				return { ok: true as const };
@@ -339,6 +348,10 @@ export const appRouter = t.router({
 		skipUpdate: t.procedure.mutation(async () => {
 			await skipPendingUpdate();
 			return { ok: true as const };
+		}),
+		chooseMatch: t.procedure.input(z.object({ animeId: z.number().int() })).mutation(async ({ input }) => {
+			await chooseNowPlayingMatch(input.animeId);
+			return getNowPlayingSnapshot();
 		}),
 	}),
 	library: t.router({

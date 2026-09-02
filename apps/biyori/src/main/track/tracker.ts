@@ -1,7 +1,11 @@
+import { normalizeTitle } from "@biyori/recognition";
 import { observable } from "@trpc/server/observable";
+import { eq } from "drizzle-orm";
+import { joinTitleList, splitTitleList } from "../../lib/split-title-list";
 import { isPathInsideFolder } from "../../lib/folder-path";
 import type { AppSettings, DefaultService } from "../../lib/schemas/app-settings";
 import { readAnilistAuth } from "../anilist/store";
+import { anime } from "../db/schema";
 import type { DatabaseClient } from "../db";
 import { pushNotice } from "../activity";
 import { setAppNotice } from "../notice";
@@ -10,7 +14,7 @@ import { syncDiscordPresence } from "../share/discord";
 import { setNowPlayingForHttp } from "../share/http";
 import { rememberPlaybackApplied, wasPlaybackApplied } from "./applied-playback";
 import { getNowPlayingMedia } from "./detect";
-import { loadCandidates, matchById, matchParsed } from "./match";
+import { loadCandidates, matchById, matchParsed, namesFrom, similarParsed } from "./match";
 import { parsePlayback } from "./parse";
 import { enqueueUpdate, initQueueFlush } from "./queue";
 import { redirectEpisode, refreshRelations } from "./relations";
@@ -24,6 +28,7 @@ const IDLE: NowPlayingSnapshot = {
 	parsed: null,
 	match: null,
 	unrecognized: false,
+	similar: [],
 	delayRemainingSeconds: 0,
 	pendingConfirm: null,
 	startedAt: null,
@@ -60,6 +65,7 @@ let appliedFingerprint = "";
 let progressRevision = 0;
 let pending: PendingConfirm | null = null;
 let pendingExit: PendingConfirm | null = null;
+let boundMatch: { fingerprint: string; animeId: number } | null = null;
 const listeners = new Set<Listener>();
 
 function emit(next: NowPlayingSnapshot): void {
@@ -166,6 +172,7 @@ async function runTick(): Promise<void> {
 		lastFingerprint = "";
 		pending = null;
 		pendingExit = null;
+		boundMatch = null;
 		emit(idleSnapshot(user));
 		syncDiscordPresence(null, settings);
 		return;
@@ -192,6 +199,7 @@ async function runTick(): Promise<void> {
 		delayLastTickAt = 0;
 		sessionStartedAt = 0;
 		lastFingerprint = "";
+		boundMatch = null;
 		emit(idleSnapshot(user));
 		syncDiscordPresence(null, settings);
 		return;
@@ -203,6 +211,7 @@ async function runTick(): Promise<void> {
 			parsed: null,
 			match: null,
 			unrecognized: true,
+			similar: [],
 			delayRemainingSeconds: 0,
 			pendingConfirm: pending,
 			startedAt: snapshot.startedAt,
@@ -222,6 +231,7 @@ async function runTick(): Promise<void> {
 			parsed: null,
 			match: null,
 			unrecognized: true,
+			similar: [],
 			delayRemainingSeconds: 0,
 			pendingConfirm: pending,
 			startedAt: snapshot.startedAt,
@@ -252,6 +262,7 @@ async function runTick(): Promise<void> {
 	const key = fingerprint(media, parsed.episode);
 	if (key !== lastFingerprint) {
 		lastFingerprint = key;
+		boundMatch = null;
 		delayElapsedSeconds = 0;
 		delayLastTickAt = Date.now();
 		sessionStartedAt = delayLastTickAt;
@@ -271,6 +282,10 @@ async function runTick(): Promise<void> {
 		}
 	} else if (wasPlaybackApplied(key)) {
 		appliedFingerprint = key;
+	}
+
+	if (!match && boundMatch?.fingerprint === key) {
+		match = matchById(boundMatch.animeId, candidates);
 	}
 
 	const now = Date.now();
@@ -309,6 +324,16 @@ async function runTick(): Promise<void> {
 		parsed,
 		match,
 		unrecognized: !match,
+		similar: match
+			? []
+			: similarParsed(
+					{
+						title: parsed.rawTitle,
+						season: parsed.season,
+						year: parsed.year,
+					},
+					candidates,
+				),
 		delayRemainingSeconds: remaining,
 		pendingConfirm: pending,
 		startedAt: sessionStartedAt || now,
@@ -344,6 +369,54 @@ export async function skipPendingUpdate(): Promise<void> {
 	}
 	pending = null;
 	emit({ ...snapshot, pendingConfirm: null });
+}
+
+async function rememberUserSynonym(animeId: number, rawTitle: string): Promise<void> {
+	if (!db) {
+		return;
+	}
+	const title = rawTitle.trim();
+	if (!title) {
+		return;
+	}
+	const rows = await db
+		.select({
+			title: anime.title,
+			alternativeTitles: anime.alternativeTitles,
+			userSynonyms: anime.userSynonyms,
+		})
+		.from(anime)
+		.where(eq(anime.id, animeId))
+		.limit(1);
+	const row = rows[0];
+	if (!row) {
+		return;
+	}
+	const existing = namesFrom(row.title, row.alternativeTitles, row.userSynonyms);
+	if (existing.includes(normalizeTitle(title))) {
+		return;
+	}
+	await db
+		.update(anime)
+		.set({
+			userSynonyms: joinTitleList([...splitTitleList(row.userSynonyms), title]),
+		})
+		.where(eq(anime.id, animeId));
+}
+
+export async function chooseNowPlayingMatch(animeId: number): Promise<void> {
+	if (!db || !lastFingerprint) {
+		return;
+	}
+	const playingTitle = snapshot.parsed?.rawTitle ?? snapshot.parsed?.title ?? "";
+	boundMatch = { fingerprint: lastFingerprint, animeId };
+	await rememberUserSynonym(animeId, playingTitle);
+	while (tickInFlight) {
+		await new Promise((resolve) => {
+			setTimeout(resolve, 20);
+		});
+	}
+	await tick();
 }
 
 export function initTracker(database: DatabaseClient): void {

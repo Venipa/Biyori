@@ -1,11 +1,13 @@
 import type { TitleParts } from "@biyori/recognition";
-import { matchParsed as matchParsedFilename, normalizeTitle, matchTitle as scoreTitle } from "@biyori/recognition";
-import type { MatchedAnime } from "./types";
+import { matchParsed as matchParsedFilename, normalizeTitle, matchTitle as scoreTitle, rankParsed } from "@biyori/recognition";
+import { splitTitleList } from "../../lib/split-title-list";
+import type { MatchedAnime, SimilarTitle } from "./types";
 
 export type Candidate = {
 	id: number;
 	title: string;
 	alternativeTitles: string;
+	userSynonyms: string;
 	type: string;
 	coverUrl: string;
 	bannerUrl: string;
@@ -30,8 +32,18 @@ export type Candidate = {
 	names: string[];
 };
 
-export function namesFrom(title: string, alternativeTitles: string): string[] {
-	return [title, ...alternativeTitles.split(/[,;]/)].map((item) => normalizeTitle(item)).filter(Boolean);
+export function namesFrom(title: string, alternativeTitles: string, userSynonyms = ""): string[] {
+	const names: string[] = [];
+	const seen = new Set<string>();
+	for (const item of [title, ...splitTitleList(alternativeTitles), ...splitTitleList(userSynonyms)]) {
+		const name = normalizeTitle(item);
+		if (!name || seen.has(name)) {
+			continue;
+		}
+		seen.add(name);
+		names.push(name);
+	}
+	return names;
 }
 
 function toMatch(candidate: Candidate): MatchedAnime {
@@ -76,4 +88,14 @@ export function matchParsed(parsed: TitleParts, candidates: Candidate[]): Matche
 export function matchById(id: number, candidates: Candidate[]): MatchedAnime | null {
 	const hit = candidates.find((item) => item.id === id);
 	return hit ? toMatch(hit) : null;
+}
+
+export function similarParsed(parsed: TitleParts, candidates: Candidate[]): SimilarTitle[] {
+	return rankParsed(parsed, candidates).map((hit) => ({
+		id: hit.candidate.id,
+		title: hit.candidate.title,
+		coverUrl: hit.candidate.coverUrl,
+		type: hit.candidate.type,
+		score: hit.score,
+	}));
 }

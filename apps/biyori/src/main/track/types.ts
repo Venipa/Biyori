@@ -43,6 +43,14 @@ export type MatchedAnime = Pick<
 		producers: string[];
 	};
 
+export type SimilarTitle = {
+	id: number;
+	title: string;
+	coverUrl: string;
+	type: string;
+	score: number;
+};
+
 export type PendingConfirm = {
 	animeId: number;
 	title: string;
@@ -59,6 +67,7 @@ export type NowPlayingSnapshot = {
 	parsed: ParsedPlayback | null;
 	match: MatchedAnime | null;
 	unrecognized: boolean;
+	similar: SimilarTitle[];
 	delayRemainingSeconds: number;
 	pendingConfirm: PendingConfirm | null;
 	startedAt: number | null;

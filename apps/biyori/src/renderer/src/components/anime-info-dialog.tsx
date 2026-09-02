@@ -4,6 +4,7 @@ import MyAnimeListIcon from "@/assets/mal.svg?react";
 import { Image } from "@/components/ui/image";
 import { desktopRpc } from "@/desktop-rpc";
 import { type AnimeInfoFormInput, type AnimeInfoFormValues, animeInfoFormSchema } from "@/lib/schemas/anime-list-entry";
+import { joinTitleList, splitTitleList } from "@/lib/split-title-list";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeListAction, AnimeListStatusSelect } from "@/mainview/components/anime-list-action";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
@@ -12,7 +13,7 @@ import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTitle } from "@/mainview/components/ui/dialog";
-import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/mainview/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/mainview/components/ui/field";
 import { Input } from "@/mainview/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
@@ -26,8 +27,8 @@ import type { AppRouter } from "@/shared/app-router";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, FolderOpen } from "lucide-react";
-import { useId } from "react";
+import { CircleAlertIcon, FolderOpen, PlusIcon, XIcon } from "lucide-react";
+import { useId, useState } from "react";
 import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 
 function posterExternalLinks(id: number, title: string): Array<{ label: string; short: string; url: string; icon?: React.ReactNode }> {
@@ -174,6 +175,7 @@ function AnimeInfoBody({
 			dateCompleted: toDateInput(anime.dateCompleted),
 			folder: anime.folder ?? "",
 			fansub: anime.fansub ?? "",
+			userSynonyms: anime.userSynonyms ?? "",
 			alternativeTitles: anime.alternativeTitles ?? "",
 		},
 	});
@@ -386,8 +388,19 @@ function AnimeInfoBody({
 												<FieldGroup className='gap-3'>
 													<Field>
 														<FieldLabel htmlFor={altTitlesId}>Alternative titles:</FieldLabel>
-														<Input id={altTitlesId} placeholder='Title 1; Title 2' {...form.register("alternativeTitles")} />
-														<FieldError errors={[form.formState.errors.alternativeTitles]} />
+														<Controller
+															name='userSynonyms'
+															control={form.control}
+															render={({ field, fieldState }) => (
+																<UserSynonymsField
+																	id={altTitlesId}
+																	defaultTitles={splitTitleList(anime.alternativeTitles)}
+																	value={field.value}
+																	onChange={field.onChange}
+																	error={fieldState.error}
+																/>
+															)}
+														/>
 													</Field>
 													<Field>
 														<FieldLabel htmlFor={folderId}>Folder:</FieldLabel>
@@ -441,6 +454,90 @@ function AnimeInfoBody({
 				<AnimeInfoSaveBar animeId={anime.id} />
 			)}
 		</FormProvider>
+	);
+}
+
+function UserSynonymsField({
+	id,
+	defaultTitles,
+	value,
+	onChange,
+	error,
+}: {
+	id: string;
+	defaultTitles: string[];
+	value: string;
+	onChange: (next: string) => void;
+	error?: { message?: string };
+}) {
+	const [draft, setDraft] = useState("");
+	const userTitles = splitTitleList(value);
+	const blocked = new Set([...defaultTitles, ...userTitles].map((title) => title.toLowerCase()));
+
+	const addDraft = () => {
+		const title = draft.trim();
+		setDraft("");
+		if (!title || blocked.has(title.toLowerCase())) {
+			return;
+		}
+		onChange(joinTitleList([...userTitles, title]));
+	};
+
+	return (
+		<div className='flex flex-col gap-2'>
+			{defaultTitles.length > 0 ? (
+				<div className='flex flex-wrap gap-1'>
+					{defaultTitles.map((title) => (
+						<Badge key={title} variant='secondary'>
+							{title}
+						</Badge>
+					))}
+				</div>
+			) : null}
+			{userTitles.length > 0 ? (
+				<div className='flex flex-wrap gap-1'>
+					{userTitles.map((title) => (
+						<Badge key={title} variant='outline' className='pr-0.5'>
+							{title}
+							<Button
+								type='button'
+								variant='ghost'
+								size='icon-xs'
+								className='rounded-full'
+								aria-label={`Remove ${title}`}
+								onClick={() => {
+									onChange(joinTitleList(userTitles.filter((item) => item !== title)));
+								}}>
+								<XIcon />
+							</Button>
+						</Badge>
+					))}
+				</div>
+			) : null}
+			<InputGroup>
+				<InputGroupInput
+					id={id}
+					value={draft}
+					placeholder='Add a matching title'
+					onChange={(event) => {
+						setDraft(event.target.value);
+					}}
+					onKeyDown={(event) => {
+						if (event.key === "Enter") {
+							event.preventDefault();
+							addDraft();
+						}
+					}}
+				/>
+				<InputGroupAddon align='inline-end'>
+					<InputGroupButton size='icon-xs' aria-label='Add alternative title' onClick={addDraft}>
+						<PlusIcon />
+					</InputGroupButton>
+				</InputGroupAddon>
+			</InputGroup>
+			<FieldDescription>Add titles used to match files. Service titles cannot be edited or removed.</FieldDescription>
+			<FieldError errors={[error]} />
+		</div>
 	);
 }
 
@@ -499,7 +596,7 @@ function AnimeInfoSaveBar({ animeId }: { animeId: number }) {
 									id: animeId,
 									folder: data.folder,
 									fansub: data.fansub,
-									alternativeTitles: data.alternativeTitles,
+									userSynonyms: data.userSynonyms,
 								});
 								form.reset(data);
 								void invalidateAnimeQueries(utils, "entrySaved", animeId);

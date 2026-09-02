@@ -164,6 +164,35 @@ export function matchTitle<T extends TitleCandidate>(query: string, candidates: 
 	return best.candidate;
 }
 
+const SIMILAR_FLOOR = 0.25;
+const SIMILAR_LIMIT = 10;
+
+export type RankedTitle<T extends TitleCandidate> = {
+	candidate: T;
+	score: number;
+};
+
+export function rankTitles<T extends TitleCandidate>(query: string, candidates: T[], season?: number | null, limit = SIMILAR_LIMIT): RankedTitle<T>[] {
+	const needle = normalizeTitle(query);
+	if (!needle) {
+		return [];
+	}
+	const lookupKey = normalizeForLookup(query);
+	const ranked: RankedTitle<T>[] = [];
+	for (const candidate of candidates) {
+		const score = scoreCandidate(candidate, needle, lookupKey, season);
+		if (score >= SIMILAR_FLOOR) {
+			ranked.push({ candidate, score });
+		}
+	}
+	ranked.sort((left, right) => right.score - left.score);
+	return ranked.slice(0, limit);
+}
+
+export function rankParsed<T extends TitleCandidate>(parsed: TitleParts, candidates: T[]): RankedTitle<T>[] {
+	return rankTitles(extendTitle(parsed), candidates, parsed.season);
+}
+
 export function matchParsed<T extends TitleCandidate>(parsed: TitleParts, candidates: T[]): T | null {
 	return matchTitle(extendTitle(parsed), candidates, parsed.season);
 }

@@ -1,6 +1,10 @@
+import { parseJsonArray } from "@/lib/parse-json-array";
+import { splitTitleList } from "@/lib/split-title-list";
+
 export type ListFilterRow = {
 	title: string;
 	alternativeTitles?: string;
+	userSynonyms?: string;
 	genres?: string;
 	notes?: string;
 	type?: string;
@@ -89,8 +93,6 @@ function includesInsensitive(haystack: string, needle: string): boolean {
 	return haystack.toLowerCase().includes(needle.toLowerCase());
 }
 
-import { parseJsonArray } from "@/lib/parse-json-array";
-
 function parseJsonStrings(value: string | undefined): string[] {
 	if (!value) {
 		return [];
@@ -106,11 +108,7 @@ function parseJsonStrings(value: string | undefined): string[] {
 }
 
 function titleBag(row: ListFilterRow): string[] {
-	const titles = [row.title, ...(row.alternativeTitles ?? "").split(",")];
-	return titles
-		.filter((part): part is string => typeof part === "string" && part.length > 0)
-		.map((part) => part.trim())
-		.filter(Boolean);
+	return [row.title, ...splitTitleList(row.alternativeTitles), ...splitTitleList(row.userSynonyms)];
 }
 
 function seasonYear(row: ListFilterRow): number {
