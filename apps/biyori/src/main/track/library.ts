@@ -1,3 +1,4 @@
+import { logger as log } from "@biyori/logger";
 import { pathUnderRoot } from "@biyori/recognition";
 import { eq } from "drizzle-orm";
 import { shell } from "electron";
@@ -164,6 +165,10 @@ export async function scanLibrary(database: DatabaseClient = requiredDb()): Prom
 	return enqueueScan(() => runScan(database, libraryRoots(), "full"));
 }
 
+export function hasIndexedLibrary(database: DatabaseClient = requiredDb()): boolean {
+	return knownAnimeFolders(database).length > 0;
+}
+
 export async function scanLibraryQuick(database: DatabaseClient = requiredDb()): Promise<{ files: number; matched: number }> {
 	return enqueueScan(async () => {
 		const folders = knownAnimeFolders(database);
@@ -172,6 +177,17 @@ export async function scanLibraryQuick(database: DatabaseClient = requiredDb()):
 		}
 		return runScan(database, folders, "quick");
 	});
+}
+
+export async function runStartupScan(): Promise<void> {
+	try {
+		if (!hasIndexedLibrary()) {
+			return;
+		}
+		await scanLibraryQuick();
+	} catch (error) {
+		log.error("startup scan failed", error);
+	}
 }
 
 function onScanProgress(kind: "full" | "quick", progress: ScanProgress): void {

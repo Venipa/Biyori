@@ -19,6 +19,7 @@ export type WindowDefinition = {
 	saveState?: boolean;
 	alwaysOnTop?: boolean;
 	modal?: boolean;
+	resizable?: boolean;
 };
 
 export type OpenWindowOptions = {
@@ -143,6 +144,7 @@ export class WindowManager<TId extends string> {
 			alwaysOnTop,
 			modal,
 			parent,
+			resizable: definition.resizable,
 		});
 
 		this.windows.set(id, { id, win });
@@ -205,6 +207,7 @@ export class WindowManager<TId extends string> {
 		alwaysOnTop: boolean;
 		modal: boolean;
 		parent?: BrowserWindow;
+		resizable?: boolean;
 	}): BrowserWindow {
 		const ctor: BrowserWindowConstructorOptions = {
 			title: options.title,
@@ -224,6 +227,7 @@ export class WindowManager<TId extends string> {
 			backgroundColor: windowBackgroundColor(),
 			autoHideMenuBar: true,
 			...(process.platform === "linux" ? { icon } : {}),
+			...(options.resizable === false ? { resizable: false } : {}),
 			webPreferences: {
 				preload: join(__dirname, "../preload/index.js"),
 				sandbox: false,

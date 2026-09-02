@@ -157,11 +157,18 @@
 	}
 	html,
 	body {
-		@apply bg-background text-foreground;
+		@apply bg-background text-foreground select-none;
+	}
+	input,
+	textarea,
+	[contenteditable="true"] {
+		@apply select-text;
 	}
 	img,
-	video {
-		@apply pointer-events-none select-none;
+	video,
+	a {
+		@apply select-none;
+		-webkit-user-drag: none;
 	}
 }
 
@@ -271,5 +278,19 @@
 	}
 	100% {
 		opacity: 0.15;
+	}
+}
+
+.progress-indeterminate [data-slot="progress-indicator"] {
+	width: 40%;
+	animation: progress-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+	from {
+		translate: -100% 0;
+	}
+	to {
+		translate: 280% 0;
 	}
 }

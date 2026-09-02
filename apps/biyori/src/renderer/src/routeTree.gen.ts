@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
+import { Route as SplashRouteImport } from './routes/splash'
 import { Route as UpdateRouteImport } from './routes/update'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppAboutRouteImport } from './routes/app/about'
@@ -44,6 +45,11 @@ const AppRouteRoute = AppRouteRouteImport.update({
 const SettingsRouteRoute = SettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SplashRoute = SplashRouteImport.update({
+  id: '/splash',
+  path: '/splash',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UpdateRoute = UpdateRouteImport.update({
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
+  '/splash': typeof SplashRoute
   '/update': typeof UpdateRoute
   '/app/about': typeof AppAboutRoute
   '/app/anime-list': typeof AppAnimeListRoute
@@ -162,6 +169,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/splash': typeof SplashRoute
   '/update': typeof UpdateRoute
   '/app/about': typeof AppAboutRoute
   '/app/anime-list': typeof AppAnimeListRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
+  '/splash': typeof SplashRoute
   '/update': typeof UpdateRoute
   '/app/about': typeof AppAboutRoute
   '/app/anime-list': typeof AppAnimeListRoute
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/settings'
+    | '/splash'
     | '/update'
     | '/app/about'
     | '/app/anime-list'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/splash'
     | '/update'
     | '/app/about'
     | '/app/anime-list'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/settings'
+    | '/splash'
     | '/update'
     | '/app/about'
     | '/app/anime-list'
@@ -279,6 +291,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRouteRoute: typeof AppRouteRouteWithChildren
   SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
+  SplashRoute: typeof SplashRoute
   UpdateRoute: typeof UpdateRoute
 }
 
@@ -303,6 +316,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/splash': {
+      id: '/splash'
+      path: '/splash'
+      fullPath: '/splash'
+      preLoaderRoute: typeof SplashRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/update': {
@@ -492,6 +512,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRouteRoute: AppRouteRouteWithChildren,
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
+  SplashRoute: SplashRoute,
   UpdateRoute: UpdateRoute,
 }
 export const routeTree = rootRouteImport

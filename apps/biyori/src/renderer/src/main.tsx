@@ -22,15 +22,18 @@ function windowChromeTitle(): string {
 	return "Biyori";
 }
 
+const chromePath = rendererRoutePath();
+const splash = chromePath.includes("/splash");
+
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<TrpcProvider>
 			<div className='relative flex h-full min-h-0 flex-1 flex-col overflow-hidden'>
-				<AppTitleBar title={windowChromeTitle()} />
+				{splash ? null : <AppTitleBar title={windowChromeTitle()} />}
 				<div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
 					<RouterProvider router={router} />
 				</div>
-				<ParentWindowScrim />
+				{splash ? null : <ParentWindowScrim />}
 			</div>
 		</TrpcProvider>
 	</StrictMode>,

@@ -1,35 +1,27 @@
-import { ipcTrpc } from "@/desktop-rpc";
+import { PageLoad } from "@/mainview/components/page-load";
 import { type SettingsFormInput, type SettingsFormValues, settingsFormSchema } from "@/lib/schemas/app-settings";
+import { SettingsCloseGuard } from "@/mainview/components/settings/settings-close-guard";
 import { SettingsSaveBar } from "@/mainview/components/settings/settings-save-bar";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { settingsSections } from "@/mainview/lib/settings-nav";
 import { cn } from "@/mainview/lib/utils";
+import { trpc } from "@/mainview/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 
 export const Route = createFileRoute("/settings")({
-	loader: () => ipcTrpc.settings.get.query(),
-	pendingComponent: SettingsPending,
 	component: SettingsLayout,
 });
 
-function SettingsPending() {
-	return (
-		<SettingsChrome>
-			<Skeleton className='h-5 w-40' />
-			<Skeleton className='h-9 w-full' />
-			<Skeleton className='h-9 w-full' />
-			<Skeleton className='h-24 w-full' />
-		</SettingsChrome>
-	);
-}
-
 function SettingsLayout() {
-	const defaultValues = Route.useLoaderData();
-	return <SettingsForm defaultValues={defaultValues} />;
+	const settingsQuery = trpc.settings.get.useQuery();
+	return (
+		<PageLoad loading={!settingsQuery.data}>
+			{settingsQuery.data ? <SettingsForm defaultValues={settingsQuery.data} /> : null}
+		</PageLoad>
+	);
 }
 
 function SettingsChrome({ children, overlay }: { children: ReactNode; overlay?: ReactNode }) {
@@ -86,7 +78,13 @@ function SettingsForm({ defaultValues }: { defaultValues: SettingsFormInput | Se
 
 	return (
 		<FormProvider {...form}>
-			<SettingsChrome overlay={<SettingsSaveBar />}>
+			<SettingsChrome
+				overlay={
+					<>
+						<SettingsSaveBar />
+						<SettingsCloseGuard />
+					</>
+				}>
 				<Outlet />
 			</SettingsChrome>
 		</FormProvider>

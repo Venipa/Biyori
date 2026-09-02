@@ -28,4 +28,16 @@ export const windowManager = new WindowManager({
 		modal: true,
 		singleton: true,
 	},
+	splash: {
+		title: "Biyori",
+		width: 380,
+		height: 240,
+		minWidth: 380,
+		minHeight: 240,
+		maxWidth: 380,
+		maxHeight: 240,
+		to: "/splash",
+		singleton: true,
+		resizable: false,
+	},
 });

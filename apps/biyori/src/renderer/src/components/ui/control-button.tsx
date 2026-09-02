@@ -1,14 +1,12 @@
+import { Button } from "@/mainview/components/ui/button";
 import { CopyIcon, MinusIcon, SquareIcon, XIcon } from "lucide-react";
 import type { ComponentProps } from "react";
-import { Button } from "@/mainview/components/ui/button";
 
 type ControlButtonBase = Omit<ComponentProps<typeof Button>, "variant" | "size" | "children"> & {
 	inactive?: boolean;
 };
 
-export type ControlButtonProps =
-	| (ControlButtonBase & { control: "minimize" | "close" })
-	| (ControlButtonBase & { control: "maximize"; maximized?: boolean });
+export type ControlButtonProps = (ControlButtonBase & { control: "minimize" | "close" }) | (ControlButtonBase & { control: "maximize"; maximized?: boolean });
 
 const CONTROL_LABEL = {
 	minimize: "Minimize",
@@ -35,8 +33,8 @@ export function ControlButton(props: ControlButtonProps) {
 				event.stopPropagation();
 				buttonProps.onDoubleClick?.(event);
 			}}>
-			{control === "minimize" ? <MinusIcon /> : null}
-			{control === "maximize" ? restore ? <CopyIcon /> : <SquareIcon /> : null}
+			{control === "minimize" ? <MinusIcon className='self-end mb-1.5 size-3' /> : null}
+			{control === "maximize" ? restore ? <CopyIcon /> : <SquareIcon className='size-3' /> : null}
 			{control === "close" ? <XIcon /> : null}
 		</Button>
 	);

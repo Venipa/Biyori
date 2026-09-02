@@ -7,6 +7,7 @@ import { AppStatusBar } from "@/mainview/components/app-status-bar";
 import { AppToolbar } from "@/mainview/components/app-toolbar";
 import { TopMenuBar } from "@/mainview/components/top-menu-bar";
 import { WatchConfirmDialog } from "@/mainview/components/watch-confirm-dialog";
+import { PageLoad } from "@/mainview/components/page-load";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { trpc } from "@/mainview/trpc";
 
@@ -50,19 +51,21 @@ function MainLayout(): ReactElement {
 	});
 
 	return (
-		<div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'>
-			<TopMenuBar />
-			<AppToolbar />
-			<div className='flex min-h-0 flex-1 overflow-hidden'>
-				<AppSidebar />
-				<main className='min-h-0 min-w-0 flex-1 overflow-hidden'>
-					<Outlet />
-				</main>
+		<PageLoad loading={!settingsQuery.data}>
+			<div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'>
+				<TopMenuBar />
+				<AppToolbar />
+				<div className='flex min-h-0 flex-1 overflow-hidden'>
+					<AppSidebar />
+					<main className='min-h-0 min-w-0 flex-1 overflow-hidden'>
+						<Outlet />
+					</main>
+				</div>
+				<AppStatusBar />
+				<AppAnimeInfoDialog />
+				<AnimeDeleteDialog />
+				<WatchConfirmDialog />
 			</div>
-			<AppStatusBar />
-			<AppAnimeInfoDialog />
-			<AnimeDeleteDialog />
-			<WatchConfirmDialog />
-		</div>
+		</PageLoad>
 	);
 }

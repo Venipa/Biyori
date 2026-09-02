@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { requestWindowClose } from "@/mainview/components/confirm-escape";
 import Logo from "@/mainview/components/logo";
 import { ControlButton } from "@/mainview/components/ui/control-button";
 import { trpc } from "@/mainview/trpc";
@@ -62,7 +63,9 @@ export function AppTitleBar({ title }: AppTitleBarProps) {
 					inactive={inactive}
 					disabled={!chrome.closable}
 					onClick={() => {
-						closeWindow.mutate();
+						requestWindowClose(() => {
+							closeWindow.mutate();
+						});
 					}}
 				/>
 			</div>
