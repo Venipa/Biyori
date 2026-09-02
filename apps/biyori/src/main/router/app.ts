@@ -13,6 +13,8 @@ import type { Anime } from "../db/types";
 import { getActivitySnapshot, subscribeActivity } from "../activity";
 import { getAppNotice, subscribeAppNotice } from "../notice";
 import { loadAppSettings, loadSettingsFormValues, patchAppSettings, patchSettingsForm } from "../settings";
+import { cacheKindsSchema } from "../../lib/schemas/cache-kind";
+import { clearCacheKinds, loadCacheSummary } from "../cache";
 import { loadStatistics } from "../statistics";
 import {
 	applyTorrentView,
@@ -21,10 +23,13 @@ import {
 	discardTorrent,
 	downloadSelectedTorrents,
 	downloadTorrent,
+	forgetArchivedTorrents,
 	getTorrentItems,
+	getTorrentPollStatus,
 	preferFansubFilter,
 	searchTorrents,
 	subscribeTorrentItems,
+	subscribeTorrentPollStatus,
 } from "../torrents";
 import { hanaVersion } from "../track/hana-client";
 import { listEpisodes, playEpisode, playNext, playRandom, scanLibrary } from "../track/library";
@@ -315,6 +320,14 @@ export const appRouter = t.router({
 			});
 			return loadSettingsFormValues();
 		}),
+		cacheSummary: t.procedure.query(async ({ ctx }) => loadCacheSummary(ctx.db)),
+		clearCache: t.procedure.input(z.object({ kinds: cacheKindsSchema })).mutation(async ({ ctx, input }) => {
+			const summary = await clearCacheKinds(ctx.db, input.kinds);
+			if (input.kinds.includes("torrentHistory")) {
+				forgetArchivedTorrents();
+			}
+			return summary;
+		}),
 	}),
 	media: t.router({
 		nowPlaying: t.procedure.query(() => getNowPlayingSnapshot()),
@@ -360,6 +373,15 @@ export const appRouter = t.router({
 			return observable<ReturnType<typeof getTorrentItems>>((emit) => {
 				emit.next(getTorrentItems());
 				return subscribeTorrentItems((next) => {
+					emit.next(next);
+				});
+			});
+		}),
+		poll: t.procedure.query(() => getTorrentPollStatus()),
+		onPoll: t.procedure.subscription(() => {
+			return observable<ReturnType<typeof getTorrentPollStatus>>((emit) => {
+				emit.next(getTorrentPollStatus());
+				return subscribeTorrentPollStatus((next) => {
 					emit.next(next);
 				});
 			});

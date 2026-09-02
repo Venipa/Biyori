@@ -17,7 +17,7 @@ function toggleId(ids: string[], id: string, checked: boolean): string[] {
 	return ids.filter((item) => item !== id);
 }
 
-export function RecognitionPanel() {
+export function RecognitionGeneralPanel() {
 	const ignoreId = useId();
 	const rangeId = useId();
 	const delayId = useId();
@@ -77,6 +77,13 @@ export function RecognitionPanel() {
 					<SettingsFieldError<AppSettingsInput> name='ignoredStrings' />
 				</Field>
 			</SettingsSectionCard>
+		</>
+	);
+}
+
+export function RecognitionSourcesPanel() {
+	return (
+		<>
 			<MediaPlayersFields />
 			<StreamingFields />
 		</>

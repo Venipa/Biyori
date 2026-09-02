@@ -205,12 +205,13 @@ export function TorrentFiltersTab() {
 						variant='outline'
 						aria-label='Export filters'
 						onClick={() => {
+							const payload = {
+								kind: "torrent-filters" as const,
+								filters: currentFilters(),
+							};
 							void desktopRpc.request.exportBiyori({
 								defaultName: "torrent-filters.biyori",
-								payload: {
-									kind: "torrent-filters",
-									filters: currentFilters(),
-								},
+								payload,
 							});
 						}}>
 						<UploadIcon data-icon='inline-start' />

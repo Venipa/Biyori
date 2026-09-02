@@ -8,7 +8,7 @@ import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { FieldError } from "@/mainview/components/ui/field";
 import { Spinner } from "@/mainview/components/ui/spinner";
-import { settingsFieldSection } from "@/mainview/lib/settings-nav";
+import { settingsFieldHref, settingsFieldNav } from "@/mainview/lib/settings-nav";
 import { trpc } from "@/mainview/trpc";
 
 function firstErrorPath(errors: FieldErrors): string | null {
@@ -91,13 +91,13 @@ export function SettingsSaveBar() {
 							(submitErrors) => {
 								const path = firstErrorPath(submitErrors);
 								const rootKey = path?.split(".")[0] ?? "";
-								const section = settingsFieldSection[rootKey] ?? "application";
-								void navigate({ to: `/settings/${section}` });
+								const nav = settingsFieldNav[rootKey] ?? { section: "application" as const };
+								void navigate({ to: settingsFieldHref(rootKey) });
 								if (path) {
 									void form.setFocus(path as FieldPath<SettingsFormInput>);
 								}
 								form.setError("root.serverError", {
-									message: path ? `Fix ${path} in ${section}` : "Fix invalid settings",
+									message: path ? `Fix ${path} in ${nav.section}` : "Fix invalid settings",
 								});
 							},
 						)();

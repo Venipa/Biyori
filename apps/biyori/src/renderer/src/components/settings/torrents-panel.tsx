@@ -23,7 +23,7 @@ const TORRENT_SORT_ORDER_OPTIONS = [
 	{ value: "descending", label: "Descending" },
 ] as const;
 
-export function TorrentsPanel() {
+export function TorrentsGeneralPanel() {
 	const rssId = useId();
 	const searchId = useId();
 	const checkId = useId();
@@ -168,10 +168,15 @@ export function TorrentsPanel() {
 			</SettingsSectionCard>
 			<DownloadLocationFields useAnimeFolderId={useAnimeFolderId} fallbackId={fallbackId} downloadDirId={downloadDirId} createSubId={createSubId} />
 			<TorrentClientFields appOpenId={appOpenId} appDefaultId={appDefaultId} appCustomId={appCustomId} appPathId={appPathId} />
-			<SettingsSectionCard title='Filters' description='Download the files you want and ignore the others.'>
-				<TorrentFiltersTab />
-			</SettingsSectionCard>
 		</>
+	);
+}
+
+export function TorrentsFiltersPanel() {
+	return (
+		<SettingsSectionCard title='Filters' description='Download the files you want and ignore the others.'>
+			<TorrentFiltersTab />
+		</SettingsSectionCard>
 	);
 }
 

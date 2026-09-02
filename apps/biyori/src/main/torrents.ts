@@ -56,12 +56,19 @@ export { parseRssItems };
 
 const TORRENT_CHECK_DELAY_MS = 4000;
 
+export type TorrentPollStatus = {
+	enabled: boolean;
+	nextCheckAt: number | null;
+};
+
 let db: DatabaseClient | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let firstCheckTimer: ReturnType<typeof setTimeout> | null = null;
 let items: TorrentItem[] = [];
 const discardedGuids = new Set<string>();
 const torrentListeners = new Set<(next: TorrentItem[]) => void>();
+const pollListeners = new Set<(next: TorrentPollStatus) => void>();
+let pollStatus: TorrentPollStatus = { enabled: false, nextCheckAt: null };
 
 type FeedCache = {
 	rows: ParsedTorrentRow[];
@@ -85,6 +92,28 @@ export function subscribeTorrentItems(listener: (next: TorrentItem[]) => void): 
 	return () => {
 		torrentListeners.delete(listener);
 	};
+}
+
+export function getTorrentPollStatus(): TorrentPollStatus {
+	return pollStatus;
+}
+
+export function subscribeTorrentPollStatus(listener: (next: TorrentPollStatus) => void): () => void {
+	pollListeners.add(listener);
+	return () => {
+		pollListeners.delete(listener);
+	};
+}
+
+function setTorrentPollStatus(next: TorrentPollStatus): void {
+	pollStatus = next;
+	for (const listener of pollListeners) {
+		listener(pollStatus);
+	}
+}
+
+function torrentPollIntervalMs(minutes: number): number {
+	return Math.max(10, minutes) * 60 * 1000;
 }
 
 function availableKey(animeId: number, episode: number): string {
@@ -190,6 +219,14 @@ function materializeItems(): TorrentItem[] {
 	next.sort((left, right) => compareTorrentState(left.state, right.state));
 	items = next;
 	return emitTorrentItems();
+}
+
+export function forgetArchivedTorrents(): void {
+	if (feedCache) {
+		feedCache.archivedTitles = new Set();
+		feedCache.seenByGuid = new Map();
+	}
+	materializeItems();
 }
 
 export async function applyTorrentView(database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
@@ -467,12 +504,15 @@ export async function restartTorrentPoll(): Promise<void> {
 		firstCheckTimer = null;
 	}
 	if (!db) {
+		setTorrentPollStatus({ enabled: false, nextCheckAt: null });
 		return;
 	}
 	const settings = loadAppSettings();
 	if (!settings.checkTorrentsAutomatically || !settings.rssFeedUrl) {
+		setTorrentPollStatus({ enabled: false, nextCheckAt: null });
 		return;
 	}
+	const intervalMs = torrentPollIntervalMs(settings.torrentCheckIntervalMinutes);
 	const startPoll = (): void => {
 		if (!db) {
 			return;
@@ -480,17 +520,18 @@ export async function restartTorrentPoll(): Promise<void> {
 		void checkTorrents(db).catch(() => {
 			/* ignore poll errors */
 		});
-		pollTimer = setInterval(
-			() => {
-				if (db) {
-					void checkTorrents(db).catch(() => {
-						/* ignore */
-					});
-				}
-			},
-			Math.max(10, settings.torrentCheckIntervalMinutes) * 60 * 1000,
-		);
+		setTorrentPollStatus({ enabled: true, nextCheckAt: Date.now() + intervalMs });
+		pollTimer = setInterval(() => {
+			if (!db) {
+				return;
+			}
+			void checkTorrents(db).catch(() => {
+				/* ignore */
+			});
+			setTorrentPollStatus({ enabled: true, nextCheckAt: Date.now() + intervalMs });
+		}, intervalMs);
 	};
+	setTorrentPollStatus({ enabled: true, nextCheckAt: Date.now() + TORRENT_CHECK_DELAY_MS });
 	firstCheckTimer = setTimeout(() => {
 		firstCheckTimer = null;
 		startPoll();

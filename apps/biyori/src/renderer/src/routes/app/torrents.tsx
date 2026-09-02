@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type ColumnDef, getCoreRowModel, getSortedRowModel, type RowSelectionState, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
-import { type ReactElement, useState } from "react";
+import { type ReactElement, type ReactNode, useEffect, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import { desktopRpc } from "@/desktop-rpc";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
@@ -40,6 +40,83 @@ function countLabel(value: number | null): string {
 	return value == null ? "-" : String(value);
 }
 
+function formatCheckRemaining(ms: number): string {
+	const total = Math.max(0, Math.ceil(ms / 1000));
+	const hours = Math.floor(total / 3600);
+	const minutes = Math.floor((total % 3600) / 60);
+	const seconds = total % 60;
+	if (hours > 0) {
+		return `${hours}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
+	}
+	return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+}
+
+function NextTorrentCheck(): ReactElement {
+	const utils = trpc.useUtils();
+	const poll = trpc.torrents.poll.useQuery();
+	trpc.torrents.onPoll.useSubscription(undefined, {
+		onData: (next) => {
+			utils.torrents.poll.setData(undefined, next);
+		},
+	});
+	const enabled = poll.data?.enabled ?? false;
+	const nextCheckAt = poll.data?.nextCheckAt ?? null;
+	const [now, setNow] = useState(() => Date.now());
+	useEffect(() => {
+		if (!enabled || nextCheckAt == null) {
+			return;
+		}
+		const id = setInterval(() => {
+			setNow(Date.now());
+		}, 1000);
+		return () => {
+			clearInterval(id);
+		};
+	}, [enabled, nextCheckAt]);
+
+	if (!enabled) {
+		return <p className='text-sm text-muted-foreground'>Automatic checks are off</p>;
+	}
+	if (nextCheckAt == null) {
+		return <p className='text-sm text-muted-foreground'>Next check pending</p>;
+	}
+	const remaining = nextCheckAt - now;
+	return (
+		<p className='text-sm text-muted-foreground tabular-nums'>
+			{remaining <= 0 ? "Checking..." : `Next check in ${formatCheckRemaining(remaining)}`}
+		</p>
+	);
+}
+
+function CheckNewTorrentsButton(): ReactElement {
+	const utils = trpc.useUtils();
+	const refresh = trpc.torrents.refresh.useMutation({
+		onSuccess: (next) => {
+			utils.torrents.list.setData(undefined, next);
+		},
+	});
+	return (
+		<Button
+			variant='outline'
+			size='sm'
+			disabled={refresh.isPending}
+			onClick={() => {
+				void refresh.mutateAsync();
+			}}>
+			Check new torrents
+		</Button>
+	);
+}
+
+function TorrentToolbar({ children }: { children?: ReactNode }): ReactElement {
+	return (
+		<div className='flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2'>
+			<NextTorrentCheck />
+			<div className='flex gap-2'>{children}</div>
+		</div>
+	);
+}
+
 function TorrentsPage(): ReactElement {
 	const query = trpc.torrents.list.useQuery();
 	const utils = trpc.useUtils();
@@ -52,6 +129,11 @@ function TorrentsPage(): ReactElement {
 
 	return (
 		<div className='flex h-full min-h-0 flex-col'>
+			{items.length === 0 ? (
+				<TorrentToolbar>
+					<CheckNewTorrentsButton />
+				</TorrentToolbar>
+			) : null}
 			{query.isPending && items.length === 0 ? <TableRowsSkeleton columnCount={12} /> : null}
 			{items.length === 0 && !query.isLoading ? (
 				<Empty>
@@ -72,11 +154,6 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 	const utils = trpc.useUtils();
 	const navigate = useNavigate();
 	const animeInfo = useAnimeInfoNav();
-	const refresh = trpc.torrents.refresh.useMutation({
-		onSuccess: (next) => {
-			utils.torrents.list.setData(undefined, next);
-		},
-	});
 	const searchFeed = trpc.torrents.search.useMutation({
 		onSuccess: (next) => {
 			utils.torrents.list.setData(undefined, next);
@@ -238,7 +315,7 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 
 	return (
 		<div className='flex h-full min-h-0 flex-col'>
-			<div className='flex shrink-0 justify-end gap-2 border-b px-3 py-2'>
+			<TorrentToolbar>
 				<Button
 					variant='outline'
 					size='sm'
@@ -255,25 +332,15 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 					size='sm'
 					disabled={selected.length === 0}
 					onClick={() => {
-						let next = items;
 						for (const row of selected) {
-							next = next.filter((item) => item.guid !== row.original.guid);
 							void discard.mutateAsync({ guid: row.original.guid });
 						}
 						setRowSelection({});
 					}}>
 					Discard all
 				</Button>
-				<Button
-					variant='outline'
-					size='sm'
-					disabled={refresh.isPending}
-					onClick={() => {
-						void refresh.mutateAsync();
-					}}>
-					Check new torrents
-				</Button>
-			</div>
+				<CheckNewTorrentsButton />
+			</TorrentToolbar>
 			<ScrollArea className='h-full flex-1'>
 				<ContextMenu>
 					<ContextMenuTrigger className='block h-full min-h-0'>

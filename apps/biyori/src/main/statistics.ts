@@ -1,40 +1,10 @@
-import { readdir, stat } from "node:fs/promises";
-import { extname, join } from "node:path";
 import { count, eq } from "drizzle-orm";
+import { totalNamedFiles, totalTorrentFiles } from "./cache";
 import type { DatabaseClient } from "./db";
 import { anime, listEntry, mediaCache } from "./db/schema";
 import { appUptimeSeconds, connectionCounts } from "./http-stats";
 import { appCacheDir, appFeedDir } from "./lib/app-paths";
 import { type StatisticsSummary, summarizeList } from "./statistics-core";
-
-type FileTotals = {
-	count: number;
-	sizeBytes: number;
-};
-
-async function totalNamedFiles(directory: string, fileNames: string[]): Promise<FileTotals> {
-	const sizes = await Promise.all(
-		fileNames.map(async (fileName) => {
-			try {
-				const info = await stat(join(directory, fileName));
-				return info.isFile() ? info.size : null;
-			} catch {
-				return null;
-			}
-		}),
-	);
-	return sizes.reduce<FileTotals>((total, size) => (size == null ? total : { count: total.count + 1, sizeBytes: total.sizeBytes + size }), { count: 0, sizeBytes: 0 });
-}
-
-async function totalTorrentFiles(directory: string): Promise<FileTotals> {
-	try {
-		const entries = await readdir(directory, { withFileTypes: true });
-		const fileNames = entries.filter((entry) => entry.isFile() && extname(entry.name).toLowerCase() === ".torrent").map((entry) => entry.name);
-		return totalNamedFiles(directory, fileNames);
-	} catch {
-		return { count: 0, sizeBytes: 0 };
-	}
-}
 
 export type StatisticsResult = StatisticsSummary & {
 	localAnimeCount: number;

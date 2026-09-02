@@ -1,6 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { observable } from "@trpc/server/observable";
-import { app, dialog, Menu, shell } from "electron";
+import { app, type BrowserWindow, dialog, Menu, shell } from "electron";
 import { z } from "zod";
 import { requestQuit } from "../handlers/quit-handler";
 import { setTrayState } from "../handlers/tray-state";
@@ -16,6 +17,32 @@ function requireWindow(getBrowserWindow: () => Electron.BrowserWindow | null) {
 		throw new Error("No browser window");
 	}
 	return win;
+}
+
+async function runFileDialog<T>(win: BrowserWindow | null, run: (parent?: BrowserWindow) => Promise<T>): Promise<T> {
+	const owner = win && !win.isDestroyed() ? win : null;
+	const parent = owner?.getParentWindow() ?? null;
+	const modal = Boolean(owner && parent);
+	if (modal && owner) {
+		owner.hide();
+	}
+	try {
+		const dialogWin = modal ? parent : owner;
+		return await run(dialogWin && !dialogWin.isDestroyed() ? dialogWin : undefined);
+	} finally {
+		if (modal && owner && !owner.isDestroyed()) {
+			owner.show();
+			owner.focus();
+		}
+	}
+}
+
+function asPlainRecord(value: unknown): Record<string, unknown> {
+	const plain: unknown = JSON.parse(JSON.stringify(value));
+	if (!plain || typeof plain !== "object" || Array.isArray(plain)) {
+		throw new Error("Invalid export payload");
+	}
+	return plain as Record<string, unknown>;
 }
 
 type WindowChromeState = {
@@ -161,30 +188,34 @@ export const desktopRouter = t.router({
 		.input(
 			z.object({
 				defaultName: z.string().min(1),
-				payload: z.record(z.string(), z.unknown()),
+				payload: z.unknown(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			const win = ctx.getBrowserWindow();
-			const options = {
-				defaultPath: input.defaultName,
-				filters: BIYORI_FILE_FILTERS,
-			};
-			const result = win ? await dialog.showSaveDialog(win, options) : await dialog.showSaveDialog(options);
+			const result = await runFileDialog(win, async (parent) => {
+				const options = {
+					defaultPath: join(app.getPath("documents"), input.defaultName),
+					filters: BIYORI_FILE_FILTERS,
+				};
+				return parent ? dialog.showSaveDialog(parent, options) : dialog.showSaveDialog(options);
+			});
 			if (result.canceled || !result.filePath) {
 				return { ok: false as const, canceled: true as const };
 			}
-			await writeFile(result.filePath, encryptPublicData(input.payload), "utf8");
+			await writeFile(result.filePath, encryptPublicData(asPlainRecord(input.payload)), "utf8");
 			return { ok: true as const, canceled: false as const };
 		}),
 	importBiyori: t.procedure.mutation(async ({ ctx }) => {
 		const win = ctx.getBrowserWindow();
-		const options = {
-			defaultPath: app.getPath("home"),
-			filters: BIYORI_FILE_FILTERS,
-			properties: ["openFile"] as Array<"openFile">,
-		};
-		const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+		const result = await runFileDialog(win, async (parent) => {
+			const options = {
+				defaultPath: app.getPath("documents"),
+				filters: BIYORI_FILE_FILTERS,
+				properties: ["openFile"] as Array<"openFile">,
+			};
+			return parent ? dialog.showOpenDialog(parent, options) : dialog.showOpenDialog(options);
+		});
 		const path = result.canceled ? null : (result.filePaths[0] ?? null);
 		if (!path) {
 			return { ok: false as const, canceled: true as const, payload: null };
