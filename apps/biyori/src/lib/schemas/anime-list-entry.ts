@@ -39,8 +39,8 @@ export const animeInfoFormSchema = animeListEntrySchema.extend({
 	dateCompleted: z.preprocess(emptyToNull, z.string().nullable()),
 	folder: z.string(),
 	fansub: z.string(),
-	userSynonyms: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
-	alternativeTitles: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
+	userSynonyms: z.string(),
+	alternativeTitles: z.string(),
 });
 
 export type AnimeListEntryInput = z.input<typeof animeListEntrySchema>;
