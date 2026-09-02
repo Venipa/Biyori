@@ -46,25 +46,40 @@ nsis:
   installerIcon: build/icon.ico
   installerHeaderIcon: build/icon.ico
   deleteAppDataOnUninstall: true
-# mac:
-#   entitlementsInherit: build/entitlements.mac.plist
-#   extendInfo:
-#     - NSCameraUsageDescription: Application requests access to the device's camera.
-#     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-#     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-#     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-#   notarize: false
-# dmg:
-#   artifactName: ${name}-${version}.${ext}
-# linux:
-#   target:
-#     - AppImage
-#     - snap
-#     - deb
-#   maintainer: electronjs.org
-#   category: Utility
-# appImage:
-#   artifactName: ${name}-${version}.${ext}
+mac:
+  category: public.app-category.entertainment
+  icon: build/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  notarize: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSDocumentsFolderUsageDescription: Biyori needs access to your library folders.
+    NSDownloadsFolderUsageDescription: Biyori needs access to downloaded files.
+    NSScreenCaptureUsageDescription: Biyori uses window titles to detect playback.
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+  artifactName: ${name}-${version}-mac-arm64.${ext}
+dmg:
+  artifactName: ${name}-${version}-mac-arm64.${ext}
+linux:
+  executableName: biyori
+  maintainer: Venipa <https://github.com/Venipa>
+  category: AudioVideo
+  synopsis: Anime library tracker
+  icon: build
+  target:
+    - target: AppImage
+      arch:
+        - x64
+appImage:
+  artifactName: ${name}-${version}-linux-x64.${ext}
 npmRebuild: true
 publish:
   provider: github
