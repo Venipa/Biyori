@@ -375,6 +375,9 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 			message: `Update available: ${best.version}`,
 			error: null,
 		});
+		if (!state.updateReady) {
+			await downloadAppUpdate();
+		}
 		return state;
 	} catch (error) {
 		applyUpdateError(error, "Update check failed");

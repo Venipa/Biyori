@@ -23,6 +23,7 @@ type ChangelogData = inferRouterOutputs<AppRouter>["updater"]["changelog"];
 export const Route = createFileRoute("/app/about")({
 	component: AboutPage,
 });
+const isTest = import.meta.env.VITE_SHOW_UPDATE_BUTTON === "true";
 
 function AboutPage() {
 	const status = useUpdateStatus();
@@ -85,7 +86,7 @@ function AboutPage() {
 					{checking ? <Spinner data-icon='inline-start' size='xs' /> : <RefreshCwIcon data-icon='inline-start' />}
 					Check for updates
 				</Button>
-				{status.updateAvailable ? (
+				{status.updateAvailable || isTest ? (
 					<Button
 						type='button'
 						onClick={() => {

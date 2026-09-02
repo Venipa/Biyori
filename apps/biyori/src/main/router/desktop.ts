@@ -7,6 +7,7 @@ import { requestQuit } from "../handlers/quit-handler";
 import { setTrayState } from "../handlers/tray-state";
 import { decryptPublicData, encryptPublicData } from "../lib/store/createYmlStore";
 import { t } from "../trpc";
+import { downloadAppUpdate, getUpdateState } from "../updater";
 import { windowManager } from "../windows";
 
 const BIYORI_FILE_FILTERS = [{ name: "Biyori", extensions: ["biyori"] }];
@@ -77,6 +78,10 @@ export const desktopRouter = t.router({
 	}),
 	openUpdate: t.procedure.mutation(() => {
 		windowManager.open("update");
+		const status = getUpdateState();
+		if (status.updateAvailable && !status.updateReady) {
+			void downloadAppUpdate();
+		}
 		return { ok: true as const };
 	}),
 	closeUpdate: t.procedure.mutation(() => {
