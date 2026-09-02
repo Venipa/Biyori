@@ -24,6 +24,7 @@
 	--color-input: var(--input);
 	--color-border: var(--border);
 	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
 	--color-success-foreground: var(--success-foreground);
 	--color-success: var(--success);
 	--color-list-playing-foreground: var(--list-playing-foreground);
@@ -74,6 +75,7 @@
 	--list-playing-foreground: oklch(0.32 0.05 145);
 	--airing-finished: oklch(0.55 0.14 250);
 	--destructive: oklch(0.577 0.245 27.325);
+	--destructive-foreground: oklch(0.985 0 0);
 	--border: oklch(0.9 0.005 260);
 	--input: oklch(0.88 0.006 260);
 	--ring: oklch(0.6 0.1 262);
@@ -118,6 +120,7 @@
 	--list-playing-foreground: oklch(0.9 0.04 145);
 	--airing-finished: oklch(0.68 0.12 250);
 	--destructive: oklch(0.704 0.191 22.216);
+	--destructive-foreground: oklch(0.985 0 0);
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.556 0 0);
@@ -152,6 +155,7 @@
 	#root {
 		@apply flex flex-col h-full;
 	}
+	html,
 	body {
 		@apply bg-background text-foreground;
 	}

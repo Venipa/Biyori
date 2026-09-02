@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { is } from "@electron-toolkit/utils";
-import { BrowserWindow, type BrowserWindowConstructorOptions, shell } from "electron";
+import { BrowserWindow, type BrowserWindowConstructorOptions, nativeTheme, shell } from "electron";
 import icon from "../../../resources/icon.png?asset";
 import { attachTrpcWindow } from "../trpc-handler";
 import { attachWindowState } from "./state";
@@ -44,6 +44,10 @@ function loadAppUrl(win: BrowserWindow, to?: string): void {
 	}
 
 	void win.loadFile(join(__dirname, "../renderer/index.html"), hash ? { hash } : {});
+}
+
+function windowBackgroundColor(): string {
+	return nativeTheme.shouldUseDarkColors ? "#252525" : "#ffffff";
 }
 
 function centerOnParent(win: BrowserWindow, parent: BrowserWindow): void {
@@ -217,6 +221,7 @@ export class WindowManager<TId extends string> {
 			parent: options.parent,
 			center: !options.parent,
 			frame: false,
+			backgroundColor: windowBackgroundColor(),
 			autoHideMenuBar: true,
 			...(process.platform === "linux" ? { icon } : {}),
 			webPreferences: {

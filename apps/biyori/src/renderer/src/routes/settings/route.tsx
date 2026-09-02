@@ -1,8 +1,8 @@
+import { ipcTrpc } from "@/desktop-rpc";
 import { type SettingsFormInput, type SettingsFormValues, settingsFormSchema } from "@/lib/schemas/app-settings";
 import { SettingsSaveBar } from "@/mainview/components/settings/settings-save-bar";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
-import { ipcTrpc } from "@/desktop-rpc";
 import { settingsSections } from "@/mainview/lib/settings-nav";
 import { cn } from "@/mainview/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,9 +40,9 @@ function SettingsChrome({ children, overlay }: { children: ReactNode; overlay?: 
 
 	return (
 		<div className='flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-background text-foreground'>
-			<div className='flex min-h-0 flex-1 overflow-hidden'>
-				<ScrollArea className='h-full w-48 shrink-0 bg-background'>
-					<nav aria-label='Settings sections' className='flex flex-col gap-0.5 p-2'>
+			<div className='flex min-h-0 flex-1 gap-0 overflow-hidden'>
+				<ScrollArea className='h-full w-48 shrink-0 bg-card/20 border-r'>
+					<nav aria-label='Settings sections' className='flex flex-col gap-1 p-2'>
 						{settingsSections.map((item) => {
 							const href = `/settings/${item.id}`;
 							const isActive = pathname === href;
@@ -62,16 +62,14 @@ function SettingsChrome({ children, overlay }: { children: ReactNode; overlay?: 
 						})}
 					</nav>
 				</ScrollArea>
-				<div className='relative flex min-h-0 min-w-0 flex-1 flex-col p-3'>
-					<div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border bg-muted/30'>
-						<div className='flex shrink-0 flex-col gap-0.5 px-4 py-3'>
+				<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-muted/30'>
+					<ScrollArea className='min-h-0 flex-1' viewportClassName='rounded-none pb-20'>
+						<div className='sticky top-0 z-10 flex flex-col gap-0.5 border-b bg-card/80 px-4 py-3 backdrop-blur-md'>
 							<h2 className='text-lg font-semibold tracking-tight'>{active?.label ?? "Settings"}</h2>
 							{active?.description ? <p className='text-sm text-muted-foreground'>{active.description}</p> : null}
 						</div>
-						<ScrollArea className='min-h-0 flex-1' viewportClassName='rounded-none pb-20 pt-1'>
-							<div className='flex flex-col gap-4 p-4 pt-0'>{children}</div>
-						</ScrollArea>
-					</div>
+						<div className='flex flex-col gap-4 p-4'>{children}</div>
+					</ScrollArea>
 					{overlay}
 				</div>
 			</div>

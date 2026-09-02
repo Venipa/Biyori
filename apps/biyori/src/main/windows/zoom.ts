@@ -10,15 +10,23 @@ export function uiZoomToFactor(percent: number): number {
 	return percent / 100;
 }
 
-function applyUiZoom(win: BrowserWindow, percent: number = loadAppSettings().uiZoom): void {
+function applyUiZoom(win: BrowserWindow, percent: number = loadAppSettings().uiZoom, force: boolean = false): void {
 	if (win.isDestroyed()) {
 		return;
 	}
 	const factor = uiZoomToFactor(percent);
-	if (win.webContents.getZoomFactor() === factor) {
+	if (!force && win.webContents.getZoomFactor() === factor) {
 		return;
 	}
 	win.webContents.setZoomFactor(factor);
+}
+
+function isZoomIdle(win: BrowserWindow): boolean {
+	return win.isDestroyed() || win.isMinimized() || !win.isVisible() || !win.isFocused();
+}
+
+function restoreUiZoom(win: BrowserWindow): void {
+	applyUiZoom(win, loadAppSettings().uiZoom, true);
 }
 
 function isZoomShortcut(input: Input): boolean {
@@ -59,17 +67,26 @@ export function attachWindowZoom(win: BrowserWindow): void {
 		applyUiZoom(win);
 	});
 	win.webContents.on("zoom-changed", () => {
+		if (isZoomIdle(win)) {
+			return;
+		}
 		applyUiZoom(win);
 	});
+	win.on("focus", () => restoreUiZoom(win));
+	win.on("restore", () => restoreUiZoom(win));
+	win.on("show", () => restoreUiZoom(win));
 
 	const onDisplayMetricsChanged = (_event: Event, _display: Display, changedMetrics: string[]): void => {
-		if (!changedMetrics.some((metric) => DPI_METRICS.has(metric))) {
+		if (isZoomIdle(win) || !changedMetrics.some((metric) => DPI_METRICS.has(metric))) {
 			return;
 		}
 		applyUiZoom(win);
 		clampWindowToWorkArea(win);
 	};
 	const onDisplayRemoved = (): void => {
+		if (isZoomIdle(win)) {
+			return;
+		}
 		applyUiZoom(win);
 		clampWindowToWorkArea(win);
 	};

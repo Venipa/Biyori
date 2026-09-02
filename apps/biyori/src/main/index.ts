@@ -10,6 +10,9 @@ import { isStartupLaunch, syncLoginItem } from "./startup";
 import { initElectronTrpc } from "./trpc-handler";
 import { windowManager } from "./windows";
 
+// Chromium occlusion drops raster scale on blur; looks like a zoom-out until focus.
+app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");
+
 if (!app.requestSingleInstanceLock()) {
 	app.quit();
 } else {

@@ -18,6 +18,27 @@ function requireWindow(getBrowserWindow: () => Electron.BrowserWindow | null) {
 	return win;
 }
 
+type WindowChromeState = {
+	maximized: boolean;
+	focused: boolean;
+	minimizable: boolean;
+	maximizable: boolean;
+	closable: boolean;
+};
+
+function readWindowChrome(win: Electron.BrowserWindow | null): WindowChromeState {
+	if (!win || win.isDestroyed()) {
+		return { maximized: false, focused: false, minimizable: false, maximizable: false, closable: false };
+	}
+	return {
+		maximized: win.isMaximized() || win.isFullScreen(),
+		focused: win.isFocused(),
+		minimizable: win.isMinimizable(),
+		maximizable: win.isMaximizable(),
+		closable: win.isClosable(),
+	};
+}
+
 export const desktopRouter = t.router({
 	openSettings: t.procedure.mutation(() => {
 		windowManager.open("settings");
@@ -44,6 +65,35 @@ export const desktopRouter = t.router({
 			return windowManager.subscribeModalChild((open) => {
 				emit.next(open);
 			});
+		});
+	}),
+	onWindowState: t.procedure.subscription(({ ctx }) => {
+		return observable<WindowChromeState>((emit) => {
+			const win = ctx.getBrowserWindow();
+			const push = (): void => {
+				emit.next(readWindowChrome(win));
+			};
+			push();
+			if (!win || win.isDestroyed()) {
+				return () => undefined;
+			}
+			win.on("maximize", push);
+			win.on("unmaximize", push);
+			win.on("enter-full-screen", push);
+			win.on("leave-full-screen", push);
+			win.on("focus", push);
+			win.on("blur", push);
+			return () => {
+				if (win.isDestroyed()) {
+					return;
+				}
+				win.off("maximize", push);
+				win.off("unmaximize", push);
+				win.off("enter-full-screen", push);
+				win.off("leave-full-screen", push);
+				win.off("focus", push);
+				win.off("blur", push);
+			};
 		});
 	}),
 	minimizeWindow: t.procedure.mutation(({ ctx }) => {
