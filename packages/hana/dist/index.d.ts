@@ -61,6 +61,8 @@ export type FindEpisodeInput = {
 	folder: string;
 	episode: number;
 	threshold: number;
+	animeId?: number;
+	candidates?: Candidate[];
 };
 
 export type NowPlayingInput = {

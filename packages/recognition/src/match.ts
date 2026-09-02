@@ -45,7 +45,7 @@ function stripSeason(value: string): string {
 	return value.replace(STRIP_SEASON, "").replace(/\s+/g, " ").trim();
 }
 
-function seasonFromNames(names: string[]): number | null {
+export function seasonFromNames(names: string[]): number | null {
 	for (const name of names) {
 		const match = name.match(SEASON_IN_NAME);
 		if (match) {

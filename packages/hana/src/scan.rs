@@ -186,10 +186,18 @@ pub fn find_episode(input: FindEpisodeInput) -> Option<String> {
 	}
 	let mut files: Vec<VideoFile> = Vec::new();
 	collect_files(Path::new(&input.folder), input.threshold.max(0) as u64, &mut files, |_| {});
-	for (file, parsed) in files.iter().zip(parse_videos(&files)) {
+	let parsed_files = parse_videos(&files);
+	let candidates = input.candidates.as_deref().unwrap_or(&[]);
+	for (file, parsed) in files.iter().zip(parsed_files) {
 		let Some(parsed) = parsed else {
 			continue;
 		};
+		if let Some(anime_id) = input.anime_id {
+			let path = file.path.to_string_lossy();
+			if identify(&parsed, candidates, Some(path.as_ref())) != Some(anime_id) {
+				continue;
+			}
+		}
 		let Some(low) = parsed.episode_low.or(parsed.episode) else {
 			continue;
 		};
@@ -304,8 +312,58 @@ mod tests {
 			folder: folder.to_string_lossy().to_string(),
 			episode: 5,
 			threshold: 1,
+			anime_id: None,
+			candidates: None,
 		});
 		assert_eq!(found.as_deref().map(Path::new), Some(wanted.as_path()));
+		let _ = fs::remove_dir_all(folder);
+	}
+
+	#[test]
+	fn find_episode_skips_other_season_in_shared_folder() {
+		let folder = temp_root("rezero");
+		write_video(
+			&folder,
+			"Re - ZERO, Starting Life in Another World (2016) - S03E16 - 065 - TBA.mkv",
+			32,
+		);
+		let s4 = write_video(
+			&folder,
+			"Re - ZERO, Starting Life in Another World (2016) - S04E15 - 081 - TBA.mkv",
+			32,
+		);
+		let candidates = vec![
+			Candidate {
+				id: 3,
+				names: vec!["re:zero kara hajimeru isekai seikatsu 3rd season".into()],
+				episodes: 16,
+				folder: Some(folder.to_string_lossy().into_owned()),
+				status: None,
+			},
+			Candidate {
+				id: 4,
+				names: vec!["re:zero kara hajimeru isekai seikatsu 4th season".into()],
+				episodes: 16,
+				folder: Some(folder.to_string_lossy().into_owned()),
+				status: None,
+			},
+		];
+		let found_16 = find_episode(FindEpisodeInput {
+			folder: folder.to_string_lossy().to_string(),
+			episode: 16,
+			threshold: 1,
+			anime_id: Some(4),
+			candidates: Some(candidates.clone()),
+		});
+		assert_eq!(found_16, None);
+		let found_15 = find_episode(FindEpisodeInput {
+			folder: folder.to_string_lossy().to_string(),
+			episode: 15,
+			threshold: 1,
+			anime_id: Some(4),
+			candidates: Some(candidates),
+		});
+		assert_eq!(found_15.as_deref().map(Path::new), Some(s4.as_path()));
 		let _ = fs::remove_dir_all(folder);
 	}
 

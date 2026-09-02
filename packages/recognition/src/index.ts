@@ -1,7 +1,7 @@
 export type { ParsedFilename, ParseOptions } from "@biyori/parser";
 export { parseFilename, parsePath } from "@biyori/parser";
 export { extendTitle } from "./extend-title";
-export { matchParsed, matchTitle, normalizeForLookup, normalizeTitle, rankParsed, rankTitles } from "./match";
+export { matchParsed, matchTitle, normalizeForLookup, normalizeTitle, rankParsed, rankTitles, seasonFromNames } from "./match";
 export type { RankedTitle } from "./match";
 export { candidatesInFolder, pathUnderRoot } from "./path";
 export type { Recognized } from "./recognize";

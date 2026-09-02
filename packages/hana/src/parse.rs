@@ -68,7 +68,7 @@ fn release_version(elements: &[Element]) -> i32 {
 }
 
 fn episode_range(elements: &[Element]) -> (Option<i32>, Option<i32>) {
-	let mut numbers: Vec<i32> = elements
+	let numbers: Vec<i32> = elements
 		.iter()
 		.filter(|element| element.kind == ElementKind::Episode)
 		.filter_map(|element| first_i32(&element.value))
@@ -76,8 +76,17 @@ fn episode_range(elements: &[Element]) -> (Option<i32>, Option<i32>) {
 	if numbers.is_empty() {
 		return (None, None);
 	}
-	numbers.sort_unstable();
-	(Some(numbers[0]), numbers.last().copied())
+	// ponytail: S04E15 + series-absolute 081 is not a 15-81 range; keep SxxExx
+	if numbers.len() >= 2 {
+		let first = numbers[0];
+		let last = *numbers.last().unwrap();
+		if last.abs_diff(first) >= 30 {
+			return (Some(first), Some(first));
+		}
+	}
+	let mut sorted = numbers;
+	sorted.sort_unstable();
+	(Some(sorted[0]), sorted.last().copied())
 }
 
 pub fn elements_to_parsed(elements: &[Element]) -> Option<Parsed> {
@@ -305,6 +314,18 @@ mod tests {
 		assert_eq!(parsed.len(), 2);
 		assert_eq!(parsed[0].as_ref().map(|item| item.episode), Some(Some(5)));
 		assert_eq!(parsed[1].as_ref().map(|item| item.episode), Some(Some(6)));
+	}
+
+	#[test]
+	fn erai_sxxexx_keeps_season_episode_not_absolute() {
+		let parsed = parse_filename(
+			"Re - ZERO, Starting Life in Another World (2016) - S04E15 - 081 - TBA [WEBDL-1080p][8bit][x264][AAC 2.0][JA]-Erai-raws.mkv",
+		)
+		.expect("parse");
+		assert_eq!(parsed.season, Some(4));
+		assert_eq!(parsed.episode, Some(15));
+		assert_eq!(parsed.episode_low, Some(15));
+		assert_eq!(parsed.episode_high, Some(15));
 	}
 
 	#[test]

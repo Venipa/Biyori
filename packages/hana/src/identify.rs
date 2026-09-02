@@ -89,12 +89,46 @@ fn pool_for_path<'a>(path: &str, candidates: &'a [Candidate]) -> Vec<&'a Candida
 	hits
 }
 
+fn season_from_names(names: &[String]) -> Option<i32> {
+	use std::sync::OnceLock;
+	static RE: OnceLock<regex::Regex> = OnceLock::new();
+	let re = RE.get_or_init(|| {
+		#[allow(clippy::expect_used)]
+		regex::Regex::new(r"(?i-u)(?:([0-9]+)(?:st|nd|rd|th) +season|(?:season|series) +([0-9]+)|s([0-9]{1,2}))\b")
+			.expect("season name")
+	});
+	for name in names {
+		if let Some(caps) = re.captures(name) {
+			let value = caps
+				.get(1)
+				.or_else(|| caps.get(2))
+				.or_else(|| caps.get(3))
+				.and_then(|m| m.as_str().parse().ok());
+			if let Some(season) = value.filter(|n| *n > 0) {
+				return Some(season);
+			}
+		}
+	}
+	None
+}
+
 fn episode_in_range(parsed: &Parsed, total: i32) -> bool {
-	let episode = parsed.episode.unwrap_or(1);
+	let high = parsed.episode_high.or(parsed.episode).unwrap_or(1);
 	if total < 1 {
 		return true;
 	}
-	episode >= 1 && episode <= total
+	high >= 1 && high <= total
+}
+
+fn season_compatible(parsed: &Parsed, candidate: &Candidate) -> bool {
+	let file = parsed.season.filter(|season| *season > 0);
+	let listed = season_from_names(&candidate.names);
+	match (file, listed) {
+		(Some(fs), Some(ls)) => fs == ls,
+		(Some(fs), None) => fs <= 1,
+		(None, Some(ls)) => ls <= 1,
+		(None, None) => true,
+	}
 }
 
 pub fn identify(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>) -> Option<i64> {
@@ -121,7 +155,7 @@ pub fn identify(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>) -
 	let matched: Vec<&Candidate> = if exact.is_empty() { pool } else { exact };
 	let hits: Vec<&Candidate> = matched
 		.into_iter()
-		.filter(|candidate| episode_in_range(parsed, candidate.episodes))
+		.filter(|candidate| episode_in_range(parsed, candidate.episodes) && season_compatible(parsed, candidate))
 		.collect();
 	if hits.len() == 1 {
 		return Some(hits[0].id);
@@ -152,5 +186,41 @@ mod tests {
 		let path = r"D:\Anime\Tensei Shitara Slime Datta Ken 4th Season\05.mkv";
 		let parsed = parse_file_path(path).expect("parse");
 		assert_eq!(identify(&parsed, &[slime, sao], Some(path)), Some(10));
+	}
+
+	fn rezero(id: i64, name: &str, episodes: i32, folder: &str) -> Candidate {
+		Candidate {
+			id,
+			names: vec![name.to_string()],
+			episodes,
+			folder: Some(folder.to_string()),
+			status: None,
+		}
+	}
+
+	#[test]
+	fn shared_folder_s04e15_matches_season_four() {
+		let folder = r"Z:\anime\Re - ZERO, Starting Life in Another World (2016) [tvdbid-305089]";
+		let s3 = rezero(3, "re:zero kara hajimeru isekai seikatsu 3rd season", 16, folder);
+		let s4 = rezero(4, "re:zero kara hajimeru isekai seikatsu 4th season", 16, folder);
+		let path = format!(
+			r"{folder}\Re - ZERO, Starting Life in Another World (2016) - S04E15 - 081 - TBA [WEBDL-1080p].mkv"
+		);
+		let parsed = parse_file_path(&path).expect("parse");
+		assert_eq!(parsed.season, Some(4));
+		assert_eq!(parsed.episode, Some(15));
+		assert_eq!(identify(&parsed, &[s3, s4], Some(&path)), Some(4));
+	}
+
+	#[test]
+	fn shared_folder_s03e16_does_not_match_season_four() {
+		let folder = r"Z:\anime\Re - ZERO, Starting Life in Another World (2016) [tvdbid-305089]";
+		let s3 = rezero(3, "re:zero kara hajimeru isekai seikatsu 3rd season", 16, folder);
+		let s4 = rezero(4, "re:zero kara hajimeru isekai seikatsu 4th season", 16, folder);
+		let path = format!(
+			r"{folder}\Re - ZERO, Starting Life in Another World (2016) - S03E16 - 065 - TBA [WEBDL-1080p].mkv"
+		);
+		let parsed = parse_file_path(&path).expect("parse");
+		assert_eq!(identify(&parsed, &[s3, s4], Some(&path)), Some(3));
 	}
 }

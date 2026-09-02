@@ -276,26 +276,18 @@ export async function listEpisodes(database: DatabaseClient, animeId: number): P
 }
 
 async function findEpisodePath(database: DatabaseClient, animeId: number, episode: number): Promise<string | null> {
-	const [folder, indexed] = await Promise.all([seriesFolder(database, animeId), database.select().from(episodeFile).where(eq(episodeFile.animeId, animeId))]);
-	for (const row of indexed) {
-		if (row.episode !== episode) {
-			continue;
-		}
-		if (folder && !pathUnderRoot(row.path, folder)) {
-			continue;
-		}
-		if (existsSync(row.path)) {
-			return row.path;
-		}
-	}
+	const folder = await seriesFolder(database, animeId);
 	if (!folder || !existsSync(folder)) {
 		return null;
 	}
+	const candidates = await loadCandidates(database);
 	try {
 		return await hana.findEpisode({
 			folder,
 			episode,
 			threshold: loadAppSettings().fileSizeThreshold,
+			animeId,
+			candidates: toScanCandidates(candidates),
 		});
 	} catch {
 		return null;

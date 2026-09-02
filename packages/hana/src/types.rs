@@ -97,6 +97,9 @@ pub struct FindEpisodeInput {
 	pub folder: String,
 	pub episode: i32,
 	pub threshold: i64,
+	#[napi(js_name = "animeId")]
+	pub anime_id: Option<i64>,
+	pub candidates: Option<Vec<Candidate>>,
 }
 
 #[napi(object)]
