@@ -7,7 +7,7 @@ import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
 import { dirname, join } from "node:path";
 import type { DatabaseClient } from "../db";
 import { anime, episodeFile } from "../db/schema";
-import { completeActivity, pushNotice, upsertActivity } from "../activity";
+import { completeActivity, pushNotice, reportStartup, upsertActivity } from "../activity";
 import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
 import { hana, type ScanHit, type ScanProgress } from "./hana-client";
@@ -179,7 +179,10 @@ export async function scanLibraryQuick(database: DatabaseClient = requiredDb()):
 	});
 }
 
+let startupScan = false;
+
 export async function runStartupScan(): Promise<void> {
+	startupScan = true;
 	try {
 		if (!hasIndexedLibrary()) {
 			return;
@@ -187,6 +190,8 @@ export async function runStartupScan(): Promise<void> {
 		await scanLibraryQuick();
 	} catch (error) {
 		log.error("startup scan failed", error);
+	} finally {
+		startupScan = false;
 	}
 }
 
@@ -202,6 +207,9 @@ function onScanProgress(kind: "full" | "quick", progress: ScanProgress): void {
 		const title = `Matching titles... (${progress.hits}/${progress.files})`;
 		setAppNotice(title, { toast: false, busy: true });
 		upsertActivity({ source: "library-scan", title: "Matching titles", body: `${progress.hits}/${progress.files} matched` });
+		if (startupScan) {
+			reportStartup(1, 2, "Matching titles");
+		}
 	}
 }
 

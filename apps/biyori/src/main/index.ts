@@ -2,7 +2,7 @@ import { logger } from "@biyori/logger";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { app, type BrowserWindow, Menu, Tray } from "electron";
 import icon from "../../resources/icon.png?asset";
-import { clearActivity, upsertActivity } from "./activity";
+import { clearActivity, reportStartup } from "./activity";
 import { attachQuitHandler, isAppQuitting, requestQuit } from "./handlers/quit-handler";
 import { attachTrayState, setTrayState } from "./handlers/tray-state";
 import { boot, scheduleAfterInit } from "./services";
@@ -19,7 +19,10 @@ function attachMainWindow(mainWindow: BrowserWindow): void {
 	attachQuitHandler(mainWindow);
 }
 
-function waitUntilPainted(win: BrowserWindow): Promise<void> {
+type WaitUntilPaintedOptions = {
+	afterLoad?: boolean;
+};
+function waitUntilPainted(win: BrowserWindow, options: WaitUntilPaintedOptions = { afterLoad: false }): Promise<void> {
 	return new Promise((resolve) => {
 		let settled = false;
 		const done = () => {
@@ -29,13 +32,9 @@ function waitUntilPainted(win: BrowserWindow): Promise<void> {
 			settled = true;
 			resolve();
 		};
-		win.once("ready-to-show", done);
+		if (!options.afterLoad) win.once("ready-to-show", done); // ready-to-show is emitted before did-finish-load
 		win.webContents.once("did-finish-load", done);
 	});
-}
-
-function reportStartup(current: number, total: number, label: string): void {
-	upsertActivity({ source: "startup", title: label, body: `${current}/${total}` });
 }
 
 function revealMain(splash: BrowserWindow, mainWindow: BrowserWindow): void {
@@ -51,21 +50,31 @@ function revealMain(splash: BrowserWindow, mainWindow: BrowserWindow): void {
 	}
 }
 
-async function runVisibleBoot(splash: BrowserWindow, mainWindow: BrowserWindow, painted: Promise<void>): Promise<void> {
+async function runVisibleBoot(splash: BrowserWindow): Promise<void> {
+	await waitUntilPainted(splash, { afterLoad: true });
+	if (isAppQuitting() || splash.isDestroyed()) {
+		return;
+	}
+
 	const checkLibrary = hasIndexedLibrary();
-	const total = checkLibrary ? 2 : 1;
-	reportStartup(0, total, "Loading window");
+	if (checkLibrary) {
+		reportStartup(0, 2, "Checking library");
+	}
+	const scan = checkLibrary ? runStartupScan() : Promise.resolve();
+
+	const mainWindow = windowManager.open("main", {
+		show: false,
+		skipTaskbar: true,
+	});
+	const painted = waitUntilPainted(mainWindow);
+	attachMainWindow(mainWindow);
 	await painted;
+	await scan;
 	if (isAppQuitting() || mainWindow.isDestroyed()) {
 		return;
 	}
-	reportStartup(1, total, checkLibrary ? "Checking library" : "Ready");
 	if (checkLibrary) {
-		await runStartupScan();
-		if (isAppQuitting() || mainWindow.isDestroyed()) {
-			return;
-		}
-		reportStartup(2, total, "Ready");
+		reportStartup(2, 2, "Ready");
 	}
 	scheduleAfterInit();
 	revealMain(splash, mainWindow);
@@ -123,23 +132,21 @@ if (!app.requestSingleInstanceLock()) {
 		}
 
 		const splash = windowManager.open("splash");
-		const mainWindow = windowManager.open("main", {
-			show: false,
-			skipTaskbar: true,
-		});
-		attachMainWindow(mainWindow);
-		const painted = waitUntilPainted(mainWindow);
 		splash.on("closed", () => {
 			if (isAppQuitting()) {
 				return;
 			}
-			if (mainWindow.isDestroyed() || !mainWindow.isVisible()) {
+			const main = windowManager.get("main");
+			if (!main?.isVisible() || main?.isDestroyed()) {
 				void requestQuit(true);
 			}
 		});
-		void runVisibleBoot(splash, mainWindow, painted).catch((error) => {
+		void runVisibleBoot(splash).catch((error) => {
 			logger.error("startup failed", error);
-			revealMain(splash, mainWindow);
+			const main = windowManager.get("main");
+			if (main) {
+				revealMain(splash, main);
+			}
 		});
 		logger.info("started");
 	});

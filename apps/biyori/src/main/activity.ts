@@ -118,6 +118,10 @@ export function subscribeActivity(listener: Listener): () => void {
 	};
 }
 
+export function reportStartup(current: number, total: number, title: string): void {
+	upsertActivity({ source: "startup", title, body: `${current}/${total}` });
+}
+
 export function upsertActivity(input: { source: string; title: string; body?: string }): void {
 	live.set(input.source, {
 		source: input.source,
