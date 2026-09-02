@@ -6,6 +6,7 @@ import { loadAppSettings, subscribeSettings } from "../settings";
 import { hana } from "../track/hana-client";
 import { windowManager } from "../windows";
 import { isAppQuitting, markAppQuitting, shouldCancelWindowClose } from "./quit-policy";
+import { destroyAppTray } from "./tray";
 import { setTrayState } from "./tray-state";
 
 export { isAppQuitting } from "./quit-policy";
@@ -16,6 +17,7 @@ async function ensureCleanup(): Promise<void> {
 	if (!cleanupPromise) {
 		cleanupPromise = (async () => {
 			await hana.dispose();
+			destroyAppTray();
 			windowManager.destroyAll();
 		})().catch((error) => {
 			log.error("Error while running app cleanup during quit", error);
@@ -95,17 +97,7 @@ export function attachQuitHandler(window: BrowserWindow): void {
 	});
 
 	app.on("before-quit", (ev) => {
-		if (
-			!shouldCancelWindowClose({
-				quitting: isAppQuitting(),
-				hideToTray: shouldHideToTray(false),
-			})
-		) {
-			return;
-		}
-		if (shouldHideToTray(false)) {
-			ev.preventDefault();
-			hideToTray();
+		if (isAppQuitting()) {
 			return;
 		}
 		ev.preventDefault();

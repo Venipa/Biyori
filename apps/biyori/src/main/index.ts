@@ -1,13 +1,14 @@
 import { logger } from "@biyori/logger";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
-import { app, type BrowserWindow, Menu, Tray } from "electron";
-import icon from "../../resources/icon.png?asset";
+import { app, type BrowserWindow } from "electron";
 import { clearActivity, reportStartup } from "./activity";
 import { attachQuitHandler, isAppQuitting, requestQuit } from "./handlers/quit-handler";
+import { createAppTray } from "./handlers/tray";
 import { attachTrayState, setTrayState } from "./handlers/tray-state";
 import { boot, scheduleAfterInit } from "./services";
 import { loadAppSettings } from "./settings";
 import { isStartupLaunch, syncLoginItem } from "./startup";
+import { shouldStartInTray } from "./startup-login";
 import { hasIndexedLibrary, runStartupScan } from "./track/library";
 import { initElectronTrpc } from "./trpc-handler";
 import { windowManager } from "./windows";
@@ -99,32 +100,26 @@ if (!app.requestSingleInstanceLock()) {
 		const bootSettings = loadAppSettings();
 
 		syncLoginItem(bootSettings);
-		const hidden = isStartupLaunch() && bootSettings.autostartTray;
+		const hidden = shouldStartInTray(isStartupLaunch(), bootSettings.autostartTray);
+		createAppTray(() => {
+			void requestQuit(true);
+		});
 
-		const tray = new Tray(icon);
-		tray.setToolTip("Biyori");
-		tray.setContextMenu(
-			Menu.buildFromTemplate([
-				{ label: "Show", click: () => setTrayState("visible") },
-				{ type: "separator" },
-				{
-					label: "Quit",
-					click: () => {
-						void requestQuit(true);
-					},
-				},
-			]),
-		);
-		tray.on("click", () => setTrayState("visible"));
+		const suppressActivateUntil = hidden ? Date.now() + 1500 : 0;
+		app.on("activate", () => {
+			if (Date.now() < suppressActivateUntil) {
+				return;
+			}
+			setTrayState("visible");
+		});
 
 		if (hidden) {
 			const mainWindow = windowManager.open("main", {
 				show: false,
 				skipTaskbar: true,
 			});
-			mainWindow.hide();
-			mainWindow.setSkipTaskbar(true);
 			attachMainWindow(mainWindow);
+			setTrayState("hidden");
 			void runStartupScan();
 			scheduleAfterInit();
 			logger.info("started");

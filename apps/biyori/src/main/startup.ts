@@ -1,25 +1,75 @@
-import { basename } from "node:path";
+import { mkdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 import { app } from "electron";
 import type { AppSettings } from "../lib/schemas/app-settings";
+import {
+	argvIsStartupLaunch,
+	linuxAutostartDesktopEntry,
+	STARTUP_FLAG,
+	windowsLoginItemArgs,
+} from "./startup-login";
 
-const STARTUP_FLAG = "--startup";
+export { STARTUP_FLAG, argvIsStartupLaunch } from "./startup-login";
 
 export function isStartupLaunch(): boolean {
-	if (process.argv.includes(STARTUP_FLAG)) {
-		return true;
-	}
-	return Boolean(app.getLoginItemSettings().wasOpenedAtLogin);
+	return argvIsStartupLaunch(process.argv, app.getLoginItemSettings());
 }
 
-function loginItemArgs(): string[] {
-	if (process.platform === "win32") {
-		return ["--processStart", `"${basename(process.execPath)}"`, STARTUP_FLAG];
+function linuxAutostartFile(): string {
+	const configDir = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
+	return join(configDir, "autostart", "net.venipa.biyori.desktop");
+}
+
+function linuxExecArgs(settings: Pick<AppSettings, "autostartTray">): string[] {
+	const args = [process.env.APPIMAGE || process.execPath];
+	if (!app.isPackaged) {
+		args.push(app.getAppPath());
 	}
-	return [STARTUP_FLAG];
+	if (settings.autostartTray) {
+		args.push(STARTUP_FLAG);
+	}
+	return args;
+}
+
+function syncLinuxAutostart(settings: Pick<AppSettings, "autostart" | "autostartTray">): void {
+	const file = linuxAutostartFile();
+	if (!settings.autostart) {
+		try {
+			unlinkSync(file);
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+				throw error;
+			}
+		}
+		return;
+	}
+	mkdirSync(dirname(file), { recursive: true });
+	writeFileSync(
+		file,
+		linuxAutostartDesktopEntry({
+			name: "Biyori",
+			execArgs: linuxExecArgs(settings),
+		}),
+		"utf8",
+	);
 }
 
 export function syncLoginItem(settings: Pick<AppSettings, "autostart" | "autostartTray">): void {
-	const args = loginItemArgs();
+	if (process.platform === "linux") {
+		syncLinuxAutostart(settings);
+		return;
+	}
+
+	if (process.platform === "darwin") {
+		app.setLoginItemSettings({
+			openAtLogin: settings.autostart,
+			openAsHidden: settings.autostart && settings.autostartTray,
+		});
+		return;
+	}
+
+	const args = windowsLoginItemArgs(process.execPath);
 	if (settings.autostart) {
 		app.setLoginItemSettings({
 			openAtLogin: true,

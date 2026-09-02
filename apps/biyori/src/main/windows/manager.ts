@@ -128,9 +128,10 @@ export class WindowManager<TId extends string> {
 
 		const show = options.show ?? true;
 		const parent = id === "main" ? undefined : (this.get("main" as TId) ?? undefined);
-		const skipTaskbar = options.skipTaskbar ?? false;
-		const alwaysOnTop = definition.alwaysOnTop ?? false;
-		const modal = Boolean(definition.modal && parent);
+		const isMac = process.platform === "darwin";
+		const skipTaskbar = options.skipTaskbar ?? Boolean(parent && !isMac);
+		const nativeModal = Boolean(definition.modal && parent && !isMac);
+		const alwaysOnTop = definition.alwaysOnTop ?? (!nativeModal && Boolean(definition.modal && parent));
 		const win = this.createChrome({
 			title: definition.title,
 			width: definition.width,
@@ -142,7 +143,7 @@ export class WindowManager<TId extends string> {
 			show,
 			skipTaskbar,
 			alwaysOnTop,
-			modal,
+			modal: nativeModal,
 			parent,
 			resizable: definition.resizable,
 		});
@@ -174,17 +175,30 @@ export class WindowManager<TId extends string> {
 		if (!win) {
 			return;
 		}
+		this.dismiss(win);
+	}
+
+	/** Child/modal windows must be destroyed. hide()+close() leaves the parent sheet-locked on macOS. */
+	dismiss(win: BrowserWindow): void {
+		if (win.isDestroyed()) {
+			return;
+		}
+		if (win.getParentWindow()) {
+			win.destroy();
+			return;
+		}
 		win.hide();
 		win.close();
 	}
 
 	destroyAll(): void {
-		const ids = [...this.windows.keys()].filter((id) => id !== "main");
-		for (const id of ids) {
-			this.close(id);
-		}
-		this.close("main" as TId);
+		const wins = [...this.windows.values()].map((entry) => entry.win);
 		this.windows.clear();
+		for (const win of wins) {
+			if (!win.isDestroyed()) {
+				win.destroy();
+			}
+		}
 	}
 
 	private emitModalChild(): void {
@@ -209,6 +223,8 @@ export class WindowManager<TId extends string> {
 		parent?: BrowserWindow;
 		resizable?: boolean;
 	}): BrowserWindow {
+		const isMac = process.platform === "darwin";
+		const isLinux = process.platform === "linux";
 		const ctor: BrowserWindowConstructorOptions = {
 			title: options.title,
 			width: options.width,
@@ -218,15 +234,17 @@ export class WindowManager<TId extends string> {
 			maxWidth: options.maxWidth,
 			maxHeight: options.maxHeight,
 			show: false,
-			skipTaskbar: options.skipTaskbar,
+			skipTaskbar: isMac ? false : options.skipTaskbar,
 			alwaysOnTop: options.alwaysOnTop,
 			modal: options.modal,
 			parent: options.parent,
 			center: !options.parent,
 			frame: false,
+			fullscreenable: !options.parent,
 			backgroundColor: windowBackgroundColor(),
 			autoHideMenuBar: true,
-			...(process.platform === "linux" ? { icon } : {}),
+			acceptFirstMouse: isMac,
+			...(isLinux ? { icon } : {}),
 			...(options.resizable === false ? { resizable: false } : {}),
 			webPreferences: {
 				preload: join(__dirname, "../preload/index.js"),
