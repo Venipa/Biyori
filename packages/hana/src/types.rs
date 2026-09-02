@@ -126,6 +126,8 @@ pub struct NowPlayingInput {
 	pub browser_names: Option<Vec<String>>,
 	#[napi(js_name = "titleNeedles")]
 	pub title_needles: Option<Vec<String>>,
+	#[napi(js_name = "urlPatterns")]
+	pub url_patterns: Option<Vec<String>>,
 	#[napi(js_name = "preferredWindowId")]
 	pub preferred_window_id: Option<String>,
 }

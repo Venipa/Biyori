@@ -33,6 +33,15 @@ function titleNeedles(settings: AppSettings): string[] {
 	return STREAMING_PROVIDERS.filter((provider) => settings.enabledStreamingProviders.includes(provider.id)).map((provider) => provider.titlePattern);
 }
 
+function urlPatterns(settings: AppSettings): string[] {
+	if (!settings.enableStreamingDetection) {
+		return [];
+	}
+	return STREAMING_PROVIDERS.filter((provider) => settings.enabledStreamingProviders.includes(provider.id))
+		.map((provider) => provider.urlPattern)
+		.filter((pattern): pattern is string => Boolean(pattern));
+}
+
 export async function getNowPlayingMedia(settings: AppSettings, preferredWindowId?: string): Promise<NowPlayingMedia | null> {
 	if (!settings.enableMediaPlayerDetection && !settings.enableStreamingDetection) {
 		return null;
@@ -46,6 +55,7 @@ export async function getNowPlayingMedia(settings: AppSettings, preferredWindowI
 			processNames: names,
 			browserNames: settings.enableStreamingDetection ? [...BROWSER_PROCESSES] : [],
 			titleNeedles: titleNeedles(settings),
+			urlPatterns: urlPatterns(settings),
 			preferredWindowId,
 		});
 		if (!hit) {

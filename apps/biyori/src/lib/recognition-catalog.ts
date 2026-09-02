@@ -9,6 +9,7 @@ export type StreamingProviderOption = {
 	label: string;
 	processes?: readonly string[];
 	titlePattern: string;
+	urlPattern?: string;
 };
 
 export const MEDIA_PLAYERS: readonly MediaPlayerOption[] = [
@@ -35,30 +36,36 @@ export const MEDIA_PLAYERS: readonly MediaPlayerOption[] = [
 ];
 
 export const STREAMING_PROVIDERS: readonly StreamingProviderOption[] = [
-	{ id: "animelab", label: "AnimeLab", titlePattern: "AnimeLab" },
-	{ id: "adn", label: "Anime Digital Network", titlePattern: "ADN" },
-	{ id: "ann", label: "Anime News Network", titlePattern: "Anime News Network" },
-	{ id: "bilibili", label: "Bilibili", titlePattern: "Bilibili" },
+	{ id: "animelab", label: "AnimeLab", titlePattern: "AnimeLab", urlPattern: "animelab\\.com/player/" },
+	{ id: "adn", label: "Anime Digital Network", titlePattern: "ADN", urlPattern: "animedigitalnetwork\\.fr/video/" },
+	{ id: "ann", label: "Anime News Network", titlePattern: "Anime News Network", urlPattern: "animenewsnetwork\\.(?:com|cc)/video/" },
+	{ id: "bilibili", label: "Bilibili", titlePattern: "Bilibili", urlPattern: "bilibili\\.tv/.+/play/" },
+	{ id: "crunchyroll", label: "Crunchyroll", titlePattern: "Crunchyroll", urlPattern: "crunchyroll\\.com/" },
+	{ id: "funimation", label: "Funimation", titlePattern: "Funimation", urlPattern: "funimation\\.com/" },
+	{ id: "hidive", label: "HIDIVE", titlePattern: "HIDIVE", urlPattern: "hidive\\.com/" },
 	{
 		id: "jellyfin",
 		label: "Jellyfin Web App",
 		processes: ["jellyfin", "jellyfinmediaplayer", "jellyfintray"],
 		titlePattern: "Jellyfin",
+		urlPattern: "jellyfin|:8096|/web/(?:index\\.html)?(?:#!?)?/(?:video|playback|details)|/web/#/",
 	},
 	{
 		id: "plex",
 		label: "Plex Web App",
 		processes: ["plex", "plexamp"],
 		titlePattern: "Plex",
+		urlPattern: "plex\\.tv|/web/|localhost:32400|:32400/web",
 	},
-	{ id: "roku", label: "Roku Channel", titlePattern: "Roku" },
-	{ id: "tubi", label: "Tubi", titlePattern: "Tubi" },
-	{ id: "veoh", label: "Veoh", titlePattern: "Veoh" },
-	{ id: "viz", label: "VIZ", titlePattern: "VIZ" },
-	{ id: "vrv", label: "VRV", titlePattern: "VRV" },
-	{ id: "wakanim", label: "Wakanim", titlePattern: "Wakanim" },
-	{ id: "yahoo", label: "Yahoo View", titlePattern: "Yahoo View" },
-	{ id: "youtube", label: "YouTube", titlePattern: "YouTube" },
+	{ id: "roku", label: "Roku Channel", titlePattern: "Roku", urlPattern: "therokuchannel\\.roku\\.com/watch/" },
+	{ id: "tubi", label: "Tubi", titlePattern: "Tubi", urlPattern: "tubitv\\.com/tv-shows/" },
+	{ id: "veoh", label: "Veoh", titlePattern: "Veoh", urlPattern: "veoh\\.com/watch/" },
+	{ id: "viz", label: "VIZ", titlePattern: "VIZ", urlPattern: "viz\\.com/watch/" },
+	{ id: "vrv", label: "VRV", titlePattern: "VRV", urlPattern: "vrv\\.co/watch/" },
+	{ id: "wakanim", label: "Wakanim", titlePattern: "Wakanim", urlPattern: "wakanim\\.tv/.+/catalogue/episode/" },
+	{ id: "yahoo", label: "Yahoo View", titlePattern: "Yahoo View", urlPattern: "view\\.yahoo\\.com/show/" },
+	{ id: "youtube", label: "YouTube", titlePattern: "YouTube", urlPattern: "youtube\\.com/watch" },
+	{ id: "netflix", label: "Netflix", titlePattern: "Netflix", urlPattern: "netflix\\.com/(?:watch|title)/" },
 ];
 
 export const BROWSER_PROCESSES = new Set(["chrome", "msedge", "firefox", "brave", "opera", "chromium"]);

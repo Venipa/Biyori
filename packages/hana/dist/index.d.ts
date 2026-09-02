@@ -69,6 +69,7 @@ export type NowPlayingInput = {
 	processNames: string[];
 	browserNames?: string[];
 	titleNeedles?: string[];
+	urlPatterns?: string[];
 	preferredWindowId?: string;
 };
 
