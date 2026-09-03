@@ -1,4 +1,4 @@
-import { useAnimeInfoNav } from "@/lib/anime-info-nav";
+import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
