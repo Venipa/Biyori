@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { is } from "@electron-toolkit/utils";
-import { BrowserWindow, type BrowserWindowConstructorOptions, nativeTheme, shell } from "electron";
+import { app, BrowserWindow, type BrowserWindowConstructorOptions, nativeTheme, shell } from "electron";
 import icon from "../../../resources/icon.png?asset";
 import { attachTrpcWindow } from "../trpc-handler";
 import { attachWindowState } from "./state";
@@ -59,6 +59,20 @@ function centerOnParent(win: BrowserWindow, parent: BrowserWindow): void {
 	const parentBounds = parent.getBounds();
 	const { width, height } = win.getBounds();
 	win.setPosition(Math.round(parentBounds.x + (parentBounds.width - width) / 2), Math.round(parentBounds.y + (parentBounds.height - height) / 2));
+}
+
+function stealWindowFocus(win: BrowserWindow): void {
+	if (win.isDestroyed()) {
+		return;
+	}
+	if (win.isMinimized()) {
+		win.restore();
+	}
+	win.moveTop();
+	win.focus();
+	if (process.platform === "darwin") {
+		app.focus({ steal: true });
+	}
 }
 
 export class WindowManager<TId extends string> {
@@ -155,6 +169,9 @@ export class WindowManager<TId extends string> {
 				this.windows.delete(id);
 			}
 			this.emitModalChild();
+			if (parent && !parent.isDestroyed()) {
+				stealWindowFocus(parent);
+			}
 		});
 		this.emitModalChild();
 
