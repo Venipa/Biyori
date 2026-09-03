@@ -17,6 +17,10 @@ Docs: [venipa.github.io/Biyori](https://venipa.github.io/Biyori) (or `bun run do
 - Discord Rich Presence
 - Activity center and sharing helpers
 
+## Inspiration
+
+- [Taiga](https://taiga.moe/) ([source](https://github.com/erengy/taiga)): Windows anime list manager. I took inspiration from its app layout. Thank you for existing; I have been using it for decades.
+
 ## Requirements
 
 - [Bun](https://bun.sh/) 1.4+
