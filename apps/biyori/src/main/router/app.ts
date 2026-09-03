@@ -1,3 +1,4 @@
+import type { SelectDatabase } from "@/db";
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { desc, eq } from "drizzle-orm";
@@ -5,16 +6,16 @@ import { z } from "zod";
 import { folderPathExists, normalizeFolderPath } from "../../lib/folder-path";
 import { parseJsonArray } from "../../lib/parse-json-array";
 import { settingsFormPatchSchema } from "../../lib/schemas/app-settings";
+import { cacheKindsSchema } from "../../lib/schemas/cache-kind";
 import { listStatusSchema } from "../../shared/list";
+import { getActivitySnapshot, subscribeActivity } from "../activity";
 import { readAnilistAuth } from "../anilist/store";
 import { ensureAnimeCached } from "../anilist/sync";
+import { clearCacheKinds, loadCacheSummary } from "../cache";
 import { anime, episodeFile, history, listEntry, syncQueue } from "../db/schema";
 import type { Anime } from "../db/types";
-import { getActivitySnapshot, subscribeActivity } from "../activity";
 import { getAppNotice, subscribeAppNotice } from "../notice";
 import { loadAppSettings, loadSettingsFormValues, patchAppSettings, patchSettingsForm } from "../settings";
-import { cacheKindsSchema } from "../../lib/schemas/cache-kind";
-import { clearCacheKinds, loadCacheSummary } from "../cache";
 import { loadStatistics } from "../statistics";
 import {
 	applyTorrentView,
@@ -58,7 +59,7 @@ type AnimeDetail = Omit<Anime, "durationMinutes" | "genres" | "producers"> & {
 	onList: boolean;
 };
 
-async function loadAnimeDetail(db: Pick<import("../db").DatabaseClient, "select">, id: number): Promise<AnimeDetail | null> {
+async function loadAnimeDetail(db: SelectDatabase, id: number): Promise<AnimeDetail | null> {
 	const rows = await db
 		.select({
 			id: anime.id,
@@ -121,6 +122,20 @@ async function loadAnimeDetail(db: Pick<import("../db").DatabaseClient, "select"
 	};
 }
 
+async function libraryEpisodesByAnime(db: SelectDatabase): Promise<Map<number, number[]>> {
+	const episodeRows = await db.select({ animeId: episodeFile.animeId, episode: episodeFile.episode }).from(episodeFile);
+	const libraryById = new Map<number, Set<number>>();
+	for (const file of episodeRows) {
+		const episodes = libraryById.get(file.animeId);
+		if (episodes) {
+			episodes.add(file.episode);
+			continue;
+		}
+		libraryById.set(file.animeId, new Set([file.episode]));
+	}
+	return new Map([...libraryById].map(([id, episodes]) => [id, [...episodes]]));
+}
+
 export const appRouter = t.router({
 	about: t.procedure.query(() => ({
 		hanaVersion,
@@ -155,19 +170,10 @@ export const appRouter = t.router({
 				.where(input.status ? eq(listEntry.status, input.status) : undefined)
 				.orderBy(desc(listEntry.lastUpdated));
 
-			const episodeRows = await ctx.db.select({ animeId: episodeFile.animeId, episode: episodeFile.episode }).from(episodeFile);
-			const libraryById = new Map<number, Set<number>>();
-			for (const file of episodeRows) {
-				const episodes = libraryById.get(file.animeId);
-				if (episodes) {
-					episodes.add(file.episode);
-					continue;
-				}
-				libraryById.set(file.animeId, new Set([file.episode]));
-			}
+			const libraryById = await libraryEpisodesByAnime(ctx.db);
 
 			return rows.map((row) => {
-				const libraryEpisodes = [...(libraryById.get(row.id) ?? [])];
+				const libraryEpisodes = libraryById.get(row.id) ?? [];
 				return {
 					...row,
 					libraryEpisodes,
@@ -190,7 +196,7 @@ export const appRouter = t.router({
 			return counts;
 		}),
 		listed: t.procedure.query(async ({ ctx }) => {
-			return ctx.db
+			const rows = await ctx.db
 				.select({
 					id: anime.id,
 					title: anime.title,
@@ -202,9 +208,15 @@ export const appRouter = t.router({
 					season: anime.season,
 					coverUrl: anime.coverUrl,
 					bannerUrl: anime.bannerUrl,
+					lastAiredEpisode: anime.lastAiredEpisode,
 				})
 				.from(anime)
 				.innerJoin(listEntry, eq(listEntry.animeId, anime.id));
+			const libraryById = await libraryEpisodesByAnime(ctx.db);
+			return rows.map((row) => ({
+				...row,
+				libraryEpisodes: libraryById.get(row.id) ?? [],
+			}));
 		}),
 		byId: t.procedure.input(z.object({ id: z.number().int() })).query(async ({ ctx, input }) => {
 			return loadAnimeDetail(ctx.db, input.id);

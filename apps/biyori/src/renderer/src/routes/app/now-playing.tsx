@@ -10,7 +10,7 @@ import { Progress, ProgressLabel, ProgressValue } from "@/mainview/components/ui
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
-import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
+import { nextEpisodeIsAvailable } from "@/mainview/lib/list-progress";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -194,6 +194,7 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 	const match = snapshot.match;
 	const media = snapshot.media;
 	const detailQuery = trpc.anime.byId.useQuery({ id: match?.id ?? 0 }, { enabled: Boolean(match?.id) });
+	const libraryQuery = trpc.library.episodes.useQuery({ animeId: match?.id ?? 0 }, { enabled: Boolean(match?.id) });
 	if (!match || !media) {
 		return null;
 	}
@@ -207,7 +208,15 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 	const isMovie = detail?.type === "Movie";
 	const currentEpisode = episode ?? watched;
 	const nextEpisode = currentEpisode + 1;
-	const canWatchNext = !isMovie && (total == null || nextEpisode <= total);
+	const lastAiredEpisode = detail?.lastAiredEpisode ?? match.lastAiredEpisode;
+	const canWatchNext =
+		!isMovie &&
+		nextEpisodeIsAvailable({
+			nextEpisode,
+			totalEpisodes: total,
+			lastAiredEpisode,
+			libraryEpisodes: libraryQuery.data?.map((row) => row.episode),
+		});
 	const progressValue = total != null && total > 0 ? Math.min(100, Math.round((watched / total) * 100)) : 80;
 	const nowPlayingLine = formatNowPlayingLine(episode, group, isMovie);
 	const title = detail?.title ?? match.title;
@@ -470,10 +479,21 @@ function buildContinueWatching(
 		}
 		seen.add(row.animeId);
 		const listed = listedById.get(row.animeId);
+		const nextEpisode = row.episode + 1;
+		if (
+			!nextEpisodeIsAvailable({
+				nextEpisode,
+				totalEpisodes: listed?.episodes,
+				lastAiredEpisode: listed?.lastAiredEpisode,
+				libraryEpisodes: listed?.libraryEpisodes,
+			})
+		) {
+			continue;
+		}
 		items.push({
 			animeId: row.animeId,
 			title: listed?.title ?? row.title,
-			nextEpisode: row.episode + 1,
+			nextEpisode,
 			coverUrl: listed?.coverUrl,
 			type: listed?.type,
 			episodes: listed?.episodes,

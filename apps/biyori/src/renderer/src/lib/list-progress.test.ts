@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { collapseEpisodeRanges, estimateEpisodeCount, libraryEpisodeTooltip, listProgressLabel, listProgressLayout, listProgressRatio } from "./list-progress";
+import {
+	collapseEpisodeRanges,
+	estimateEpisodeCount,
+	libraryEpisodeTooltip,
+	listProgressLabel,
+	listProgressLayout,
+	listProgressRatio,
+	nextEpisodeIsAvailable,
+} from "./list-progress";
 
 describe("estimateEpisodeCount", () => {
 	test("returns the known total", () => {
@@ -99,5 +107,30 @@ describe("listProgressLabel", () => {
 
 	test("clamps watched to total", () => {
 		expect(listProgressLabel(14, 12)).toEqual({ watched: "12", total: "12" });
+	});
+});
+
+describe("nextEpisodeIsAvailable", () => {
+	test("allows an aired episode", () => {
+		expect(nextEpisodeIsAvailable({ nextEpisode: 8, totalEpisodes: 12, lastAiredEpisode: 8 })).toBe(true);
+	});
+
+	test("allows a library file that has not been marked aired", () => {
+		expect(
+			nextEpisodeIsAvailable({
+				nextEpisode: 9,
+				totalEpisodes: 12,
+				lastAiredEpisode: 8,
+				libraryEpisodes: [9],
+			}),
+		).toBe(true);
+	});
+
+	test("hides an unaired episode that is not on disk", () => {
+		expect(nextEpisodeIsAvailable({ nextEpisode: 9, totalEpisodes: 12, lastAiredEpisode: 8 })).toBe(false);
+	});
+
+	test("hides past the known total", () => {
+		expect(nextEpisodeIsAvailable({ nextEpisode: 13, totalEpisodes: 12, lastAiredEpisode: 12, libraryEpisodes: [13] })).toBe(false);
 	});
 });

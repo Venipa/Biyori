@@ -130,6 +130,26 @@ export function libraryEpisodeTooltip(input: { watched: number; total: number; a
 	return lines.join("\n");
 }
 
+export function nextEpisodeIsAvailable(input: {
+	nextEpisode: number;
+	totalEpisodes?: number | null;
+	lastAiredEpisode?: number | null;
+	libraryEpisodes?: readonly number[] | null;
+}): boolean {
+	const next = input.nextEpisode;
+	if (!Number.isFinite(next) || next < 1) {
+		return false;
+	}
+	const total = input.totalEpisodes ?? 0;
+	if (total > 0 && next > total) {
+		return false;
+	}
+	if (input.libraryEpisodes?.includes(next)) {
+		return true;
+	}
+	return (input.lastAiredEpisode ?? 0) >= next;
+}
+
 export function listProgressLabel(watched: number, total: number): { watched: string; total: string } {
 	const capped = total > 0 ? Math.min(Math.max(watched, 0), total) : Math.max(watched, 0);
 	return {
