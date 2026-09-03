@@ -12,12 +12,12 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) for every commi
 ```
 <type>(<optional-scope>): <short summary>
 
-<optional body>
+<optional body (if changes are too complex to summarize in the summary)>
 ```
 
 - Header: lowercase `type`, optional lowercase `scope`, colon + space, imperative summary
 - Summary: ~50 chars, no period at the end, ASCII only (`-` not em dash, `...` not ellipsis)
-- Body: Don't include Body unless changes are too complex to summarize in the summary; wrap ~72 chars; explain why and any side effects
+- Body: Don't include Body unless changes are too complex to summarize in the summary; wrap max ~72 chars but keep lines short; explain why and any side effects
 - One logical change per commit; do not mix unrelated work
 
 ## Types
