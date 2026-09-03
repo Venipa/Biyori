@@ -3,8 +3,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ParentWindowScrim } from "@/components/parent-window-scrim";
 import "./index.css";
-import { initTheme } from "./lib/theme";
 import { rendererRoutePath } from "./lib/start-path";
+import { initTheme } from "./lib/theme";
 import { router } from "./router";
 import { TrpcProvider } from "./trpc-provider";
 

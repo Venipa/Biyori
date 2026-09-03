@@ -1,13 +1,18 @@
 {
-  "editor.defaultFormatter": "biomejs.biome",
-  "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": {
-    "source.fixAll.biome": "explicit",
-    "source.organizeImports.biome": "explicit"
-  },
   "css.lint.unknownAtRules": "ignore",
   "css.lint.unknownProperties": "ignore",
   "[css]": {
     "editor.defaultFormatter": "biomejs.biome"
-  }
+  },
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    // disable native sorting
+    "source.organizeImports": "never",
+    "source.organizeImports.ts": "never",
+    // enable biome sorting
+    "source.organizeImports.biome": "explicit",
+    // enable biome fixing
+    "source.fixAll.biome": "explicit"
+  },
 }
