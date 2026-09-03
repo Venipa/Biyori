@@ -5,9 +5,9 @@ import { shell } from "electron";
 import { randomUUID } from "node:crypto";
 import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
 import { dirname, join } from "node:path";
+import { completeActivity, pushNotice, reportStartup, upsertActivity } from "../activity";
 import type { DatabaseClient } from "../db";
 import { anime, episodeFile } from "../db/schema";
-import { completeActivity, pushNotice, reportStartup, upsertActivity } from "../activity";
 import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
 import { hana, type ScanHit, type ScanProgress } from "./hana-client";
@@ -184,7 +184,7 @@ let startupScan = false;
 export async function runStartupScan(): Promise<void> {
 	startupScan = true;
 	try {
-		if (!hasIndexedLibrary()) {
+		if (!hasIndexedLibrary() || !loadAppSettings().onboardingComplete) {
 			return;
 		}
 		await scanLibraryQuick();

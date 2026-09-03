@@ -1,6 +1,8 @@
 import { shell } from "electron";
+import { buildAuthorizeUrl } from "./oauth-url";
 
-const AUTHORIZE_BASE = "https://anilist.co/api/v2/oauth/authorize";
+export { ANILIST_REDIRECT_URI, buildAuthorizeUrl, normalizeAnilistToken } from "./oauth-url";
+
 const DEFAULT_EXPIRES_IN_SECONDS = 365 * 24 * 60 * 60;
 const ANILIST_CLIENT_ID = import.meta.env.VITE_ANILIST_CLIENT_ID;
 if (!ANILIST_CLIENT_ID) {
@@ -25,28 +27,10 @@ export function getAnilistClientId(): string {
 	return ANILIST_CLIENT_ID;
 }
 
-export function buildAuthorizeUrl(clientId: string): string {
-	return `${AUTHORIZE_BASE}?${new URLSearchParams({
-		client_id: clientId,
-		response_type: "token",
-	}).toString()}`;
-}
-
 export function openAnilistLogin(): { opened: true } {
-	const clientId = getAnilistClientId();
-	const url = buildAuthorizeUrl(clientId);
+	const url = buildAuthorizeUrl(getAnilistClientId());
 	void shell.openExternal(url);
 	return { opened: true as const };
-}
-
-export function normalizeAnilistToken(raw: string): string {
-	const trimmed = raw.trim();
-	if (!trimmed.includes("access_token=")) {
-		return trimmed;
-	}
-	const hashStart = trimmed.indexOf("#");
-	const query = hashStart >= 0 ? trimmed.slice(hashStart + 1) : trimmed;
-	return new URLSearchParams(query).get("access_token") ?? trimmed;
 }
 
 export function expiresAtFromToken(token: string): number {

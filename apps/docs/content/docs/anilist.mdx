@@ -7,12 +7,19 @@ AniList is the default list service. MyAnimeList and Kitsu are not available yet
 
 ## Connect
 
+On first launch, Biyori opens a get-started wizard. AniList must be connected before you can continue into the app. Library folders on that wizard are optional.
+
+**Authorize** opens AniList in the browser (implicit grant). After you approve, AniList redirects to `biyori://anilist/callback#access_token=...`. The redirect URI is set on the AniList app, not in the authorize URL. Paste a token only if the browser does not return to the app.
+
+After setup:
+
 1. Open **Settings -> Services**.
-2. Use **Connect** to authorize in the browser, or paste a personal access token.
-3. Disconnect from the same panel. Account changes save immediately and are not part of the main settings Save bar.
+2. Use **Authorize...** to sign in. Disconnect from the same panel. Account changes save immediately and are not part of the main settings Save bar. Disconnecting does not show the wizard again.
+
+Set the AniList app redirect URL to exactly `biyori://anilist/callback`.
 
 ## What syncs
 
 Lists, progress, and series details come from AniList. Title language (Romaji, English, Native) is set under **Settings -> Application**.
 
-Build-time env `VITE_ANILIST_CLIENT_ID` is required for the OAuth client used by Connect.
+Build-time env `VITE_ANILIST_CLIENT_ID` is required for Connect.

@@ -5,6 +5,7 @@ import { clearActivity, reportStartup } from "./activity";
 import { attachQuitHandler, isAppQuitting, requestQuit } from "./handlers/quit-handler";
 import { createAppTray } from "./handlers/tray";
 import { attachTrayState, setTrayState } from "./handlers/tray-state";
+import { installBiyoriProtocol, startProtocolHandling } from "./protocol";
 import { boot, scheduleAfterInit } from "./services";
 import { loadAppSettings } from "./settings";
 import { isStartupLaunch, syncLoginItem } from "./startup";
@@ -66,6 +67,7 @@ async function runVisibleBoot(splash: BrowserWindow): Promise<void> {
 	const mainWindow = windowManager.open("main", {
 		show: false,
 		skipTaskbar: true,
+		to: loadAppSettings().onboardingComplete ? undefined : "/onboarding",
 	});
 	const painted = waitUntilPainted(mainWindow);
 	attachMainWindow(mainWindow);
@@ -84,9 +86,7 @@ async function runVisibleBoot(splash: BrowserWindow): Promise<void> {
 if (!app.requestSingleInstanceLock()) {
 	app.quit();
 } else {
-	app.on("second-instance", () => {
-		setTrayState("visible");
-	});
+	installBiyoriProtocol();
 
 	app.whenReady().then(async () => {
 		electronApp.setAppUserModelId("net.venipa.biyori");
@@ -97,6 +97,7 @@ if (!app.requestSingleInstanceLock()) {
 
 		await boot();
 		initElectronTrpc();
+		startProtocolHandling();
 		const bootSettings = loadAppSettings();
 
 		syncLoginItem(bootSettings);
@@ -117,6 +118,7 @@ if (!app.requestSingleInstanceLock()) {
 			const mainWindow = windowManager.open("main", {
 				show: false,
 				skipTaskbar: true,
+				to: bootSettings.onboardingComplete ? undefined : "/onboarding",
 			});
 			attachMainWindow(mainWindow);
 			setTrayState("hidden");

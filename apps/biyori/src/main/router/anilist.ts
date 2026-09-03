@@ -10,15 +10,14 @@ import { AnilistApiError } from "../anilist/client";
 import { toAnilistStatus } from "../anilist/map";
 import {
 	clearAnilistLoginError,
-	expiresAtFromToken,
 	getAnilistClientId,
 	getAnilistLoginError,
-	normalizeAnilistToken,
 	openAnilistLogin,
 	setAnilistLoginError,
 } from "../anilist/oauth";
-import { clearAnilistAuth, readAnilistAuth, toPublicStatus, writeAnilistAuth } from "../anilist/store";
-import { fetchSeasonMedia, fetchViewer, saveMediaListEntry, searchAniListMedia, upsertMediaList } from "../anilist/sync";
+import { connectAnilistAccessToken, subscribeAnilistAuthError, subscribeAnilistAuthSuccess } from "../anilist/connect";
+import { clearAnilistAuth, readAnilistAuth, toPublicStatus } from "../anilist/store";
+import { fetchSeasonMedia, saveMediaListEntry, searchAniListMedia, upsertMediaList } from "../anilist/sync";
 import { anime, listEntry } from "../db/schema";
 import { loadAppSettings } from "../settings";
 import { abortAniListSync, getSyncSnapshot, requestAniListSync, subscribeSyncStatus } from "../sync";
@@ -88,18 +87,10 @@ export const anilistRouter = t.router({
 	}),
 	connectWithToken: t.procedure.input(anilistTokenSchema).mutation(async ({ input }) => {
 		clearAnilistLoginError();
-		const token = normalizeAnilistToken(input.token);
 		try {
-			const viewer = await fetchViewer(token);
-			writeAnilistAuth({
-				accessToken: token,
-				expiresAt: expiresAtFromToken(token),
-				userId: viewer.id,
-				username: viewer.name,
-			});
-			requestAniListSync();
+			const status = await connectAnilistAccessToken(input.token);
 			return {
-				...toPublicStatus(readAnilistAuth()),
+				...status,
 				loginError: null as string | null,
 			};
 		} catch (error) {
@@ -126,6 +117,20 @@ export const anilistRouter = t.router({
 			emit.next(getSyncSnapshot());
 			return subscribeSyncStatus((next) => {
 				emit.next(next);
+			});
+		});
+	}),
+	onAuthSuccess: t.procedure.subscription(() => {
+		return observable<{ username: string }>((emit) => {
+			return subscribeAnilistAuthSuccess((username) => {
+				emit.next({ username });
+			});
+		});
+	}),
+	onAuthError: t.procedure.subscription(() => {
+		return observable<{ message: string }>((emit) => {
+			return subscribeAnilistAuthError((message) => {
+				emit.next({ message });
 			});
 		});
 	}),

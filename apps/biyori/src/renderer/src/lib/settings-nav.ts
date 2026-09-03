@@ -129,6 +129,7 @@ export const settingsFieldNav: Record<string, { section: SettingsSectionId; chil
 	httpPort: { section: "sharing" },
 	discordApplicationId: { section: "sharing" },
 	uiTheme: { section: "advanced", child: "general" },
+	onboardingComplete: { section: "application" },
 	fileSizeThreshold: { section: "advanced", child: "general" },
 	mediaDetectionInterval: { section: "advanced", child: "general" },
 };

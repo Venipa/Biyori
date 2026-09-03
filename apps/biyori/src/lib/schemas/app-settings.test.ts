@@ -44,6 +44,20 @@ describe("parseAppSettings torrent filters", () => {
 	test("falls back when uiZoom is out of range", () => {
 		expect(parseAppSettings({ uiZoom: 200 }).uiZoom).toBe(100);
 	});
+
+	test("fresh settings are not onboarded", () => {
+		expect(parseAppSettings(null).onboardingComplete).toBe(false);
+	});
+
+	test("legacy stores without onboardingComplete are already complete", () => {
+		expect(parseAppSettings({ titleLanguage: "English" }).onboardingComplete).toBe(true);
+		expect(parseAppSettings({}).onboardingComplete).toBe(true);
+	});
+
+	test("keeps an explicit onboardingComplete flag", () => {
+		expect(parseAppSettings({ onboardingComplete: false }).onboardingComplete).toBe(false);
+		expect(parseAppSettings({ onboardingComplete: true }).onboardingComplete).toBe(true);
+	});
 });
 
 describe("parseTorrentFiltersFile", () => {

@@ -1,12 +1,24 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { app } from "electron";
 import type { Conf } from "electron-conf/main";
 import { type AppSettings, type AppSettingsPatch, appSettingsSchema, parseAppSettings } from "../../../lib/schemas/app-settings";
 import { createYmlStore } from "../../lib/store/createYmlStore";
 import { syncLoginItem } from "../../startup";
 import { appStoreMigrations } from "./migrations";
 
+function appStoreDefaults(): AppSettings {
+	const defaults = parseAppSettings(null);
+	const filePath = path.join(app.getPath("userData"), "app.yml");
+	if (existsSync(filePath)) {
+		return { ...defaults, onboardingComplete: true };
+	}
+	return defaults;
+}
+
 export const appStore: Conf<AppSettings> = createYmlStore<AppSettings>("app", {
 	ext: ".yml",
-	defaults: parseAppSettings(null),
+	defaults: appStoreDefaults(),
 	migrations: appStoreMigrations,
 	zodSchema: appSettingsSchema,
 });

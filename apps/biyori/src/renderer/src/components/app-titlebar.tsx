@@ -1,12 +1,10 @@
-import { useState } from "react";
 import { requestWindowClose } from "@/mainview/components/confirm-escape";
 import Logo from "@/mainview/components/logo";
 import { ControlButton } from "@/mainview/components/ui/control-button";
 import { trpc } from "@/mainview/trpc";
-
-export type AppTitleBarProps = {
-	title: string;
-};
+import { cn } from "@renderer/lib/utils";
+import { useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
 
 const INITIAL_CHROME = {
 	maximized: false,
@@ -16,8 +14,21 @@ const INITIAL_CHROME = {
 	closable: true,
 };
 
-export function AppTitleBar({ title }: AppTitleBarProps) {
+function chromeTitle(pathname: string): string {
+	if (pathname.startsWith("/settings")) {
+		return "Settings";
+	}
+	if (pathname.startsWith("/update")) {
+		return "Update";
+	}
+	return "Biyori";
+}
+
+export function AppTitleBar() {
 	const [chrome, setChrome] = useState(INITIAL_CHROME);
+	const pathname = useRouterState({ select: (state) => state.location.pathname });
+	const isOnboarding = pathname === "/onboarding";
+	const title = chromeTitle(pathname);
 	const minimizeWindow = trpc.desktop.minimizeWindow.useMutation();
 	const toggleMaximizeWindow = trpc.desktop.toggleMaximizeWindow.useMutation();
 	const closeWindow = trpc.desktop.closeWindow.useMutation();
@@ -30,7 +41,7 @@ export function AppTitleBar({ title }: AppTitleBarProps) {
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: frameless drag region, double-click maximizes
 		<header
-			className='app-region-drag flex h-8 shrink-0 select-none items-center border-b bg-card'
+			className={cn("app-region-drag flex h-8 shrink-0 select-none items-center border-b bg-card", isOnboarding && "border-transparent bg-transparent")}
 			onDoubleClick={() => {
 				if (!chrome.maximizable) {
 					return;

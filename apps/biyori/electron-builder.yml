@@ -81,6 +81,10 @@ linux:
 appImage:
   artifactName: ${name}-${version}-linux-x64.${ext}
 npmRebuild: true
+protocols:
+  name: Biyori
+  schemes:
+    - biyori
 publish:
   provider: github
   owner: Venipa

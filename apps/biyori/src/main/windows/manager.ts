@@ -25,6 +25,7 @@ export type WindowDefinition = {
 export type OpenWindowOptions = {
 	show?: boolean;
 	skipTaskbar?: boolean;
+	to?: string;
 };
 
 type WindowEntry = {
@@ -166,7 +167,7 @@ export class WindowManager<TId extends string> {
 			centerOnParent(win, parent);
 		}
 
-		loadAppUrl(win, definition.to);
+		loadAppUrl(win, options.to ?? definition.to);
 		return win;
 	}
 

@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useBlocker, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Navigate, Outlet, useBlocker, useNavigate } from "@tanstack/react-router";
 import { type ReactElement, useRef } from "react";
 import { AnimeDeleteDialog } from "@/mainview/components/anime-delete-dialog";
 import { AppAnimeInfoDialog } from "@/mainview/components/app-anime-info-dialog";
@@ -49,6 +49,10 @@ function MainLayout(): ReactElement {
 			}
 		},
 	});
+
+	if (settingsQuery.data && !settingsQuery.data.onboardingComplete) {
+		return <Navigate to='/onboarding' />;
+	}
 
 	return (
 		<PageLoad loading={!settingsQuery.data}>

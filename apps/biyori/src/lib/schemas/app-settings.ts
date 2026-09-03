@@ -83,6 +83,7 @@ export const appSettingsSchema = z.object({
 	seasonsViewAs: seasonViewAsSchema.default("tiles"),
 	seasonsLastSeason: anilistSeasonNameSchema.nullish(),
 	seasonsLastYear: z.number().int().nullish(),
+	onboardingComplete: z.boolean(),
 });
 
 export const settingsFormSchema = appSettingsSchema.extend({
@@ -164,6 +165,7 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	seasonsViewAs: "tiles",
 	seasonsLastSeason: null,
 	seasonsLastYear: null,
+	onboardingComplete: false,
 };
 
 export const settingsFormDefaultValues: SettingsFormInput = {
@@ -171,6 +173,17 @@ export const settingsFormDefaultValues: SettingsFormInput = {
 	torrentFilterEnabled: torrentFiltersFileDefaultValues.enabled,
 	torrentFilters: torrentFiltersFileDefaultValues.filters,
 };
+
+export function resolveOnboardingComplete(value: unknown): boolean {
+	if (value == null || typeof value !== "object") {
+		return false;
+	}
+	const record = value as Record<string, unknown>;
+	if (typeof record.onboardingComplete === "boolean") {
+		return record.onboardingComplete;
+	}
+	return true;
+}
 
 const LEGACY_TORRENT_KEYS = ["torrentWatchingOnly", "torrentDiscardNotInList", "torrentDiscardAnimeIds"] as const;
 
@@ -183,17 +196,21 @@ function omitLegacyTorrentKeys(record: Record<string, unknown>): Record<string, 
 }
 
 export function parseAppSettings(value: unknown): AppSettings {
+	if (value == null) {
+		return appSettingsSchema.parse(appSettingsDefaultValues);
+	}
 	const direct = appSettingsSchema.safeParse(value);
 	if (direct.success) {
 		return direct.data;
 	}
-	const record = omitLegacyTorrentKeys(value && typeof value === "object" ? (value as Record<string, unknown>) : {});
+	const record = omitLegacyTorrentKeys(typeof value === "object" ? (value as Record<string, unknown>) : {});
 	const merged = {
 		...appSettingsDefaultValues,
 		...record,
 		libraryFolders: Array.isArray(record.libraryFolders) ? record.libraryFolders : appSettingsDefaultValues.libraryFolders,
 		enabledMediaPlayers: Array.isArray(record.enabledMediaPlayers) ? record.enabledMediaPlayers : appSettingsDefaultValues.enabledMediaPlayers,
 		enabledStreamingProviders: Array.isArray(record.enabledStreamingProviders) ? record.enabledStreamingProviders : appSettingsDefaultValues.enabledStreamingProviders,
+		onboardingComplete: resolveOnboardingComplete(record),
 	};
 	const parsed = appSettingsSchema.safeParse(merged);
 	if (parsed.success) {
