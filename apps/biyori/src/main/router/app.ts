@@ -34,6 +34,7 @@ import {
 } from "../torrents";
 import { hanaVersion } from "../track/hana-client";
 import { listEpisodes, playEpisode, playNext, playRandom, scanLibrary } from "../track/library";
+import { loadCandidates, suggestTitles } from "../track/match";
 import { countQueued } from "../track/queue";
 import { chooseNowPlayingMatch, confirmPendingUpdate, getNowPlayingSnapshot, nowPlayingObservable, skipPendingUpdate } from "../track/tracker";
 import { t } from "../trpc";
@@ -217,6 +218,10 @@ export const appRouter = t.router({
 				...row,
 				libraryEpisodes: libraryById.get(row.id) ?? [],
 			}));
+		}),
+		suggest: t.procedure.input(z.object({ q: z.string().trim().min(1) })).query(async ({ ctx, input }) => {
+			const candidates = await loadCandidates(ctx.db);
+			return suggestTitles(input.q, candidates);
 		}),
 		byId: t.procedure.input(z.object({ id: z.number().int() })).query(async ({ ctx, input }) => {
 			return loadAnimeDetail(ctx.db, input.id);

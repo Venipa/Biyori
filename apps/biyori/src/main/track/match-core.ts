@@ -1,5 +1,5 @@
 import type { TitleParts } from "@biyori/recognition";
-import { matchParsed as matchParsedFilename, normalizeTitle, matchTitle as scoreTitle, rankParsed } from "@biyori/recognition";
+import { matchParsed as matchParsedFilename, normalizeTitle, matchTitle as scoreTitle, rankParsed, rankTitles } from "@biyori/recognition";
 import { splitTitleList } from "../../lib/split-title-list";
 import type { MatchedAnime, SimilarTitle } from "./types";
 
@@ -96,6 +96,30 @@ export function similarParsed(parsed: TitleParts, candidates: Candidate[]): Simi
 		title: hit.candidate.title,
 		coverUrl: hit.candidate.coverUrl,
 		type: hit.candidate.type,
+		score: hit.score,
+	}));
+}
+
+export type TitleSuggestion = {
+	id: number;
+	title: string;
+	type: string;
+	coverUrl: string;
+	status: string;
+	episodesWatched: number;
+	episodes: number;
+	score: number;
+};
+
+export function suggestTitles(query: string, candidates: Candidate[]): TitleSuggestion[] {
+	return rankTitles(query, candidates).map((hit) => ({
+		id: hit.candidate.id,
+		title: hit.candidate.title,
+		type: hit.candidate.type,
+		coverUrl: hit.candidate.coverUrl,
+		status: hit.candidate.status,
+		episodesWatched: hit.candidate.episodesWatched,
+		episodes: hit.candidate.episodes,
 		score: hit.score,
 	}));
 }

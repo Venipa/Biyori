@@ -69,8 +69,8 @@ function pieBackground(items: StatBar[]): string {
 	return `conic-gradient(${stops.join(", ")})`;
 }
 
-function BarList({ items, value }: { items: StatBar[]; value?: (item: StatBar) => string }): ReactElement {
-	if (items.length === 0) {
+function BarList({ items, value }: { items?: StatBar[] | null; value?: (item: StatBar) => string }): ReactElement {
+	if (!items || items.length === 0) {
 		return <p className='text-sm text-muted-foreground'>None</p>;
 	}
 	return (
@@ -95,18 +95,19 @@ function BarList({ items, value }: { items: StatBar[]; value?: (item: StatBar) =
 	);
 }
 
-function StatusPie({ items }: { items: StatBar[] }): ReactElement {
-	const total = items.reduce((sum, item) => sum + item.count, 0);
+function StatusPie({ items }: { items?: StatBar[] | null }): ReactElement {
+	const slices = items ?? [];
+	const total = slices.reduce((sum, item) => sum + item.count, 0);
 	return (
 		<div className='flex flex-wrap items-center gap-8'>
 			<div
 				role='img'
-				aria-label={items.map((item) => `${item.label} ${item.count}`).join(", ") || "No list statuses"}
+				aria-label={slices.map((item) => `${item.label} ${item.count}`).join(", ") || "No list statuses"}
 				className='size-40 shrink-0 rounded-full'
-				style={{ background: pieBackground(items) }}
+				style={{ background: pieBackground(slices) }}
 			/>
 			<ul className='flex min-w-48 flex-col gap-1.5 text-sm'>
-				{items.map((item, index) => (
+				{slices.map((item, index) => (
 					<li key={item.label} className='flex items-center gap-2'>
 						<span className={`size-2.5 shrink-0 rounded-sm ${CHART_BG[index % CHART_BG.length]}`} />
 						<span className='flex-1'>{item.label}</span>
@@ -124,6 +125,7 @@ function StatusPie({ items }: { items: StatBar[] }): ReactElement {
 export function StatisticsView(): ReactElement {
 	const query = trpc.statistics.summary.useQuery();
 	const data = query.data;
+	const coverage = data?.libraryCoverage ?? { have: 0, aired: 0, ratio: 0, byStatus: [] };
 
 	return (
 		<ScrollArea viewportClassName='flex min-h-0 flex-col gap-5 px-6 py-5'>
@@ -205,12 +207,12 @@ export function StatisticsView(): ReactElement {
 						<section>
 							<h2 className='text-sm font-semibold'>Library coverage</h2>
 							<Separator className='my-2' />
-							<StatRow label='Episode files:' value={data.libraryCoverage.have} />
-							<StatRow label='Aired episodes:' value={data.libraryCoverage.aired} />
-							<StatRow label='Coverage:' value={`${Math.round(data.libraryCoverage.ratio * 100)}%`} />
+							<StatRow label='Episode files:' value={coverage.have} />
+							<StatRow label='Aired episodes:' value={coverage.aired} />
+							<StatRow label='Coverage:' value={`${Math.round(coverage.ratio * 100)}%`} />
 							<div className='mt-3'>
 								<BarList
-									items={data.libraryCoverage.byStatus}
+									items={coverage.byStatus}
 									value={(item) => `${item.count}/${item.total ?? 0}`}
 								/>
 							</div>
