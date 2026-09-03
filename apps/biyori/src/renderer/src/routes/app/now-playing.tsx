@@ -1,3 +1,4 @@
+import { useAnimeInfoNav } from "@/lib/anime-info-nav";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
@@ -105,9 +106,7 @@ function IdleNowPlaying() {
 						<div>
 							<h2 className='mb-1 text-sm font-semibold'>Continue watching</h2>
 							<Separator className='mb-2' />
-							<ul
-								aria-label='Continue watching'
-								className='flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]'>
+							<ul aria-label='Continue watching' className='flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]'>
 								{continueWatching.map((item) => (
 									<li key={item.animeId} className='w-[200px] shrink-0 snap-start'>
 										<ContinueWatchingCard
@@ -452,7 +451,15 @@ function SimilarTitleCard({
 					className='h-auto min-w-0 flex-1 items-center justify-start gap-3 rounded-xl px-2 py-2 text-left font-normal'
 					disabled={disabled}
 					onClick={onChoose}>
-					<AnimeCover id={item.id} coverUrl={item.coverUrl || undefined} alt='' lazy width={40} height={60} className='aspect-2/3 w-10 shrink-0 overflow-hidden rounded-md bg-muted' />
+					<AnimeCover
+						id={item.id}
+						coverUrl={item.coverUrl || undefined}
+						alt=''
+						lazy
+						width={40}
+						height={60}
+						className='aspect-2/3 w-10 shrink-0 overflow-hidden rounded-md bg-muted'
+					/>
 					<span className='flex min-w-0 flex-col gap-0.5'>
 						<span className='truncate text-sm font-medium'>{item.title}</span>
 						{item.type ? <span className='text-xs text-muted-foreground'>{item.type}</span> : null}
@@ -466,11 +473,7 @@ function SimilarTitleCard({
 	);
 }
 
-function buildContinueWatching(
-	rows: HistoryRow[],
-	listedById: ReadonlyMap<number, ListedRow>,
-	skipAnimeIds: ReadonlySet<number>,
-): ContinueWatchingItem[] {
+function buildContinueWatching(rows: HistoryRow[], listedById: ReadonlyMap<number, ListedRow>, skipAnimeIds: ReadonlySet<number>): ContinueWatchingItem[] {
 	const seen = new Set<number>();
 	const items: ContinueWatchingItem[] = [];
 	for (const row of rows) {
