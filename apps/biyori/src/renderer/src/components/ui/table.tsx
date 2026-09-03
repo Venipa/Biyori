@@ -13,13 +13,13 @@ function Table({
 }) {
 	return (
 		<div data-slot='table-container' className={cn("relative w-full overflow-x-auto", containerClassName)}>
-			<table data-slot='table' className={cn("w-full caption-bottom text-sm", className)} {...props} />
+			<table data-slot='table' className={cn("w-full caption-bottom border-separate border-spacing-0 text-sm", className)} {...props} />
 		</div>
 	);
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
-	return <thead data-slot='table-header' className={cn("[&_tr]:border-b", className)} {...props} />;
+	return <thead data-slot='table-header' className={cn("sticky top-0 z-20 bg-card [&_tr]:border-b [&_th]:bg-card", className)} {...props} />;
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
@@ -40,7 +40,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 	return (
 		<th
 			data-slot='table-head'
-			className={cn("h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0", className)}
+			className={cn("sticky top-0 z-20 h-10 bg-card px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0", className)}
 			{...props}
 		/>
 	);

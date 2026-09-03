@@ -150,7 +150,7 @@ export function DataTable<TData>({
 
 	return (
 		<Table
-			containerClassName='overflow-x-auto overflow-y-visible'
+			containerClassName='overflow-visible'
 			className={cn("table-fixed", compact ? "[&_th]:h-8 [&_td]:py-1" : undefined)}
 			style={{ width: table.getTotalSize() }}>
 			<TableHeader className='sticky top-0 z-20 bg-card'>
