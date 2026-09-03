@@ -1,4 +1,3 @@
-import type { SelectDatabase } from "@/db";
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { desc, eq } from "drizzle-orm";
@@ -12,6 +11,7 @@ import { getActivitySnapshot, subscribeActivity } from "../activity";
 import { readAnilistAuth } from "../anilist/store";
 import { ensureAnimeCached } from "../anilist/sync";
 import { clearCacheKinds, loadCacheSummary } from "../cache";
+import type { SelectDatabase } from "../db";
 import { anime, episodeFile, history, listEntry, syncQueue } from "../db/schema";
 import type { Anime } from "../db/types";
 import { getAppNotice, subscribeAppNotice } from "../notice";
