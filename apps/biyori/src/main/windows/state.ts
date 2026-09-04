@@ -31,12 +31,13 @@ export function clampWindowToWorkArea(win: BrowserWindow): void {
 
 export function attachWindowState(win: BrowserWindow, name: string, defaults: { width: number; height: number }): void {
 	const store = createYmlStore<SavedWindowState>(name);
+	const storeValues = store.store;
 	const restored: SavedWindowState = {
-		width: Number(store.get("width", defaults.width)) || defaults.width,
-		height: Number(store.get("height", defaults.height)) || defaults.height,
-		x: store.get("x"),
-		y: store.get("y"),
-		maximized: Boolean(store.get("maximized", false)),
+		width: Number(storeValues.width) || defaults.width,
+		height: Number(storeValues.height) || defaults.height,
+		x: storeValues.x,
+		y: storeValues.y,
+		maximized: Boolean(storeValues.maximized),
 	};
 
 	if (typeof restored.x === "number" && typeof restored.y === "number") {
@@ -73,11 +74,13 @@ export function attachWindowState(win: BrowserWindow, name: string, defaults: { 
 			next.width = width;
 			next.height = height;
 		}
-		store.set("x", next.x);
-		store.set("y", next.y);
-		store.set("width", next.width);
-		store.set("height", next.height);
-		store.set("maximized", next.maximized);
+		store.set({
+			x: next.x,
+			y: next.y,
+			width: next.width,
+			height: next.height,
+			maximized: next.maximized,
+		});
 		log.debug("save", name, next);
 	};
 
