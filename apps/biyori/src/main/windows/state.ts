@@ -10,7 +10,7 @@ const windowStateSchema = (defaults: { width: number; height: number }) =>
 		y: z.number().optional(),
 		width: z.number().default(defaults.width),
 		height: z.number().default(defaults.height),
-		maximized: z.boolean().optional(),
+		maximized: z.boolean().optional().default(false),
 	});
 type SavedWindowState = z.infer<ReturnType<typeof windowStateSchema>>;
 
@@ -34,7 +34,7 @@ export function clampWindowToWorkArea(win: BrowserWindow): void {
 
 export function attachWindowState(win: BrowserWindow, name: string, defaults: { width: number; height: number }): void {
 	const schema = windowStateSchema(defaults);
-	const store = createYmlStore<SavedWindowState>(name, { ext: ".yml", zodSchema: schema });
+	const store = createYmlStore<SavedWindowState>(`window-state-${name}`, { ext: ".yml", zodSchema: schema });
 	const storeValues = store.store;
 	const restored: SavedWindowState = schema.parse(storeValues);
 
