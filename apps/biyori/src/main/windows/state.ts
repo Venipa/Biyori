@@ -1,15 +1,18 @@
 import { logger } from "@biyori/logger";
 import { type BrowserWindow, type Rectangle, screen } from "electron";
+import { z } from "zod";
 import { createYmlStore } from "../lib/store/createYmlStore";
 import { clampRectToWorkArea } from "./work-area";
 
-type SavedWindowState = {
-	x?: number;
-	y?: number;
-	width: number;
-	height: number;
-	maximized?: boolean;
-};
+const windowStateSchema = (defaults: { width: number; height: number }) =>
+	z.object({
+		x: z.number().optional(),
+		y: z.number().optional(),
+		width: z.number().default(defaults.width),
+		height: z.number().default(defaults.height),
+		maximized: z.boolean().optional(),
+	});
+type SavedWindowState = z.infer<ReturnType<typeof windowStateSchema>>;
 
 const log = logger.child("window-state");
 
@@ -30,15 +33,10 @@ export function clampWindowToWorkArea(win: BrowserWindow): void {
 }
 
 export function attachWindowState(win: BrowserWindow, name: string, defaults: { width: number; height: number }): void {
-	const store = createYmlStore<SavedWindowState>(name);
+	const schema = windowStateSchema(defaults);
+	const store = createYmlStore<SavedWindowState>(name, { ext: ".yml", zodSchema: schema });
 	const storeValues = store.store;
-	const restored: SavedWindowState = {
-		width: Number(storeValues.width) || defaults.width,
-		height: Number(storeValues.height) || defaults.height,
-		x: storeValues.x,
-		y: storeValues.y,
-		maximized: Boolean(storeValues.maximized),
-	};
+	const restored: SavedWindowState = schema.parse(storeValues);
 
 	if (typeof restored.x === "number" && typeof restored.y === "number") {
 		win.setBounds(

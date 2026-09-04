@@ -8,370 +8,370 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root"
-import { Route as IndexRouteImport } from "./routes/index"
-import { Route as AppRouteRouteImport } from "./routes/app/route"
-import { Route as OnboardingRouteImport } from "./routes/onboarding"
-import { Route as SettingsRouteRouteImport } from "./routes/settings/route"
-import { Route as SplashRouteImport } from "./routes/splash"
-import { Route as UpdateRouteImport } from "./routes/update"
-import { Route as AppIndexRouteImport } from "./routes/app/index"
-import { Route as AppAboutRouteImport } from "./routes/app/about"
-import { Route as AppAnimeListRouteImport } from "./routes/app/anime-list"
-import { Route as AppHistoryRouteImport } from "./routes/app/history"
-import { Route as AppNowPlayingRouteImport } from "./routes/app/now-playing"
-import { Route as AppSearchRouteImport } from "./routes/app/search"
-import { Route as AppSeasonsRouteImport } from "./routes/app/seasons"
-import { Route as AppStatisticsRouteImport } from "./routes/app/statistics"
-import { Route as AppTorrentsRouteImport } from "./routes/app/torrents"
-import { Route as SettingsIndexRouteImport } from "./routes/settings/index"
-import { Route as SettingsAdvancedRouteRouteImport } from "./routes/settings/advanced/route"
-import { Route as SettingsApplicationRouteImport } from "./routes/settings/application"
-import { Route as SettingsLibraryRouteImport } from "./routes/settings/library"
-import { Route as SettingsRecognitionRouteRouteImport } from "./routes/settings/recognition/route"
-import { Route as SettingsServicesRouteImport } from "./routes/settings/services"
-import { Route as SettingsSharingRouteImport } from "./routes/settings/sharing"
-import { Route as SettingsTorrentsRouteRouteImport } from "./routes/settings/torrents/route"
-import { Route as SettingsAdvancedCacheRouteImport } from "./routes/settings/advanced/cache"
-import { Route as SettingsAdvancedGeneralRouteImport } from "./routes/settings/advanced/general"
-import { Route as SettingsRecognitionGeneralRouteImport } from "./routes/settings/recognition/general"
-import { Route as SettingsRecognitionSourcesRouteImport } from "./routes/settings/recognition/sources"
-import { Route as SettingsTorrentsFiltersRouteImport } from "./routes/settings/torrents/filters"
-import { Route as SettingsTorrentsGeneralRouteImport } from "./routes/settings/torrents/general"
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteRouteImport } from './routes/app/route'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as SettingsRouteRouteImport } from './routes/settings/route'
+import { Route as SplashRouteImport } from './routes/splash'
+import { Route as UpdateRouteImport } from './routes/update'
+import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AppAboutRouteImport } from './routes/app/about'
+import { Route as AppAnimeListRouteImport } from './routes/app/anime-list'
+import { Route as AppHistoryRouteImport } from './routes/app/history'
+import { Route as AppNowPlayingRouteImport } from './routes/app/now-playing'
+import { Route as AppSearchRouteImport } from './routes/app/search'
+import { Route as AppSeasonsRouteImport } from './routes/app/seasons'
+import { Route as AppStatisticsRouteImport } from './routes/app/statistics'
+import { Route as AppTorrentsRouteImport } from './routes/app/torrents'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as SettingsAdvancedRouteRouteImport } from './routes/settings/advanced/route'
+import { Route as SettingsApplicationRouteImport } from './routes/settings/application'
+import { Route as SettingsLibraryRouteImport } from './routes/settings/library'
+import { Route as SettingsRecognitionRouteRouteImport } from './routes/settings/recognition/route'
+import { Route as SettingsServicesRouteImport } from './routes/settings/services'
+import { Route as SettingsSharingRouteImport } from './routes/settings/sharing'
+import { Route as SettingsTorrentsRouteRouteImport } from './routes/settings/torrents/route'
+import { Route as SettingsAdvancedCacheRouteImport } from './routes/settings/advanced/cache'
+import { Route as SettingsAdvancedGeneralRouteImport } from './routes/settings/advanced/general'
+import { Route as SettingsRecognitionGeneralRouteImport } from './routes/settings/recognition/general'
+import { Route as SettingsRecognitionSourcesRouteImport } from './routes/settings/recognition/sources'
+import { Route as SettingsTorrentsFiltersRouteImport } from './routes/settings/torrents/filters'
+import { Route as SettingsTorrentsGeneralRouteImport } from './routes/settings/torrents/general'
 
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRouteRoute = AppRouteRouteImport.update({
-  id: "/app",
-  path: "/app",
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
-  id: "/onboarding",
-  path: "/onboarding",
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRouteRoute = SettingsRouteRouteImport.update({
-  id: "/settings",
-  path: "/settings",
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SplashRoute = SplashRouteImport.update({
-  id: "/splash",
-  path: "/splash",
+  id: '/splash',
+  path: '/splash',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UpdateRoute = UpdateRouteImport.update({
-  id: "/update",
-  path: "/update",
+  id: '/update',
+  path: '/update',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppAboutRoute = AppAboutRouteImport.update({
-  id: "/about",
-  path: "/about",
+  id: '/about',
+  path: '/about',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppAnimeListRoute = AppAnimeListRouteImport.update({
-  id: "/anime-list",
-  path: "/anime-list",
+  id: '/anime-list',
+  path: '/anime-list',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppHistoryRoute = AppHistoryRouteImport.update({
-  id: "/history",
-  path: "/history",
+  id: '/history',
+  path: '/history',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppNowPlayingRoute = AppNowPlayingRouteImport.update({
-  id: "/now-playing",
-  path: "/now-playing",
+  id: '/now-playing',
+  path: '/now-playing',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppSearchRoute = AppSearchRouteImport.update({
-  id: "/search",
-  path: "/search",
+  id: '/search',
+  path: '/search',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppSeasonsRoute = AppSeasonsRouteImport.update({
-  id: "/seasons",
-  path: "/seasons",
+  id: '/seasons',
+  path: '/seasons',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppStatisticsRoute = AppStatisticsRouteImport.update({
-  id: "/statistics",
-  path: "/statistics",
+  id: '/statistics',
+  path: '/statistics',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppTorrentsRoute = AppTorrentsRouteImport.update({
-  id: "/torrents",
-  path: "/torrents",
+  id: '/torrents',
+  path: '/torrents',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => SettingsRouteRoute,
 } as any)
 const SettingsAdvancedRouteRoute = SettingsAdvancedRouteRouteImport.update({
-  id: "/advanced",
-  path: "/advanced",
+  id: '/advanced',
+  path: '/advanced',
   getParentRoute: () => SettingsRouteRoute,
 } as any)
 const SettingsApplicationRoute = SettingsApplicationRouteImport.update({
-  id: "/application",
-  path: "/application",
+  id: '/application',
+  path: '/application',
   getParentRoute: () => SettingsRouteRoute,
 } as any)
 const SettingsLibraryRoute = SettingsLibraryRouteImport.update({
-  id: "/library",
-  path: "/library",
+  id: '/library',
+  path: '/library',
   getParentRoute: () => SettingsRouteRoute,
 } as any)
 const SettingsRecognitionRouteRoute =
   SettingsRecognitionRouteRouteImport.update({
-    id: "/recognition",
-    path: "/recognition",
+    id: '/recognition',
+    path: '/recognition',
     getParentRoute: () => SettingsRouteRoute,
   } as any)
 const SettingsServicesRoute = SettingsServicesRouteImport.update({
-  id: "/services",
-  path: "/services",
+  id: '/services',
+  path: '/services',
   getParentRoute: () => SettingsRouteRoute,
 } as any)
 const SettingsSharingRoute = SettingsSharingRouteImport.update({
-  id: "/sharing",
-  path: "/sharing",
+  id: '/sharing',
+  path: '/sharing',
   getParentRoute: () => SettingsRouteRoute,
 } as any)
 const SettingsTorrentsRouteRoute = SettingsTorrentsRouteRouteImport.update({
-  id: "/torrents",
-  path: "/torrents",
+  id: '/torrents',
+  path: '/torrents',
   getParentRoute: () => SettingsRouteRoute,
 } as any)
 const SettingsAdvancedCacheRoute = SettingsAdvancedCacheRouteImport.update({
-  id: "/cache",
-  path: "/cache",
+  id: '/cache',
+  path: '/cache',
   getParentRoute: () => SettingsAdvancedRouteRoute,
 } as any)
 const SettingsAdvancedGeneralRoute = SettingsAdvancedGeneralRouteImport.update({
-  id: "/general",
-  path: "/general",
+  id: '/general',
+  path: '/general',
   getParentRoute: () => SettingsAdvancedRouteRoute,
 } as any)
 const SettingsRecognitionGeneralRoute =
   SettingsRecognitionGeneralRouteImport.update({
-    id: "/general",
-    path: "/general",
+    id: '/general',
+    path: '/general',
     getParentRoute: () => SettingsRecognitionRouteRoute,
   } as any)
 const SettingsRecognitionSourcesRoute =
   SettingsRecognitionSourcesRouteImport.update({
-    id: "/sources",
-    path: "/sources",
+    id: '/sources',
+    path: '/sources',
     getParentRoute: () => SettingsRecognitionRouteRoute,
   } as any)
 const SettingsTorrentsFiltersRoute = SettingsTorrentsFiltersRouteImport.update({
-  id: "/filters",
-  path: "/filters",
+  id: '/filters',
+  path: '/filters',
   getParentRoute: () => SettingsTorrentsRouteRoute,
 } as any)
 const SettingsTorrentsGeneralRoute = SettingsTorrentsGeneralRouteImport.update({
-  id: "/general",
-  path: "/general",
+  id: '/general',
+  path: '/general',
   getParentRoute: () => SettingsTorrentsRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute
-  "/app": typeof AppRouteRouteWithChildren
-  "/settings": typeof SettingsRouteRouteWithChildren
-  "/onboarding": typeof OnboardingRoute
-  "/splash": typeof SplashRoute
-  "/update": typeof UpdateRoute
-  "/settings/advanced": typeof SettingsAdvancedRouteRouteWithChildren
-  "/settings/recognition": typeof SettingsRecognitionRouteRouteWithChildren
-  "/settings/torrents": typeof SettingsTorrentsRouteRouteWithChildren
-  "/app/about": typeof AppAboutRoute
-  "/app/anime-list": typeof AppAnimeListRoute
-  "/app/history": typeof AppHistoryRoute
-  "/app/now-playing": typeof AppNowPlayingRoute
-  "/app/search": typeof AppSearchRoute
-  "/app/seasons": typeof AppSeasonsRoute
-  "/app/statistics": typeof AppStatisticsRoute
-  "/app/torrents": typeof AppTorrentsRoute
-  "/settings/application": typeof SettingsApplicationRoute
-  "/settings/library": typeof SettingsLibraryRoute
-  "/settings/services": typeof SettingsServicesRoute
-  "/settings/sharing": typeof SettingsSharingRoute
-  "/app/": typeof AppIndexRoute
-  "/settings/": typeof SettingsIndexRoute
-  "/settings/advanced/cache": typeof SettingsAdvancedCacheRoute
-  "/settings/advanced/general": typeof SettingsAdvancedGeneralRoute
-  "/settings/recognition/general": typeof SettingsRecognitionGeneralRoute
-  "/settings/recognition/sources": typeof SettingsRecognitionSourcesRoute
-  "/settings/torrents/filters": typeof SettingsTorrentsFiltersRoute
-  "/settings/torrents/general": typeof SettingsTorrentsGeneralRoute
+  '/': typeof IndexRoute
+  '/app': typeof AppRouteRouteWithChildren
+  '/settings': typeof SettingsRouteRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
+  '/splash': typeof SplashRoute
+  '/update': typeof UpdateRoute
+  '/settings/advanced': typeof SettingsAdvancedRouteRouteWithChildren
+  '/settings/recognition': typeof SettingsRecognitionRouteRouteWithChildren
+  '/settings/torrents': typeof SettingsTorrentsRouteRouteWithChildren
+  '/app/about': typeof AppAboutRoute
+  '/app/anime-list': typeof AppAnimeListRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/now-playing': typeof AppNowPlayingRoute
+  '/app/search': typeof AppSearchRoute
+  '/app/seasons': typeof AppSeasonsRoute
+  '/app/statistics': typeof AppStatisticsRoute
+  '/app/torrents': typeof AppTorrentsRoute
+  '/settings/application': typeof SettingsApplicationRoute
+  '/settings/library': typeof SettingsLibraryRoute
+  '/settings/services': typeof SettingsServicesRoute
+  '/settings/sharing': typeof SettingsSharingRoute
+  '/app/': typeof AppIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/settings/advanced/cache': typeof SettingsAdvancedCacheRoute
+  '/settings/advanced/general': typeof SettingsAdvancedGeneralRoute
+  '/settings/recognition/general': typeof SettingsRecognitionGeneralRoute
+  '/settings/recognition/sources': typeof SettingsRecognitionSourcesRoute
+  '/settings/torrents/filters': typeof SettingsTorrentsFiltersRoute
+  '/settings/torrents/general': typeof SettingsTorrentsGeneralRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute
-  "/onboarding": typeof OnboardingRoute
-  "/splash": typeof SplashRoute
-  "/update": typeof UpdateRoute
-  "/settings/advanced": typeof SettingsAdvancedRouteRouteWithChildren
-  "/settings/recognition": typeof SettingsRecognitionRouteRouteWithChildren
-  "/settings/torrents": typeof SettingsTorrentsRouteRouteWithChildren
-  "/app/about": typeof AppAboutRoute
-  "/app/anime-list": typeof AppAnimeListRoute
-  "/app/history": typeof AppHistoryRoute
-  "/app/now-playing": typeof AppNowPlayingRoute
-  "/app/search": typeof AppSearchRoute
-  "/app/seasons": typeof AppSeasonsRoute
-  "/app/statistics": typeof AppStatisticsRoute
-  "/app/torrents": typeof AppTorrentsRoute
-  "/settings/application": typeof SettingsApplicationRoute
-  "/settings/library": typeof SettingsLibraryRoute
-  "/settings/services": typeof SettingsServicesRoute
-  "/settings/sharing": typeof SettingsSharingRoute
-  "/app": typeof AppIndexRoute
-  "/settings": typeof SettingsIndexRoute
-  "/settings/advanced/cache": typeof SettingsAdvancedCacheRoute
-  "/settings/advanced/general": typeof SettingsAdvancedGeneralRoute
-  "/settings/recognition/general": typeof SettingsRecognitionGeneralRoute
-  "/settings/recognition/sources": typeof SettingsRecognitionSourcesRoute
-  "/settings/torrents/filters": typeof SettingsTorrentsFiltersRoute
-  "/settings/torrents/general": typeof SettingsTorrentsGeneralRoute
+  '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
+  '/splash': typeof SplashRoute
+  '/update': typeof UpdateRoute
+  '/settings/advanced': typeof SettingsAdvancedRouteRouteWithChildren
+  '/settings/recognition': typeof SettingsRecognitionRouteRouteWithChildren
+  '/settings/torrents': typeof SettingsTorrentsRouteRouteWithChildren
+  '/app/about': typeof AppAboutRoute
+  '/app/anime-list': typeof AppAnimeListRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/now-playing': typeof AppNowPlayingRoute
+  '/app/search': typeof AppSearchRoute
+  '/app/seasons': typeof AppSeasonsRoute
+  '/app/statistics': typeof AppStatisticsRoute
+  '/app/torrents': typeof AppTorrentsRoute
+  '/settings/application': typeof SettingsApplicationRoute
+  '/settings/library': typeof SettingsLibraryRoute
+  '/settings/services': typeof SettingsServicesRoute
+  '/settings/sharing': typeof SettingsSharingRoute
+  '/app': typeof AppIndexRoute
+  '/settings': typeof SettingsIndexRoute
+  '/settings/advanced/cache': typeof SettingsAdvancedCacheRoute
+  '/settings/advanced/general': typeof SettingsAdvancedGeneralRoute
+  '/settings/recognition/general': typeof SettingsRecognitionGeneralRoute
+  '/settings/recognition/sources': typeof SettingsRecognitionSourcesRoute
+  '/settings/torrents/filters': typeof SettingsTorrentsFiltersRoute
+  '/settings/torrents/general': typeof SettingsTorrentsGeneralRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  "/": typeof IndexRoute
-  "/app": typeof AppRouteRouteWithChildren
-  "/settings": typeof SettingsRouteRouteWithChildren
-  "/onboarding": typeof OnboardingRoute
-  "/splash": typeof SplashRoute
-  "/update": typeof UpdateRoute
-  "/settings/advanced": typeof SettingsAdvancedRouteRouteWithChildren
-  "/settings/recognition": typeof SettingsRecognitionRouteRouteWithChildren
-  "/settings/torrents": typeof SettingsTorrentsRouteRouteWithChildren
-  "/app/about": typeof AppAboutRoute
-  "/app/anime-list": typeof AppAnimeListRoute
-  "/app/history": typeof AppHistoryRoute
-  "/app/now-playing": typeof AppNowPlayingRoute
-  "/app/search": typeof AppSearchRoute
-  "/app/seasons": typeof AppSeasonsRoute
-  "/app/statistics": typeof AppStatisticsRoute
-  "/app/torrents": typeof AppTorrentsRoute
-  "/settings/application": typeof SettingsApplicationRoute
-  "/settings/library": typeof SettingsLibraryRoute
-  "/settings/services": typeof SettingsServicesRoute
-  "/settings/sharing": typeof SettingsSharingRoute
-  "/app/": typeof AppIndexRoute
-  "/settings/": typeof SettingsIndexRoute
-  "/settings/advanced/cache": typeof SettingsAdvancedCacheRoute
-  "/settings/advanced/general": typeof SettingsAdvancedGeneralRoute
-  "/settings/recognition/general": typeof SettingsRecognitionGeneralRoute
-  "/settings/recognition/sources": typeof SettingsRecognitionSourcesRoute
-  "/settings/torrents/filters": typeof SettingsTorrentsFiltersRoute
-  "/settings/torrents/general": typeof SettingsTorrentsGeneralRoute
+  '/': typeof IndexRoute
+  '/app': typeof AppRouteRouteWithChildren
+  '/settings': typeof SettingsRouteRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
+  '/splash': typeof SplashRoute
+  '/update': typeof UpdateRoute
+  '/settings/advanced': typeof SettingsAdvancedRouteRouteWithChildren
+  '/settings/recognition': typeof SettingsRecognitionRouteRouteWithChildren
+  '/settings/torrents': typeof SettingsTorrentsRouteRouteWithChildren
+  '/app/about': typeof AppAboutRoute
+  '/app/anime-list': typeof AppAnimeListRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/now-playing': typeof AppNowPlayingRoute
+  '/app/search': typeof AppSearchRoute
+  '/app/seasons': typeof AppSeasonsRoute
+  '/app/statistics': typeof AppStatisticsRoute
+  '/app/torrents': typeof AppTorrentsRoute
+  '/settings/application': typeof SettingsApplicationRoute
+  '/settings/library': typeof SettingsLibraryRoute
+  '/settings/services': typeof SettingsServicesRoute
+  '/settings/sharing': typeof SettingsSharingRoute
+  '/app/': typeof AppIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/settings/advanced/cache': typeof SettingsAdvancedCacheRoute
+  '/settings/advanced/general': typeof SettingsAdvancedGeneralRoute
+  '/settings/recognition/general': typeof SettingsRecognitionGeneralRoute
+  '/settings/recognition/sources': typeof SettingsRecognitionSourcesRoute
+  '/settings/torrents/filters': typeof SettingsTorrentsFiltersRoute
+  '/settings/torrents/general': typeof SettingsTorrentsGeneralRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/app"
-    | "/settings"
-    | "/onboarding"
-    | "/splash"
-    | "/update"
-    | "/settings/advanced"
-    | "/settings/recognition"
-    | "/settings/torrents"
-    | "/app/about"
-    | "/app/anime-list"
-    | "/app/history"
-    | "/app/now-playing"
-    | "/app/search"
-    | "/app/seasons"
-    | "/app/statistics"
-    | "/app/torrents"
-    | "/settings/application"
-    | "/settings/library"
-    | "/settings/services"
-    | "/settings/sharing"
-    | "/app/"
-    | "/settings/"
-    | "/settings/advanced/cache"
-    | "/settings/advanced/general"
-    | "/settings/recognition/general"
-    | "/settings/recognition/sources"
-    | "/settings/torrents/filters"
-    | "/settings/torrents/general"
+    | '/'
+    | '/app'
+    | '/settings'
+    | '/onboarding'
+    | '/splash'
+    | '/update'
+    | '/settings/advanced'
+    | '/settings/recognition'
+    | '/settings/torrents'
+    | '/app/about'
+    | '/app/anime-list'
+    | '/app/history'
+    | '/app/now-playing'
+    | '/app/search'
+    | '/app/seasons'
+    | '/app/statistics'
+    | '/app/torrents'
+    | '/settings/application'
+    | '/settings/library'
+    | '/settings/services'
+    | '/settings/sharing'
+    | '/app/'
+    | '/settings/'
+    | '/settings/advanced/cache'
+    | '/settings/advanced/general'
+    | '/settings/recognition/general'
+    | '/settings/recognition/sources'
+    | '/settings/torrents/filters'
+    | '/settings/torrents/general'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/onboarding"
-    | "/splash"
-    | "/update"
-    | "/settings/advanced"
-    | "/settings/recognition"
-    | "/settings/torrents"
-    | "/app/about"
-    | "/app/anime-list"
-    | "/app/history"
-    | "/app/now-playing"
-    | "/app/search"
-    | "/app/seasons"
-    | "/app/statistics"
-    | "/app/torrents"
-    | "/settings/application"
-    | "/settings/library"
-    | "/settings/services"
-    | "/settings/sharing"
-    | "/app"
-    | "/settings"
-    | "/settings/advanced/cache"
-    | "/settings/advanced/general"
-    | "/settings/recognition/general"
-    | "/settings/recognition/sources"
-    | "/settings/torrents/filters"
-    | "/settings/torrents/general"
+    | '/'
+    | '/onboarding'
+    | '/splash'
+    | '/update'
+    | '/settings/advanced'
+    | '/settings/recognition'
+    | '/settings/torrents'
+    | '/app/about'
+    | '/app/anime-list'
+    | '/app/history'
+    | '/app/now-playing'
+    | '/app/search'
+    | '/app/seasons'
+    | '/app/statistics'
+    | '/app/torrents'
+    | '/settings/application'
+    | '/settings/library'
+    | '/settings/services'
+    | '/settings/sharing'
+    | '/app'
+    | '/settings'
+    | '/settings/advanced/cache'
+    | '/settings/advanced/general'
+    | '/settings/recognition/general'
+    | '/settings/recognition/sources'
+    | '/settings/torrents/filters'
+    | '/settings/torrents/general'
   id:
-    | "__root__"
-    | "/"
-    | "/app"
-    | "/settings"
-    | "/onboarding"
-    | "/splash"
-    | "/update"
-    | "/settings/advanced"
-    | "/settings/recognition"
-    | "/settings/torrents"
-    | "/app/about"
-    | "/app/anime-list"
-    | "/app/history"
-    | "/app/now-playing"
-    | "/app/search"
-    | "/app/seasons"
-    | "/app/statistics"
-    | "/app/torrents"
-    | "/settings/application"
-    | "/settings/library"
-    | "/settings/services"
-    | "/settings/sharing"
-    | "/app/"
-    | "/settings/"
-    | "/settings/advanced/cache"
-    | "/settings/advanced/general"
-    | "/settings/recognition/general"
-    | "/settings/recognition/sources"
-    | "/settings/torrents/filters"
-    | "/settings/torrents/general"
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/settings'
+    | '/onboarding'
+    | '/splash'
+    | '/update'
+    | '/settings/advanced'
+    | '/settings/recognition'
+    | '/settings/torrents'
+    | '/app/about'
+    | '/app/anime-list'
+    | '/app/history'
+    | '/app/now-playing'
+    | '/app/search'
+    | '/app/seasons'
+    | '/app/statistics'
+    | '/app/torrents'
+    | '/settings/application'
+    | '/settings/library'
+    | '/settings/services'
+    | '/settings/sharing'
+    | '/app/'
+    | '/settings/'
+    | '/settings/advanced/cache'
+    | '/settings/advanced/general'
+    | '/settings/recognition/general'
+    | '/settings/recognition/sources'
+    | '/settings/torrents/filters'
+    | '/settings/torrents/general'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -383,208 +383,208 @@ export interface RootRouteChildren {
   UpdateRoute: typeof UpdateRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/"
-      path: "/"
-      fullPath: "/"
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/app": {
-      id: "/app"
-      path: "/app"
-      fullPath: "/app"
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
       preLoaderRoute: typeof AppRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/onboarding": {
-      id: "/onboarding"
-      path: "/onboarding"
-      fullPath: "/onboarding"
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/settings": {
-      id: "/settings"
-      path: "/settings"
-      fullPath: "/settings"
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/splash": {
-      id: "/splash"
-      path: "/splash"
-      fullPath: "/splash"
+    '/splash': {
+      id: '/splash'
+      path: '/splash'
+      fullPath: '/splash'
       preLoaderRoute: typeof SplashRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/update": {
-      id: "/update"
-      path: "/update"
-      fullPath: "/update"
+    '/update': {
+      id: '/update'
+      path: '/update'
+      fullPath: '/update'
       preLoaderRoute: typeof UpdateRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/app/": {
-      id: "/app/"
-      path: "/"
-      fullPath: "/app/"
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    "/app/about": {
-      id: "/app/about"
-      path: "/about"
-      fullPath: "/app/about"
+    '/app/about': {
+      id: '/app/about'
+      path: '/about'
+      fullPath: '/app/about'
       preLoaderRoute: typeof AppAboutRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    "/app/anime-list": {
-      id: "/app/anime-list"
-      path: "/anime-list"
-      fullPath: "/app/anime-list"
+    '/app/anime-list': {
+      id: '/app/anime-list'
+      path: '/anime-list'
+      fullPath: '/app/anime-list'
       preLoaderRoute: typeof AppAnimeListRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    "/app/history": {
-      id: "/app/history"
-      path: "/history"
-      fullPath: "/app/history"
+    '/app/history': {
+      id: '/app/history'
+      path: '/history'
+      fullPath: '/app/history'
       preLoaderRoute: typeof AppHistoryRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    "/app/now-playing": {
-      id: "/app/now-playing"
-      path: "/now-playing"
-      fullPath: "/app/now-playing"
+    '/app/now-playing': {
+      id: '/app/now-playing'
+      path: '/now-playing'
+      fullPath: '/app/now-playing'
       preLoaderRoute: typeof AppNowPlayingRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    "/app/search": {
-      id: "/app/search"
-      path: "/search"
-      fullPath: "/app/search"
+    '/app/search': {
+      id: '/app/search'
+      path: '/search'
+      fullPath: '/app/search'
       preLoaderRoute: typeof AppSearchRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    "/app/seasons": {
-      id: "/app/seasons"
-      path: "/seasons"
-      fullPath: "/app/seasons"
+    '/app/seasons': {
+      id: '/app/seasons'
+      path: '/seasons'
+      fullPath: '/app/seasons'
       preLoaderRoute: typeof AppSeasonsRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    "/app/statistics": {
-      id: "/app/statistics"
-      path: "/statistics"
-      fullPath: "/app/statistics"
+    '/app/statistics': {
+      id: '/app/statistics'
+      path: '/statistics'
+      fullPath: '/app/statistics'
       preLoaderRoute: typeof AppStatisticsRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    "/app/torrents": {
-      id: "/app/torrents"
-      path: "/torrents"
-      fullPath: "/app/torrents"
+    '/app/torrents': {
+      id: '/app/torrents'
+      path: '/torrents'
+      fullPath: '/app/torrents'
       preLoaderRoute: typeof AppTorrentsRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    "/settings/": {
-      id: "/settings/"
-      path: "/"
-      fullPath: "/settings/"
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
       preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
-    "/settings/advanced": {
-      id: "/settings/advanced"
-      path: "/advanced"
-      fullPath: "/settings/advanced"
+    '/settings/advanced': {
+      id: '/settings/advanced'
+      path: '/advanced'
+      fullPath: '/settings/advanced'
       preLoaderRoute: typeof SettingsAdvancedRouteRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
-    "/settings/application": {
-      id: "/settings/application"
-      path: "/application"
-      fullPath: "/settings/application"
+    '/settings/application': {
+      id: '/settings/application'
+      path: '/application'
+      fullPath: '/settings/application'
       preLoaderRoute: typeof SettingsApplicationRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
-    "/settings/library": {
-      id: "/settings/library"
-      path: "/library"
-      fullPath: "/settings/library"
+    '/settings/library': {
+      id: '/settings/library'
+      path: '/library'
+      fullPath: '/settings/library'
       preLoaderRoute: typeof SettingsLibraryRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
-    "/settings/recognition": {
-      id: "/settings/recognition"
-      path: "/recognition"
-      fullPath: "/settings/recognition"
+    '/settings/recognition': {
+      id: '/settings/recognition'
+      path: '/recognition'
+      fullPath: '/settings/recognition'
       preLoaderRoute: typeof SettingsRecognitionRouteRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
-    "/settings/services": {
-      id: "/settings/services"
-      path: "/services"
-      fullPath: "/settings/services"
+    '/settings/services': {
+      id: '/settings/services'
+      path: '/services'
+      fullPath: '/settings/services'
       preLoaderRoute: typeof SettingsServicesRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
-    "/settings/sharing": {
-      id: "/settings/sharing"
-      path: "/sharing"
-      fullPath: "/settings/sharing"
+    '/settings/sharing': {
+      id: '/settings/sharing'
+      path: '/sharing'
+      fullPath: '/settings/sharing'
       preLoaderRoute: typeof SettingsSharingRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
-    "/settings/torrents": {
-      id: "/settings/torrents"
-      path: "/torrents"
-      fullPath: "/settings/torrents"
+    '/settings/torrents': {
+      id: '/settings/torrents'
+      path: '/torrents'
+      fullPath: '/settings/torrents'
       preLoaderRoute: typeof SettingsTorrentsRouteRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
-    "/settings/advanced/cache": {
-      id: "/settings/advanced/cache"
-      path: "/cache"
-      fullPath: "/settings/advanced/cache"
+    '/settings/advanced/cache': {
+      id: '/settings/advanced/cache'
+      path: '/cache'
+      fullPath: '/settings/advanced/cache'
       preLoaderRoute: typeof SettingsAdvancedCacheRouteImport
       parentRoute: typeof SettingsAdvancedRouteRoute
     }
-    "/settings/advanced/general": {
-      id: "/settings/advanced/general"
-      path: "/general"
-      fullPath: "/settings/advanced/general"
+    '/settings/advanced/general': {
+      id: '/settings/advanced/general'
+      path: '/general'
+      fullPath: '/settings/advanced/general'
       preLoaderRoute: typeof SettingsAdvancedGeneralRouteImport
       parentRoute: typeof SettingsAdvancedRouteRoute
     }
-    "/settings/recognition/general": {
-      id: "/settings/recognition/general"
-      path: "/general"
-      fullPath: "/settings/recognition/general"
+    '/settings/recognition/general': {
+      id: '/settings/recognition/general'
+      path: '/general'
+      fullPath: '/settings/recognition/general'
       preLoaderRoute: typeof SettingsRecognitionGeneralRouteImport
       parentRoute: typeof SettingsRecognitionRouteRoute
     }
-    "/settings/recognition/sources": {
-      id: "/settings/recognition/sources"
-      path: "/sources"
-      fullPath: "/settings/recognition/sources"
+    '/settings/recognition/sources': {
+      id: '/settings/recognition/sources'
+      path: '/sources'
+      fullPath: '/settings/recognition/sources'
       preLoaderRoute: typeof SettingsRecognitionSourcesRouteImport
       parentRoute: typeof SettingsRecognitionRouteRoute
     }
-    "/settings/torrents/filters": {
-      id: "/settings/torrents/filters"
-      path: "/filters"
-      fullPath: "/settings/torrents/filters"
+    '/settings/torrents/filters': {
+      id: '/settings/torrents/filters'
+      path: '/filters'
+      fullPath: '/settings/torrents/filters'
       preLoaderRoute: typeof SettingsTorrentsFiltersRouteImport
       parentRoute: typeof SettingsTorrentsRouteRoute
     }
-    "/settings/torrents/general": {
-      id: "/settings/torrents/general"
-      path: "/general"
-      fullPath: "/settings/torrents/general"
+    '/settings/torrents/general': {
+      id: '/settings/torrents/general'
+      path: '/general'
+      fullPath: '/settings/torrents/general'
       preLoaderRoute: typeof SettingsTorrentsGeneralRouteImport
       parentRoute: typeof SettingsTorrentsRouteRoute
     }
