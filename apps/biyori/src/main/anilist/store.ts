@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/electron/main";
 import { z } from "zod";
 import { credentialsStore } from "../stores";
 
@@ -24,10 +25,12 @@ export function readAnilistAuth(): AnilistAuth | null {
 
 export function writeAnilistAuth(auth: AnilistAuth): void {
 	credentialsStore.set("anilist", auth);
+	Sentry.setUser({ id: String(auth.userId) });
 }
 
 export function clearAnilistAuth(): void {
 	credentialsStore.delete("anilist");
+	Sentry.setUser(null);
 }
 
 export function toPublicStatus(auth: AnilistAuth | null): AnilistPublicStatus {

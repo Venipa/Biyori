@@ -33,6 +33,11 @@ describe("parseAppSettings torrent filters", () => {
 		expect(parseAppSettings({}).updateChannel).toBe("stable");
 	});
 
+	test("defaults missing sendCrashReports to true", () => {
+		expect(parseAppSettings({}).sendCrashReports).toBe(true);
+		expect(parseAppSettings({ sendCrashReports: false }).sendCrashReports).toBe(false);
+	});
+
 	test("defaults missing uiZoom to 100", () => {
 		expect(parseAppSettings({}).uiZoom).toBe(100);
 	});

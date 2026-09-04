@@ -37,6 +37,7 @@ export function ApplicationPanel() {
 	const defaultAddToListStatusId = useId();
 	const autostartId = useId();
 	const closeToTrayId = useId();
+	const sendCrashReportsId = useId();
 	const updateChannelId = useId();
 	const externalLinksId = useId();
 	const form = useFormContext<AppSettingsInput>();
@@ -119,6 +120,9 @@ export function ApplicationPanel() {
 			</SettingsSectionCard>
 			<SettingsSectionCard title='Tray'>
 				<FormCheckbox control={form.control} name='closeToTray' id={closeToTrayId} label='Close to tray' />
+			</SettingsSectionCard>
+			<SettingsSectionCard title='Privacy' description='Crash reports go to the Biyori Sentry project. No AniList name or token.'>
+				<FormCheckbox control={form.control} name='sendCrashReports' id={sendCrashReportsId} label='Send crash reports' />
 			</SettingsSectionCard>
 			<SettingsSectionCard title='External links' description='One URL template per line. Used from title details.'>
 				<Field>

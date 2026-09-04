@@ -85,6 +85,7 @@ export const settingsFieldNav: Record<string, { section: SettingsSectionId; chil
 	autostartTray: { section: "application" },
 	updateChannel: { section: "application" },
 	closeToTray: { section: "application" },
+	sendCrashReports: { section: "application" },
 	externalLinks: { section: "application" },
 	libraryFolders: { section: "library" },
 	realtimeMonitor: { section: "library" },

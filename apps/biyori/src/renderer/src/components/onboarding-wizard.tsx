@@ -22,12 +22,16 @@ import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
 import { THEME_MODES, type ThemeMode } from "@/mainview/lib/theme";
 import { trpc } from "@/mainview/trpc";
 
-const STEP_COUNT = 4;
+const STEP_COUNT = 5;
 const TITLE_LANGUAGE_OPTIONS = titleLanguageSchema.options.map((value) => ({ value, label: value }));
 const THEME_OPTIONS = THEME_MODES.map((value) => ({
 	value,
 	label: value === "system" ? "System" : value === "light" ? "Light" : "Dark",
 }));
+const CRASH_REPORT_OPTIONS = [
+	{ value: "send", label: "Send reports" },
+	{ value: "dont", label: "Don't send" },
+] as const;
 
 type TitleLanguage = (typeof titleLanguageSchema.options)[number];
 
@@ -50,6 +54,7 @@ export function OnboardingWizard() {
 	const [recognition, setRecognition] = useState<boolean | null>(null);
 	const [players, setPlayers] = useState<boolean | null>(null);
 	const [confirm, setConfirm] = useState<boolean | null>(null);
+	const [crashReports, setCrashReports] = useState<boolean | null>(null);
 	const progress = ((step + 1) / STEP_COUNT) * 100;
 
 	if (!settings) {
@@ -69,6 +74,7 @@ export function OnboardingWizard() {
 	const enableRecognition = recognition ?? settings.enableRecognition;
 	const enableMediaPlayerDetection = players ?? settings.enableMediaPlayerDetection;
 	const askToConfirmUpdate = confirm ?? settings.askToConfirmUpdate;
+	const sendCrashReports = crashReports ?? settings.sendCrashReports;
 
 	async function goPrefsNext(): Promise<void> {
 		await setSettings.mutateAsync({
@@ -78,6 +84,11 @@ export function OnboardingWizard() {
 			askToConfirmUpdate,
 		});
 		setStep(3);
+	}
+
+	async function goCrashReportsNext(): Promise<void> {
+		await setSettings.mutateAsync({ sendCrashReports });
+		setStep(4);
 	}
 
 	async function finish(): Promise<void> {
@@ -94,7 +105,7 @@ export function OnboardingWizard() {
 							<Logo className='size-6' />
 							<h1 className='text-base font-medium'>Get started</h1>
 						</div>
-						<p className='text-sm text-muted-foreground'>Optionally add a library and match preferences.</p>
+						<p className='text-sm text-muted-foreground'>Library, preferences, and whether to send crash reports.</p>
 						<Progress value={progress}>
 							<div className='flex w-full items-center'>
 								<ProgressLabel>
@@ -126,7 +137,10 @@ export function OnboardingWizard() {
 								onAskToConfirmUpdateChange={setConfirm}
 							/>
 						) : null}
-						{step === 3 ? <OnboardingDoneStep username={statusQuery.data?.username ?? ""} folderCount={settings.libraryFolders.length} /> : null}
+						{step === 3 ? (
+							<OnboardingCrashReportsStep sendCrashReports={sendCrashReports} onSendCrashReportsChange={setCrashReports} />
+						) : null}
+						{step === 4 ? <OnboardingDoneStep username={statusQuery.data?.username ?? ""} folderCount={settings.libraryFolders.length} /> : null}
 					</div>
 				)}
 			</div>
@@ -143,7 +157,7 @@ export function OnboardingWizard() {
 									Skip
 								</Button>
 							) : null}
-							{step === 3 ? (
+							{step === 4 ? (
 								<Button type='button' disabled={setSettings.isPending} onClick={() => void finish()}>
 									Open Biyori
 								</Button>
@@ -154,6 +168,10 @@ export function OnboardingWizard() {
 									onClick={() => {
 										if (step === 2) {
 											void goPrefsNext();
+											return;
+										}
+										if (step === 3) {
+											void goCrashReportsNext();
 											return;
 										}
 										setStep(step + 1);
@@ -408,6 +426,33 @@ function OnboardingPrefsStep({
 			<PrefCheckbox id={recognitionId} label='Enable media recognition' checked={enableRecognition} onCheckedChange={onEnableRecognitionChange} />
 			<PrefCheckbox id={playersId} label='Detect media players' checked={enableMediaPlayerDetection} onCheckedChange={onEnableMediaPlayerDetectionChange} />
 			<PrefCheckbox id={confirmId} label='Ask before updating list progress' checked={askToConfirmUpdate} onCheckedChange={onAskToConfirmUpdateChange} />
+		</FieldGroup>
+	);
+}
+
+function OnboardingCrashReportsStep({
+	sendCrashReports,
+	onSendCrashReportsChange,
+}: {
+	sendCrashReports: boolean;
+	onSendCrashReportsChange: (next: boolean) => void;
+}) {
+	const crashReportsId = useId();
+	return (
+		<FieldGroup>
+			<Field>
+				<FieldLabel htmlFor={crashReportsId}>Help me fix crashes?</FieldLabel>
+				<FieldDescription>
+					If Biyori hits an unexpected error, it can send me a technical report so I can fix it. That includes a stack trace and your AniList user id, not
+					your token, passwords, or files. You can change this later in Settings.
+				</FieldDescription>
+				<SettingsToggleGroup
+					id={crashReportsId}
+					value={sendCrashReports ? "send" : "dont"}
+					onValueChange={(value) => onSendCrashReportsChange(value === "send")}
+					options={CRASH_REPORT_OPTIONS}
+				/>
+			</Field>
 		</FieldGroup>
 	);
 }

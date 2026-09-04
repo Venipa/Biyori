@@ -1,3 +1,4 @@
+import "./sentry";
 import { logger } from "@biyori/logger";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { app, type BrowserWindow } from "electron";

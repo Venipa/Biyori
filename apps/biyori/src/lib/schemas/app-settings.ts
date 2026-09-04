@@ -28,6 +28,7 @@ export const appSettingsSchema = z.object({
 	autostart: z.boolean().default(false),
 	autostartTray: z.boolean().default(false),
 	closeToTray: z.boolean().default(true),
+	sendCrashReports: z.boolean().default(true),
 	externalLinks: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
 	libraryFolders: z.array(
 		z.object({
@@ -114,6 +115,7 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	autostart: false,
 	autostartTray: false,
 	closeToTray: true,
+	sendCrashReports: true,
 	externalLinks: "Hibari|https://hb.wopian.me\nAniChart|http://anichart.net/airing",
 	libraryFolders: [],
 	realtimeMonitor: true,
