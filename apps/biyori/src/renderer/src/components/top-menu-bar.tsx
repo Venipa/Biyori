@@ -63,7 +63,9 @@ export function TopMenuBar() {
 								<MenubarSeparator />
 								<MenubarItem
 									onClick={() => {
-										void addLibraryFolder.addFromPicker();
+										window.setTimeout(() => {
+											void addLibraryFolder.addFromPicker();
+										}, 0);
 									}}>
 									Add new folder...
 								</MenubarItem>

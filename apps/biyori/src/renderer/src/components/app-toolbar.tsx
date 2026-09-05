@@ -156,7 +156,9 @@ export function AppToolbar() {
 					{folders.length > 0 ? <DropdownMenuSeparator /> : null}
 					<DropdownMenuItem
 						onClick={() => {
-							void addLibraryFolder.addFromPicker();
+							window.setTimeout(() => {
+								void addLibraryFolder.addFromPicker();
+							}, 0);
 						}}>
 						Add new folder...
 					</DropdownMenuItem>
