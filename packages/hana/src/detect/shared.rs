@@ -284,6 +284,7 @@ pub fn choose_browser_title(caption: &str, tabs: &[String], input: &NowPlayingIn
 		.or_else(|| candidates.into_iter().max_by_key(|item| item.len()))
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
 pub fn browser_needs_tree_probe(caption: &str, foreground: bool, preferred: bool, input: &NowPlayingInput) -> bool {
 	if choose_browser_title(caption, &[], input).is_some() {
 		return false;

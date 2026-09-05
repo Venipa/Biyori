@@ -11,7 +11,7 @@ import { anime, episodeFile } from "../db/schema";
 import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
 import { hana, type ScanHit, type ScanProgress } from "./hana-client";
-import { loadCandidates } from "./match";
+import { invalidateCandidateCache, loadCandidates } from "./match";
 
 const VIDEO_EXT = /\.(mkv|mp4|avi|webm|mov|wmv|flv|ts|m2ts|mpg|mpeg)$/i;
 
@@ -97,6 +97,7 @@ function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: S
 			}
 		}
 	});
+	invalidateCandidateCache();
 }
 
 function enqueueScan(work: () => Promise<{ files: number; matched: number }>): Promise<{ files: number; matched: number }> {
@@ -353,6 +354,9 @@ export async function restartLibraryWatch(): Promise<void> {
 			const root = folder.path;
 			const watcher = watch(root, { recursive: true }, (_event, filename) => {
 				if (!filename) {
+					return;
+				}
+				if (/\.(jpe?g|png|webp|nfo|txt|srt|ass|ssa|idx|sub|part|tmp)$/i.test(filename)) {
 					return;
 				}
 				dirtyPaths.add(join(root, filename));

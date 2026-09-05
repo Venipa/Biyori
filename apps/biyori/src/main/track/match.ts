@@ -7,7 +7,17 @@ import { type Candidate, namesFrom } from "./match-core";
 export type { Candidate } from "./match-core";
 export { matchById, matchParsed, matchTitle, namesFrom, similarParsed, suggestTitles } from "./match-core";
 
+const CANDIDATE_TTL_MS = 15_000;
+let candidateCache: { at: number; rows: Candidate[] } | null = null;
+
+export function invalidateCandidateCache(): void {
+	candidateCache = null;
+}
+
 export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
+	if (candidateCache && Date.now() - candidateCache.at < CANDIDATE_TTL_MS) {
+		return candidateCache.rows;
+	}
 	const rows = await db
 		.select({
 			id: anime.id,
@@ -39,7 +49,7 @@ export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 		.from(listEntry)
 		.innerJoin(anime, eq(listEntry.animeId, anime.id));
 
-	return rows.map((row) => ({
+	const mapped = rows.map((row) => ({
 		id: row.id,
 		title: row.title,
 		alternativeTitles: row.alternativeTitles,
@@ -67,4 +77,6 @@ export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 		dateCompleted: row.dateCompleted,
 		names: namesFrom(row.title, row.alternativeTitles, row.userSynonyms),
 	}));
+	candidateCache = { at: Date.now(), rows: mapped };
+	return mapped;
 }

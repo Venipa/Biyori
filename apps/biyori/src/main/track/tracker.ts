@@ -14,7 +14,7 @@ import { syncDiscordPresence } from "../share/discord";
 import { setNowPlayingForHttp } from "../share/http";
 import { rememberPlaybackApplied, wasPlaybackApplied } from "./applied-playback";
 import { getNowPlayingMedia } from "./detect";
-import { loadCandidates, matchById, matchParsed, namesFrom, similarParsed } from "./match";
+import { invalidateCandidateCache, loadCandidates, matchById, matchParsed, namesFrom, similarParsed } from "./match";
 import { parsePlayback } from "./parse";
 import { enqueueUpdate, initQueueFlush } from "./queue";
 import { redirectEpisode, refreshRelations } from "./relations";
@@ -61,6 +61,8 @@ let delayElapsedSeconds = 0;
 let delayLastTickAt = 0;
 let sessionStartedAt = 0;
 let lastFingerprint = "";
+let lastMediaIdentity = "";
+let forceRematch = false;
 let appliedFingerprint = "";
 let progressRevision = 0;
 let pending: PendingConfirm | null = null;
@@ -78,6 +80,10 @@ function emit(next: NowPlayingSnapshot): void {
 
 function fingerprint(media: NowPlayingMedia, episode: number | null): string {
 	return `${media.player}|${media.filePath ?? media.title}|${episode ?? "none"}`;
+}
+
+function mediaIdentity(media: NowPlayingMedia): string {
+	return `${media.player}|${media.filePath ?? media.title}|${media.windowId}`;
 }
 
 function isInsideLibrary(filePath: string | null, folders: Array<{ path: string }>): boolean {
@@ -170,16 +176,20 @@ async function runTick(): Promise<void> {
 		delayLastTickAt = 0;
 		sessionStartedAt = 0;
 		lastFingerprint = "";
+		lastMediaIdentity = "";
 		pending = null;
 		pendingExit = null;
 		boundMatch = null;
-		emit(idleSnapshot(user));
-		syncDiscordPresence(null, settings);
+		if (snapshot.media || snapshot.parsed || snapshot.match) {
+			emit(idleSnapshot(user));
+			syncDiscordPresence(null, settings);
+		}
 		return;
 	}
 
 	const media = await getNowPlayingMedia(settings, snapshot.media?.windowId);
 	if (!media) {
+		lastMediaIdentity = "";
 		if (pendingExit) {
 			const exit = pendingExit;
 			pendingExit = null;
@@ -200,8 +210,10 @@ async function runTick(): Promise<void> {
 		sessionStartedAt = 0;
 		lastFingerprint = "";
 		boundMatch = null;
-		emit(idleSnapshot(user));
-		syncDiscordPresence(null, settings);
+		if (snapshot.media || snapshot.parsed || snapshot.match) {
+			emit(idleSnapshot(user));
+			syncDiscordPresence(null, settings);
+		}
 		return;
 	}
 
@@ -222,9 +234,63 @@ async function runTick(): Promise<void> {
 		return;
 	}
 
-	const parsed = await parsePlayback(media, {
-		ignoredStrings: settings.ignoredStrings,
-	});
+	const identity = mediaIdentity(media);
+	const reuse =
+		!forceRematch && identity === lastMediaIdentity && snapshot.parsed != null && snapshot.media != null;
+	forceRematch = false;
+	lastMediaIdentity = identity;
+
+	let parsed = snapshot.parsed;
+	let match = snapshot.match;
+	let similar = snapshot.similar;
+	if (!reuse) {
+		parsed = await parsePlayback(media, {
+			ignoredStrings: settings.ignoredStrings,
+		});
+		if (!parsed) {
+			emit({
+				media,
+				parsed: null,
+				match: null,
+				unrecognized: true,
+				similar: [],
+				delayRemainingSeconds: 0,
+				pendingConfirm: pending,
+				startedAt: snapshot.startedAt,
+				progressRevision,
+				user,
+			});
+			syncDiscordPresence(null, settings);
+			return;
+		}
+
+		const candidates = await loadCandidates(db);
+		match = matchParsed(
+			{
+				title: parsed.rawTitle,
+				season: parsed.season,
+				year: parsed.year,
+			},
+			candidates,
+		);
+		if (match && parsed.episode != null) {
+			const redirected = redirectEpisode(match, parsed.episode);
+			parsed.episode = redirected.episode;
+			if (redirected.id !== match.id) {
+				match = matchById(redirected.id, candidates) ?? match;
+			}
+		}
+		similar = match
+			? []
+			: similarParsed(
+					{
+						title: parsed.rawTitle,
+						season: parsed.season,
+						year: parsed.year,
+					},
+					candidates,
+				);
+	}
 	if (!parsed) {
 		emit({
 			media,
@@ -240,23 +306,6 @@ async function runTick(): Promise<void> {
 		});
 		syncDiscordPresence(null, settings);
 		return;
-	}
-
-	const candidates = await loadCandidates(db);
-	let match = matchParsed(
-		{
-			title: parsed.rawTitle,
-			season: parsed.season,
-			year: parsed.year,
-		},
-		candidates,
-	);
-	if (match && parsed.episode != null) {
-		const redirected = redirectEpisode(match, parsed.episode);
-		parsed.episode = redirected.episode;
-		if (redirected.id !== match.id) {
-			match = matchById(redirected.id, candidates) ?? match;
-		}
 	}
 
 	const key = fingerprint(media, parsed.episode);
@@ -285,6 +334,7 @@ async function runTick(): Promise<void> {
 	}
 
 	if (!match && boundMatch?.fingerprint === key) {
+		const candidates = await loadCandidates(db);
 		match = matchById(boundMatch.animeId, candidates);
 	}
 
@@ -324,22 +374,22 @@ async function runTick(): Promise<void> {
 		parsed,
 		match,
 		unrecognized: !match,
-		similar: match
-			? []
-			: similarParsed(
-					{
-						title: parsed.rawTitle,
-						season: parsed.season,
-						year: parsed.year,
-					},
-					candidates,
-				),
+		similar: match ? [] : similar,
 		delayRemainingSeconds: remaining,
 		pendingConfirm: pending,
 		startedAt: sessionStartedAt || now,
 		progressRevision,
 		user,
 	};
+	if (
+		reuse &&
+		snapshot.delayRemainingSeconds === remaining &&
+		snapshot.media?.foreground === media.foreground &&
+		snapshot.pendingConfirm === pending &&
+		snapshot.progressRevision === progressRevision
+	) {
+		return;
+	}
 	emit(next);
 	syncDiscordPresence(next, settings);
 }
@@ -396,6 +446,7 @@ async function rememberUserSynonym(animeId: number, rawTitle: string): Promise<v
 	if (existing.includes(normalizeTitle(title))) {
 		return;
 	}
+	invalidateCandidateCache();
 	await db
 		.update(anime)
 		.set({
@@ -411,6 +462,7 @@ export async function chooseNowPlayingMatch(animeId: number): Promise<void> {
 	const playingTitle = snapshot.parsed?.rawTitle ?? snapshot.parsed?.title ?? "";
 	boundMatch = { fingerprint: lastFingerprint, animeId };
 	await rememberUserSynonym(animeId, playingTitle);
+	forceRematch = true;
 	while (tickInFlight) {
 		await new Promise((resolve) => {
 			setTimeout(resolve, 20);
