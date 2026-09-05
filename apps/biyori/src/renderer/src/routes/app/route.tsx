@@ -22,9 +22,16 @@ function MainLayout(): ReactElement {
 	});
 	const utils = trpc.useUtils();
 	const navigate = useNavigate();
-	const settingsQuery = trpc.settings.get.useQuery();
+	const onboardingComplete = trpc.settings.get.useQuery(undefined, {
+		select: (settings) => settings.onboardingComplete,
+	});
 	const lastPlayKey = useRef("");
 	const lastProgressRevision = useRef(0);
+	trpc.settings.onChange.useSubscription(undefined, {
+		onData: (settings) => {
+			utils.settings.get.setData(undefined, settings);
+		},
+	});
 	trpc.media.onNowPlaying.useSubscription(undefined, {
 		onData: (snapshot) => {
 			utils.media.nowPlaying.setData(undefined, snapshot);
@@ -32,7 +39,7 @@ function MainLayout(): ReactElement {
 				lastProgressRevision.current = snapshot.progressRevision;
 				void invalidateAnimeQueries(utils, "watched", snapshot.match?.id);
 			}
-			const settings = settingsQuery.data;
+			const settings = utils.settings.get.getData();
 			if (!settings || !snapshot.media) {
 				lastPlayKey.current = "";
 				return;
@@ -50,12 +57,12 @@ function MainLayout(): ReactElement {
 		},
 	});
 
-	if (settingsQuery.data && !settingsQuery.data.onboardingComplete) {
+	if (onboardingComplete.data === false) {
 		return <Navigate to='/onboarding' />;
 	}
 
 	return (
-		<PageLoad loading={!settingsQuery.data}>
+		<PageLoad loading={onboardingComplete.data === undefined}>
 			<div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'>
 				<TopMenuBar />
 				<AppToolbar />

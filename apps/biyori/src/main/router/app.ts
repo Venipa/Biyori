@@ -15,7 +15,7 @@ import type { SelectDatabase } from "../db";
 import { anime, episodeFile, history, listEntry, syncQueue } from "../db/schema";
 import type { Anime } from "../db/types";
 import { getAppNotice, subscribeAppNotice } from "../notice";
-import { loadAppSettings, loadSettingsFormValues, patchAppSettings, patchSettingsForm } from "../settings";
+import { loadAppSettings, loadSettingsFormValues, patchAppSettings, patchSettingsForm, subscribeFilters, subscribeSettings } from "../settings";
 import { loadStatistics } from "../statistics";
 import {
 	applyTorrentView,
@@ -331,6 +331,19 @@ export const appRouter = t.router({
 	settings: t.router({
 		get: t.procedure.query(() => {
 			return loadSettingsFormValues();
+		}),
+		onChange: t.procedure.subscription(() => {
+			return observable<ReturnType<typeof loadSettingsFormValues>>((emit) => {
+				const push = (): void => {
+					emit.next(loadSettingsFormValues());
+				};
+				const stopSettings = subscribeSettings(push);
+				const stopFilters = subscribeFilters(push);
+				return () => {
+					stopSettings();
+					stopFilters();
+				};
+			});
 		}),
 		set: t.procedure.input(settingsFormPatchSchema).mutation(({ input }) => {
 			return patchSettingsForm(input);
