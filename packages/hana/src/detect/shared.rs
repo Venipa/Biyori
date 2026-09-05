@@ -284,6 +284,13 @@ pub fn choose_browser_title(caption: &str, tabs: &[String], input: &NowPlayingIn
 		.or_else(|| candidates.into_iter().max_by_key(|item| item.len()))
 }
 
+pub fn browser_needs_tree_probe(caption: &str, foreground: bool, preferred: bool, input: &NowPlayingInput) -> bool {
+	if choose_browser_title(caption, &[], input).is_some() {
+		return false;
+	}
+	foreground || preferred
+}
+
 pub fn normalize_media_path(value: &str) -> String {
 	let trimmed = value.trim();
 	if let Some(rest) = trimmed.strip_prefix("file:///") {
@@ -417,8 +424,8 @@ pub fn query_unix_mpv(pid: u32) -> Option<String> {
 #[cfg(test)]
 mod tests {
 	use super::{
-		browser_media_ok, choose_browser_title, extract_file_path, file_path_from_cmd, looks_like_playback_title, name_allowed,
-		normalize_browser_title, pick_hit,
+		browser_media_ok, browser_needs_tree_probe, choose_browser_title, extract_file_path, file_path_from_cmd,
+		looks_like_playback_title, name_allowed, normalize_browser_title, pick_hit,
 	};
 	use crate::types::{NowPlaying, NowPlayingInput};
 
@@ -552,6 +559,15 @@ mod tests {
 		let input = input_needles(&["Jellyfin"]);
 		assert!(browser_media_ok(title, None, &[], &input));
 		assert!(!browser_media_ok("Inbox - Gmail", None, &[], &input));
+	}
+
+	#[test]
+	fn tree_probe_skips_when_caption_already_has_a_show_title() {
+		let input = input_needles(&["Crunchyroll"]);
+		assert!(!browser_needs_tree_probe("Show - Crunchyroll", false, false, &input));
+		assert!(browser_needs_tree_probe("Netflix", true, false, &input_needles(&["Netflix"])));
+		assert!(!browser_needs_tree_probe("Netflix", false, false, &input_needles(&["Netflix"])));
+		assert!(browser_needs_tree_probe("Netflix", false, true, &input_needles(&["Netflix"])));
 	}
 
 	#[test]

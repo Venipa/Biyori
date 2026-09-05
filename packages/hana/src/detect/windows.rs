@@ -1,9 +1,11 @@
 use super::shared::{
-	browser_media_ok, choose_browser_title, classify_player, extract_file_path, pick_hit, process_key, query_mpv_json,
+	browser_media_ok, browser_needs_tree_probe, choose_browser_title, classify_player, extract_file_path, pick_hit,
+	process_key, query_mpv_json,
 };
 use crate::types::{NowPlaying, NowPlayingInput};
+use std::collections::HashMap;
 use std::path::Path;
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 use windows::core::{Interface, BSTR, VARIANT};
 use windows::Media::Control::{
@@ -71,6 +73,20 @@ fn process_image_path(pid: u32) -> Option<String> {
 	Some(String::from_utf16_lossy(&buf[..size as usize]))
 }
 
+fn cached_process_image_path(pid: u32) -> Option<String> {
+	static CACHE: OnceLock<Mutex<HashMap<u32, (Instant, Option<String>)>>> = OnceLock::new();
+	let mut cache = CACHE.get_or_init(|| Mutex::new(HashMap::new())).lock().ok()?;
+	if let Some((at, value)) = cache.get(&pid) {
+		if at.elapsed() < Duration::from_secs(8) {
+			return value.clone();
+		}
+	}
+	let value = process_image_path(pid);
+	cache.retain(|_, (at, _)| at.elapsed() < Duration::from_secs(30));
+	cache.insert(pid, (Instant::now(), value.clone()));
+	value
+}
+
 fn exe_key(path: &str) -> String {
 	process_key(
 		Path::new(path)
@@ -112,6 +128,22 @@ fn query_mpv_pipe(name: &str) -> Option<String> {
 }
 
 fn mpv_ipc_path(pid: u32) -> Option<String> {
+	static CACHE: OnceLock<Mutex<HashMap<u32, (Instant, Option<String>)>>> = OnceLock::new();
+	let Ok(mut cache) = CACHE.get_or_init(|| Mutex::new(HashMap::new())).lock() else {
+		return query_mpv_ipc(pid);
+	};
+	if let Some((at, value)) = cache.get(&pid) {
+		if at.elapsed() < Duration::from_secs(2) {
+			return value.clone();
+		}
+	}
+	let value = query_mpv_ipc(pid);
+	cache.retain(|_, (at, _)| at.elapsed() < Duration::from_secs(10));
+	cache.insert(pid, (Instant::now(), value.clone()));
+	value
+}
+
+fn query_mpv_ipc(pid: u32) -> Option<String> {
 	let names = [
 		format!(r"\\.\pipe\mpvnet-{pid}"),
 		format!(r"\\.\pipe\mpv-{pid}"),
@@ -139,6 +171,23 @@ fn looks_like_url(value: &str) -> bool {
 		|| lower.contains(".com/")
 		|| lower.contains(".tv/")
 		|| lower.contains("localhost")
+}
+
+fn cached_uia_collect(hwnd: HWND) -> (Option<String>, Vec<String>) {
+	static CACHE: OnceLock<Mutex<HashMap<isize, (Instant, Option<String>, Vec<String>)>>> = OnceLock::new();
+	let key = hwnd.0 as isize;
+	if let Ok(mut cache) = CACHE.get_or_init(|| Mutex::new(HashMap::new())).lock() {
+		if let Some((at, url, tabs)) = cache.get(&key) {
+			if at.elapsed() < Duration::from_millis(1500) {
+				return (url.clone(), tabs.clone());
+			}
+		}
+		let (url, tabs) = uia_collect(hwnd);
+		cache.retain(|_, (at, _, _)| at.elapsed() < Duration::from_secs(8));
+		cache.insert(key, (Instant::now(), url.clone(), tabs.clone()));
+		return (url, tabs);
+	}
+	uia_collect(hwnd)
 }
 
 fn uia_collect(hwnd: HWND) -> (Option<String>, Vec<String>) {
@@ -339,10 +388,12 @@ pub fn now_playing(input: NowPlayingInput) -> Option<NowPlaying> {
 		let _ = EnumWindows(Some(on_window), LPARAM(&mut ctx as *mut EnumCtx as isize));
 	}
 
-	let smtc = smtc_browser_title();
+	let browsers_enabled = input.browser_names.as_deref().is_some_and(|names| !names.is_empty());
+	let preferred = input.preferred_window_id.as_deref();
 	let mut hits: Vec<NowPlaying> = Vec::new();
+	let mut want_smtc = false;
 	for row in ctx.rows {
-		let Some(image) = process_image_path(row.pid) else {
+		let Some(image) = cached_process_image_path(row.pid) else {
 			continue;
 		};
 		let name = exe_key(&image);
@@ -352,8 +403,14 @@ pub fn now_playing(input: NowPlayingInput) -> Option<NowPlaying> {
 		if is_browser && !is_browser_widget_class(&row.class) {
 			continue;
 		}
-		let (url, tabs) = if is_browser {
-			uia_collect(row.hwnd)
+		if is_browser && row.title.trim().is_empty() && !row.foreground {
+			continue;
+		}
+		let window_id = (row.hwnd.0 as isize).to_string();
+		let is_preferred = preferred == Some(window_id.as_str());
+		let (url, tabs) = if is_browser && browser_needs_tree_probe(&row.title, row.foreground, is_preferred, &input)
+		{
+			cached_uia_collect(row.hwnd)
 		} else {
 			(None, Vec::new())
 		};
@@ -361,16 +418,15 @@ pub fn now_playing(input: NowPlayingInput) -> Option<NowPlaying> {
 			continue;
 		}
 		let title = if is_browser {
-			choose_browser_title(&row.title, &tabs, &input).or_else(|| {
-				smtc
-					.as_ref()
-					.and_then(|title| choose_browser_title(title, &[], &input))
-			})
+			choose_browser_title(&row.title, &tabs, &input)
 		} else if row.title.trim().is_empty() {
 			None
 		} else {
 			Some(row.title.clone())
 		};
+		if is_browser && title.is_none() {
+			want_smtc = true;
+		}
 		let ipc = if key.contains("mpv") {
 			mpv_ipc_path(row.pid)
 		} else {
@@ -383,7 +439,7 @@ pub fn now_playing(input: NowPlayingInput) -> Option<NowPlaying> {
 		};
 		hits.push(NowPlaying {
 			player: key,
-			window_id: (row.hwnd.0 as isize).to_string(),
+			window_id,
 			title,
 			file_path,
 			url,
@@ -391,5 +447,16 @@ pub fn now_playing(input: NowPlayingInput) -> Option<NowPlaying> {
 			browser: Some(is_browser),
 		});
 	}
-	pick_hit(hits, input.preferred_window_id.as_deref())
+	if browsers_enabled && want_smtc {
+		if let Some(smtc) = smtc_browser_title() {
+			if let Some(smtc_title) = choose_browser_title(&smtc, &[], &input) {
+				for hit in &mut hits {
+					if hit.browser == Some(true) && hit.title.is_none() {
+						hit.title = Some(smtc_title.clone());
+					}
+				}
+			}
+		}
+	}
+	pick_hit(hits, preferred)
 }
