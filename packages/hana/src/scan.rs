@@ -148,10 +148,13 @@ pub fn scan_library(input: ScanInput, mut report: impl FnMut(ScanProgress)) -> S
 		let Some(parsed) = parsed else {
 			continue;
 		};
-		let anime_id = identify(&parsed, &input.candidates, Some(&display)).unwrap_or(0);
+		let anime_id = identify(&parsed, &input.candidates, Some(&display));
+		if anime_id.is_none() && parsed.season.unwrap_or(0) <= 1 {
+			continue;
+		}
 		hits.push(ScanHit {
 			path: display,
-			anime_id,
+			anime_id: anime_id.unwrap_or(0),
 			episode: parsed.episode.unwrap_or(1),
 			size: file.size.min(i64::MAX as u64) as i64,
 		});

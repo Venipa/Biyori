@@ -45,8 +45,15 @@ function toScanCandidates(candidates: Awaited<ReturnType<typeof loadCandidates>>
 }
 
 function remapScanHits(hits: ScanHit[], candidates: Awaited<ReturnType<typeof loadCandidates>>): ScanHit[] {
+	const byId = new Map(candidates.map((candidate) => [candidate.id, candidate]));
 	const next: ScanHit[] = [];
 	for (const hit of hits) {
+		const listed = hit.animeId > 0 ? byId.get(hit.animeId) : undefined;
+		const inRange = listed != null && (listed.episodes < 1 || hit.episode <= listed.episodes);
+		if (inRange) {
+			next.push(hit);
+			continue;
+		}
 		const parsed = parseFilename(hit.path);
 		if (!parsed) {
 			if (hit.animeId > 0) {
@@ -59,14 +66,17 @@ function remapScanHits(hits: ScanHit[], candidates: Awaited<ReturnType<typeof lo
 			parsed.episode,
 			candidates,
 		);
-		if (!resolved.match) {
+		if (resolved.match) {
+			next.push({
+				...hit,
+				animeId: resolved.match.id,
+				episode: resolved.episode ?? hit.episode,
+			});
 			continue;
 		}
-		next.push({
-			...hit,
-			animeId: resolved.match.id,
-			episode: resolved.episode ?? hit.episode,
-		});
+		if (hit.animeId > 0) {
+			next.push(hit);
+		}
 	}
 	return next;
 }
