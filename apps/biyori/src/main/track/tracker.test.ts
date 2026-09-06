@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { canApplyProgress, progressPayload } from "./tracker-progress";
+import { canApplyProgress } from "./tracker-progress";
 
 const completedRewatch = {
 	episodes: 12,
