@@ -69,22 +69,12 @@ function selectedFromContinue(item: ContinueWatchingItem): SelectedAnime {
 	};
 }
 
-function IdleItemContextMenu({
-	item,
-	playNextEnabled,
-	nativeButton = true,
-	render,
-}: {
-	item: ContinueWatchingItem;
-	playNextEnabled: boolean;
-	nativeButton?: boolean;
-	render: ReactElement;
-}) {
+function IdleItemContextMenu({ item, playNextEnabled, render }: { item: ContinueWatchingItem; playNextEnabled: boolean; render: ReactElement }) {
 	const [open, setOpen] = useState(false);
 	const animeInfo = useAnimeInfoNav();
 	return (
 		<ContextMenu onOpenChange={setOpen}>
-			<ContextMenuTrigger nativeButton={nativeButton} render={render} />
+			<ContextMenuTrigger render={render} />
 			<ContextMenuContent className='min-w-56'>
 				{open ? (
 					<AnimeItemCommands
@@ -356,7 +346,6 @@ function IdleTables({
 									key={item.animeId}
 									item={item}
 									playNextEnabled={!playDisabled}
-									nativeButton={false}
 									render={
 										<TableRow
 											className={playDisabled ? "opacity-50" : "cursor-pointer"}
@@ -422,7 +411,6 @@ function IdleAiringDayRows({ group, onOpen }: { group: AiringSoonGroup; onOpen: 
 					key={item.animeId}
 					item={item}
 					playNextEnabled={false}
-					nativeButton={false}
 					render={
 						<TableRow
 							className='cursor-pointer'
