@@ -30,3 +30,14 @@ export function formatLocalDateTime(value: string | null | undefined): string {
 	}
 	return format(date, "yyyy-MM-dd HH:mm");
 }
+
+export function formatWeekdayClock(value: string | null | undefined): string {
+	if (!value) {
+		return "-";
+	}
+	const date = toDate(value);
+	if (!date) {
+		return value;
+	}
+	return format(date, "EEEE HH:mm");
+}
