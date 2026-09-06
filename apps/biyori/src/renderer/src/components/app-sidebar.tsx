@@ -1,3 +1,7 @@
+import { Link, useRouterState } from "@tanstack/react-router";
+import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, HistoryIcon, ListIcon, PlayIcon, SearchIcon } from "lucide-react";
+import { LayoutGroup, motion } from "motion/react";
+import { type ReactNode, useRef } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { Button } from "@/mainview/components/ui/button";
@@ -6,10 +10,6 @@ import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import { ANIME_LIST_SEARCH_TAB } from "@/shared/list";
-import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, HistoryIcon, ListIcon, PlayIcon, SearchIcon } from "lucide-react";
-import { LayoutGroup, motion } from "motion/react";
-import { type ReactNode, useRef } from "react";
 
 const listItems = [
 	{ to: "/app/history", label: "History", icon: HistoryIcon },
@@ -29,7 +29,7 @@ const navPillSpring = { type: "spring", stiffness: 500, damping: 40 } as const;
 function navItemClass(active: boolean): string {
 	return cn(
 		"relative flex w-full items-center gap-2 rounded-md py-1.5 pr-2 pl-4 text-left text-sm transition-colors",
-		active ? "text-foreground" : "text-foreground/80 hover:bg-muted",
+		active ? "text-foreground bg-muted" : "text-foreground/80 hover:bg-muted",
 	);
 }
 
@@ -87,13 +87,7 @@ export function AppSidebar() {
 				<NavGroup label='Library'>
 					<AnimeListNavLink active={pathname === "/app/anime-list"} isEnter={isEnter} />
 					{listItems.map((item) => (
-						<NavLink
-							key={item.to}
-							{...item}
-							active={pathname === item.to}
-							isEnter={isEnter}
-							badge={item.to === "/app/history" ? queuedCount : undefined}
-						/>
+						<NavLink key={item.to} {...item} active={pathname === item.to} isEnter={isEnter} badge={item.to === "/app/history" ? queuedCount : undefined} />
 					))}
 				</NavGroup>
 				<NavGroup label='Discover'>
@@ -188,11 +182,7 @@ function AnimeListNavLink({ active, isEnter }: { active: boolean; isEnter: boole
 	const listFilter = useListFilterText();
 	const searching = listFilter.trim().length > 0;
 	return (
-		<Link
-			to='/app/anime-list'
-			search={searching ? { tab: ANIME_LIST_SEARCH_TAB } : true}
-			aria-current={active ? "page" : undefined}
-			className={navItemClass(active)}>
+		<Link to='/app/anime-list' search={searching ? { tab: ANIME_LIST_SEARCH_TAB } : true} aria-current={active ? "page" : undefined} className={navItemClass(active)}>
 			<ActiveNavPill active={active} isEnter={isEnter} />
 			<ListIcon className='size-4 shrink-0 text-current' />
 			<span className='flex-1 truncate'>Anime List</span>
@@ -200,21 +190,7 @@ function AnimeListNavLink({ active, isEnter }: { active: boolean; isEnter: boole
 	);
 }
 
-function NavLink({
-	to,
-	label,
-	icon: Icon,
-	badge,
-	active,
-	isEnter,
-}: {
-	to: string;
-	label: string;
-	icon: typeof PlayIcon;
-	badge?: number;
-	active: boolean;
-	isEnter: boolean;
-}) {
+function NavLink({ to, label, icon: Icon, badge, active, isEnter }: { to: string; label: string; icon: typeof PlayIcon; badge?: number; active: boolean; isEnter: boolean }) {
 	return (
 		<Link to={to} aria-current={active ? "page" : undefined} className={navItemClass(active)}>
 			<ActiveNavPill active={active} isEnter={isEnter} />
