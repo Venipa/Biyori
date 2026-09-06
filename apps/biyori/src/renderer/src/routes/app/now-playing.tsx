@@ -1,17 +1,30 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, CircleHelpIcon, ExternalLinkIcon, LayoutGridIcon, PlayCircleIcon, SearchIcon, Table2Icon } from "lucide-react";
+import { type ReactElement, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { desktopRpc } from "@/desktop-rpc";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import type { NowPlayingView } from "@/lib/schemas/app-settings";
 import { AnimeCover } from "@/mainview/components/anime-cover";
+import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
 import { PlaceholderView } from "@/mainview/components/placeholder-view";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/mainview/components/ui/alert";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Card } from "@/mainview/components/ui/card";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuSeparator,
+	ContextMenuShortcut,
+	ContextMenuSub,
+	ContextMenuSubContent,
+	ContextMenuSubTrigger,
+	ContextMenuTrigger,
+} from "@/mainview/components/ui/context-menu";
 import { Progress, ProgressLabel, ProgressValue } from "@/mainview/components/ui/progress";
 import { Separator } from "@/mainview/components/ui/separator";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
@@ -21,6 +34,7 @@ import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { formatClock } from "@/mainview/lib/format-date";
 import { nextEpisodeIsAvailable } from "@/mainview/lib/list-progress";
 import { type AiringSoonGroup, buildAiringSoon, buildContinueWatching, buildUpcoming, type ContinueWatchingItem, SEVEN_DAYS_MS } from "@/mainview/lib/now-playing-idle";
+import type { SelectedAnime } from "@/mainview/lib/selected-anime";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
@@ -33,6 +47,60 @@ export const Route = createFileRoute("/app/now-playing")({
 type NowPlayingSnapshot = NonNullable<inferRouterOutputs<AppRouter>["media"]["nowPlaying"]>;
 
 type HistoryRow = inferRouterOutputs<AppRouter>["history"]["list"]["history"][number];
+
+const commandParts = {
+	Item: ContextMenuItem,
+	Sub: ContextMenuSub,
+	SubTrigger: ContextMenuSubTrigger,
+	SubContent: ContextMenuSubContent,
+	Separator: ContextMenuSeparator,
+	Shortcut: ContextMenuShortcut,
+};
+
+function selectedFromContinue(item: ContinueWatchingItem): SelectedAnime {
+	return {
+		id: item.animeId,
+		title: item.title,
+		folder: "",
+		episodes: item.episodes ?? 0,
+		episodesWatched: Math.max(0, item.nextEpisode - 1),
+		status: "Currently watching",
+		notes: "",
+	};
+}
+
+function IdleItemContextMenu({
+	item,
+	playNextEnabled,
+	nativeButton = true,
+	render,
+}: {
+	item: ContinueWatchingItem;
+	playNextEnabled: boolean;
+	nativeButton?: boolean;
+	render: ReactElement;
+}) {
+	const [open, setOpen] = useState(false);
+	const animeInfo = useAnimeInfoNav();
+	return (
+		<ContextMenu onOpenChange={setOpen}>
+			<ContextMenuTrigger nativeButton={nativeButton} render={render} />
+			<ContextMenuContent className='min-w-56'>
+				{open ? (
+					<AnimeItemCommands
+						parts={commandParts}
+						mode='now-playing'
+						showPlayNext={playNextEnabled}
+						anime={selectedFromContinue(item)}
+						onEdit={() => {
+							animeInfo.open({ id: item.animeId, infoTab: "list" });
+						}}
+					/>
+				) : null}
+			</ContextMenuContent>
+		</ContextMenu>
+	);
+}
 
 function NowPlayingPage() {
 	const query = trpc.media.nowPlaying.useQuery();
@@ -284,21 +352,28 @@ function IdleTables({
 						</TableHeader>
 						<TableBody>
 							{continueWatching.map((item) => (
-								<TableRow
+								<IdleItemContextMenu
 									key={item.animeId}
-									className={playDisabled ? "opacity-50" : "cursor-pointer"}
-									onClick={() => {
-										if (!playDisabled) {
-											onPlay(item);
-										}
-									}}>
-									<TitleCellWithPoster item={item} />
-									<TableCell className='text-muted-foreground'>
-										Next episode {item.nextEpisode}
-										{item.episodes != null && item.episodes > 0 ? ` of ${item.episodes}` : ""}
-									</TableCell>
-									<TableCell className='text-muted-foreground'>{item.type ?? "-"}</TableCell>
-								</TableRow>
+									item={item}
+									playNextEnabled={!playDisabled}
+									nativeButton={false}
+									render={
+										<TableRow
+											className={playDisabled ? "opacity-50" : "cursor-pointer"}
+											onClick={() => {
+												if (!playDisabled) {
+													onPlay(item);
+												}
+											}}>
+											<TitleCellWithPoster item={item} />
+											<TableCell className='text-muted-foreground'>
+												Next episode {item.nextEpisode}
+												{item.episodes != null && item.episodes > 0 ? ` of ${item.episodes}` : ""}
+											</TableCell>
+											<TableCell className='text-muted-foreground'>{item.type ?? "-"}</TableCell>
+										</TableRow>
+									}
+								/>
 							))}
 						</TableBody>
 					</Table>
@@ -343,16 +418,23 @@ function IdleAiringDayRows({ group, onOpen }: { group: AiringSoonGroup; onOpen: 
 				</TableCell>
 			</TableRow>
 			{group.items.map((item) => (
-				<TableRow
+				<IdleItemContextMenu
 					key={item.animeId}
-					className='cursor-pointer'
-					onClick={() => {
-						onOpen(item);
-					}}>
-					<TitleCellWithPoster item={item} />
-					<TableCell className='text-muted-foreground'>{airingCaption(item)}</TableCell>
-					<TableCell className='text-muted-foreground'>{item.type ?? "-"}</TableCell>
-				</TableRow>
+					item={item}
+					playNextEnabled={false}
+					nativeButton={false}
+					render={
+						<TableRow
+							className='cursor-pointer'
+							onClick={() => {
+								onOpen(item);
+							}}>
+							<TitleCellWithPoster item={item} />
+							<TableCell className='text-muted-foreground'>{airingCaption(item)}</TableCell>
+							<TableCell className='text-muted-foreground'>{item.type ?? "-"}</TableCell>
+						</TableRow>
+					}
+				/>
 			))}
 		</>
 	);
@@ -379,7 +461,7 @@ function IdlePosterStrip({
 			<ul aria-label={label} className='flex w-max snap-x snap-mandatory gap-3 pb-1'>
 				{items.map((item) => (
 					<li key={item.animeId} className='w-40 shrink-0 snap-start md:w-50'>
-						<ContinueWatchingCard item={item} disabled={disabled} description={description?.(item)} onActivate={() => onActivate(item)} />
+						<ContinueWatchingCard item={item} disabled={disabled} playNextEnabled description={description?.(item)} onActivate={() => onActivate(item)} />
 					</li>
 				))}
 			</ul>
@@ -409,7 +491,7 @@ function IdleAiringRail({
 						<ul aria-label={group.label} className='flex snap-x snap-mandatory gap-3 pr-6 pb-1'>
 							{group.items.map((item) => (
 								<li key={item.animeId} className='w-40 shrink-0 snap-start md:w-50'>
-									<ContinueWatchingCard item={item} description={airingCaption(item)} onActivate={() => group.onActivate(item)} />
+									<ContinueWatchingCard item={item} playNextEnabled={false} description={airingCaption(item)} onActivate={() => group.onActivate(item)} />
 								</li>
 							))}
 						</ul>
@@ -420,38 +502,56 @@ function IdleAiringRail({
 	);
 }
 
-function ContinueWatchingCard({ item, disabled, description, onActivate }: { item: ContinueWatchingItem; disabled?: boolean; description?: string; onActivate: () => void }) {
+function ContinueWatchingCard({
+	item,
+	disabled,
+	playNextEnabled = false,
+	description,
+	onActivate,
+}: {
+	item: ContinueWatchingItem;
+	disabled?: boolean;
+	playNextEnabled?: boolean;
+	description?: string;
+	onActivate: () => void;
+}) {
 	const total = item.episodes != null && item.episodes > 0 ? item.episodes : null;
 	const caption = description ?? `Next episode ${item.nextEpisode}${total != null ? ` of ${total}` : ""}`;
 	return (
-		<Button
-			type='button'
-			variant='ghost'
-			className='h-auto w-full min-w-0 rounded-xl p-0 text-left font-normal whitespace-normal hover:bg-transparent dark:hover:bg-transparent'
-			disabled={disabled}
-			onClick={onActivate}>
-			<Card size='sm' className='isolate w-full overflow-clip py-0'>
-				<span className='relative block aspect-square h-60 w-full overflow-clip rounded-xl bg-muted transform-gpu [-webkit-mask-image:-webkit-radial-gradient(#fff,#000)] md:h-75'>
-					<AnimeCover
-						id={item.animeId}
-						kind='cover'
-						coverUrl={item.coverUrl}
-						alt=''
-						lazy
-						className='size-full [&_img]:block [&_img]:rounded-xl [&_img]:transform-gpu [&_img]:[clip-path:inset(0_round_var(--radius-xl))] [&_img]:[filter:none] [&_img]:transition-none'
-					/>
-					<span className='pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/85 via-black/55 to-transparent p-2 pt-8'>
-						<span className='block text-sm font-medium leading-snug wrap-break-word text-white'>{item.title}</span>
-						<span className='mt-0.5 block text-xs leading-snug wrap-break-word text-white/80'>{caption}</span>
-					</span>
-					{item.type ? (
-						<Badge variant='outline' className='absolute top-2 left-2 border-white/30 bg-black/50 text-white'>
-							{item.type}
-						</Badge>
-					) : null}
-				</span>
-			</Card>
-		</Button>
+		<IdleItemContextMenu
+			item={item}
+			playNextEnabled={playNextEnabled && !disabled}
+			render={
+				<Button
+					type='button'
+					variant='ghost'
+					className='h-auto w-full min-w-0 rounded-xl p-0 text-left font-normal whitespace-normal hover:bg-transparent dark:hover:bg-transparent'
+					disabled={disabled}
+					onClick={onActivate}>
+					<Card size='sm' className='isolate w-full overflow-clip py-0'>
+						<span className='relative block aspect-square h-60 w-full overflow-clip rounded-xl bg-muted transform-gpu [-webkit-mask-image:-webkit-radial-gradient(#fff,#000)] md:h-75'>
+							<AnimeCover
+								id={item.animeId}
+								kind='cover'
+								coverUrl={item.coverUrl}
+								alt=''
+								lazy
+								className='size-full [&_img]:block [&_img]:rounded-xl [&_img]:transform-gpu [&_img]:[clip-path:inset(0_round_var(--radius-xl))] [&_img]:[filter:none] [&_img]:transition-none'
+							/>
+							<span className='pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/85 via-black/55 to-transparent p-2 pt-8'>
+								<span className='block text-sm font-medium leading-snug wrap-break-word text-white'>{item.title}</span>
+								<span className='mt-0.5 block text-xs leading-snug wrap-break-word text-white/80'>{caption}</span>
+							</span>
+							{item.type ? (
+								<Badge variant='outline' className='absolute top-2 left-2 border-white/30 bg-black/50 text-white'>
+									{item.type}
+								</Badge>
+							) : null}
+						</span>
+					</Card>
+				</Button>
+			}
+		/>
 	);
 }
 

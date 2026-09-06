@@ -114,27 +114,31 @@ export function AnimeItemCommands({
 	onInformation,
 	onEdit,
 	onDelete,
+	showPlayNext = false,
 }: {
 	parts: MenuParts;
-	mode?: "list" | "discover";
+	mode?: "list" | "discover" | "now-playing";
 	anime?: SelectedAnime | null;
 	discover?: DiscoverAnimeTarget | null;
 	onInformation?: () => void;
 	onEdit?: () => void;
 	onDelete?: () => void;
+	showPlayNext?: boolean;
 }) {
 	const { Item, Sub, SubTrigger, SubContent, Separator, Shortcut } = parts;
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
 	const isList = mode === "list";
-	const title = isList ? (anime?.title ?? "") : (discover?.title ?? "");
-	const id = isList ? (anime?.id ?? null) : (discover?.id ?? null);
+	const isNowPlaying = mode === "now-playing";
+	const useLibrary = isList || isNowPlaying;
+	const title = isList || isNowPlaying ? (anime?.title ?? "") : (discover?.title ?? "");
+	const id = isList || isNowPlaying ? (anime?.id ?? null) : (discover?.id ?? null);
 	const trailerId = discover?.trailerId ?? null;
-	const disabled = isList ? anime == null : discover == null;
+	const disabled = isList || isNowPlaying ? anime == null : discover == null;
 	const nextEpisode = anime ? Math.min(anime.episodesWatched + 1, anime.episodes || anime.episodesWatched + 1) : 1;
 	const lastEpisode = anime?.episodesWatched ?? 0;
 	const hasFolder = Boolean(anime?.folder);
-	const episodesQuery = trpc.library.episodes.useQuery({ animeId: anime?.id ?? 0 }, { enabled: Boolean(isList && anime?.id) });
+	const episodesQuery = trpc.library.episodes.useQuery({ animeId: anime?.id ?? 0 }, { enabled: Boolean(useLibrary && anime?.id) });
 	const scan = trpc.library.scan.useMutation();
 	const playEpisode = trpc.library.playEpisode.useMutation();
 	const playNext = trpc.library.playNext.useMutation();
@@ -175,6 +179,87 @@ export function AnimeItemCommands({
 			mediaId: discover.id,
 			...(status ? { status } : {}),
 		});
+	}
+
+	if (isNowPlaying) {
+		return (
+			<>
+				{showPlayNext ? (
+					<Item
+						disabled={disabled || localEpisodes.length === 0}
+						onClick={() => {
+							if (!anime) {
+								return;
+							}
+							void playNext.mutateAsync({
+								animeId: anime.id,
+								episodesWatched: anime.episodesWatched,
+							});
+						}}>
+						Play next episode (#{nextEpisode})<Shortcut>Ctrl+N</Shortcut>
+					</Item>
+				) : null}
+				<Item
+					disabled={disabled}
+					onClick={() => {
+						if (!anime) {
+							return;
+						}
+						void navigate({
+							to: "/app/search",
+							search: { q: anime.title },
+						});
+					}}>
+					Search
+				</Item>
+				<Item
+					disabled={disabled || !title}
+					onClick={() => {
+						void navigate({
+							to: "/app/torrents",
+						});
+					}}>
+					Search torrents
+				</Item>
+				{onEdit ? (
+					<Item disabled={disabled} onClick={onEdit}>
+						Edit...
+					</Item>
+				) : null}
+				<Item
+					disabled={disabled}
+					onClick={() => {
+						void scan.mutateAsync();
+					}}>
+					Scan available episodes
+					<Shortcut>F5</Shortcut>
+				</Item>
+				<Sub>
+					<SubTrigger>Play episode</SubTrigger>
+					<SubContent>
+						{localEpisodes.length === 0 ? (
+							<Item disabled>No local episodes</Item>
+						) : (
+							localEpisodes.map((item) => (
+								<Item
+									key={item.path}
+									onClick={() => {
+										if (!anime) {
+											return;
+										}
+										void playEpisode.mutateAsync({
+											animeId: anime.id,
+											episode: item.episode,
+										});
+									}}>
+									Episode {item.episode}
+								</Item>
+							))
+						)}
+					</SubContent>
+				</Sub>
+			</>
+		);
 	}
 
 	return (
