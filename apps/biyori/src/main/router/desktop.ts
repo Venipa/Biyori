@@ -162,12 +162,22 @@ export const desktopRouter = t.router({
 		const win = ctx.getBrowserWindow();
 		return { maximized: win?.isMaximized() ?? false };
 	}),
-	openPath: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(({ input }) => {
-		void shell.openPath(input.path);
+	openPath: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(({ ctx, input }) => {
+		const win = ctx.getBrowserWindow();
+		void shell.openPath(input.path).finally(() => {
+			if (win && !win.isDestroyed()) {
+				win.setEnabled(true);
+			}
+		});
 		return { ok: true as const };
 	}),
-	openExternal: t.procedure.input(z.object({ url: z.string().min(1) })).mutation(({ input }) => {
-		void shell.openExternal(input.url);
+	openExternal: t.procedure.input(z.object({ url: z.string().min(1) })).mutation(({ ctx, input }) => {
+		const win = ctx.getBrowserWindow();
+		void shell.openExternal(input.url).finally(() => {
+			if (win && !win.isDestroyed()) {
+				win.setEnabled(true);
+			}
+		});
 		return { ok: true as const };
 	}),
 	pickFolder: t.procedure.mutation(async ({ ctx }) => {

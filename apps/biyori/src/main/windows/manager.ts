@@ -163,17 +163,19 @@ export class WindowManager<TId extends string> {
 			win.on("hide", () => {
 				this.emitSettingsOverlay();
 			});
+			this.emitSettingsOverlay();
 		}
 		win.on("closed", () => {
 			if (this.windows.get(id)?.win === win) {
 				this.windows.delete(id);
 			}
-			this.emitSettingsOverlay();
+			if (id === "settings") {
+				this.emitSettingsOverlay();
+			}
 			if (parent && !parent.isDestroyed()) {
 				stealWindowFocus(parent);
 			}
 		});
-		this.emitSettingsOverlay();
 
 		if (definition.saveState) {
 			attachWindowState(win, String(id), {
@@ -281,7 +283,11 @@ export class WindowManager<TId extends string> {
 		});
 
 		win.webContents.setWindowOpenHandler((details) => {
-			void shell.openExternal(details.url);
+			void shell.openExternal(details.url).finally(() => {
+				if (!win.isDestroyed()) {
+					win.setEnabled(true);
+				}
+			});
 			return { action: "deny" };
 		});
 		attachRendererNavigationGuard(win);

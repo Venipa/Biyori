@@ -14,7 +14,9 @@ export function ParentWindowScrim() {
 	const focusChild = trpc.desktop.focusModalChild.useMutation();
 	trpc.desktop.onParentDimmed.useSubscription(undefined, {
 		enabled: !auxiliary,
-		onData: setDimmed,
+		onData: (open) => {
+			setDimmed(open === true);
+		},
 	});
 	if (auxiliary || !dimmed) {
 		return null;
