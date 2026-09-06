@@ -123,7 +123,9 @@ if (!app.requestSingleInstanceLock()) {
 			});
 			attachMainWindow(mainWindow);
 			setTrayState("hidden");
-			void runStartupScan();
+			void runStartupScan().finally(() => {
+				clearActivity("startup");
+			});
 			scheduleAfterInit();
 			logger.info("started");
 			return;
