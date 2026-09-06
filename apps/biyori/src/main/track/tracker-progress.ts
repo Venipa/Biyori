@@ -2,7 +2,7 @@ import type { AppSettings } from "../../lib/schemas/app-settings";
 import type { QueuePayload } from "./queue";
 import type { MatchedAnime } from "./types";
 
-type ProgressMatch = Pick<MatchedAnime, "episodes" | "episodesWatched" | "status" | "rewatching" | "timesRewatched" | "dateStarted">;
+type ProgressMatch = Pick<MatchedAnime, "episodes" | "episodesWatched" | "status" | "rewatching" | "timesRewatched" | "dateStarted" | "dateCompleted">;
 
 export function canApplyProgress(match: ProgressMatch, episode: number, settings: Pick<AppSettings, "ignoreOutOfRangeEpisode">): boolean {
 	const progress = match.rewatching && match.episodes > 0 && match.episodesWatched >= match.episodes ? 0 : match.episodesWatched;

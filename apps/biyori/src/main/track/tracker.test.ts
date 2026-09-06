@@ -8,6 +8,7 @@ const completedRewatch = {
 	rewatching: true,
 	timesRewatched: 2,
 	dateStarted: "2026-01-01",
+	dateCompleted: "2026-01-15",
 };
 
 describe("tracker progress", () => {
@@ -34,6 +35,7 @@ describe("tracker progress", () => {
 				rewatching: false,
 				timesRewatched: 0,
 				dateStarted: "2026-01-01",
+				dateCompleted: null,
 			},
 			5,
 		);
