@@ -8,7 +8,7 @@ import { trpc } from "@/mainview/trpc";
 import { ANIME_LIST_SEARCH_TAB } from "@/shared/list";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, HistoryIcon, ListIcon, PlayIcon, SearchIcon } from "lucide-react";
-import { AnimatePresence, LayoutGroup, motion } from "motion/react";
+import { LayoutGroup, motion } from "motion/react";
 import { type ReactNode, useRef } from "react";
 
 const listItems = [
@@ -24,8 +24,7 @@ const toolItems = [
 
 const navDestinations: string[] = ["/app/now-playing", "/app/anime-list", ...listItems.map((item) => item.to), ...toolItems.map((item) => item.to)];
 
-const navPillSpring = { type: "spring", stiffness: 420, damping: 32 } as const;
-const navPillFade = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const;
+const navPillSpring = { type: "spring", stiffness: 500, damping: 40 } as const;
 
 function navItemClass(active: boolean): string {
 	return cn(
@@ -44,24 +43,19 @@ function NavGroup({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function ActiveNavPill({ active, isEnter }: { active: boolean; isEnter: boolean }) {
+	if (!active) {
+		return null;
+	}
 	return (
-		<AnimatePresence>
-			{active ? (
-				<motion.span
-					layoutId='app-nav-pill'
-					aria-hidden
-					className='absolute top-1/2 left-1.5 h-3.5 w-1 rounded-full bg-primary'
-					initial={isEnter ? { opacity: 0, scale: 0.5, y: "-50%" } : false}
-					animate={{ opacity: 1, scale: 1, y: "-50%" }}
-					exit={{ opacity: 0, scale: 0.5, y: "-50%" }}
-					transition={{
-						layout: navPillSpring,
-						opacity: navPillFade,
-						scale: navPillFade,
-					}}
-				/>
-			) : null}
-		</AnimatePresence>
+		<motion.span
+			layoutId='app-nav-pill'
+			layout='position'
+			aria-hidden
+			className='pointer-events-none absolute top-1/2 left-1.5 mt-[-7px] h-3.5 w-1 rounded-full bg-primary'
+			initial={isEnter ? { opacity: 0 } : false}
+			animate={{ opacity: 1 }}
+			transition={navPillSpring}
+		/>
 	);
 }
 
@@ -162,7 +156,7 @@ function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: bool
 			render={<Link to='/app/now-playing' aria-current={active ? "page" : undefined} />}
 			nativeButton={false}
 			className={cn(
-				"relative isolate h-auto min-h-8 w-full justify-start py-1.5 pr-2 pl-4 has-data-[icon=inline-start]:pl-4",
+				"relative isolate h-auto min-h-8 w-full justify-start py-1.5 pr-2 pl-4 transition-colors has-data-[icon=inline-start]:pl-4",
 				showCover ? "items-stretch" : "items-start",
 				subLines.length > 0 ? "whitespace-normal" : undefined,
 				active ? "text-foreground" : "text-foreground/80",
