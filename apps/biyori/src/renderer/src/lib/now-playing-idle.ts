@@ -1,5 +1,6 @@
+import { formatAiringDayLabel } from "./format-date";
+
 export const CONTINUE_WATCHING_LIMIT = 20;
-export const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type IdleHistoryRow = {
@@ -35,9 +36,9 @@ export type UpcomingItem = {
 	title: string;
 };
 
-export type AiringSoonBuckets = {
-	soon: ContinueWatchingItem[];
-	later: ContinueWatchingItem[];
+export type AiringSoonGroup = {
+	label: string;
+	items: ContinueWatchingItem[];
 };
 
 export function nextUnwatchedEpisode(listed: IdleListedRow): number {
@@ -84,15 +85,10 @@ function airingMs(value: string | null | undefined): number | null {
 	return Number.isNaN(time) ? null : time;
 }
 
-export function buildAiringSoon(
-	listed: IdleListedRow[],
-	skipAnimeIds: ReadonlySet<number>,
-	now: number,
-): AiringSoonBuckets {
-	const soon: ContinueWatchingItem[] = [];
-	const later: ContinueWatchingItem[] = [];
-	const soonEnd = now + THREE_DAYS_MS;
+export function buildAiringSoon(listed: IdleListedRow[], skipAnimeIds: ReadonlySet<number>, now: number): AiringSoonGroup[] {
 	const laterEnd = now + SEVEN_DAYS_MS;
+	const nowDate = new Date(now);
+	const byDay = new Map<string, ContinueWatchingItem[]>();
 	for (const row of listed) {
 		if (skipAnimeIds.has(row.id)) {
 			continue;
@@ -105,7 +101,10 @@ export function buildAiringSoon(
 		if (row.episodesWatched >= nextEpisode) {
 			continue;
 		}
-		const item: ContinueWatchingItem = {
+		const airingAt = new Date(at);
+		const label = formatAiringDayLabel(airingAt, nowDate);
+		const items = byDay.get(label) ?? [];
+		items.push({
 			animeId: row.id,
 			title: row.title,
 			nextEpisode,
@@ -113,16 +112,16 @@ export function buildAiringSoon(
 			type: row.type ?? undefined,
 			episodes: row.episodes,
 			nextAiringAt: row.nextAiringAt ?? undefined,
-		};
-		if (at <= soonEnd) {
-			soon.push(item);
-		} else {
-			later.push(item);
-		}
+		});
+		byDay.set(label, items);
 	}
-	soon.sort((a, b) => (airingMs(a.nextAiringAt) ?? 0) - (airingMs(b.nextAiringAt) ?? 0));
-	later.sort((a, b) => (airingMs(a.nextAiringAt) ?? 0) - (airingMs(b.nextAiringAt) ?? 0));
-	return { soon, later };
+	const groups: AiringSoonGroup[] = [];
+	for (const [label, items] of byDay) {
+		items.sort((a, b) => (airingMs(a.nextAiringAt) ?? 0) - (airingMs(b.nextAiringAt) ?? 0));
+		groups.push({ label, items });
+	}
+	groups.sort((a, b) => (airingMs(a.items[0]?.nextAiringAt) ?? 0) - (airingMs(b.items[0]?.nextAiringAt) ?? 0));
+	return groups;
 }
 
 export function buildUpcoming(listed: Array<IdleListedRow & { airingStatus: string }>, skipAnimeIds: ReadonlySet<number>): UpcomingItem[] {

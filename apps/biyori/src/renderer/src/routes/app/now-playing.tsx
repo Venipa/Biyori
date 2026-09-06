@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, CircleHelpIcon, ExternalLinkIcon, PlayCircleIcon, SearchIcon } from "lucide-react";
+import { CircleAlertIcon, CircleHelpIcon, ExternalLinkIcon, LayoutGridIcon, PlayCircleIcon, SearchIcon, Table2Icon } from "lucide-react";
+import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { desktopRpc } from "@/desktop-rpc";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
@@ -12,12 +13,14 @@ import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Card } from "@/mainview/components/ui/card";
 import { Progress, ProgressLabel, ProgressValue } from "@/mainview/components/ui/progress";
-import { Separator } from "@/mainview/components/ui/separator";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
+import { ToggleRadio, ToggleRadioItem } from "@/mainview/components/ui/toggle-radio";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
+import { Separator } from "@/mainview/components/ui/separator";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
-import { formatWeekdayClock } from "@/mainview/lib/format-date";
+import { formatClock } from "@/mainview/lib/format-date";
 import { nextEpisodeIsAvailable } from "@/mainview/lib/list-progress";
-import { buildAiringSoon, buildContinueWatching, buildUpcoming, type ContinueWatchingItem, SEVEN_DAYS_MS } from "@/mainview/lib/now-playing-idle";
+import { buildAiringSoon, buildContinueWatching, buildUpcoming, type AiringSoonGroup, type ContinueWatchingItem, SEVEN_DAYS_MS } from "@/mainview/lib/now-playing-idle";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 
@@ -29,6 +32,7 @@ export const Route = createFileRoute("/app/now-playing")({
 type NowPlayingSnapshot = NonNullable<inferRouterOutputs<AppRouter>["media"]["nowPlaying"]>;
 
 type HistoryRow = inferRouterOutputs<AppRouter>["history"]["list"]["history"][number];
+type IdleLayout = "cards" | "table";
 
 function NowPlayingPage() {
 	const query = trpc.media.nowPlaying.useQuery();
@@ -60,6 +64,7 @@ function IdleNowPlaying() {
 	const listedQuery = trpc.anime.listed.useQuery();
 	const playNext = trpc.library.playNext.useMutation();
 	const animeInfo = useAnimeInfoNav();
+	const [layout, setLayout] = useState<IdleLayout>("cards");
 	const queued = historyQuery.data?.queued ?? [];
 	const history = historyQuery.data?.history ?? [];
 	const listed = listedQuery.data ?? [];
@@ -68,12 +73,13 @@ function IdleNowPlaying() {
 	const continueWatching = buildContinueWatching([...queued, ...history], listedById, skipStatus);
 	const airingSkip = new Set([...skipStatus, ...continueWatching.map((item) => item.animeId)]);
 	const airing = buildAiringSoon(listed, airingSkip, Date.now());
-	const upcomingSkip = new Set([...skipStatus, ...airing.soon.map((item) => item.animeId), ...airing.later.map((item) => item.animeId)]);
+	const airingIds = airing.flatMap((group) => group.items.map((item) => item.animeId));
+	const upcomingSkip = new Set([...skipStatus, ...airingIds]);
 	const upcoming = buildUpcoming(listed, upcomingSkip);
 	const watchedLastWeek = countWatchedLastWeek([...queued, ...history]);
 	const historyPending = historyQuery.isPending && !historyQuery.data;
 	const listedPending = listedQuery.isPending && !listedQuery.data;
-	const hasAiring = airing.soon.length > 0 || airing.later.length > 0;
+	const hasAiring = airing.length > 0;
 
 	if (historyPending || listedPending) {
 		return <NowPlayingSkeleton />;
@@ -86,17 +92,38 @@ function IdleNowPlaying() {
 	return (
 		<ScrollArea className='h-full'>
 			<div className='@container mx-auto flex w-full flex-col gap-6 p-4 pb-10'>
-				<header className='flex flex-col gap-1'>
-					<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Now playing</p>
-					<h1 className='text-xl font-semibold tracking-tight'>Nothing is playing</h1>
-					<p className='text-sm text-muted-foreground'>Continue from recent list updates.</p>
+				<header className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+					<div className='flex flex-col gap-1'>
+						<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Now playing</p>
+						<h1 className='text-xl font-semibold tracking-tight'>Nothing is playing</h1>
+						<p className='text-sm text-muted-foreground'>Continue from recent list updates.</p>
+					</div>
+					{continueWatching.length > 0 || hasAiring ? (
+						<IdleLayoutToggle value={layout} onValueChange={setLayout} />
+					) : null}
 				</header>
 
-				{continueWatching.length > 0 || hasAiring ? (
-					<div className='grid grid-cols-1 gap-6 @xl:grid-cols-2'>
+				{layout === "table" ? (
+					<IdleTables
+						continueWatching={continueWatching}
+						airing={airing}
+						playDisabled={playNext.isPending}
+						onPlay={(item) => {
+							void playNext.mutateAsync({
+								animeId: item.animeId,
+								episodesWatched: item.nextEpisode - 1,
+							});
+						}}
+						onOpen={(item) => {
+							animeInfo.open({ id: item.animeId, infoTab: "main" });
+						}}
+						watchedLastWeek={watchedLastWeek}
+					/>
+				) : continueWatching.length > 0 || hasAiring ? (
+					<div className='flex min-w-0 gap-3'>
 						{continueWatching.length > 0 ? (
-							<section className='flex min-w-0 flex-col gap-3'>
-								<div>
+							<section className='flex w-fit min-w-0 max-w-1/2 flex-col gap-3'>
+								<div className='min-w-0 max-w-full'>
 									<h2 className='mb-1 text-sm font-semibold'>Continue watching</h2>
 									<Separator className='mb-2' />
 									<IdlePosterStrip
@@ -120,35 +147,16 @@ function IdleNowPlaying() {
 							</section>
 						) : null}
 						{hasAiring ? (
-							<section className='flex min-w-0 flex-col gap-4'>
-								{airing.soon.length > 0 ? (
-									<div>
-										<h2 className='mb-1 text-sm font-semibold'>Next 3 days</h2>
-										<Separator className='mb-2' />
-										<IdlePosterStrip
-											label='Next 3 days'
-											items={airing.soon}
-											onActivate={(item) => {
-												animeInfo.open({ id: item.animeId, infoTab: "main" });
-											}}
-											description={airingCaption}
-										/>
-									</div>
-								) : null}
-								{airing.later.length > 0 ? (
-									<div>
-										<h2 className='mb-1 text-sm font-semibold'>In 4-7 days</h2>
-										<Separator className='mb-2' />
-										<IdlePosterStrip
-											label='In 4-7 days'
-											items={airing.later}
-											onActivate={(item) => {
-												animeInfo.open({ id: item.animeId, infoTab: "main" });
-											}}
-											description={airingCaption}
-										/>
-									</div>
-								) : null}
+							<section className='min-w-0 flex-1'>
+								<IdleAiringRail
+									groups={airing.map((group) => ({
+										label: group.label,
+										items: group.items,
+										onActivate: (item: ContinueWatchingItem) => {
+											animeInfo.open({ id: item.animeId, infoTab: "main" });
+										},
+									}))}
+								/>
 							</section>
 						) : null}
 					</div>
@@ -180,7 +188,151 @@ function IdleNowPlaying() {
 }
 
 function airingCaption(item: ContinueWatchingItem): string {
-	return `Episode ${item.nextEpisode} airing ${formatWeekdayClock(item.nextAiringAt)}`;
+	return `Episode ${item.nextEpisode} at ${formatClock(item.nextAiringAt)}`;
+}
+
+function IdleLayoutToggle({ value, onValueChange }: { value: IdleLayout; onValueChange: (value: IdleLayout) => void }) {
+	return (
+		<ToggleRadio
+			aria-label='View'
+			value={value}
+			onValueChange={(next) => {
+				if (next === "cards" || next === "table") {
+					onValueChange(next);
+				}
+			}}>
+			<ToggleRadioItem value='cards' aria-label='Card view'>
+				<LayoutGridIcon />
+			</ToggleRadioItem>
+			<ToggleRadioItem value='table' aria-label='Table view'>
+				<Table2Icon />
+			</ToggleRadioItem>
+		</ToggleRadio>
+	);
+}
+
+function TitleCellWithPoster({ item }: { item: ContinueWatchingItem }) {
+	return (
+		<TableCell className='group/poster relative w-full max-w-64 overflow-visible'>
+			<span className='pointer-events-none invisible absolute top-1/2 left-full z-30 ml-2 -translate-y-1/2 group-hover/poster:visible'>
+				<AnimeCover
+					id={item.animeId}
+					kind='cover'
+					coverUrl={item.coverUrl}
+					alt=''
+					width={96}
+					height={144}
+					className='aspect-2/3 h-36 w-24 overflow-hidden rounded-md bg-muted shadow-md ring-1 ring-foreground/10'
+				/>
+			</span>
+			<span className='block w-full min-w-0 truncate'>{item.title}</span>
+		</TableCell>
+	);
+}
+
+function IdleTables({
+	continueWatching,
+	airing,
+	playDisabled,
+	onPlay,
+	onOpen,
+	watchedLastWeek,
+}: {
+	continueWatching: ContinueWatchingItem[];
+	airing: AiringSoonGroup[];
+	playDisabled: boolean;
+	onPlay: (item: ContinueWatchingItem) => void;
+	onOpen: (item: ContinueWatchingItem) => void;
+	watchedLastWeek: number;
+}) {
+	return (
+		<div className='flex flex-col gap-6'>
+			{continueWatching.length > 0 ? (
+				<section>
+					<h2 className='mb-1 text-sm font-semibold'>Continue watching</h2>
+					<Separator className='mb-2' />
+					<Table containerClassName='overflow-visible'>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Title</TableHead>
+								<TableHead>Episode</TableHead>
+								<TableHead>Type</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{continueWatching.map((item) => (
+								<TableRow
+									key={item.animeId}
+									className={playDisabled ? "opacity-50" : "cursor-pointer"}
+									onClick={() => {
+										if (!playDisabled) {
+											onPlay(item);
+										}
+									}}>
+									<TitleCellWithPoster item={item} />
+									<TableCell className='text-muted-foreground'>
+										Next episode {item.nextEpisode}
+										{item.episodes != null && item.episodes > 0 ? ` of ${item.episodes}` : ""}
+									</TableCell>
+									<TableCell className='text-muted-foreground'>{item.type ?? "-"}</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+					{watchedLastWeek > 0 ? (
+						<p className='mt-3 text-sm text-muted-foreground'>
+							You've watched {watchedLastWeek} episode
+							{watchedLastWeek === 1 ? "" : "s"} last week.
+						</p>
+					) : null}
+				</section>
+			) : null}
+			{airing.length > 0 ? (
+				<section>
+					<h2 className='mb-1 text-sm font-semibold'>Airing soon</h2>
+					<Separator className='mb-2' />
+					<Table containerClassName='overflow-visible'>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Title</TableHead>
+								<TableHead>Airing</TableHead>
+								<TableHead>Type</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{airing.map((group) => (
+								<IdleAiringDayRows key={group.label} group={group} onOpen={onOpen} />
+							))}
+						</TableBody>
+					</Table>
+				</section>
+			) : null}
+		</div>
+	);
+}
+
+function IdleAiringDayRows({ group, onOpen }: { group: AiringSoonGroup; onOpen: (item: ContinueWatchingItem) => void }) {
+	return (
+		<>
+			<TableRow className='bg-muted hover:bg-muted'>
+				<TableCell colSpan={3} className='py-1.5 text-sm font-semibold'>
+					{group.label}
+				</TableCell>
+			</TableRow>
+			{group.items.map((item) => (
+				<TableRow
+					key={item.animeId}
+					className='cursor-pointer'
+					onClick={() => {
+						onOpen(item);
+					}}>
+					<TitleCellWithPoster item={item} />
+					<TableCell className='text-muted-foreground'>{airingCaption(item)}</TableCell>
+					<TableCell className='text-muted-foreground'>{item.type ?? "-"}</TableCell>
+				</TableRow>
+			))}
+		</>
+	);
 }
 
 function IdlePosterStrip({
@@ -197,14 +349,48 @@ function IdlePosterStrip({
 	description?: (item: ContinueWatchingItem) => string;
 }) {
 	return (
-		<ScrollArea className='h-auto w-full' viewportClassName='overflow-x-auto overflow-y-hidden'>
+		<ScrollArea className='h-auto max-w-full' viewportClassName='overflow-x-auto overflow-y-hidden'>
 			<ul aria-label={label} className='flex w-max snap-x snap-mandatory gap-3 pb-1'>
 				{items.map((item) => (
-					<li key={item.animeId} className='w-[160px] md:w-[200px] shrink-0 snap-start'>
+					<li key={item.animeId} className='w-40 shrink-0 snap-start md:w-50'>
 						<ContinueWatchingCard item={item} disabled={disabled} description={description?.(item)} onActivate={() => onActivate(item)} />
 					</li>
 				))}
 			</ul>
+		</ScrollArea>
+	);
+}
+
+function IdleAiringRail({
+	groups,
+}: {
+	groups: Array<{
+		label: string;
+		items: ContinueWatchingItem[];
+		onActivate: (item: ContinueWatchingItem) => void;
+	}>;
+}) {
+	const visible = groups.filter((group) => group.items.length > 0);
+	if (visible.length === 0) {
+		return null;
+	}
+	return (
+		<ScrollArea className='h-auto w-full' viewportClassName='overflow-x-auto overflow-y-hidden'>
+			<div className='flex w-max items-start'>
+				{visible.map((group) => (
+					<section key={group.label} className='flex flex-col'>
+						<h2 className='sticky left-0 z-10 mb-1 w-max bg-background/90 py-0.5 pr-4 text-sm font-semibold backdrop-blur-sm'>{group.label}</h2>
+						<Separator className='sticky left-0 z-10 mb-2 w-40 md:w-50' />
+						<ul aria-label={group.label} className='flex snap-x snap-mandatory gap-3 pr-6 pb-1'>
+							{group.items.map((item) => (
+								<li key={item.animeId} className='w-40 shrink-0 snap-start md:w-50'>
+									<ContinueWatchingCard item={item} description={airingCaption(item)} onActivate={() => group.onActivate(item)} />
+								</li>
+							))}
+						</ul>
+					</section>
+				))}
+			</div>
 		</ScrollArea>
 	);
 }

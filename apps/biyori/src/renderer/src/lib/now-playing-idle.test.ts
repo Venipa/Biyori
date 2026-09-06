@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { buildAiringSoon, buildContinueWatching, buildUpcoming, THREE_DAYS_MS } from "./now-playing-idle";
+import { addDays, startOfDay } from "date-fns";
+import { buildAiringSoon, buildContinueWatching, buildUpcoming, SEVEN_DAYS_MS } from "./now-playing-idle";
 
 const listed = {
 	id: 1,
@@ -28,37 +29,45 @@ describe("buildContinueWatching", () => {
 });
 
 describe("buildAiringSoon", () => {
-	const now = Date.parse("2026-09-06T12:00:00.000Z");
+	const nowDate = new Date(2026, 8, 6, 12);
+	const now = nowDate.getTime();
 
-	function row(id: number, offsetMs: number, extra?: Partial<typeof listed>): typeof listed & { nextAiringAt: string } {
+	function row(id: number, when: Date, extra?: Partial<typeof listed>): typeof listed & { nextAiringAt: string } {
 		return {
 			...listed,
 			id,
 			title: `Show ${id}`,
-			nextAiringAt: new Date(now + offsetMs).toISOString(),
+			nextAiringAt: when.toISOString(),
 			...extra,
 		};
 	}
 
-	test("splits 2d vs 5d vs 8d and drops the past", () => {
-		const buckets = buildAiringSoon(
-			[row(1, 2 * 24 * 60 * 60 * 1000), row(2, 5 * 24 * 60 * 60 * 1000), row(3, 8 * 24 * 60 * 60 * 1000), row(4, -60_000)],
+	test("groups by local day and drops past and beyond 7 days", () => {
+		const groups = buildAiringSoon(
+			[
+				row(1, new Date(2026, 8, 6, 18)),
+				row(2, new Date(2026, 8, 7, 10)),
+				row(3, addDays(startOfDay(nowDate), 3)),
+				row(4, new Date(now + SEVEN_DAYS_MS + 60_000)),
+				row(5, new Date(now - 60_000)),
+			],
 			new Set(),
 			now,
 		);
-		expect(buckets.soon.map((item) => item.animeId)).toEqual([1]);
-		expect(buckets.later.map((item) => item.animeId)).toEqual([2]);
+		expect(groups.map((group) => group.label)).toEqual(["Today", "Tomorrow", "Wed 9 Sep"]);
+		expect(groups[0]?.items.map((item) => item.animeId)).toEqual([1]);
+		expect(groups[1]?.items.map((item) => item.animeId)).toEqual([2]);
+		expect(groups[2]?.items.map((item) => item.animeId)).toEqual([3]);
 	});
 
 	test("skips already watched next episodes", () => {
-		const buckets = buildAiringSoon([row(1, THREE_DAYS_MS, { lastAiredEpisode: 4, episodesWatched: 5 })], new Set(), now);
-		expect(buckets.soon).toEqual([]);
-		expect(buckets.later).toEqual([]);
+		const groups = buildAiringSoon([row(1, new Date(2026, 8, 6, 18), { lastAiredEpisode: 4, episodesWatched: 5 })], new Set(), now);
+		expect(groups).toEqual([]);
 	});
 
 	test("omits ids already in continue watching", () => {
-		const buckets = buildAiringSoon([row(1, THREE_DAYS_MS)], new Set([1]), now);
-		expect(buckets.soon).toEqual([]);
+		const groups = buildAiringSoon([row(1, new Date(2026, 8, 6, 18))], new Set([1]), now);
+		expect(groups).toEqual([]);
 	});
 });
 
