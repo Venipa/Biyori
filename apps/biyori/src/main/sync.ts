@@ -1,4 +1,4 @@
-import { completeActivity, clearActivity, upsertActivity } from "./activity";
+import { clearActivity, completeActivity, upsertActivity } from "./activity";
 import { readAnilistAuth, writeAnilistAuth } from "./anilist/store";
 import { fetchViewer, syncAniListList } from "./anilist/sync";
 import type { DatabaseClient } from "./db";

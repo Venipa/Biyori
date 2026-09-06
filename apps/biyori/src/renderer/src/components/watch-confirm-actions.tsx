@@ -2,17 +2,7 @@ import { Button } from "@/mainview/components/ui/button";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { trpc } from "@/mainview/trpc";
 
-export function WatchConfirmActions({
-	disabled,
-	size = "sm",
-	onSkip,
-	onUpdate,
-}: {
-	disabled?: boolean;
-	size?: "xs" | "sm";
-	onSkip: () => void;
-	onUpdate: () => void;
-}) {
+export function WatchConfirmActions({ disabled, size = "sm", onSkip, onUpdate }: { disabled?: boolean; size?: "xs" | "sm"; onSkip: () => void; onUpdate: () => void }) {
 	return (
 		<div className='flex shrink-0 items-center gap-1 [&_button]:cursor-pointer'>
 			<Button type='button' variant='outline' size={size} onClick={onSkip}>

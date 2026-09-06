@@ -3,14 +3,9 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { app } from "electron";
 import type { AppSettings } from "../lib/schemas/app-settings";
-import {
-	argvIsStartupLaunch,
-	linuxAutostartDesktopEntry,
-	STARTUP_FLAG,
-	windowsLoginItemArgs,
-} from "./startup-login";
+import { argvIsStartupLaunch, linuxAutostartDesktopEntry, STARTUP_FLAG, windowsLoginItemArgs } from "./startup-login";
 
-export { STARTUP_FLAG, argvIsStartupLaunch } from "./startup-login";
+export { argvIsStartupLaunch, STARTUP_FLAG } from "./startup-login";
 
 export function isStartupLaunch(): boolean {
 	return argvIsStartupLaunch(process.argv, app.getLoginItemSettings());

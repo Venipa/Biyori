@@ -1,3 +1,8 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { LayoutGroup, motion } from "motion/react";
+import { type ReactNode, useRef } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import { type SettingsFormInput, type SettingsFormValues, settingsFormSchema } from "@/lib/schemas/app-settings";
 import { PageLoad } from "@/mainview/components/page-load";
 import { SettingsCloseGuard } from "@/mainview/components/settings/settings-close-guard";
@@ -6,11 +11,6 @@ import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { matchSettingsNav, settingsSectionHref, settingsSections } from "@/mainview/lib/settings-nav";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutGroup, motion } from "motion/react";
-import { type ReactNode, useRef } from "react";
-import { FormProvider, useForm } from "react-hook-form";
 
 export const Route = createFileRoute("/settings")({
 	component: SettingsLayout,
@@ -29,25 +29,14 @@ function navLinkClass(isActive: boolean) {
 }
 
 function subNavLinkClass(isActive: boolean) {
-	return cn(
-		"relative flex items-center py-1.5 pl-3 text-left text-sm transition-colors",
-		isActive ? "text-foreground" : "text-foreground/80 hover:text-foreground",
-	);
+	return cn("relative flex items-center py-1.5 pl-3 text-left text-sm transition-colors", isActive ? "text-foreground" : "text-foreground/80 hover:text-foreground");
 }
 
 const subNavPillSpring = { type: "spring", stiffness: 420, damping: 32 } as const;
 const subNavPillEnter = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const;
 const subNavPillInstant = { duration: 0 } as const;
 
-function SettingsSubNav({
-	sectionId,
-	items,
-	pathname,
-}: {
-	sectionId: string;
-	items: readonly { id: string; label: string }[];
-	pathname: string;
-}) {
+function SettingsSubNav({ sectionId, items, pathname }: { sectionId: string; items: readonly { id: string; label: string }[]; pathname: string }) {
 	const groupActive = items.some((child) => pathname === settingsSectionHref(sectionId, child.id));
 	const shown = useRef(false);
 	if (!groupActive) {

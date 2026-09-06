@@ -1,5 +1,5 @@
-import { AppWindowIcon, DownloadIcon, FolderIcon, GlobeIcon, ScanEyeIcon, Share2Icon, SlidersHorizontalIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { AppWindowIcon, DownloadIcon, FolderIcon, GlobeIcon, ScanEyeIcon, Share2Icon, SlidersHorizontalIcon } from "lucide-react";
 
 export type SettingsNavChild = {
 	id: string;

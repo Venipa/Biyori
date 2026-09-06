@@ -4,11 +4,7 @@ import { matchById, matchParsed, relationHopCandidates } from "./match-core";
 import { redirectEpisode, uniqueRedirect } from "./relations";
 import type { MatchedAnime } from "./types";
 
-export function resolveFileMatch(
-	parts: TitleParts,
-	episode: number | null,
-	candidates: Candidate[],
-): { match: MatchedAnime | null; episode: number | null } {
+export function resolveFileMatch(parts: TitleParts, episode: number | null, candidates: Candidate[]): { match: MatchedAnime | null; episode: number | null } {
 	const match = matchParsed(parts, candidates);
 	if (episode == null) {
 		return { match, episode };

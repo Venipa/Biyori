@@ -1,12 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import {
-	ACTIVITY_MAX_AGE_MS,
-	completeActivity,
-	filterFreshActivities,
-	getActivitySnapshot,
-	resetActivityCenterForTests,
-	upsertActivity,
-} from "./activity";
+import { ACTIVITY_MAX_AGE_MS, completeActivity, filterFreshActivities, getActivitySnapshot, resetActivityCenterForTests, upsertActivity } from "./activity";
 
 describe("activity center", () => {
 	afterEach(() => {

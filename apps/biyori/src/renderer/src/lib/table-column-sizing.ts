@@ -1,5 +1,5 @@
-import { useState } from "react";
 import type { ColumnSizingState, OnChangeFn } from "@tanstack/react-table";
+import { useState } from "react";
 import { z } from "zod";
 
 const STORAGE_PREFIX = "biyori.table-columns.";

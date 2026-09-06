@@ -5,11 +5,7 @@ import { setTrayState, toggleTrayState } from "./tray-state";
 let tray: Tray | null = null;
 
 function trayMenu(onQuit: () => void): Electron.Menu {
-	return Menu.buildFromTemplate([
-		{ label: "Show", click: () => setTrayState("visible") },
-		{ type: "separator" },
-		{ label: "Quit", click: onQuit },
-	]);
+	return Menu.buildFromTemplate([{ label: "Show", click: () => setTrayState("visible") }, { type: "separator" }, { label: "Quit", click: onQuit }]);
 }
 
 function trayImage(): Electron.NativeImage | string {

@@ -1,11 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeftIcon, FolderIcon, FolderPlusIcon, Trash2Icon } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
-import { useNavigate } from "@tanstack/react-router";
 import AnilistIcon from "@/assets/anilist.svg?react";
 import MyAnimeListIcon from "@/assets/mal.svg?react";
+import { folderDisplayName } from "@/lib/folder-path";
 import { type AnilistToken, type AnilistTokenInput, anilistTokenSchema } from "@/lib/schemas/anilist-token";
+import { titleLanguageSchema } from "@/lib/schemas/app-settings";
 import Logo from "@/mainview/components/logo";
 import { SettingsToggleGroup } from "@/mainview/components/settings/settings-toggle-group";
 import { Badge } from "@/mainview/components/ui/badge";
@@ -15,8 +17,6 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/mainview/components/ui/field";
 import { Progress, ProgressLabel, ProgressValue } from "@/mainview/components/ui/progress";
 import { Textarea } from "@/mainview/components/ui/textarea";
-import { folderDisplayName } from "@/lib/folder-path";
-import { titleLanguageSchema } from "@/lib/schemas/app-settings";
 import { useTheme } from "@/mainview/lib/hooks/use-theme";
 import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
 import { THEME_MODES, type ThemeMode } from "@/mainview/lib/theme";
@@ -137,9 +137,7 @@ export function OnboardingWizard() {
 								onAskToConfirmUpdateChange={setConfirm}
 							/>
 						) : null}
-						{step === 3 ? (
-							<OnboardingCrashReportsStep sendCrashReports={sendCrashReports} onSendCrashReportsChange={setCrashReports} />
-						) : null}
+						{step === 3 ? <OnboardingCrashReportsStep sendCrashReports={sendCrashReports} onSendCrashReportsChange={setCrashReports} /> : null}
 						{step === 4 ? <OnboardingDoneStep username={statusQuery.data?.username ?? ""} folderCount={settings.libraryFolders.length} /> : null}
 					</div>
 				)}
@@ -430,21 +428,15 @@ function OnboardingPrefsStep({
 	);
 }
 
-function OnboardingCrashReportsStep({
-	sendCrashReports,
-	onSendCrashReportsChange,
-}: {
-	sendCrashReports: boolean;
-	onSendCrashReportsChange: (next: boolean) => void;
-}) {
+function OnboardingCrashReportsStep({ sendCrashReports, onSendCrashReportsChange }: { sendCrashReports: boolean; onSendCrashReportsChange: (next: boolean) => void }) {
 	const crashReportsId = useId();
 	return (
 		<FieldGroup>
 			<Field>
 				<FieldLabel htmlFor={crashReportsId}>Help me fix crashes?</FieldLabel>
 				<FieldDescription>
-					If Biyori hits an unexpected error, it can send me a technical report so I can fix it. That includes a stack trace and your AniList user id, not
-					your token, passwords, or files. You can change this later in Settings.
+					If Biyori hits an unexpected error, it can send me a technical report so I can fix it. That includes a stack trace and your AniList user id, not your token, passwords, or
+					files. You can change this later in Settings.
 				</FieldDescription>
 				<SettingsToggleGroup
 					id={crashReportsId}

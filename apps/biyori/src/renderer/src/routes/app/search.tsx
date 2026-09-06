@@ -8,7 +8,7 @@ import { anilistSearchRouteSchema } from "@/lib/schemas/anilist-search";
 import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
 import { DataTable, resizableTableOptions } from "@/mainview/components/data-table";
-import { usePersistedColumnSizing } from "@/mainview/lib/table-column-sizing";
+import { PlaceholderView } from "@/mainview/components/placeholder-view";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -20,12 +20,12 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
-import { PlaceholderView } from "@/mainview/components/placeholder-view";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { useAnimeInfoNav, useAnimeInfoOpen } from "@/mainview/lib/anime-info-nav";
 import { formatSeasonLabel } from "@/mainview/lib/season-view";
+import { usePersistedColumnSizing } from "@/mainview/lib/table-column-sizing";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
@@ -129,9 +129,7 @@ function SearchPage() {
 			<ContextMenu>
 				<ContextMenuTrigger className='block h-full min-h-0'>
 					<ScrollArea className='h-full'>
-						{!hasQuery ? (
-							<PlaceholderView icon={SearchIcon} title='Search AniList' description='Type a title in the toolbar and submit.' />
-						) : null}
+						{!hasQuery ? <PlaceholderView icon={SearchIcon} title='Search AniList' description='Type a title in the toolbar and submit.' /> : null}
 						{hasQuery && query.isPending && items.length === 0 ? <TableRowsSkeleton columnCount={columns.length} /> : null}
 						{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Search failed' description={query.error.message} /> : null}
 						{hasQuery && !query.isPending && !query.error && items.length === 0 ? (

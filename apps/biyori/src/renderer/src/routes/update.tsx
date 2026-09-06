@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, RefreshCwIcon } from "lucide-react";
 import { desktopRpc } from "@/desktop-rpc";
 import Logo from "@/mainview/components/logo";
@@ -11,7 +12,6 @@ import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { formatTransferRate } from "@/shared/updater";
-import type { inferRouterOutputs } from "@trpc/server";
 
 export const Route = createFileRoute("/update")({
 	component: UpdatePage,

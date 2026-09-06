@@ -6,7 +6,7 @@ import { FormCheckbox } from "@/mainview/components/form-checkbox";
 import { SettingsFieldError } from "@/mainview/components/settings/settings-field-error";
 import { SettingsSectionCard } from "@/mainview/components/settings/settings-section-card";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
-import { Field, FieldDescription, FieldLabel } from "@/mainview/components/ui/field";
+import { Field, FieldLabel } from "@/mainview/components/ui/field";
 import { Input } from "@/mainview/components/ui/input";
 import { Textarea } from "@/mainview/components/ui/textarea";
 
@@ -156,9 +156,7 @@ function StreamingFields() {
 	const form = useFormContext<AppSettingsInput>();
 	const streamingEnabled = form.watch("enableStreamingDetection");
 	return (
-		<SettingsSectionCard
-			title='Streaming media'
-			description='Supported browsers are Google Chrome, Mozilla Firefox, and Opera. Works best with a browser in English.'>
+		<SettingsSectionCard title='Streaming media' description='Supported browsers are Google Chrome, Mozilla Firefox, and Opera. Works best with a browser in English.'>
 			<FormCheckbox control={form.control} name='enableStreamingDetection' id={streamEnableId} label='Enable streaming media detection' />
 			<Controller
 				control={form.control}

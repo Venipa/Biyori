@@ -10,11 +10,7 @@ export function parseRatio(body: string): { current: number; total: number } | n
 	return { current: Number(matched[1]), total };
 }
 
-export function splashSegmentState(input: {
-	bootBody?: string;
-	scanTitle?: string;
-	scanBody?: string;
-}): { completed: number; total: number; inner: number | null } {
+export function splashSegmentState(input: { bootBody?: string; scanTitle?: string; scanBody?: string }): { completed: number; total: number; inner: number | null } {
 	const bootRatio = input.bootBody ? parseRatio(input.bootBody) : null;
 	const innerRatio = input.scanBody ? parseRatio(input.scanBody) : null;
 	const scanning = Boolean(input.scanTitle || input.scanBody);

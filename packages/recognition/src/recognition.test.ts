@@ -189,11 +189,15 @@ describe("uniqueOutOfRangeRedirect", () => {
 
 	test("picks the unique dest when season 1 is in range and a cour is not", () => {
 		expect(
-			uniqueOutOfRangeRedirect(47, [
-				{ id: 269, episodes: 366 },
-				{ id: 1, episodes: 13 },
-				{ id: 2, episodes: 10 },
-			], bang),
+			uniqueOutOfRangeRedirect(
+				47,
+				[
+					{ id: 269, episodes: 366 },
+					{ id: 1, episodes: 13 },
+					{ id: 2, episodes: 10 },
+				],
+				bang,
+			),
 		).toEqual({ id: 2, episode: 7 });
 	});
 

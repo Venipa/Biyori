@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { dialogPaintedAnime, isAnimeInfoDialogOpen, isPendingAnimeInfoOpen, selectAnimeInfoDialog, shouldEnsureAnimeInfo, shouldHydrateAnimeInfoUrl, shownAnimeInfoDetail } from "./anime-info-dialog-state";
+import {
+	dialogPaintedAnime,
+	isAnimeInfoDialogOpen,
+	isPendingAnimeInfoOpen,
+	selectAnimeInfoDialog,
+	shouldEnsureAnimeInfo,
+	shouldHydrateAnimeInfoUrl,
+	shownAnimeInfoDetail,
+} from "./anime-info-dialog-state";
 
 const a = { id: 1 };
 const b = { id: 2 };

@@ -104,7 +104,7 @@ export function ReleaseDownloadPanel({ releases }: ReleaseDownloadPanelProps) {
 
 	useEffect(() => {
 		setNotesExpanded(false);
-	}, [channel]);
+	}, []);
 
 	useEffect(() => {
 		if (!channelOpen) return;
@@ -165,15 +165,12 @@ export function ReleaseDownloadPanel({ releases }: ReleaseDownloadPanelProps) {
 						<ChevronDownIcon className={cn("size-3.5 transition-transform", channelOpen && "rotate-180")} />
 					</button>
 					{channelOpen ? (
-						<ul
-							role='listbox'
-							aria-label='Release channel'
-							className='absolute left-0 top-full z-20 mt-1.5 min-w-40 overflow-hidden rounded-xl border bg-fd-popover py-1 shadow-lg'>
+						<ul aria-label='Release channel' className='absolute left-0 top-full z-20 mt-1.5 min-w-40 overflow-hidden rounded-xl border bg-fd-popover py-1 shadow-lg'>
 							{availableChannels.map((item) => {
 								const itemRelease = releases[item];
 								const selected = item === channel;
 								return (
-									<li key={item} role='option' aria-selected={selected}>
+									<li key={item} aria-selected={selected}>
 										<button
 											type='button'
 											onClick={() => {
@@ -278,7 +275,7 @@ function ReleaseNotesCollapse({ notes, expanded, onToggle }: ReleaseNotesCollaps
 		if (!el) return;
 		// Collapsed viewport is max-h-20 (5rem)
 		setNeedsCollapse(el.scrollHeight > 80);
-	}, [notes]);
+	}, []);
 
 	const list = (
 		<ul ref={measureRef} className={cn("list-disc space-y-1.5 pl-4 text-sm text-fd-muted-foreground", expanded && needsCollapse && "max-h-[min(32rem,70vh)] overflow-y-auto pr-1")}>

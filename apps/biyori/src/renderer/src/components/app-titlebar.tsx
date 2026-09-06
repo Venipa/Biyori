@@ -1,10 +1,10 @@
+import { cn } from "@renderer/lib/utils";
+import { useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
 import { requestWindowClose } from "@/mainview/components/confirm-escape";
 import Logo from "@/mainview/components/logo";
 import { ControlButton } from "@/mainview/components/ui/control-button";
 import { trpc } from "@/mainview/trpc";
-import { cn } from "@renderer/lib/utils";
-import { useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
 
 const INITIAL_CHROME = {
 	maximized: false,

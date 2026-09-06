@@ -1,3 +1,5 @@
+import { BellIcon } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { ActivityCenterPanel } from "@/mainview/components/activity-center-panel";
 import { Button } from "@/mainview/components/ui/button";
 import { Spinner } from "@/mainview/components/ui/spinner";
@@ -5,8 +7,6 @@ import { useWatchConfirm } from "@/mainview/components/watch-confirm-actions";
 import { setActivityPanelOpen, toggleActivityPanel, useActivityPanelState } from "@/mainview/lib/activity-panel";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { trpc } from "@/mainview/trpc";
-import { BellIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
 
 export function AppStatusBar() {
 	const utils = trpc.useUtils();

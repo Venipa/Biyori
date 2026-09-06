@@ -1,9 +1,9 @@
-import { Provider } from "@/components/provider";
-import { assetPath } from "@/lib/paths";
-import { appDescription, appName, appTagline, siteUrl } from "@/lib/shared";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
+import { Provider } from "@/components/provider";
+import { assetPath } from "@/lib/paths";
+import { appDescription, appName, appTagline, siteUrl } from "@/lib/shared";
 import "./global.css";
 
 const inter = Inter({

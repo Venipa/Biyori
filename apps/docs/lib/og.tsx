@@ -1,8 +1,8 @@
-import { appName, appTagline } from "@/lib/shared";
-import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { ImageResponse } from "next/og";
 import type { ReactNode } from "react";
+import { appName, appTagline } from "@/lib/shared";
 
 const PILLS = [
 	{ label: "List", icon: "list" },

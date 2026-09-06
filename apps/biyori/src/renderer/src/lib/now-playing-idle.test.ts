@@ -16,9 +16,7 @@ const listed = {
 describe("buildContinueWatching", () => {
 	test("keeps the next episode only when the file is on disk", () => {
 		const listedById = new Map([[1, listed]]);
-		expect(
-			buildContinueWatching([{ animeId: 1, title: "Show", episode: 3 }], listedById, new Set()).map((item) => item.nextEpisode),
-		).toEqual([4]);
+		expect(buildContinueWatching([{ animeId: 1, title: "Show", episode: 3 }], listedById, new Set()).map((item) => item.nextEpisode)).toEqual([4]);
 		expect(buildContinueWatching([{ animeId: 1, title: "Show", episode: 4 }], listedById, new Set())).toEqual([]);
 	});
 

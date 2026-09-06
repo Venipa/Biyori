@@ -1,14 +1,7 @@
 import { useEffect } from "react";
-import {
-	AlertDialog,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/mainview/components/ui/alert-dialog";
-import { WatchConfirmActions, useWatchConfirm } from "@/mainview/components/watch-confirm-actions";
-import { promoteWatchConfirm, resetWatchConfirmPromoted, useActivityPanelState, getActivityPanelState } from "@/mainview/lib/activity-panel";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/mainview/components/ui/alert-dialog";
+import { useWatchConfirm, WatchConfirmActions } from "@/mainview/components/watch-confirm-actions";
+import { getActivityPanelState, promoteWatchConfirm, resetWatchConfirmPromoted, useActivityPanelState } from "@/mainview/lib/activity-panel";
 
 const CONFIRM_DIALOG_MS = 10_000;
 

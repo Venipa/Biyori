@@ -1,9 +1,9 @@
+import { type ReactElement, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { trpc } from "@/mainview/trpc";
-import { type ReactElement, useState } from "react";
 
 const tabTriggerClass =
 	"rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none";
@@ -168,86 +168,81 @@ export function StatisticsView(): ReactElement {
 							</div>
 						) : data && tab === "overview" ? (
 							<>
-						<section>
-							<h1 className='text-base font-semibold'>Anime list</h1>
-							<Separator className='my-2' />
-							<StatRow label='Anime count:' value={data.animeCount} />
-							<StatRow label='Episode count:' value={data.episodeCount} />
-							<StatRow label='Time spent watching:' value={formatDuration(data.spentMinutes)} />
-							<StatRow label='Time remaining:' value={formatDuration(data.remainingMinutes)} />
-							<StatRow label='Mean score:' value={data.meanScore.toFixed(2)} />
-							<StatRow label='Score deviation:' value={data.scoreDeviation.toFixed(2)} />
-						</section>
-						<section>
-							<h2 className='text-sm font-semibold'>Score distribution</h2>
-							<Separator className='my-2' />
-							<div className='flex max-w-xl flex-col gap-1'>
-								{data.scoreDistribution.map((bucket) => (
-									<div key={bucket.score} className='grid grid-cols-[2rem_1fr_3rem] items-center gap-2 text-sm'>
-										<span className='text-right tabular-nums'>{bucket.score}</span>
-										<div className='h-4 overflow-hidden rounded-sm bg-muted'>
-											<div role='img' aria-label={`Score ${bucket.score}: ${bucket.count}`} className='h-full bg-primary' style={{ width: `${bucket.ratio * 100}%` }} />
-										</div>
-										<span className='tabular-nums text-muted-foreground'>{bucket.count}</span>
+								<section>
+									<h1 className='text-base font-semibold'>Anime list</h1>
+									<Separator className='my-2' />
+									<StatRow label='Anime count:' value={data.animeCount} />
+									<StatRow label='Episode count:' value={data.episodeCount} />
+									<StatRow label='Time spent watching:' value={formatDuration(data.spentMinutes)} />
+									<StatRow label='Time remaining:' value={formatDuration(data.remainingMinutes)} />
+									<StatRow label='Mean score:' value={data.meanScore.toFixed(2)} />
+									<StatRow label='Score deviation:' value={data.scoreDeviation.toFixed(2)} />
+								</section>
+								<section>
+									<h2 className='text-sm font-semibold'>Score distribution</h2>
+									<Separator className='my-2' />
+									<div className='flex max-w-xl flex-col gap-1'>
+										{data.scoreDistribution.map((bucket) => (
+											<div key={bucket.score} className='grid grid-cols-[2rem_1fr_3rem] items-center gap-2 text-sm'>
+												<span className='text-right tabular-nums'>{bucket.score}</span>
+												<div className='h-4 overflow-hidden rounded-sm bg-muted'>
+													<div role='img' aria-label={`Score ${bucket.score}: ${bucket.count}`} className='h-full bg-primary' style={{ width: `${bucket.ratio * 100}%` }} />
+												</div>
+												<span className='tabular-nums text-muted-foreground'>{bucket.count}</span>
+											</div>
+										))}
 									</div>
-								))}
-							</div>
-						</section>
-						<section>
-							<h2 className='text-sm font-semibold'>Local database</h2>
-							<Separator className='my-2' />
-							<StatRow label='Anime count:' value={data.localAnimeCount} />
-							<StatRow label='Image files:' value={`${data.imageCount} (${formatBytes(data.imageSizeBytes)})`} />
-							<StatRow label='Torrent files:' value={`${data.torrentCount} (${formatBytes(data.torrentSizeBytes)})`} />
-						</section>
-						<section>
-							<h2 className='text-sm font-semibold'>Biyori</h2>
-							<Separator className='my-2' />
-							<StatRow label='Connections:' value={`${data.connectionCount}${data.connectionsFailed > 0 ? ` (${data.connectionsFailed} failed)` : ""}`} />
-							<StatRow label='Uptime:' value={formatUptime(data.uptimeSeconds)} />
-						</section>
+								</section>
+								<section>
+									<h2 className='text-sm font-semibold'>Local database</h2>
+									<Separator className='my-2' />
+									<StatRow label='Anime count:' value={data.localAnimeCount} />
+									<StatRow label='Image files:' value={`${data.imageCount} (${formatBytes(data.imageSizeBytes)})`} />
+									<StatRow label='Torrent files:' value={`${data.torrentCount} (${formatBytes(data.torrentSizeBytes)})`} />
+								</section>
+								<section>
+									<h2 className='text-sm font-semibold'>Biyori</h2>
+									<Separator className='my-2' />
+									<StatRow label='Connections:' value={`${data.connectionCount}${data.connectionsFailed > 0 ? ` (${data.connectionsFailed} failed)` : ""}`} />
+									<StatRow label='Uptime:' value={formatUptime(data.uptimeSeconds)} />
+								</section>
 							</>
 						) : data && tab === "mix" ? (
 							<>
-						<section>
-							<h2 className='text-sm font-semibold'>List status</h2>
-							<Separator className='my-2' />
-							<StatusPie items={data.statusDistribution} />
-						</section>
-						<section>
-							<h2 className='text-sm font-semibold'>Format</h2>
-							<Separator className='my-2' />
-							<BarList items={data.typeDistribution} />
-						</section>
+								<section>
+									<h2 className='text-sm font-semibold'>List status</h2>
+									<Separator className='my-2' />
+									<StatusPie items={data.statusDistribution} />
+								</section>
+								<section>
+									<h2 className='text-sm font-semibold'>Format</h2>
+									<Separator className='my-2' />
+									<BarList items={data.typeDistribution} />
+								</section>
 							</>
 						) : data && tab === "genres" ? (
-							<>
-						<section>
-							<h2 className='text-sm font-semibold'>Top genres</h2>
-							<Separator className='my-2' />
-							<BarList items={data.genreDistribution} />
-						</section>
-							</>
+							<section>
+								<h2 className='text-sm font-semibold'>Top genres</h2>
+								<Separator className='my-2' />
+								<BarList items={data.genreDistribution} />
+							</section>
 						) : data && tab === "library" ? (
 							<>
-						<section>
-							<h2 className='text-sm font-semibold'>Library coverage</h2>
-							<Separator className='my-2' />
-							<StatRow label='Episode files:' value={coverage.have} />
-							<StatRow label='Aired episodes:' value={coverage.aired} />
-							<StatRow label='Coverage:' value={`${Math.round(coverage.ratio * 100)}%`} />
-							<div className='mt-3'>
-								<BarList
-									items={coverage.byStatus}
-									value={(item) => `${item.count}/${item.total ?? 0}`}
-								/>
-							</div>
-						</section>
-						<section>
-							<h2 className='text-sm font-semibold'>Rewatches</h2>
-							<Separator className='my-2' />
-							<BarList items={data.rewatchDistribution} />
-						</section>
+								<section>
+									<h2 className='text-sm font-semibold'>Library coverage</h2>
+									<Separator className='my-2' />
+									<StatRow label='Episode files:' value={coverage.have} />
+									<StatRow label='Aired episodes:' value={coverage.aired} />
+									<StatRow label='Coverage:' value={`${Math.round(coverage.ratio * 100)}%`} />
+									<div className='mt-3'>
+										<BarList items={coverage.byStatus} value={(item) => `${item.count}/${item.total ?? 0}`} />
+									</div>
+								</section>
+								<section>
+									<h2 className='text-sm font-semibold'>Rewatches</h2>
+									<Separator className='my-2' />
+									<BarList items={data.rewatchDistribution} />
+								</section>
 							</>
 						) : null}
 					</ScrollArea>

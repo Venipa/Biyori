@@ -5,11 +5,11 @@ import { asc, count, inArray } from "drizzle-orm";
 import { shell } from "electron";
 import type { AppSettings } from "../lib/schemas/app-settings";
 import { fillTorrentSearchUrl } from "../lib/torrent-feeds";
+import { pushNotice } from "./activity";
 import type { DatabaseClient } from "./db";
 import { episodeFile, torrentArchive } from "./db/schema";
 import { trackedFetch } from "./http-stats";
 import { appFeedDir } from "./lib/app-paths";
-import { pushNotice } from "./activity";
 import { setAppNotice } from "./notice";
 import { loadAppSettings, loadTorrentFiltersFile, patchTorrentFiltersFile, subscribeFilters, subscribeSettings } from "./settings";
 import {

@@ -1,13 +1,13 @@
 import { normalizeTitle } from "@biyori/recognition";
 import { observable } from "@trpc/server/observable";
 import { eq } from "drizzle-orm";
-import { joinTitleList, splitTitleList } from "../../lib/split-title-list";
 import { isPathInsideFolder } from "../../lib/folder-path";
 import type { AppSettings, DefaultService } from "../../lib/schemas/app-settings";
-import { readAnilistAuth } from "../anilist/store";
-import { anime } from "../db/schema";
-import type { DatabaseClient } from "../db";
+import { joinTitleList, splitTitleList } from "../../lib/split-title-list";
 import { pushNotice } from "../activity";
+import { readAnilistAuth } from "../anilist/store";
+import type { DatabaseClient } from "../db";
+import { anime } from "../db/schema";
 import { setAppNotice } from "../notice";
 import { loadAppSettings, subscribeSettings } from "../settings";
 import { syncDiscordPresence } from "../share/discord";
@@ -15,10 +15,10 @@ import { setNowPlayingForHttp } from "../share/http";
 import { rememberPlaybackApplied, wasPlaybackApplied } from "./applied-playback";
 import { getNowPlayingMedia } from "./detect";
 import { type Candidate, invalidateCandidateCache, loadCandidates, matchById, namesFrom, similarParsed } from "./match";
+import { resolveFileMatch } from "./match-resolve";
 import { parsePlayback } from "./parse";
 import { enqueueUpdate, initQueueFlush } from "./queue";
 import { redirectEpisode, refreshRelations } from "./relations";
-import { resolveFileMatch } from "./match-resolve";
 import { canApplyProgress, progressPayload } from "./tracker-progress";
 import type { MatchedAnime, NowPlayingMedia, NowPlayingSnapshot, NowPlayingUser, PendingConfirm } from "./types";
 
@@ -41,11 +41,7 @@ function idleSnapshot(user: NowPlayingUser): NowPlayingSnapshot {
 	return { ...IDLE, progressRevision, user };
 }
 
-function applyRedirect(
-	match: MatchedAnime,
-	episode: number,
-	candidates: Candidate[],
-): { match: MatchedAnime; episode: number } {
+function applyRedirect(match: MatchedAnime, episode: number, candidates: Candidate[]): { match: MatchedAnime; episode: number } {
 	const redirected = redirectEpisode(match, episode);
 	if (redirected.id === match.id) {
 		return { match, episode: redirected.episode };
@@ -152,8 +148,7 @@ async function applyProgress(match: MatchedAnime, episode: number): Promise<void
 export async function noteManualListUpdate(animeId: number): Promise<void> {
 	invalidateCandidateCache();
 	if (lastFingerprint && snapshot.match?.id === animeId) {
-		const applied =
-			snapshot.parsed?.episode != null ? `${lastFingerprint}|${animeId}|${snapshot.parsed.episode}` : lastFingerprint;
+		const applied = snapshot.parsed?.episode != null ? `${lastFingerprint}|${animeId}|${snapshot.parsed.episode}` : lastFingerprint;
 		appliedFingerprint = applied;
 		rememberPlaybackApplied(applied);
 	}
@@ -254,8 +249,7 @@ async function runTick(): Promise<void> {
 	}
 
 	const identity = mediaIdentity(media);
-	const reuse =
-		!forceRematch && identity === lastMediaIdentity && snapshot.parsed != null && snapshot.media != null;
+	const reuse = !forceRematch && identity === lastMediaIdentity && snapshot.parsed != null && snapshot.media != null;
 	forceRematch = false;
 	lastMediaIdentity = identity;
 
@@ -430,8 +424,7 @@ export async function confirmPendingUpdate(): Promise<void> {
 export async function skipPendingUpdate(): Promise<void> {
 	const match = snapshot.match;
 	const episode = snapshot.parsed?.episode;
-	const applied =
-		lastFingerprint && match && episode != null ? `${lastFingerprint}|${match.id}|${episode}` : lastFingerprint;
+	const applied = lastFingerprint && match && episode != null ? `${lastFingerprint}|${match.id}|${episode}` : lastFingerprint;
 	appliedFingerprint = applied;
 	if (applied) {
 		rememberPlaybackApplied(applied);

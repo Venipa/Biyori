@@ -1,5 +1,5 @@
 import type { TitleParts } from "@biyori/recognition";
-import { matchParsed as matchParsedFilename, normalizeTitle, matchTitle as scoreTitle, rankParsed, rankTitles } from "@biyori/recognition";
+import { matchParsed as matchParsedFilename, normalizeTitle, rankParsed, rankTitles, matchTitle as scoreTitle } from "@biyori/recognition";
 import { splitTitleList } from "../../lib/split-title-list";
 import type { MatchedAnime, SimilarTitle } from "./types";
 

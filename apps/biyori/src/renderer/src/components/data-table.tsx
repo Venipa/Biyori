@@ -21,10 +21,7 @@ declare module "@tanstack/react-table" {
 
 function rowCells<TData>(row: Row<TData>, indent: boolean): ReactNode {
 	return row.getVisibleCells().map((cell, index) => (
-		<TableCell
-			key={cell.id}
-			className={cn("overflow-hidden", cell.column.columnDef.meta?.className, indent && index === 0 && "pl-8")}
-			style={{ width: cell.column.getSize() }}>
+		<TableCell key={cell.id} className={cn("overflow-hidden", cell.column.columnDef.meta?.className, indent && index === 0 && "pl-8")} style={{ width: cell.column.getSize() }}>
 			{flexRender(cell.column.columnDef.cell, cell.getContext())}
 		</TableCell>
 	));
@@ -149,10 +146,7 @@ export function DataTable<TData>({
 	}
 
 	return (
-		<Table
-			containerClassName='overflow-visible'
-			className={cn("table-fixed", compact ? "[&_th]:h-8 [&_td]:py-1" : undefined)}
-			style={{ width: table.getTotalSize() }}>
+		<Table containerClassName='overflow-visible' className={cn("table-fixed", compact ? "[&_th]:h-8 [&_td]:py-1" : undefined)} style={{ width: table.getTotalSize() }}>
 			<TableHeader className='sticky top-0 z-20 bg-card'>
 				{table.getHeaderGroups().map((headerGroup) => (
 					<TableRow key={headerGroup.id} className='hover:bg-transparent'>

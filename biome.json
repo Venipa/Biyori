@@ -57,7 +57,8 @@
 		"enabled": true,
 		"includes": ["**", "!**/components/ui/**"],
 		"rules": {
-			"preset": "recommended"
+			"preset": "recommended",
+			"a11y": "off"
 		}
 	}
 }

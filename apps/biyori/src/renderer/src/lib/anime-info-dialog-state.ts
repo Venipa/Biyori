@@ -2,11 +2,7 @@ export function isAnimeInfoDialogOpen(id: number | undefined, armed: boolean, re
 	return id != null && (armed || ready);
 }
 
-export function shownAnimeInfoDetail<T extends { id: number }>(
-	queryId: number | undefined,
-	data: T | null | undefined,
-	armed: boolean,
-): T | undefined {
+export function shownAnimeInfoDetail<T extends { id: number }>(queryId: number | undefined, data: T | null | undefined, armed: boolean): T | undefined {
 	if (queryId != null && data?.id === queryId) {
 		return data;
 	}
@@ -20,11 +16,7 @@ export function dialogPaintedAnime<T>(matching: T | undefined, lastShown: T | un
 	return matching ?? (keepPreviousPaint ? lastShown : undefined);
 }
 
-export function shouldHydrateAnimeInfoUrl(input: {
-	urlId: number | undefined;
-	storeId: number | undefined;
-	ignoreUrlUntilCleared: boolean;
-}): boolean {
+export function shouldHydrateAnimeInfoUrl(input: { urlId: number | undefined; storeId: number | undefined; ignoreUrlUntilCleared: boolean }): boolean {
 	return input.urlId != null && input.storeId == null && !input.ignoreUrlUntilCleared;
 }
 
@@ -32,13 +24,7 @@ export function isPendingAnimeInfoOpen(id: number | undefined, dialogOpen: boole
 	return id != null && !dialogOpen;
 }
 
-export function shouldEnsureAnimeInfo(input: {
-	id: number | undefined;
-	matching: boolean;
-	isFetched: boolean;
-	isPlaceholderData: boolean;
-	ensurePendingForId: boolean;
-}): boolean {
+export function shouldEnsureAnimeInfo(input: { id: number | undefined; matching: boolean; isFetched: boolean; isPlaceholderData: boolean; ensurePendingForId: boolean }): boolean {
 	if (input.id == null || input.matching || !input.isFetched || input.isPlaceholderData || input.ensurePendingForId) {
 		return false;
 	}
@@ -57,7 +43,9 @@ export type AnimeInfoDialogGateInput<T extends { id: number }> = {
 	lastShown: T | undefined;
 };
 
-export function selectAnimeInfoDialog<T extends { id: number }>(input: AnimeInfoDialogGateInput<T>): {
+export function selectAnimeInfoDialog<T extends { id: number }>(
+	input: AnimeInfoDialogGateInput<T>,
+): {
 	queryId: number | undefined;
 	dialogOpen: boolean;
 	nextArmed: boolean;

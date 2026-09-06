@@ -1,8 +1,8 @@
+import type { CSSProperties } from "react";
 import { ProgressIndicator, ProgressRoot, ProgressTrack } from "@/mainview/components/ui/progress";
 import { listProgressLabel, listProgressLayout } from "@/mainview/lib/list-progress";
 import { cn } from "@/mainview/lib/utils";
 import type { ListStatus } from "@/shared/list";
-import type { CSSProperties } from "react";
 
 type AnimeListProgressProps = {
 	watched: number;

@@ -1,10 +1,10 @@
+import { randomUUID } from "node:crypto";
+import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
+import { dirname, join } from "node:path";
 import { logger as log } from "@biyori/logger";
 import { pathUnderRoot } from "@biyori/recognition";
 import { and, eq } from "drizzle-orm";
 import { shell } from "electron";
-import { randomUUID } from "node:crypto";
-import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
-import { dirname, join } from "node:path";
 import { completeActivity, pushNotice, upsertActivity } from "../activity";
 import type { DatabaseClient } from "../db";
 import { anime, episodeFile } from "../db/schema";
@@ -61,11 +61,7 @@ function remapScanHits(hits: ScanHit[], candidates: Awaited<ReturnType<typeof lo
 			}
 			continue;
 		}
-		const resolved = resolveFileMatch(
-			{ title: parsed.rawTitle, season: parsed.season, year: parsed.year },
-			parsed.episode,
-			candidates,
-		);
+		const resolved = resolveFileMatch({ title: parsed.rawTitle, season: parsed.season, year: parsed.year }, parsed.episode, candidates);
 		if (resolved.match) {
 			next.push({
 				...hit,

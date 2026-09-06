@@ -36,9 +36,7 @@ function candidate(input: { id: number; title: string; episodes: number }): Cand
 
 describe("resolveFileMatch", () => {
 	test("hops Bleach S17E47 to Calamity episode 7", () => {
-		replaceRelationRules(
-			parseRelations("- 41467|43078|116674:41-50 -> 60636|49444|185874:1-10!\n"),
-		);
+		replaceRelationRules(parseRelations("- 41467|43078|116674:41-50 -> 60636|49444|185874:1-10!\n"));
 		const resolved = resolveFileMatch({ title: "Bleach", season: 17, year: 2004 }, 47, [
 			candidate({ id: 269, title: "Bleach", episodes: 366 }),
 			candidate({ id: 185874, title: "Bleach: Thousand-Year Blood War - The Calamity", episodes: 10 }),

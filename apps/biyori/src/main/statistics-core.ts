@@ -168,9 +168,7 @@ export function summarizeList(entries: StatisticsEntry[]): StatisticsSummary {
 		.toSorted((left, right) => right.count - left.count || left.label.localeCompare(right.label))
 		.slice(0, GENRE_LIMIT);
 	const largestGenre = Math.max(1, ...genreBars.map((item) => item.count));
-	const rewatchBars = rewatches
-		.toSorted((left, right) => right.count - left.count || left.label.localeCompare(right.label))
-		.slice(0, REWATCH_LIMIT);
+	const rewatchBars = rewatches.toSorted((left, right) => right.count - left.count || left.label.localeCompare(right.label)).slice(0, REWATCH_LIMIT);
 	const largestRewatch = Math.max(1, ...rewatchBars.map((item) => item.count));
 	const coverageBars: StatBucket[] = STATUS_ORDER.filter((status) => coverageAired.has(status) || coverageHave.has(status)).map((status) => {
 		const have = coverageHave.get(status) ?? 0;

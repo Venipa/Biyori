@@ -45,11 +45,7 @@ export function nextUnwatchedEpisode(listed: IdleListedRow): number {
 	return listed.lastAiredEpisode + 1;
 }
 
-export function buildContinueWatching(
-	rows: IdleHistoryRow[],
-	listedById: ReadonlyMap<number, IdleListedRow>,
-	skipAnimeIds: ReadonlySet<number>,
-): ContinueWatchingItem[] {
+export function buildContinueWatching(rows: IdleHistoryRow[], listedById: ReadonlyMap<number, IdleListedRow>, skipAnimeIds: ReadonlySet<number>): ContinueWatchingItem[] {
 	const seen = new Set<number>();
 	const items: ContinueWatchingItem[] = [];
 	for (const row of rows) {

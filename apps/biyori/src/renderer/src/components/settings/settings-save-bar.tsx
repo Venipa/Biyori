@@ -50,9 +50,7 @@ export function SettingsSaveBar() {
 				{changeCount}
 			</Badge>
 			<div className='flex min-w-0 flex-1 flex-col gap-0.5'>
-				<p className='truncate text-sm font-medium'>
-					{serverError ? "Could not save" : changeCount === 1 ? "1 unsaved change" : `${changeCount} unsaved changes`}
-				</p>
+				<p className='truncate text-sm font-medium'>{serverError ? "Could not save" : changeCount === 1 ? "1 unsaved change" : `${changeCount} unsaved changes`}</p>
 				<FieldError errors={[serverError]} />
 			</div>
 			<div className='flex shrink-0 items-center gap-2'>

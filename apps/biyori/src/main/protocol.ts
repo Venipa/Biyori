@@ -1,7 +1,7 @@
-import { isProduction } from "@/utils";
+import path from "node:path";
 import { log } from "@biyori/logger";
 import { app } from "electron";
-import path from "node:path";
+import { isProduction } from "@/utils";
 import { handleBiyoriDeepLink } from "./anilist/connect";
 import { setTrayState } from "./handlers/tray-state";
 

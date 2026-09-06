@@ -1,3 +1,8 @@
+import { log } from "@biyori/logger";
+import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
+import type { inferRouterOutputs } from "@trpc/server";
+import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon, XIcon } from "lucide-react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import { Badge } from "@/components/ui/badge";
 import { desktopRpc } from "@/desktop-rpc";
@@ -31,11 +36,6 @@ import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { ANIME_LIST_SEARCH_TAB, type AnimeListTab, type ListStatus, listStatusSchema } from "@/shared/list";
-import { log } from "@biyori/logger";
-import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
-import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon, XIcon } from "lucide-react";
-import { startTransition, useEffect, useRef, useState } from "react";
 
 const tabs = listStatusSchema.options;
 

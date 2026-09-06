@@ -97,14 +97,7 @@ export default defineConfig({
 		build: {
 			sourcemap: sentrySourcemap,
 			externalizeDeps: {
-				exclude: [
-					"@biyori/electron-trpc",
-					"@biyori/logger",
-					"@biyori/parser",
-					"@biyori/recognition",
-					"@biyori/worker",
-					"@sentry/electron",
-				],
+				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/worker", "@sentry/electron"],
 			},
 		},
 	},

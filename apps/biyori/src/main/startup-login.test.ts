@@ -1,12 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-	argvIsStartupLaunch,
-	linuxAutostartDesktopEntry,
-	quoteDesktopExecArg,
-	shouldStartInTray,
-	STARTUP_FLAG,
-	windowsLoginItemArgs,
-} from "./startup-login";
+import { argvIsStartupLaunch, linuxAutostartDesktopEntry, quoteDesktopExecArg, STARTUP_FLAG, shouldStartInTray, windowsLoginItemArgs } from "./startup-login";
 
 describe("startup login helpers", () => {
 	test("detects argv flag and mac login item fields", () => {

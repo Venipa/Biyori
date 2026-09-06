@@ -1,11 +1,11 @@
+import type { inferRouterOutputs } from "@trpc/server";
+import type { KeyboardEvent } from "react";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { Badge } from "@/mainview/components/ui/badge";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { listProgressLabel } from "@/mainview/lib/list-progress";
 import { cn } from "@/mainview/lib/utils";
 import type { AppRouter } from "@/shared/app-router";
-import type { inferRouterOutputs } from "@trpc/server";
-import type { KeyboardEvent } from "react";
 
 export type TitleSuggestion = inferRouterOutputs<AppRouter>["anime"]["suggest"][number];
 
@@ -69,79 +69,79 @@ export function SearchSuggestPanel({
 		<div className='absolute top-full right-0 left-0 z-50 bg-popover text-popover-foreground'>
 			<ScrollArea className='h-auto max-h-80 overflow-hidden' viewportClassName='h-auto max-h-80 w-full outline-none focus-visible:ring-0'>
 				<div id={listId} role='listbox' aria-label='Title suggestions' className='py-1'>
-			{items.map((item, index) => {
-				const progress = listProgressLabel(item.episodesWatched, item.episodes);
-				const optionId = `${listId}-${index}`;
-				const active = index === activeIndex;
-				return (
+					{items.map((item, index) => {
+						const progress = listProgressLabel(item.episodesWatched, item.episodes);
+						const optionId = `${listId}-${index}`;
+						const active = index === activeIndex;
+						return (
+							<button
+								key={item.id}
+								type='button'
+								role='option'
+								id={optionId}
+								aria-selected={active}
+								className={cn(
+									"flex w-full min-w-0 items-center gap-2 px-2 py-1.5 text-left text-sm shadow-none outline-none focus-visible:ring-0",
+									active ? "bg-muted" : "hover:bg-muted/60",
+								)}
+								onMouseDown={(event) => {
+									event.preventDefault();
+								}}
+								onMouseEnter={() => {
+									onActiveIndex(index);
+								}}
+								onClick={() => {
+									onOpen(item.id);
+								}}>
+								<AnimeCover
+									id={item.id}
+									coverUrl={item.coverUrl || undefined}
+									alt=''
+									lazy
+									width={32}
+									height={48}
+									className='aspect-2/3 w-8 shrink-0 overflow-hidden rounded-sm bg-muted'
+								/>
+								<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
+									<span className='truncate font-medium'>{item.title}</span>
+									<span className='flex min-w-0 flex-wrap items-center gap-1'>
+										{item.type ? (
+											<Badge variant='outline' size='xs'>
+												{item.type}
+											</Badge>
+										) : null}
+										<Badge variant='secondary' size='xs'>
+											{item.status}
+										</Badge>
+										<span className='text-xs tabular-nums text-muted-foreground'>
+											{progress.watched}/{progress.total}
+										</span>
+									</span>
+								</span>
+								<span className='shrink-0 text-xs tabular-nums text-muted-foreground'>{Math.round(item.score * 100)}%</span>
+							</button>
+						);
+					})}
 					<button
-						key={item.id}
 						type='button'
 						role='option'
-						id={optionId}
-						aria-selected={active}
+						id={`${listId}-${footerIndex}`}
+						aria-selected={activeIndex === footerIndex}
 						className={cn(
-							"flex w-full min-w-0 items-center gap-2 px-2 py-1.5 text-left text-sm shadow-none outline-none focus-visible:ring-0",
-							active ? "bg-muted" : "hover:bg-muted/60",
+							"flex w-full min-w-0 px-2 py-1.5 text-left text-sm shadow-none outline-none focus-visible:ring-0",
+							activeIndex === footerIndex ? "bg-muted" : "hover:bg-muted/60",
 						)}
 						onMouseDown={(event) => {
 							event.preventDefault();
 						}}
 						onMouseEnter={() => {
-							onActiveIndex(index);
+							onActiveIndex(footerIndex);
 						}}
 						onClick={() => {
-							onOpen(item.id);
+							onSearchAnilist();
 						}}>
-						<AnimeCover
-							id={item.id}
-							coverUrl={item.coverUrl || undefined}
-							alt=''
-							lazy
-							width={32}
-							height={48}
-							className='aspect-2/3 w-8 shrink-0 overflow-hidden rounded-sm bg-muted'
-						/>
-						<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
-							<span className='truncate font-medium'>{item.title}</span>
-							<span className='flex min-w-0 flex-wrap items-center gap-1'>
-								{item.type ? (
-									<Badge variant='outline' size='xs'>
-										{item.type}
-									</Badge>
-								) : null}
-								<Badge variant='secondary' size='xs'>
-									{item.status}
-								</Badge>
-								<span className='text-xs tabular-nums text-muted-foreground'>
-									{progress.watched}/{progress.total}
-								</span>
-							</span>
-						</span>
-						<span className='shrink-0 text-xs tabular-nums text-muted-foreground'>{Math.round(item.score * 100)}%</span>
+						<span className='truncate'>Search AniList for "{q}"</span>
 					</button>
-				);
-			})}
-			<button
-				type='button'
-				role='option'
-				id={`${listId}-${footerIndex}`}
-				aria-selected={activeIndex === footerIndex}
-				className={cn(
-					"flex w-full min-w-0 px-2 py-1.5 text-left text-sm shadow-none outline-none focus-visible:ring-0",
-					activeIndex === footerIndex ? "bg-muted" : "hover:bg-muted/60",
-				)}
-				onMouseDown={(event) => {
-					event.preventDefault();
-				}}
-				onMouseEnter={() => {
-					onActiveIndex(footerIndex);
-				}}
-				onClick={() => {
-					onSearchAnilist();
-				}}>
-				<span className='truncate'>Search AniList for "{q}"</span>
-			</button>
 				</div>
 			</ScrollArea>
 		</div>

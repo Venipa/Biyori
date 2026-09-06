@@ -95,14 +95,7 @@ export function collapseEpisodeRanges(episodes: number[]): Array<[number, number
 	return ranges;
 }
 
-export function libraryEpisodeTooltip(input: {
-	watched: number;
-	total: number;
-	aired: number;
-	finished: boolean;
-	libraryEpisodes?: number[];
-	nextAiring?: string;
-}): string {
+export function libraryEpisodeTooltip(input: { watched: number; total: number; aired: number; finished: boolean; libraryEpisodes?: number[]; nextAiring?: string }): string {
 	const libraryEpisodes = input.libraryEpisodes ?? [];
 	const have = new Set(libraryEpisodes);
 	const maxLibrary = libraryEpisodes.length > 0 ? Math.max(...libraryEpisodes) : 0;

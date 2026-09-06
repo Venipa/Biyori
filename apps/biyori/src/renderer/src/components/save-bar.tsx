@@ -44,17 +44,7 @@ const saveBarTransition = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const;
 
 type SaveBarVariant = NonNullable<VariantProps<typeof saveBarFrameVariants>["variant"]>;
 
-export function SaveBar({
-	open,
-	variant = "float",
-	children,
-	className,
-}: {
-	open: boolean;
-	children: ReactNode;
-	className?: string;
-	variant?: SaveBarVariant;
-}) {
+export function SaveBar({ open, variant = "float", children, className }: { open: boolean; children: ReactNode; className?: string; variant?: SaveBarVariant }) {
 	const motionProps = saveBarMotion[variant];
 	return (
 		<div className={saveBarFrameVariants({ variant })}>

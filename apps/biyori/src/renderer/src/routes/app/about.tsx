@@ -1,3 +1,6 @@
+import { createFileRoute } from "@tanstack/react-router";
+import type { inferRouterOutputs } from "@trpc/server";
+import { AlertCircleIcon, RefreshCwIcon, ScrollTextIcon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { desktopRpc } from "@/desktop-rpc";
 import { MarkdownBody } from "@/mainview/components/markdown-body";
@@ -14,9 +17,6 @@ import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { getVersionChannel, parseUpdateChannel, UPDATE_CHANNEL_LABELS, type UpdateChannel } from "@/shared/updater";
-import { createFileRoute } from "@tanstack/react-router";
-import type { inferRouterOutputs } from "@trpc/server";
-import { AlertCircleIcon, RefreshCwIcon, ScrollTextIcon } from "lucide-react";
 
 type ChangelogData = inferRouterOutputs<AppRouter>["updater"]["changelog"];
 

@@ -21,11 +21,7 @@ describe("tracker progress", () => {
 
 	test("rejects an episode past the listed count", () => {
 		expect(
-			canApplyProgress(
-				{ ...completedRewatch, episodes: 10, episodesWatched: 5, status: "Currently watching", rewatching: false },
-				47,
-				{ ignoreOutOfRangeEpisode: false },
-			),
+			canApplyProgress({ ...completedRewatch, episodes: 10, episodesWatched: 5, status: "Currently watching", rewatching: false }, 47, { ignoreOutOfRangeEpisode: false }),
 		).toBe(false);
 	});
 });

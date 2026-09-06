@@ -1,11 +1,11 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { logger as log } from "@biyori/logger";
 import { is } from "@electron-toolkit/utils";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { app } from "electron";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { appDatabasePath } from "../lib/app-paths";
 import * as schema from "./schema";
 

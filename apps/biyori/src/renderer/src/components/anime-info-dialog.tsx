@@ -1,3 +1,8 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { inferRouterOutputs } from "@trpc/server";
+import { CircleAlertIcon, FolderOpen, PlusIcon, XIcon } from "lucide-react";
+import { useId, useState } from "react";
+import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 import AniDBIcon from "@/assets/anidb.png";
 import AnilistIcon from "@/assets/anilist.svg?react";
 import MyAnimeListIcon from "@/assets/mal.svg?react";
@@ -25,11 +30,6 @@ import { getNeighborAnimeId } from "@/mainview/lib/selected-anime";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, FolderOpen, PlusIcon, XIcon } from "lucide-react";
-import { useId, useState } from "react";
-import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 
 function posterExternalLinks(id: number, title: string): Array<{ label: string; short: string; url: string; icon?: React.ReactNode }> {
 	const q = encodeURIComponent(title);
@@ -77,11 +77,7 @@ export function AnimeInfoDialog({
 	onNavigate?: (id: number) => void;
 }) {
 	return (
-		<Dialog
-			open={open}
-			onOpenChange={onOpenChange}
-			onOpenChangeComplete={onOpenChangeComplete}
-			modal>
+		<Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete} modal>
 			<DialogContent
 				from='bottom'
 				showCloseButton={false}

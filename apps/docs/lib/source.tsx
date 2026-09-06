@@ -46,7 +46,7 @@ export const source = loader({
 					if (!filePath) return node;
 
 					const file = this.storage.read(filePath);
-					if (!file || file.format !== "page") return node;
+					if (file?.format !== "page") return node;
 
 					const badge = (file.data as { badge?: string }).badge;
 					if (!badge) return node;
@@ -70,7 +70,7 @@ export function getPageImageUrl(page: (typeof source)["$inferPage"]) {
 
 	return {
 		segments,
-		url: "/" + [page.locale, ...docsImageRoute.split("/"), ...segments].filter(Boolean).join("/"),
+		url: `/${[page.locale, ...docsImageRoute.split("/"), ...segments].filter(Boolean).join("/")}`,
 	};
 }
 
@@ -79,7 +79,7 @@ export function getPageMarkdownUrl(page: (typeof source)["$inferPage"]) {
 
 	return {
 		segments,
-		url: "/" + [page.locale, ...docsContentRoute.split("/"), ...segments].filter(Boolean).join("/"),
+		url: `/${[page.locale, ...docsContentRoute.split("/"), ...segments].filter(Boolean).join("/")}`,
 	};
 }
 

@@ -42,10 +42,7 @@ describe("suggestTitles", () => {
 	});
 
 	test("orders closer titles first", () => {
-		const hits = suggestTitles("jujutsu", [
-			candidate({ id: 2, title: "Chainsaw Man" }),
-			candidate({ id: 1, title: "Jujutsu Kaisen" }),
-		]);
+		const hits = suggestTitles("jujutsu", [candidate({ id: 2, title: "Chainsaw Man" }), candidate({ id: 1, title: "Jujutsu Kaisen" })]);
 		expect(hits[0]?.id).toBe(1);
 		expect(hits[0]?.score ?? 0).toBeGreaterThan(hits[1]?.score ?? 0);
 	});

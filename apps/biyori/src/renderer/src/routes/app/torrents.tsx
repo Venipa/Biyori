@@ -81,11 +81,7 @@ function NextTorrentCheck(): ReactElement {
 		return <p className='text-sm text-muted-foreground'>Next check pending</p>;
 	}
 	const remaining = nextCheckAt - now;
-	return (
-		<p className='text-sm text-muted-foreground tabular-nums'>
-			{remaining <= 0 ? "Checking..." : `Next check in ${formatCheckRemaining(remaining)}`}
-		</p>
-	);
+	return <p className='text-sm text-muted-foreground tabular-nums'>{remaining <= 0 ? "Checking..." : `Next check in ${formatCheckRemaining(remaining)}`}</p>;
 }
 
 function CheckNewTorrentsButton(): ReactElement {

@@ -1,6 +1,6 @@
-import * as Sentry from "@sentry/electron/renderer";
 import { exposeElectronTRPC } from "@biyori/electron-trpc/preload";
 import { electronAPI } from "@electron-toolkit/preload";
+import * as Sentry from "@sentry/electron/renderer";
 import { contextBridge } from "electron";
 
 Sentry.init();

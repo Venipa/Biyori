@@ -1,12 +1,12 @@
+import { buttonVariants } from "fumadocs-ui/components/ui/button";
+import { BookOpenIcon, ClapperboardIcon, DownloadIcon, FolderSearchIcon, ListIcon, RadioIcon, ScrollTextIcon, SearchIcon, StarIcon } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { ReleaseDownloadPanel } from "@/components/release-download-panel";
 import { cn } from "@/lib/cn";
 import { getLatestReleasesByChannel, getLatestReleaseUrl, getRepositoryUrl, groupDownloadsByPlatform, pickPrimaryDownload } from "@/lib/github";
 import { assetPath } from "@/lib/paths";
 import { appDescription, appName, appTagline, changelogRoute, docsRoute, formatStarCount, repoStars } from "@/lib/shared";
-import { buttonVariants } from "fumadocs-ui/components/ui/button";
-import { BookOpenIcon, ClapperboardIcon, DownloadIcon, FolderSearchIcon, ListIcon, RadioIcon, ScrollTextIcon, SearchIcon, StarIcon } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
 
 const appScreenshot = "/app-screenshot-1.png";
 

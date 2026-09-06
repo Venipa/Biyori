@@ -1,11 +1,11 @@
+import { BellIcon, CheckIcon, CircleAlertIcon, DownloadIcon, FolderSearchIcon, ListIcon, PlayIcon, RefreshCwIcon, TvIcon, XIcon } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import type { ComponentType, ReactNode } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Spinner } from "@/mainview/components/ui/spinner";
 import { WatchConfirmActions } from "@/mainview/components/watch-confirm-actions";
 import { cn } from "@/mainview/lib/utils";
-import { BellIcon, CheckIcon, CircleAlertIcon, DownloadIcon, FolderSearchIcon, ListIcon, PlayIcon, RefreshCwIcon, TvIcon, XIcon } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import type { ComponentType, ReactNode } from "react";
 
 const SOURCE_ICONS: Record<string, ComponentType<{ className?: string }>> = {
 	"library-scan": FolderSearchIcon,

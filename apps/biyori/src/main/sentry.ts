@@ -1,5 +1,5 @@
-import { app } from "electron";
 import * as Sentry from "@sentry/electron/main";
+import { app } from "electron";
 import { formatSentryRelease, sentryClientEnabled } from "../shared/sentry-release";
 import { readAnilistAuth } from "./anilist/store";
 import { loadAppSettings, subscribeSettings } from "./settings";

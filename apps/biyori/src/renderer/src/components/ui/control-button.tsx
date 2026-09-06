@@ -1,6 +1,6 @@
-import { Button } from "@/mainview/components/ui/button";
 import { CopyIcon, MinusIcon, SquareIcon, XIcon } from "lucide-react";
 import type { ComponentProps } from "react";
+import { Button } from "@/mainview/components/ui/button";
 
 type ControlButtonBase = Omit<ComponentProps<typeof Button>, "variant" | "size" | "children"> & {
 	inactive?: boolean;

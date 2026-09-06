@@ -1,18 +1,18 @@
-import { desktopRpc } from "@/desktop-rpc";
-import { type AnilistSearchForm, type AnilistSearchFormInput, anilistSearchFormSchema } from "@/lib/schemas/anilist-search";
-import { Button } from "@/mainview/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
-import { handleSuggestKeyDown, SearchSuggestPanel, suggestionOptionCount } from "@/mainview/components/search-suggest";
-import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
-import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
-import { setListFilterText, useListFilterResetToken } from "@/mainview/lib/list-filter";
-import { trpc } from "@/mainview/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { ChevronDownIcon, FolderIcon, RefreshCwIcon, SearchIcon, SettingsIcon } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { desktopRpc } from "@/desktop-rpc";
+import { type AnilistSearchForm, type AnilistSearchFormInput, anilistSearchFormSchema } from "@/lib/schemas/anilist-search";
+import { handleSuggestKeyDown, SearchSuggestPanel, suggestionOptionCount } from "@/mainview/components/search-suggest";
+import { Button } from "@/mainview/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
+import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
+import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
+import { setListFilterText, useListFilterResetToken } from "@/mainview/lib/list-filter";
+import { trpc } from "@/mainview/trpc";
 
 const LIST_FILTER_DEBOUNCE_MS = 250;
 
@@ -46,10 +46,7 @@ export function AppToolbar() {
 	const [debouncedQ, setDebouncedQ] = useState("");
 	const [panelOpen, setPanelOpen] = useState(true);
 	const [active, setActive] = useState({ q: "", index: 0 });
-	const suggestQuery = trpc.anime.suggest.useQuery(
-		{ q: debouncedQ },
-		{ enabled: !isLiveFilterPage && debouncedQ.length >= 2 },
-	);
+	const suggestQuery = trpc.anime.suggest.useQuery({ q: debouncedQ }, { enabled: !isLiveFilterPage && debouncedQ.length >= 2 });
 	const items = !isLiveFilterPage && debouncedQ === trimmedQ ? (suggestQuery.data ?? []) : [];
 	const optionCount = suggestionOptionCount(items);
 	const showPanel = suggestReady && panelOpen;
