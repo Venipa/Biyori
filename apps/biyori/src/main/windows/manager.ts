@@ -2,7 +2,6 @@ import { join } from "node:path";
 import { is } from "@electron-toolkit/utils";
 import { app, BrowserWindow, type BrowserWindowConstructorOptions, nativeTheme, shell } from "electron";
 import icon from "../../../resources/icon.png?asset";
-import { restoreAppWindowsEnabled } from "../lib/open-path";
 import { attachTrpcWindow } from "../trpc-handler";
 import { attachRendererNavigationGuard } from "./navigation";
 import { attachWindowState } from "./state";
@@ -79,7 +78,7 @@ function stealWindowFocus(win: BrowserWindow): void {
 
 export class WindowManager<TId extends string> {
 	private readonly windows = new Map<TId, WindowEntry>();
-	private readonly modalListeners = new Set<(open: boolean) => void>();
+	private readonly settingsOverlayListeners = new Set<(open: boolean) => void>();
 
 	constructor(private readonly definitions: Record<TId, WindowDefinition>) {
 		startWindowZoomSync((fn) => this.forEachWindow(fn));
@@ -102,37 +101,27 @@ export class WindowManager<TId extends string> {
 		return entry.win;
 	}
 
-	hasModalChild(): boolean {
-		for (const [id, entry] of this.windows) {
-			if (id === "main" || entry.win.isDestroyed() || !entry.win.isVisible()) {
-				continue;
-			}
-			if (this.definitions[id]?.modal) {
-				return true;
-			}
-		}
-		return false;
+	hasSettingsOverlay(): boolean {
+		const entry = this.windows.get("settings" as TId);
+		return Boolean(entry && !entry.win.isDestroyed() && entry.win.isVisible());
 	}
 
-	subscribeModalChild(listener: (open: boolean) => void): () => void {
-		this.modalListeners.add(listener);
-		listener(this.hasModalChild());
+	subscribeSettingsOverlay(listener: (open: boolean) => void): () => void {
+		this.settingsOverlayListeners.add(listener);
+		listener(this.hasSettingsOverlay());
 		return () => {
-			this.modalListeners.delete(listener);
+			this.settingsOverlayListeners.delete(listener);
 		};
 	}
 
-	focusModalChild(): void {
-		for (const [id, entry] of this.windows) {
-			if (id === "main" || entry.win.isDestroyed() || !this.definitions[id]?.modal) {
-				continue;
-			}
-			entry.win.show();
-			entry.win.focus();
+	focusSettings(): void {
+		const win = this.get("settings" as TId);
+		if (!win) {
+			this.emitSettingsOverlay();
 			return;
 		}
-		restoreAppWindowsEnabled();
-		this.emitModalChild();
+		win.show();
+		win.focus();
 	}
 
 	open(id: TId, options: OpenWindowOptions = {}): BrowserWindow {
@@ -149,8 +138,7 @@ export class WindowManager<TId extends string> {
 		const parent = id === "main" ? undefined : (this.get("main" as TId) ?? undefined);
 		const isMac = process.platform === "darwin";
 		const skipTaskbar = options.skipTaskbar ?? Boolean(parent && !isMac);
-		const nativeModal = Boolean(definition.modal && parent && !isMac);
-		const alwaysOnTop = definition.alwaysOnTop ?? (!nativeModal && Boolean(definition.modal && parent));
+		const alwaysOnTop = definition.alwaysOnTop ?? Boolean(definition.modal && parent);
 		const win = this.createChrome({
 			title: definition.title,
 			width: definition.width,
@@ -162,28 +150,30 @@ export class WindowManager<TId extends string> {
 			show,
 			skipTaskbar,
 			alwaysOnTop,
-			modal: nativeModal,
+			modal: false,
 			parent,
 			resizable: definition.resizable,
 		});
 
 		this.windows.set(id, { id, win });
-		win.on("show", () => {
-			this.emitModalChild();
-		});
-		win.on("hide", () => {
-			this.emitModalChild();
-		});
+		if (id === "settings") {
+			win.on("show", () => {
+				this.emitSettingsOverlay();
+			});
+			win.on("hide", () => {
+				this.emitSettingsOverlay();
+			});
+		}
 		win.on("closed", () => {
 			if (this.windows.get(id)?.win === win) {
 				this.windows.delete(id);
 			}
-			this.emitModalChild();
+			this.emitSettingsOverlay();
 			if (parent && !parent.isDestroyed()) {
 				stealWindowFocus(parent);
 			}
 		});
-		this.emitModalChild();
+		this.emitSettingsOverlay();
 
 		if (definition.saveState) {
 			attachWindowState(win, String(id), {
@@ -229,9 +219,9 @@ export class WindowManager<TId extends string> {
 		}
 	}
 
-	private emitModalChild(): void {
-		const open = this.hasModalChild();
-		for (const listener of this.modalListeners) {
+	private emitSettingsOverlay(): void {
+		const open = this.hasSettingsOverlay();
+		for (const listener of this.settingsOverlayListeners) {
 			listener(open);
 		}
 	}

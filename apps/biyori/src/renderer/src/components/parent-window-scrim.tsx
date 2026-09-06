@@ -22,7 +22,7 @@ export function ParentWindowScrim() {
 	return createPortal(
 		<button
 			type='button'
-			aria-label='Return to the open dialog'
+			aria-label='Return to settings'
 			className='fixed inset-0 isolate z-[100] bg-background/50 backdrop-blur-sm'
 			onClick={() => {
 				focusChild.mutate();
