@@ -34,6 +34,7 @@ export function TopMenuBar() {
 	const addLibraryFolder = useAddLibraryFolder();
 	const selected = useSelectedAnime();
 	const scan = trpc.library.scan.useMutation();
+	const scanAll = trpc.library.scanAll.useMutation();
 	const playNext = trpc.library.playNext.useMutation();
 	const playRandom = trpc.library.playRandom.useMutation();
 	const [theme, _setTheme] = useTheme();
@@ -76,6 +77,12 @@ export function TopMenuBar() {
 								void scan.mutateAsync();
 							}}>
 							Scan available episodes
+						</MenubarItem>
+						<MenubarItem
+							onClick={() => {
+								void scanAll.mutateAsync();
+							}}>
+							Scan library folders
 						</MenubarItem>
 						<MenubarSeparator />
 						<MenubarItem

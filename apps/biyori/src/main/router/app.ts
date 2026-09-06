@@ -33,7 +33,7 @@ import {
 	subscribeTorrentPollStatus,
 } from "../torrents";
 import { hanaVersion } from "../track/hana-client";
-import { listEpisodes, playEpisode, playNext, playRandom, scanLibrary } from "../track/library";
+import { listEpisodes, playEpisode, playNext, playRandom, scanAvailableEpisodes, scanLibrary } from "../track/library";
 import { loadCandidates, suggestTitles } from "../track/match";
 import { countQueued } from "../track/queue";
 import { chooseNowPlayingMatch, confirmPendingUpdate, getNowPlayingSnapshot, nowPlayingObservable, skipPendingUpdate } from "../track/tracker";
@@ -386,6 +386,9 @@ export const appRouter = t.router({
 	}),
 	library: t.router({
 		scan: t.procedure.mutation(async ({ ctx }) => {
+			return scanAvailableEpisodes(ctx.db);
+		}),
+		scanAll: t.procedure.mutation(async ({ ctx }) => {
 			return scanLibrary(ctx.db);
 		}),
 		episodes: t.procedure.input(z.object({ animeId: z.number().int() })).query(async ({ ctx, input }) => {

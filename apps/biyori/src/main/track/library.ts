@@ -114,6 +114,11 @@ function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: S
 			if (assignedFolder.has(hit.animeId)) {
 				continue;
 			}
+			const parent = dirname(hit.path);
+			if (isLibraryRoot(parent, scannedRoots) || isLibraryRoot(parent, libraryRoots())) {
+				assignedFolder.add(hit.animeId);
+				continue;
+			}
 			const folderRow = tx.select({ folder: anime.folder }).from(anime).where(eq(anime.id, hit.animeId)).get();
 			if (folderRow && !folderRow.folder) {
 				tx.update(anime)
@@ -156,10 +161,14 @@ function libraryRoots(): string[] {
 }
 
 function knownAnimeFolders(database: DatabaseClient): string[] {
+	const library = libraryRoots();
 	const rows = database.select({ folder: anime.folder }).from(anime).all();
 	const folders: string[] = [];
 	for (const row of rows) {
 		if (!row.folder || !existsSync(row.folder)) {
+			continue;
+		}
+		if (isLibraryRoot(row.folder, library)) {
 			continue;
 		}
 		folders.push(row.folder);
@@ -204,6 +213,14 @@ function pruneGone(database: DatabaseClient, gone: string[]): void {
 
 export async function scanLibrary(database: DatabaseClient = requiredDb()): Promise<{ files: number; matched: number }> {
 	return enqueueScan(() => runScan(database, libraryRoots(), "full"));
+}
+
+export async function scanAvailableEpisodes(database: DatabaseClient = requiredDb()): Promise<{ files: number; matched: number }> {
+	const folders = knownAnimeFolders(database);
+	if (folders.length > 0) {
+		return scanLibraryQuick(database);
+	}
+	return scanLibrary(database);
 }
 
 export function hasIndexedLibrary(database: DatabaseClient = requiredDb()): boolean {
