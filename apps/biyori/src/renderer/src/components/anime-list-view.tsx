@@ -437,7 +437,12 @@ export function AnimeListView({
 					<ContextMenu>
 						<ContextMenuTrigger className='block h-full min-h-0'>
 							<ScrollArea className='h-full'>
-								{listQuery.isPending && !listQuery.data ? <TableRowsSkeleton columnCount={columns.length} /> : null}
+								{listQuery.isPending && !listQuery.data ? (
+									<TableRowsSkeleton
+										columnCount={columns.length}
+										headers={["", "Anime title", "Progress", "Airing date", "Score", "Average", "Type", "Season", "Started", "Completed", "Last updated"]}
+									/>
+								) : null}
 								{listQuery.error ? <PlaceholderView icon={CircleAlertIcon} title='Could not load list' description={listQuery.error.message} /> : null}
 								{listQuery.data && listQuery.data.length === 0 ? <PlaceholderView icon={ListIcon} title='No anime' description='Nothing in this list yet.' /> : null}
 								{listQuery.data && listQuery.data.length > 0 && filteredRows.length === 0 ? (

@@ -130,7 +130,9 @@ function TorrentsPage(): ReactElement {
 					<CheckNewTorrentsButton />
 				</TorrentToolbar>
 			) : null}
-			{query.isPending && items.length === 0 ? <TableRowsSkeleton columnCount={12} /> : null}
+			{query.isPending && items.length === 0 ? (
+				<TableRowsSkeleton columnCount={12} headers={["", "Anime title", "Episode", "Group", "Size", "Video", "S", "L", "D", "Description", "Filename", "Release date"]} />
+			) : null}
 			{items.length === 0 && !query.isLoading ? (
 				<Empty>
 					<EmptyTitle>No torrents found</EmptyTitle>

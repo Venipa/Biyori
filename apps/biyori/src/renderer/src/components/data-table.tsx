@@ -1,6 +1,7 @@
 import { flexRender, type Header, type Row, type Table as TanstackTable } from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDownIcon, ChevronsUpDownIcon, ChevronUpIcon } from "lucide-react";
-import { Fragment, type ReactNode } from "react";
+import { type ComponentProps, cloneElement, Fragment, isValidElement, type ReactElement, type ReactNode, useRef } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 import { cn } from "@/mainview/lib/utils";
 
@@ -18,6 +19,8 @@ declare module "@tanstack/react-table" {
 		playingId?: number | null;
 	}
 }
+
+type FlatItem<TData> = { type: "group"; key: string; label: ReactNode } | { type: "row"; key: string; row: Row<TData>; indent: boolean };
 
 function rowCells<TData>(row: Row<TData>, indent: boolean): ReactNode {
 	return row.getVisibleCells().map((cell, index) => (
@@ -67,9 +70,9 @@ function SortableHead<TData>({ header }: { header: Header<TData, unknown> }) {
 	);
 }
 
-function GroupHeader({ colSpan, children }: { colSpan: number; children: ReactNode }) {
+function GroupHeader({ colSpan, children, ...props }: { colSpan: number; children: ReactNode } & ComponentProps<"tr">) {
 	return (
-		<TableRow className='hover:bg-transparent'>
+		<TableRow className='hover:bg-transparent' {...props}>
 			<TableCell colSpan={colSpan} className='py-1 text-sm font-medium text-primary'>
 				{children}
 			</TableCell>
@@ -95,6 +98,58 @@ function orderedGroupKeys(keys: Iterable<string>, groupOrder: readonly string[] 
 	return ordered;
 }
 
+function flattenTableItems<TData>(
+	leaves: Row<TData>[],
+	groupBy: ((row: Row<TData>) => string) | undefined,
+	groupOrder: readonly string[] | undefined,
+	groupLabel: ((groupingValue: unknown) => ReactNode) | undefined,
+): FlatItem<TData>[] {
+	const items: FlatItem<TData>[] = [];
+	if (groupBy) {
+		const buckets = new Map<string, Row<TData>[]>();
+		for (const row of leaves) {
+			if (row.getIsGrouped()) {
+				continue;
+			}
+			const key = groupBy(row);
+			const bucket = buckets.get(key);
+			if (bucket) {
+				bucket.push(row);
+			} else {
+				buckets.set(key, [row]);
+			}
+		}
+		for (const key of orderedGroupKeys(buckets.keys(), groupOrder)) {
+			items.push({ type: "group", key: `g-${key}`, label: groupLabel ? groupLabel(key) : key });
+			for (const row of buckets.get(key) ?? []) {
+				items.push({ type: "row", key: row.id, row, indent: false });
+			}
+		}
+		return items;
+	}
+	for (const row of leaves) {
+		if (row.getIsGrouped()) {
+			items.push({ type: "group", key: `g-${row.id}`, label: groupLabel ? groupLabel(row.groupingValue) : String(row.groupingValue) });
+			for (const subRow of row.subRows) {
+				items.push({ type: "row", key: subRow.id, row: subRow, indent: true });
+			}
+			continue;
+		}
+		items.push({ type: "row", key: row.id, row, indent: false });
+	}
+	return items;
+}
+
+function attachVirtualMeasure(node: ReactNode, index: number, measure: (element: Element | null) => void): ReactNode {
+	if (!isValidElement(node)) {
+		return node;
+	}
+	return cloneElement(node as ReactElement<{ "data-index"?: number; ref?: (element: Element | null) => void }>, {
+		"data-index": index,
+		ref: measure,
+	});
+}
+
 export function DataTable<TData>({
 	table,
 	onRowClick,
@@ -112,96 +167,100 @@ export function DataTable<TData>({
 	groupLabel?: (groupingValue: unknown) => ReactNode;
 	compact?: boolean;
 }) {
+	const rootRef = useRef<HTMLDivElement>(null);
 	const colSpan = table.getVisibleLeafColumns().length;
 	const leaves = table.getRowModel().rows.filter((row) => row.depth === 0);
+	const items = flattenTableItems(leaves, groupBy, groupOrder, groupLabel);
+	const rowSize = compact ? 32 : 40;
+	const virtualizer = useVirtualizer({
+		count: items.length,
+		getScrollElement: () => rootRef.current?.closest("[data-slot=scroll-area-viewport]") ?? null,
+		estimateSize: (index) => (items[index]?.type === "group" ? 32 : rowSize),
+		overscan: 8,
+		measureElement: (element) => element.getBoundingClientRect().height,
+	});
+	const virtualItems = virtualizer.getVirtualItems();
+	const paddingTop = virtualItems[0]?.start ?? 0;
+	const paddingBottom = virtualizer.getTotalSize() - (virtualItems.at(-1)?.end ?? 0);
 
-	function renderLeaf(row: Row<TData>, indent = false): ReactNode {
+	function renderLeaf(row: Row<TData>, indent: boolean): ReactNode {
 		const cells = rowCells(row, indent);
 		if (renderRow) {
-			return <Fragment key={row.id}>{renderRow(row, cells)}</Fragment>;
+			return renderRow(row, cells);
 		}
-		return <DefaultRow key={row.id} row={row} cells={cells} onRowClick={onRowClick} />;
-	}
-
-	function renderGroups(): ReactNode {
-		const buckets = new Map<string, Row<TData>[]>();
-		for (const row of leaves) {
-			if (row.getIsGrouped() || !groupBy) {
-				continue;
-			}
-			const key = groupBy(row);
-			const bucket = buckets.get(key);
-			if (bucket) {
-				bucket.push(row);
-			} else {
-				buckets.set(key, [row]);
-			}
-		}
-		return orderedGroupKeys(buckets.keys(), groupOrder).map((key) => (
-			<Fragment key={key}>
-				<GroupHeader colSpan={colSpan}>{groupLabel ? groupLabel(key) : key}</GroupHeader>
-				{(buckets.get(key) ?? []).map((row) => renderLeaf(row))}
-			</Fragment>
-		));
+		return <DefaultRow row={row} cells={cells} onRowClick={onRowClick} />;
 	}
 
 	return (
-		<Table containerClassName='overflow-visible' className={cn("table-fixed", compact ? "[&_th]:h-8 [&_td]:py-1" : undefined)} style={{ width: table.getTotalSize() }}>
-			<TableHeader className='sticky top-0 z-20 bg-card'>
-				{table.getHeaderGroups().map((headerGroup) => (
-					<TableRow key={headerGroup.id} className='hover:bg-transparent'>
-						{headerGroup.headers.map((header) => {
-							const sorted = header.column.getIsSorted();
-							return (
-								<TableHead
-									key={header.id}
-									colSpan={header.colSpan}
-									aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
-									className={cn(
-										"relative overflow-visible bg-card transition-colors hover:bg-muted/60",
-										sorted && "bg-muted/70 hover:bg-muted",
-										header.column.columnDef.meta?.className,
-									)}
-									style={{ width: header.getSize() }}>
-									<SortableHead header={header} />
-									{header.column.getCanResize() ? (
-										<button
-											type='button'
-											tabIndex={-1}
-											aria-label={`Resize ${header.column.id} column`}
-											className={cn(
-												"absolute inset-y-0 -right-2 z-10 w-4 cursor-col-resize touch-none border-0 bg-transparent p-0",
-												"after:pointer-events-none after:absolute after:inset-y-2 after:right-2 after:w-px after:bg-transparent hover:after:bg-border",
-												header.column.getIsResizing() && "after:bg-primary",
-											)}
-											onMouseDown={header.getResizeHandler()}
-											onTouchStart={header.getResizeHandler()}
-											onClick={(event) => {
-												event.stopPropagation();
-											}}
-										/>
-									) : null}
-								</TableHead>
-							);
-						})}
-					</TableRow>
-				))}
-			</TableHeader>
-			<TableBody>
-				{groupBy
-					? renderGroups()
-					: leaves.map((row) => {
-							if (row.getIsGrouped()) {
+		<div ref={rootRef}>
+			<Table containerClassName='overflow-visible' className={cn("table-fixed", compact ? "[&_th]:h-8 [&_td]:py-1" : undefined)} style={{ width: table.getTotalSize() }}>
+				<TableHeader className='sticky top-0 z-20 bg-card'>
+					{table.getHeaderGroups().map((headerGroup) => (
+						<TableRow key={headerGroup.id} className='hover:bg-transparent'>
+							{headerGroup.headers.map((header) => {
+								const sorted = header.column.getIsSorted();
 								return (
-									<Fragment key={row.id}>
-										<GroupHeader colSpan={colSpan}>{groupLabel ? groupLabel(row.groupingValue) : String(row.groupingValue)}</GroupHeader>
-										{row.subRows.map((subRow) => renderLeaf(subRow, true))}
-									</Fragment>
+									<TableHead
+										key={header.id}
+										colSpan={header.colSpan}
+										aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
+										className={cn(
+											"relative overflow-visible bg-card transition-colors hover:bg-muted/60",
+											sorted && "bg-muted/70 hover:bg-muted",
+											header.column.columnDef.meta?.className,
+										)}
+										style={{ width: header.getSize() }}>
+										<SortableHead header={header} />
+										{header.column.getCanResize() ? (
+											<button
+												type='button'
+												tabIndex={-1}
+												aria-label={`Resize ${header.column.id} column`}
+												className={cn(
+													"absolute inset-y-0 -right-2 z-10 w-4 cursor-col-resize touch-none border-0 bg-transparent p-0",
+													"after:pointer-events-none after:absolute after:inset-y-2 after:right-2 after:w-px after:bg-transparent hover:after:bg-border",
+													header.column.getIsResizing() && "after:bg-primary",
+												)}
+												onMouseDown={header.getResizeHandler()}
+												onTouchStart={header.getResizeHandler()}
+												onClick={(event) => {
+													event.stopPropagation();
+												}}
+											/>
+										) : null}
+									</TableHead>
 								);
-							}
-							return renderLeaf(row);
-						})}
-			</TableBody>
-		</Table>
+							})}
+						</TableRow>
+					))}
+				</TableHeader>
+				<TableBody>
+					{paddingTop > 0 ? (
+						<tr aria-hidden>
+							<td colSpan={colSpan} style={{ height: paddingTop, padding: 0, border: 0 }} />
+						</tr>
+					) : null}
+					{virtualItems.map((virtualRow) => {
+						const item = items[virtualRow.index];
+						if (!item) {
+							return null;
+						}
+						if (item.type === "group") {
+							return (
+								<GroupHeader key={item.key} colSpan={colSpan} data-index={virtualRow.index} ref={virtualizer.measureElement}>
+									{item.label}
+								</GroupHeader>
+							);
+						}
+						return <Fragment key={item.key}>{attachVirtualMeasure(renderLeaf(item.row, item.indent), virtualRow.index, virtualizer.measureElement)}</Fragment>;
+					})}
+					{paddingBottom > 0 ? (
+						<tr aria-hidden>
+							<td colSpan={colSpan} style={{ height: paddingBottom, padding: 0, border: 0 }} />
+						</tr>
+					) : null}
+				</TableBody>
+			</Table>
+		</div>
 	);
 }

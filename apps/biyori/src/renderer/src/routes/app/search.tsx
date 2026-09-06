@@ -130,7 +130,9 @@ function SearchPage() {
 				<ContextMenuTrigger className='block h-full min-h-0'>
 					<ScrollArea className='h-full'>
 						{!hasQuery ? <PlaceholderView icon={SearchIcon} title='Search AniList' description='Type a title in the toolbar and submit.' /> : null}
-						{hasQuery && query.isPending && items.length === 0 ? <TableRowsSkeleton columnCount={columns.length} /> : null}
+						{hasQuery && query.isPending && items.length === 0 ? (
+							<TableRowsSkeleton columnCount={columns.length} headers={["Anime title", "Type", "Episodes", "Score", "Season"]} />
+						) : null}
 						{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Search failed' description={query.error.message} /> : null}
 						{hasQuery && !query.isPending && !query.error && items.length === 0 ? (
 							<PlaceholderView icon={SearchIcon} title='No results' description={`Nothing matched "${q}".`} />

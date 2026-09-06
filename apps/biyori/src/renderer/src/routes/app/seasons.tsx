@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon, CircleAlertIcon, FilterIcon, RefreshCwIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import type { AnilistSeasonName, SeasonGroupBy, SeasonItem, SeasonSortBy, SeasonViewAs } from "@/lib/schemas/seasons";
 import { AnimeCover } from "@/mainview/components/anime-cover";
@@ -28,12 +29,15 @@ import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { useListFilterText } from "@/mainview/lib/list-filter";
 import {
 	airingBarClass,
+	flattenSeasonVirtualItems,
 	formatAiredRange,
 	formatPopularity,
 	formatScore,
 	formatSeasonLabel,
 	groupSeasonItems,
 	imageFooterText,
+	type SeasonGroup,
+	seasonGridColumns,
 	shiftSeason,
 	sortSeasonItems,
 } from "@/mainview/lib/season-view";
@@ -382,74 +386,146 @@ function SeasonsPage() {
 				</p>
 			</div>
 			<ScrollArea className='h-full flex-1'>
-				{!ready || (query.isPending && !query.data) ? (
-					<div className='flex flex-col gap-3 p-4'>
-						{["s0", "s1", "s2", "s3", "s4", "s5"].map((id) => (
-							<Skeleton key={id} className='h-40 w-full rounded-lg' />
-						))}
-					</div>
-				) : null}
+				{!ready || (query.isPending && !query.data) ? <SeasonGridSkeleton viewAs={viewAs} /> : null}
 				{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Could not load season' description={query.error.message} /> : null}
 				{query.data && (query.data.items?.length ?? 0) === 0 ? <PlaceholderView icon={CalendarDaysIcon} title='No titles' description='Nothing listed for this season.' /> : null}
 				{query.data && (query.data.items?.length ?? 0) > 0 && filtered.length === 0 ? (
 					<PlaceholderView icon={FilterIcon} title='No matches' description='Nothing matched the list filter.' />
 				) : null}
-				{groups.map((group) => (
-					<section key={group.key} className='border-b last:border-b-0'>
-						<h2 className='sticky top-0 z-10 border-b bg-muted/90 px-4 py-2 text-sm font-medium backdrop-blur-sm'>
-							{group.label}
-							<span className='ml-2 text-muted-foreground'>({group.items.length})</span>
-						</h2>
-						{viewAs === "images" ? (
-							<ul className='grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'>
-								{group.items.map((item) => {
-									const listStatus = localById.get(item.id) ?? null;
-									return (
-										<li key={item.id}>
-											<SeasonCard
-												item={item}
-												viewAs='images'
-												sortBy={sortBy}
-												listStatus={listStatus}
-												onOpen={() => openSeasonInfo(item)}
-												onAdd={() =>
-													void addFromSearch.mutateAsync({
-														mediaId: item.id,
-													})
-												}
-												adding={addFromSearch.isPending}
-											/>
-										</li>
-									);
-								})}
-							</ul>
+				{groups.length > 0 ? (
+					<SeasonVirtualGrid
+						groups={groups}
+						viewAs={viewAs}
+						sortBy={sortBy}
+						localById={localById}
+						onOpen={openSeasonInfo}
+						onAdd={(item) => {
+							void addFromSearch.mutateAsync({ mediaId: item.id });
+						}}
+						adding={addFromSearch.isPending}
+					/>
+				) : null}
+			</ScrollArea>
+		</div>
+	);
+}
+
+function SeasonGridSkeleton({ viewAs }: { viewAs: SeasonViewAs }) {
+	if (viewAs === "images") {
+		return (
+			<ul className='grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'>
+				{["i0", "i1", "i2", "i3", "i4", "i5", "i6", "i7", "i8", "i9", "i10", "i11"].map((id) => (
+					<li key={id}>
+						<Skeleton className='aspect-2/3 w-full rounded-md' />
+					</li>
+				))}
+			</ul>
+		);
+	}
+	return (
+		<ul className='grid grid-cols-1 gap-3 p-3 md:grid-cols-2 xl:grid-cols-3'>
+			{["t0", "t1", "t2", "t3", "t4", "t5"].map((id) => (
+				<li key={id}>
+					<Skeleton className='h-44 w-full rounded-md' />
+				</li>
+			))}
+		</ul>
+	);
+}
+
+function SeasonVirtualGrid({
+	groups,
+	viewAs,
+	sortBy,
+	localById,
+	onOpen,
+	onAdd,
+	adding,
+}: {
+	groups: SeasonGroup[];
+	viewAs: SeasonViewAs;
+	sortBy: SeasonSortBy;
+	localById: Map<number, ListStatus>;
+	onOpen: (item: SeasonItem) => void;
+	onAdd: (item: SeasonItem) => void;
+	adding: boolean;
+}) {
+	const rootRef = useRef<HTMLDivElement>(null);
+	const [width, setWidth] = useState(0);
+	useEffect(() => {
+		const node = rootRef.current;
+		if (!node) {
+			return;
+		}
+		const observer = new ResizeObserver((entries) => {
+			setWidth(entries[0]?.contentRect.width ?? 0);
+		});
+		observer.observe(node);
+		setWidth(node.clientWidth);
+		return () => {
+			observer.disconnect();
+		};
+	}, []);
+	const columns = seasonGridColumns(viewAs, width || 640);
+	const items = flattenSeasonVirtualItems(groups, columns);
+	const gap = 12;
+	const rowPad = viewAs === "images" ? 16 : 12;
+	const virtualizer = useVirtualizer({
+		count: items.length,
+		getScrollElement: () => rootRef.current?.closest("[data-slot=scroll-area-viewport]") ?? null,
+		estimateSize: (index) => {
+			const item = items[index];
+			if (!item || item.type === "header") {
+				return 40;
+			}
+			if (viewAs === "images") {
+				const colWidth = Math.max(80, ((width || 640) - rowPad * 2 - gap * (columns - 1)) / columns);
+				return colWidth * 1.5 + gap;
+			}
+			return 220;
+		},
+		overscan: 4,
+		measureElement: (element) => element.getBoundingClientRect().height,
+	});
+	return (
+		<div ref={rootRef} className='relative w-full' style={{ height: virtualizer.getTotalSize() }}>
+			{virtualizer.getVirtualItems().map((virtualRow) => {
+				const item = items[virtualRow.index];
+				if (!item) {
+					return null;
+				}
+				return (
+					<div
+						key={item.key}
+						data-index={virtualRow.index}
+						ref={virtualizer.measureElement}
+						className='absolute top-0 left-0 w-full'
+						style={{ transform: `translateY(${virtualRow.start}px)` }}>
+						{item.type === "header" ? (
+							<h2 className='border-b bg-muted/90 px-4 py-2 text-sm font-medium'>
+								{item.label}
+								<span className='ml-2 text-muted-foreground'>({item.count})</span>
+							</h2>
 						) : (
-							<ul className='grid grid-cols-1 gap-3 p-3 md:grid-cols-2 xl:grid-cols-3'>
-								{group.items.map((item) => {
-									const listStatus = localById.get(item.id) ?? null;
-									return (
-										<li key={item.id}>
-											<SeasonCard
-												item={item}
-												viewAs='tiles'
-												sortBy={sortBy}
-												listStatus={listStatus}
-												onOpen={() => openSeasonInfo(item)}
-												onAdd={() =>
-													void addFromSearch.mutateAsync({
-														mediaId: item.id,
-													})
-												}
-												adding={addFromSearch.isPending}
-											/>
-										</li>
-									);
-								})}
+							<ul className={viewAs === "images" ? "grid gap-3 p-4" : "grid gap-3 p-3"} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+								{item.items.map((card) => (
+									<li key={card.id}>
+										<SeasonCard
+											item={card}
+											viewAs={viewAs}
+											sortBy={sortBy}
+											listStatus={localById.get(card.id) ?? null}
+											onOpen={() => onOpen(card)}
+											onAdd={() => onAdd(card)}
+											adding={adding}
+										/>
+									</li>
+								))}
 							</ul>
 						)}
-					</section>
-				))}
-			</ScrollArea>
+					</div>
+				);
+			})}
 		</div>
 	);
 }

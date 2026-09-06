@@ -1,4 +1,4 @@
-import type { SeasonGroupBy, SeasonItem, SeasonSortBy } from "@/lib/schemas/seasons";
+import type { SeasonGroupBy, SeasonItem, SeasonSortBy, SeasonViewAs } from "@/lib/schemas/seasons";
 
 export type SeasonGroup = {
 	key: string;
@@ -140,4 +140,43 @@ export function airingBarClass(status: string): string {
 		default:
 			return "bg-sky-600 text-white";
 	}
+}
+
+export function seasonGridColumns(viewAs: SeasonViewAs, width: number): number {
+	if (viewAs === "images") {
+		if (width >= 1280) {
+			return 6;
+		}
+		if (width >= 1024) {
+			return 5;
+		}
+		if (width >= 768) {
+			return 4;
+		}
+		if (width >= 640) {
+			return 3;
+		}
+		return 2;
+	}
+	if (width >= 1280) {
+		return 3;
+	}
+	if (width >= 768) {
+		return 2;
+	}
+	return 1;
+}
+
+export type SeasonVirtualItem<T> = { type: "header"; key: string; label: string; count: number } | { type: "row"; key: string; items: T[] };
+
+export function flattenSeasonVirtualItems<T>(groups: Array<{ key: string; label: string; items: T[] }>, columns: number): SeasonVirtualItem<T>[] {
+	const cols = Math.max(1, columns);
+	const out: SeasonVirtualItem<T>[] = [];
+	for (const group of groups) {
+		out.push({ type: "header", key: `h-${group.key}`, label: group.label, count: group.items.length });
+		for (let index = 0; index < group.items.length; index += cols) {
+			out.push({ type: "row", key: `r-${group.key}-${index}`, items: group.items.slice(index, index + cols) });
+		}
+	}
+	return out;
 }

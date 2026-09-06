@@ -127,6 +127,36 @@ function StatusPie({ items }: { items?: StatBar[] | null }): ReactElement {
 	);
 }
 
+function StatisticsSkeleton(): ReactElement {
+	return (
+		<div className='flex flex-col gap-5'>
+			<section>
+				<Skeleton className='h-5 w-28' />
+				<Separator className='my-2' />
+				{["r0", "r1", "r2", "r3", "r4", "r5"].map((id) => (
+					<div key={id} className='flex items-baseline gap-6 py-1'>
+						<Skeleton className='h-4 w-48 shrink-0' />
+						<Skeleton className='h-4 w-24' />
+					</div>
+				))}
+			</section>
+			<section>
+				<Skeleton className='h-4 w-40' />
+				<Separator className='my-2' />
+				<div className='flex max-w-xl flex-col gap-1'>
+					{["b0", "b1", "b2", "b3"].map((id) => (
+						<div key={id} className='grid grid-cols-[2rem_1fr_3rem] items-center gap-2'>
+							<Skeleton className='h-4 w-6 justify-self-end' />
+							<Skeleton className='h-4 w-full rounded-sm' />
+							<Skeleton className='h-4 w-8' />
+						</div>
+					))}
+				</div>
+			</section>
+		</div>
+	);
+}
+
 export function StatisticsView(): ReactElement {
 	const query = trpc.statistics.summary.useQuery();
 	const data = query.data;
@@ -160,12 +190,7 @@ export function StatisticsView(): ReactElement {
 				<TabsContent value={tab} keepMounted={false} className='m-0 min-h-0 flex-1'>
 					<ScrollArea className='h-full min-h-0' viewportClassName='flex min-h-0 flex-col gap-5 px-6 py-5'>
 						{query.isPending && !data ? (
-							<div>
-								<Skeleton className='mb-2 h-5 w-64' />
-								<Skeleton className='mb-2 h-5 w-56' />
-								<Skeleton className='mb-2 h-5 w-72' />
-								<Skeleton className='h-5 w-40' />
-							</div>
+							<StatisticsSkeleton />
 						) : data && tab === "overview" ? (
 							<>
 								<section>
