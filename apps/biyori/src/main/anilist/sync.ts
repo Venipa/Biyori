@@ -214,6 +214,8 @@ export async function upsertAnimeFromMedia(
 				producers: animeRow.producers,
 				synopsis: animeRow.synopsis,
 				lastAiredEpisode: animeRow.lastAiredEpisode,
+				nextAiringAt: animeRow.nextAiringAt,
+				endDate: animeRow.endDate,
 				coverUrl: animeRow.coverUrl,
 				bannerUrl: animeRow.bannerUrl,
 			})

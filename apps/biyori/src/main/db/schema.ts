@@ -19,6 +19,8 @@ export const anime = sqliteTable("anime", {
 	folder: text("folder").notNull().default(""),
 	fansub: text("fansub").notNull().default(""),
 	lastAiredEpisode: integer("last_aired_episode").notNull().default(0),
+	nextAiringAt: text("next_airing_at"),
+	endDate: text("end_date"),
 	coverUrl: text("cover_url").notNull().default(""),
 	bannerUrl: text("banner_url").notNull().default(""),
 });

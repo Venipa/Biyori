@@ -64,6 +64,10 @@ function rowListStatus(row: AnimeRow, fallback: ListStatus): ListStatus {
 	return parsed.success ? parsed.data : fallback;
 }
 
+function isAiringFinished(status: string | null | undefined): boolean {
+	return status === "Finished airing" || status === "Finished" || status === "Cancelled";
+}
+
 function PlayingOrAiringCell({ playing, status }: { playing: boolean; status: string | null | undefined }) {
 	if (playing) {
 		return (
@@ -120,7 +124,8 @@ const columns: ColumnDef<AnimeRow>[] = [
 		size: 180,
 		minSize: 120,
 		cell: ({ row }) => {
-			const finished = row.original.airingStatus === "Finished airing" || row.original.airingStatus === "Finished";
+			const finished = isAiringFinished(row.original.airingStatus);
+			const nextAiring = row.original.nextAiringAt ? formatLocalDateTime(row.original.nextAiringAt) : undefined;
 			return (
 				<span
 					className='block min-w-0'
@@ -130,6 +135,7 @@ const columns: ColumnDef<AnimeRow>[] = [
 						aired: row.original.lastAiredEpisode,
 						finished,
 						libraryEpisodes: row.original.libraryEpisodes,
+						nextAiring: nextAiring && nextAiring !== "-" ? nextAiring : undefined,
 					})}>
 					<AnimeListProgress
 						watched={row.original.episodesWatched}
@@ -141,6 +147,29 @@ const columns: ColumnDef<AnimeRow>[] = [
 					/>
 				</span>
 			);
+		},
+	},
+	{
+		id: "airingDate",
+		accessorFn: (row) => row.nextAiringAt ?? (isAiringFinished(row.airingStatus) ? row.endDate : null) ?? "",
+		header: "Airing date",
+		size: 140,
+		minSize: 96,
+		cell: ({ row }) => {
+			const next = row.original.nextAiringAt;
+			if (next) {
+				const absolute = formatLocalDateTime(next);
+				return (
+					<span className='tabular-nums text-muted-foreground' title={absolute === "-" ? undefined : absolute}>
+						{formatTimeAgo(next)}
+					</span>
+				);
+			}
+			const last = isAiringFinished(row.original.airingStatus) ? row.original.endDate : null;
+			if (last) {
+				return <span className='tabular-nums text-muted-foreground'>{last}</span>;
+			}
+			return <span className='text-muted-foreground'>-</span>;
 		},
 	},
 	{

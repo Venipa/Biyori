@@ -97,6 +97,16 @@ describe("libraryEpisodeTooltip", () => {
 				libraryEpisodes: [1, 2, 4],
 			}),
 		).toBe("Missing: #3, #5-8\nAired: #8 (estimated)");
+		expect(
+			libraryEpisodeTooltip({
+				watched: 2,
+				total: 12,
+				aired: 8,
+				finished: false,
+				libraryEpisodes: [1, 2, 4],
+				nextAiring: "2026-09-08 18:00",
+			}),
+		).toBe("Missing: #3, #5-8\nAired: #8 (estimated)\nNext airing: 2026-09-08 18:00");
 	});
 });
 

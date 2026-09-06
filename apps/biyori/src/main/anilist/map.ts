@@ -74,6 +74,7 @@ export const anilistMediaSchema = z.object({
 	nextAiringEpisode: z
 		.object({
 			episode: z.number().nullable().optional(),
+			airingAt: z.number().nullable().optional(),
 		})
 		.nullable()
 		.optional(),
@@ -272,6 +273,13 @@ function lastAiredEpisode(media: AnilistMedia): number {
 	return 0;
 }
 
+function nextAiringAtIso(airingAt: number | null | undefined): string | null {
+	if (airingAt == null || airingAt <= 0) {
+		return null;
+	}
+	return new Date(airingAt * 1000).toISOString();
+}
+
 export function toAnimeRow(media: AnilistMedia, titleLanguage: "Romaji" | "English" | "Native" = "Romaji"): AnimeInsert {
 	const preferred = pickTitle(media.title, titleLanguage);
 	const titles = [media.title.romaji, media.title.english, media.title.native, ...(media.synonyms ?? [])].filter((item): item is string => Boolean(item));
@@ -297,6 +305,8 @@ export function toAnimeRow(media: AnilistMedia, titleLanguage: "Romaji" | "Engli
 		folder: "",
 		fansub: "",
 		lastAiredEpisode: lastAiredEpisode(media),
+		nextAiringAt: nextAiringAtIso(media.nextAiringEpisode?.airingAt),
+		endDate: formatFuzzyDate(media.endDate),
 		coverUrl: pickCoverUrl(media),
 		bannerUrl: pickBannerUrl(media),
 	};

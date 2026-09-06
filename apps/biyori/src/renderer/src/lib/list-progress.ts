@@ -95,7 +95,14 @@ export function collapseEpisodeRanges(episodes: number[]): Array<[number, number
 	return ranges;
 }
 
-export function libraryEpisodeTooltip(input: { watched: number; total: number; aired: number; finished: boolean; libraryEpisodes?: number[] }): string {
+export function libraryEpisodeTooltip(input: {
+	watched: number;
+	total: number;
+	aired: number;
+	finished: boolean;
+	libraryEpisodes?: number[];
+	nextAiring?: string;
+}): string {
 	const libraryEpisodes = input.libraryEpisodes ?? [];
 	const have = new Set(libraryEpisodes);
 	const maxLibrary = libraryEpisodes.length > 0 ? Math.max(...libraryEpisodes) : 0;
@@ -126,6 +133,9 @@ export function libraryEpisodeTooltip(input: { watched: number; total: number; a
 	}
 	if (!input.finished && lastAired > input.watched) {
 		lines.push(`Aired: #${lastAired} (estimated)`);
+	}
+	if (input.nextAiring) {
+		lines.push(`Next airing: ${input.nextAiring}`);
 	}
 	return lines.join("\n");
 }

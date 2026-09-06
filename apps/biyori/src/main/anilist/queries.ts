@@ -55,6 +55,7 @@ trailer {
 }
 nextAiringEpisode {
   episode
+  airingAt
 }
 `;
 
@@ -139,6 +140,7 @@ query ($query: String!) {
       }
       nextAiringEpisode {
         episode
+        airingAt
       }
     }
   }

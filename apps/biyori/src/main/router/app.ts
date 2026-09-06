@@ -78,6 +78,8 @@ async function loadAnimeDetail(db: SelectDatabase, id: number): Promise<AnimeDet
 			folder: anime.folder,
 			fansub: anime.fansub,
 			lastAiredEpisode: anime.lastAiredEpisode,
+			nextAiringAt: anime.nextAiringAt,
+			endDate: anime.endDate,
 			coverUrl: anime.coverUrl,
 			bannerUrl: anime.bannerUrl,
 			episodesWatched: listEntry.episodesWatched,
@@ -165,6 +167,8 @@ export const appRouter = t.router({
 					folder: anime.folder,
 					fansub: anime.fansub,
 					lastAiredEpisode: anime.lastAiredEpisode,
+					nextAiringAt: anime.nextAiringAt,
+					endDate: anime.endDate,
 				})
 				.from(listEntry)
 				.innerJoin(anime, eq(listEntry.animeId, anime.id))
