@@ -21,6 +21,7 @@ import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { formatClock } from "@/mainview/lib/format-date";
 import { nextEpisodeIsAvailable } from "@/mainview/lib/list-progress";
 import { type AiringSoonGroup, buildAiringSoon, buildContinueWatching, buildUpcoming, type ContinueWatchingItem, SEVEN_DAYS_MS } from "@/mainview/lib/now-playing-idle";
+import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 
@@ -134,26 +135,23 @@ function IdleNowPlaying() {
 						watchedLastWeek={watchedLastWeek}
 					/>
 				) : continueWatching.length > 0 || hasAiring ? (
-					<div className='flex min-w-0 gap-3'>
+					<div className='flex min-w-0 items-start gap-3'>
 						{continueWatching.length > 0 ? (
-							<section className='flex w-fit min-w-0 max-w-1/2 flex-col gap-3'>
-								<div className='min-w-0 max-w-full'>
-									<h2 className='mb-1 text-sm font-semibold'>Continue watching</h2>
-									<Separator className='mb-2' />
-									<IdlePosterStrip
-										label='Continue watching'
-										items={continueWatching}
-										disabled={playNext.isPending}
-										onActivate={(item) => {
-											void playNext.mutateAsync({
-												animeId: item.animeId,
-												episodesWatched: item.nextEpisode - 1,
-											});
-										}}
-									/>
-								</div>
+							<section className='flex w-fit min-w-0 max-w-1/2 flex-col'>
+								<IdlePosterStrip
+									heading='Continue watching'
+									label='Continue watching'
+									items={continueWatching}
+									disabled={playNext.isPending}
+									onActivate={(item) => {
+										void playNext.mutateAsync({
+											animeId: item.animeId,
+											episodesWatched: item.nextEpisode - 1,
+										});
+									}}
+								/>
 								{watchedLastWeek > 0 ? (
-									<p className='text-sm text-muted-foreground'>
+									<p className='mt-3 text-sm text-muted-foreground'>
 										You've watched {watchedLastWeek} episode
 										{watchedLastWeek === 1 ? "" : "s"} last week.
 									</p>
@@ -198,6 +196,15 @@ function IdleNowPlaying() {
 				) : null}
 			</div>
 		</ScrollArea>
+	);
+}
+
+function IdleColumnHeading({ children, sticky }: { children: string; sticky?: boolean }) {
+	return (
+		<>
+			<h2 className={cn("mb-1 text-sm leading-5 font-semibold", sticky && "sticky left-0 z-10 w-max bg-background/90 pr-4 backdrop-blur-sm")}>{children}</h2>
+			<Separator className={cn("mb-2", sticky && "sticky left-0 z-10 w-40 md:w-50")} />
+		</>
 	);
 }
 
@@ -352,12 +359,14 @@ function IdleAiringDayRows({ group, onOpen }: { group: AiringSoonGroup; onOpen: 
 }
 
 function IdlePosterStrip({
+	heading,
 	label,
 	items,
 	disabled,
 	onActivate,
 	description,
 }: {
+	heading?: string;
 	label: string;
 	items: ContinueWatchingItem[];
 	disabled?: boolean;
@@ -365,7 +374,8 @@ function IdlePosterStrip({
 	description?: (item: ContinueWatchingItem) => string;
 }) {
 	return (
-		<ScrollArea className='h-auto max-w-full' viewportClassName='overflow-x-auto overflow-y-hidden'>
+		<ScrollArea className='h-auto min-w-0 max-w-full' viewportClassName='overflow-x-auto overflow-y-hidden'>
+			{heading ? <IdleColumnHeading>{heading}</IdleColumnHeading> : null}
 			<ul aria-label={label} className='flex w-max snap-x snap-mandatory gap-3 pb-1'>
 				{items.map((item) => (
 					<li key={item.animeId} className='w-40 shrink-0 snap-start md:w-50'>
@@ -391,12 +401,11 @@ function IdleAiringRail({
 		return null;
 	}
 	return (
-		<ScrollArea className='h-auto w-full' viewportClassName='overflow-x-auto overflow-y-hidden'>
+		<ScrollArea className='h-auto min-w-0 w-full' viewportClassName='overflow-x-auto overflow-y-hidden'>
 			<div className='flex w-max items-start'>
 				{visible.map((group) => (
 					<section key={group.label} className='flex flex-col'>
-						<h2 className='sticky left-0 z-10 mb-1 w-max bg-background/90 py-0.5 pr-4 text-sm font-semibold backdrop-blur-sm'>{group.label}</h2>
-						<Separator className='sticky left-0 z-10 mb-2 w-40 md:w-50' />
+						<IdleColumnHeading sticky>{group.label}</IdleColumnHeading>
 						<ul aria-label={group.label} className='flex snap-x snap-mandatory gap-3 pr-6 pb-1'>
 							{group.items.map((item) => (
 								<li key={item.animeId} className='w-40 shrink-0 snap-start md:w-50'>
