@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, CircleHelpIcon, ExternalLinkIcon, LayoutGridIcon, PlayCircleIcon, SearchIcon, Table2Icon } from "lucide-react";
-import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { desktopRpc } from "@/desktop-rpc";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
+import { type NowPlayingView } from "@/lib/schemas/app-settings";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
 import { PlaceholderView } from "@/mainview/components/placeholder-view";
@@ -32,7 +32,6 @@ export const Route = createFileRoute("/app/now-playing")({
 type NowPlayingSnapshot = NonNullable<inferRouterOutputs<AppRouter>["media"]["nowPlaying"]>;
 
 type HistoryRow = inferRouterOutputs<AppRouter>["history"]["list"]["history"][number];
-type IdleLayout = "cards" | "table";
 
 function NowPlayingPage() {
 	const query = trpc.media.nowPlaying.useQuery();
@@ -62,9 +61,23 @@ function NowPlayingPage() {
 function IdleNowPlaying() {
 	const historyQuery = trpc.history.list.useQuery();
 	const listedQuery = trpc.anime.listed.useQuery();
+	const settingsQuery = trpc.settings.get.useQuery();
+	const utils = trpc.useUtils();
+	const setSettings = trpc.settings.set.useMutation({
+		onSuccess: (settings) => {
+			utils.settings.get.setData(undefined, settings);
+		},
+	});
 	const playNext = trpc.library.playNext.useMutation();
 	const animeInfo = useAnimeInfoNav();
-	const [layout, setLayout] = useState<IdleLayout>("cards");
+	const layout = settingsQuery.data?.nowPlayingView ?? "cards";
+	function setLayout(next: NowPlayingView) {
+		const current = utils.settings.get.getData();
+		if (current) {
+			utils.settings.get.setData(undefined, { ...current, nowPlayingView: next });
+		}
+		void setSettings.mutateAsync({ nowPlayingView: next });
+	}
 	const queued = historyQuery.data?.queued ?? [];
 	const history = historyQuery.data?.history ?? [];
 	const listed = listedQuery.data ?? [];
@@ -191,7 +204,7 @@ function airingCaption(item: ContinueWatchingItem): string {
 	return `Episode ${item.nextEpisode} at ${formatClock(item.nextAiringAt)}`;
 }
 
-function IdleLayoutToggle({ value, onValueChange }: { value: IdleLayout; onValueChange: (value: IdleLayout) => void }) {
+function IdleLayoutToggle({ value, onValueChange }: { value: NowPlayingView; onValueChange: (value: NowPlayingView) => void }) {
 	return (
 		<ToggleRadio
 			aria-label='View'
@@ -201,11 +214,13 @@ function IdleLayoutToggle({ value, onValueChange }: { value: IdleLayout; onValue
 					onValueChange(next);
 				}
 			}}>
-			<ToggleRadioItem value='cards' aria-label='Card view'>
-				<LayoutGridIcon />
+			<ToggleRadioItem value='cards'>
+				<LayoutGridIcon data-icon='inline-start' />
+				Cards
 			</ToggleRadioItem>
-			<ToggleRadioItem value='table' aria-label='Table view'>
-				<Table2Icon />
+			<ToggleRadioItem value='table'>
+				<Table2Icon data-icon='inline-start' />
+				Table
 			</ToggleRadioItem>
 		</ToggleRadio>
 	);
@@ -399,9 +414,14 @@ function ContinueWatchingCard({ item, disabled, description, onActivate }: { ite
 	const total = item.episodes != null && item.episodes > 0 ? item.episodes : null;
 	const caption = description ?? `Next episode ${item.nextEpisode}${total != null ? ` of ${total}` : ""}`;
 	return (
-		<Card size='sm' className='overflow-hidden py-0'>
-			<Button type='button' variant='ghost' className='h-auto w-full min-w-0 p-0 text-left font-normal whitespace-normal' disabled={disabled} onClick={onActivate}>
-				<span className='relative block aspect-square h-60 md:h-75 w-full overflow-hidden bg-muted'>
+		<Button
+			type='button'
+			variant='ghost'
+			className='h-auto w-full min-w-0 rounded-xl p-0 text-left font-normal whitespace-normal hover:bg-transparent dark:hover:bg-transparent'
+			disabled={disabled}
+			onClick={onActivate}>
+			<Card size='sm' className='w-full overflow-hidden py-0'>
+				<span className='relative block aspect-square h-60 w-full overflow-hidden bg-muted md:h-75'>
 					<AnimeCover id={item.animeId} kind='cover' coverUrl={item.coverUrl} alt='' lazy className='size-full' />
 					<span className='pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/85 via-black/55 to-transparent p-2 pt-8'>
 						<span className='block text-sm font-medium leading-snug wrap-break-word text-white'>{item.title}</span>
@@ -413,8 +433,8 @@ function ContinueWatchingCard({ item, disabled, description, onActivate }: { ite
 						</Badge>
 					) : null}
 				</span>
-			</Button>
-		</Card>
+			</Card>
+		</Button>
 	);
 }
 

@@ -38,6 +38,11 @@ describe("parseAppSettings torrent filters", () => {
 		expect(parseAppSettings({ sendCrashReports: false }).sendCrashReports).toBe(false);
 	});
 
+	test("defaults nowPlayingView to cards", () => {
+		expect(parseAppSettings({}).nowPlayingView).toBe("cards");
+		expect(parseAppSettings({ nowPlayingView: "table" }).nowPlayingView).toBe("table");
+	});
+
 	test("defaults missing uiZoom to 100", () => {
 		expect(parseAppSettings({}).uiZoom).toBe(100);
 	});

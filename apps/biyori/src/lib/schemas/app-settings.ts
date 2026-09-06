@@ -13,7 +13,9 @@ export const torrentAppModeSchema = z.enum(["default", "custom"]);
 export const torrentSortBySchema = z.enum(["episode_number", "release_date"]);
 export const torrentSortOrderSchema = z.enum(["ascending", "descending"]);
 export const defaultServiceSchema = z.enum(["anilist", "myanimelist", "kitsu"]);
+export const nowPlayingViewSchema = z.enum(["cards", "table"]);
 export type DefaultService = z.infer<typeof defaultServiceSchema>;
+export type NowPlayingView = z.infer<typeof nowPlayingViewSchema>;
 export {
 	anilistSeasonNameSchema,
 	seasonGroupBySchema,
@@ -82,6 +84,7 @@ export const appSettingsSchema = z.object({
 	seasonsGroupBy: seasonGroupBySchema.default("airing"),
 	seasonsSortBy: seasonSortBySchema.default("date"),
 	seasonsViewAs: seasonViewAsSchema.default("tiles"),
+	nowPlayingView: nowPlayingViewSchema.default("cards"),
 	seasonsLastSeason: anilistSeasonNameSchema.nullish(),
 	seasonsLastYear: z.number().int().nullish(),
 	onboardingComplete: z.boolean(),
@@ -165,6 +168,7 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	seasonsGroupBy: "airing",
 	seasonsSortBy: "date",
 	seasonsViewAs: "tiles",
+	nowPlayingView: "cards",
 	seasonsLastSeason: null,
 	seasonsLastYear: null,
 	onboardingComplete: false,
