@@ -21,7 +21,7 @@ export default function slugify(string: string, options: SlugifyOptions = {}) {
 
 	options = typeof options === "string" ? { replacement: options } : options || {};
 
-	var locale = locales[options.locale!] || {};
+	var locale = locales[options.locale ?? ""] || {};
 
 	var replacement = options.replacement === undefined ? "-" : options.replacement;
 

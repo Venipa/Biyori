@@ -120,7 +120,12 @@ export function AppSidebar() {
 
 function nowPlayingSubLines(snapshot: {
 	media: { player: string } | null;
-	parsed: { title: string; season: number | null; episode: number | null; group: string | null } | null;
+	parsed: {
+		title: string;
+		season: number | null;
+		episode: number | null;
+		group: string | null;
+	} | null;
 	match: { title: string; type: string | null } | null;
 }): string[] {
 	const title = snapshot.match?.title ?? snapshot.parsed?.title;
@@ -168,8 +173,8 @@ function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: bool
 			)}
 			<span className='relative flex min-w-0 flex-1 flex-col items-start gap-0.5'>
 				<span className='truncate'>Now Playing</span>
-				{subLines.map((line, index) => (
-					<span key={`${index}-${line}`} className='w-full truncate text-xs font-normal text-muted-foreground'>
+				{subLines.map((line) => (
+					<span key={line} className='w-full truncate text-xs font-normal text-muted-foreground'>
 						{line}
 					</span>
 				))}

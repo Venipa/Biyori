@@ -1,0 +1,19 @@
+---
+description: After code changes, run bun biome check --write. Do not use typecheck as the agent gate.
+alwaysApply: true
+---
+
+# Biome check (not typecheck)
+
+After you change JS/TS/JSON/CSS in this repo, from the workspace root run Biome on **those files only**:
+
+```
+bun biome check --write -- path/to/changed.ts path/to/other.tsx
+```
+
+Then run a full `bun biome check` (no `--write` on the whole tree unless you intend to format everything). Fix remaining diagnostics in files you touched until that scoped check is clean.
+
+Do **not** run `bun run typecheck`, `tsc --noEmit`, or package `typecheck` scripts as a post-edit check unless the user explicitly asked for typecheck.
+
+`typecheck` stays in app build/release scripts. Agent verification is Biome.
+Do not run `bun biome check --write` with no paths: it can reformat the whole included tree.

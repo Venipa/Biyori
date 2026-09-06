@@ -30,6 +30,7 @@ export function AiringStatusMark({
 	const label = status?.trim() || "Unknown";
 	return (
 		<span
+			role='img'
 			aria-label={label}
 			title={nativeTitle ? label : undefined}
 			className={cn("inline-block shrink-0", shape === "square" ? "size-2.5 rounded-none" : "size-2 rounded-full", airingStatusClass(status), className)}

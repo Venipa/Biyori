@@ -1,30 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ComponentProps, MouseEvent } from "react";
+import { type ComponentProps, useEffect, useRef } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { type MDXContent, parseReleaseMarkdown } from "@/mainview/lib/markdown-parser";
 import { cn } from "@/mainview/lib/utils";
 
-function openMarkdownLink(event: MouseEvent<HTMLAnchorElement>, href: string | undefined): void {
-	event.preventDefault();
-	if (!href) {
-		return;
-	}
-	void desktopRpc.request.openExternal({ url: href });
-}
-
 const mdxComponents = {
-	a: (props: ComponentProps<"a">) => (
-		<a
-			{...props}
-			className={cn("text-primary underline-offset-2 hover:underline", props.className)}
-			target='_blank'
-			rel='noreferrer'
-			onClick={(event) => {
-				openMarkdownLink(event, props.href);
-			}}
-		/>
-	),
+	a: (props: ComponentProps<"a">) => <a {...props} className={cn("text-primary underline-offset-2 hover:underline", props.className)} target='_blank' rel='noreferrer' />,
 	img: (props: ComponentProps<"img">) => (
 		<img {...props} className={cn("inline-block size-5 rounded-full align-middle ring-1 ring-border", props.className)} alt={props.alt ?? ""} />
 	),
@@ -59,9 +41,36 @@ export function MarkdownBody({ markdown, className }: { markdown: string; classN
 		);
 	}
 
-	const Content: MDXContent = query.data;
+	return <MarkdownBodyReady className={className} Content={query.data} />;
+}
+
+function MarkdownBodyReady({ className, Content }: { className?: string; Content: MDXContent }) {
+	const rootRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		const el = rootRef.current;
+		if (!el) {
+			return;
+		}
+		const onClick = (event: MouseEvent) => {
+			const target = event.target;
+			if (!(target instanceof Element)) {
+				return;
+			}
+			const anchor = target.closest("a");
+			const href = anchor?.getAttribute("href");
+			if (!href) {
+				return;
+			}
+			event.preventDefault();
+			void desktopRpc.request.openExternal({ url: href });
+		};
+		el.addEventListener("click", onClick);
+		return () => el.removeEventListener("click", onClick);
+	}, []);
+
 	return (
-		<div className={cn("flex flex-col gap-1", className)}>
+		<div ref={rootRef} className={cn("flex flex-col gap-1", className)}>
 			<Content components={mdxComponents} />
 		</div>
 	);

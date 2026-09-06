@@ -4,7 +4,7 @@ import { CircleAlertIcon, CircleHelpIcon, ExternalLinkIcon, LayoutGridIcon, Play
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { desktopRpc } from "@/desktop-rpc";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
-import { type NowPlayingView } from "@/lib/schemas/app-settings";
+import type { NowPlayingView } from "@/lib/schemas/app-settings";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
 import { PlaceholderView } from "@/mainview/components/placeholder-view";
@@ -13,14 +13,14 @@ import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Card } from "@/mainview/components/ui/card";
 import { Progress, ProgressLabel, ProgressValue } from "@/mainview/components/ui/progress";
+import { Separator } from "@/mainview/components/ui/separator";
+import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 import { ToggleRadio, ToggleRadioItem } from "@/mainview/components/ui/toggle-radio";
-import { Skeleton } from "@/mainview/components/ui/skeleton";
-import { Separator } from "@/mainview/components/ui/separator";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { formatClock } from "@/mainview/lib/format-date";
 import { nextEpisodeIsAvailable } from "@/mainview/lib/list-progress";
-import { buildAiringSoon, buildContinueWatching, buildUpcoming, type AiringSoonGroup, type ContinueWatchingItem, SEVEN_DAYS_MS } from "@/mainview/lib/now-playing-idle";
+import { type AiringSoonGroup, buildAiringSoon, buildContinueWatching, buildUpcoming, type ContinueWatchingItem, SEVEN_DAYS_MS } from "@/mainview/lib/now-playing-idle";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 
@@ -74,7 +74,10 @@ function IdleNowPlaying() {
 	function setLayout(next: NowPlayingView) {
 		const current = utils.settings.get.getData();
 		if (current) {
-			utils.settings.get.setData(undefined, { ...current, nowPlayingView: next });
+			utils.settings.get.setData(undefined, {
+				...current,
+				nowPlayingView: next,
+			});
 		}
 		void setSettings.mutateAsync({ nowPlayingView: next });
 	}
@@ -111,9 +114,7 @@ function IdleNowPlaying() {
 						<h1 className='text-xl font-semibold tracking-tight'>Nothing is playing</h1>
 						<p className='text-sm text-muted-foreground'>Continue from recent list updates.</p>
 					</div>
-					{continueWatching.length > 0 || hasAiring ? (
-						<IdleLayoutToggle value={layout} onValueChange={setLayout} />
-					) : null}
+					{continueWatching.length > 0 || hasAiring ? <IdleLayoutToggle value={layout} onValueChange={setLayout} /> : null}
 				</header>
 
 				{layout === "table" ? (
@@ -555,7 +556,9 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 							variant='ghost'
 							size='sm'
 							onClick={() => {
-								void desktopRpc.request.openExternal({ url: `https://anilist.co/anime/${match.id}` });
+								void desktopRpc.request.openExternal({
+									url: `https://anilist.co/anime/${match.id}`,
+								});
 							}}>
 							AniList
 							<ExternalLinkIcon data-icon='inline-end' />

@@ -15,7 +15,12 @@ initTheme();
 
 const splash = rendererRoutePath().includes("/splash");
 
-createRoot(document.getElementById("root")!).render(
+const rootEl = document.getElementById("root");
+if (!rootEl) {
+	throw new Error("Missing #root");
+}
+
+createRoot(rootEl).render(
 	<StrictMode>
 		<TrpcProvider>
 			<div className='relative flex h-full min-h-0 flex-1 flex-col overflow-hidden'>

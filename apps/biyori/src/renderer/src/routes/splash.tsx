@@ -1,22 +1,14 @@
+import { createFileRoute } from "@tanstack/react-router";
 import Logo from "@/mainview/components/logo";
 import { splashSegmentState } from "@/mainview/lib/splash-progress";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
-import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/splash")({
 	component: SplashPage,
 });
 
-function SegmentedProgress({
-	completed,
-	total,
-	inner,
-}: {
-	completed: number;
-	total: number;
-	inner: number | null;
-}) {
+function SegmentedProgress({ completed, total, inner }: { completed: number; total: number; inner: number | null }) {
 	const segments = Math.max(1, total);
 	return (
 		<div className='flex w-56 gap-1' role='progressbar' aria-label='Startup' aria-valuemin={0} aria-valuemax={100}>
@@ -26,12 +18,9 @@ function SegmentedProgress({
 				const pulse = active && inner == null;
 				const fill = finished ? 100 : active ? (inner ?? (pulse ? 100 : 0)) : 0;
 				return (
+					// biome-ignore lint/suspicious/noArrayIndexKey: fixed-order progress segments
 					<div key={index} className='relative h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-muted'>
-						<div
-							data-slot='progress-indicator'
-							className={cn("h-full bg-primary transition-[width]", pulse && "animate-pulse")}
-							style={{ width: `${fill}%` }}
-						/>
+						<div data-slot='progress-indicator' className={cn("h-full bg-primary transition-[width]", pulse && "animate-pulse")} style={{ width: `${fill}%` }} />
 					</div>
 				);
 			})}

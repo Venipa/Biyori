@@ -5,6 +5,7 @@ import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import type { AnilistSeasonName, SeasonGroupBy, SeasonItem, SeasonSortBy, SeasonViewAs } from "@/lib/schemas/seasons";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
+import { PlaceholderView } from "@/mainview/components/placeholder-view";
 import { Button } from "@/mainview/components/ui/button";
 import { ButtonToggle } from "@/mainview/components/ui/button-toggle";
 import {
@@ -18,7 +19,6 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
-import { PlaceholderView } from "@/mainview/components/placeholder-view";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
@@ -173,6 +173,7 @@ function SeasonsPage() {
 		}
 	}
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: refreshSeason is a render function; F5 should not resubscribe every render
 	useEffect(() => {
 		const onKey = (event: KeyboardEvent) => {
 			if (event.key === "F5") {
@@ -182,7 +183,7 @@ function SeasonsPage() {
 		};
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
-	}, [refreshSeason]);
+	}, []);
 
 	function persistPrefs(next: SeasonLocalPrefs) {
 		const merged = { ...local, ...next };
@@ -382,16 +383,14 @@ function SeasonsPage() {
 			</div>
 			<ScrollArea className='h-full flex-1'>
 				{!ready || (query.isPending && !query.data) ? (
-					<div className='space-y-3 p-4'>
-						{Array.from({ length: 6 }).map((_, index) => (
-							<Skeleton key={index} className='h-40 w-full rounded-lg' />
+					<div className='flex flex-col gap-3 p-4'>
+						{["s0", "s1", "s2", "s3", "s4", "s5"].map((id) => (
+							<Skeleton key={id} className='h-40 w-full rounded-lg' />
 						))}
 					</div>
 				) : null}
 				{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Could not load season' description={query.error.message} /> : null}
-				{query.data && (query.data.items?.length ?? 0) === 0 ? (
-					<PlaceholderView icon={CalendarDaysIcon} title='No titles' description='Nothing listed for this season.' />
-				) : null}
+				{query.data && (query.data.items?.length ?? 0) === 0 ? <PlaceholderView icon={CalendarDaysIcon} title='No titles' description='Nothing listed for this season.' /> : null}
 				{query.data && (query.data.items?.length ?? 0) > 0 && filtered.length === 0 ? (
 					<PlaceholderView icon={FilterIcon} title='No matches' description='Nothing matched the list filter.' />
 				) : null}
