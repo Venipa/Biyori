@@ -14,10 +14,11 @@ import { syncDiscordPresence } from "../share/discord";
 import { setNowPlayingForHttp } from "../share/http";
 import { rememberPlaybackApplied, wasPlaybackApplied } from "./applied-playback";
 import { getNowPlayingMedia } from "./detect";
-import { type Candidate, invalidateCandidateCache, loadCandidates, matchById, matchParsed, namesFrom, relationHopCandidates, similarParsed } from "./match";
+import { type Candidate, invalidateCandidateCache, loadCandidates, matchById, namesFrom, similarParsed } from "./match";
 import { parsePlayback } from "./parse";
 import { enqueueUpdate, initQueueFlush } from "./queue";
-import { redirectEpisode, refreshRelations, uniqueRedirect } from "./relations";
+import { redirectEpisode, refreshRelations } from "./relations";
+import { resolveFileMatch } from "./match-resolve";
 import { canApplyProgress, progressPayload } from "./tracker-progress";
 import type { MatchedAnime, NowPlayingMedia, NowPlayingSnapshot, NowPlayingUser, PendingConfirm } from "./types";
 
@@ -141,16 +142,20 @@ async function applyProgress(match: MatchedAnime, episode: number): Promise<void
 		payload: progressPayload(match, episode),
 	});
 	if (lastFingerprint) {
-		appliedFingerprint = lastFingerprint;
-		rememberPlaybackApplied(lastFingerprint);
+		const applied = `${lastFingerprint}|${match.id}|${episode}`;
+		appliedFingerprint = applied;
+		rememberPlaybackApplied(applied);
 	}
 	progressRevision += 1;
 }
 
 export async function noteManualListUpdate(animeId: number): Promise<void> {
+	invalidateCandidateCache();
 	if (lastFingerprint && snapshot.match?.id === animeId) {
-		appliedFingerprint = lastFingerprint;
-		rememberPlaybackApplied(lastFingerprint);
+		const applied =
+			snapshot.parsed?.episode != null ? `${lastFingerprint}|${animeId}|${snapshot.parsed.episode}` : lastFingerprint;
+		appliedFingerprint = applied;
+		rememberPlaybackApplied(applied);
 	}
 	if (!db || snapshot.match?.id !== animeId) {
 		return;
@@ -210,7 +215,6 @@ async function runTick(): Promise<void> {
 			const candidates = await loadCandidates(db);
 			const match = matchById(exit.animeId, candidates);
 			if (match && canApplyProgress(match, exit.episode, settings)) {
-				appliedFingerprint = lastFingerprint;
 				await applyProgress(match, exit.episode);
 			}
 		}
@@ -287,24 +291,12 @@ async function runTick(): Promise<void> {
 			season: parsed.season,
 			year: parsed.year,
 		};
-		match = matchParsed(parts, candidates);
-		if (parsed.episode != null) {
-			const hopped =
-				parsed.season != null && parsed.season > 1
-					? uniqueRedirect(parsed.episode, relationHopCandidates(parts, candidates))
-					: null;
-			if (hopped && hopped.id !== match?.id) {
-				match = matchById(hopped.id, candidates);
-				parsed.episode = hopped.episode;
-			} else if (match) {
-				const redirected = applyRedirect(match, parsed.episode, candidates);
-				match = redirected.match;
-				parsed.episode = redirected.episode;
-			}
+		const resolved = resolveFileMatch(parts, parsed.episode, candidates);
+		match = resolved.match;
+		if (resolved.episode != null) {
+			parsed.episode = resolved.episode;
 		}
-		similar = match
-			? []
-			: similarParsed(parts, candidates);
+		similar = match ? [] : similarParsed(parts, candidates);
 	}
 	if (!parsed) {
 		emit({
@@ -334,9 +326,6 @@ async function runTick(): Promise<void> {
 		sessionStartedAt = delayLastTickAt;
 		pending = null;
 		pendingExit = null;
-		if (wasPlaybackApplied(key)) {
-			appliedFingerprint = key;
-		}
 		if (match && settings.notifyOnRecognized) {
 			const title = `Now playing: ${match.title}`;
 			setAppNotice(title);
@@ -346,8 +335,6 @@ async function runTick(): Promise<void> {
 			setAppNotice(title);
 			pushNotice({ source: "playback", title: parsed.title, body: "Unrecognized" });
 		}
-	} else if (wasPlaybackApplied(key)) {
-		appliedFingerprint = key;
 	}
 
 	if (!match && boundMatch?.identity === identity) {
@@ -367,13 +354,19 @@ async function runTick(): Promise<void> {
 		delayElapsedSeconds += Math.max(0, (now - delayLastTickAt) / 1000);
 	}
 	delayLastTickAt = now;
-	const remaining = appliedFingerprint === key ? 0 : Math.max(0, Math.ceil(settings.recognitionDelaySeconds - delayElapsedSeconds));
 	const episode = parsed.episode;
+	const applyKey = match && episode != null ? `${key}|${match.id}|${episode}` : key;
+	if (wasPlaybackApplied(applyKey)) {
+		appliedFingerprint = applyKey;
+	}
+	const remaining = appliedFingerprint === applyKey ? 0 : Math.max(0, Math.ceil(settings.recognitionDelaySeconds - delayElapsedSeconds));
 
-	if (match && episode != null && remaining === 0 && appliedFingerprint !== key && !pending) {
+	if (match && episode != null && remaining === 0 && appliedFingerprint !== applyKey && !pending) {
 		if (!canApplyProgress(match, episode, settings)) {
-			appliedFingerprint = key;
-			rememberPlaybackApplied(key);
+			appliedFingerprint = applyKey;
+			if (!(match.episodes > 0 && episode > match.episodes)) {
+				rememberPlaybackApplied(applyKey);
+			}
 		} else if (settings.waitUntilPlayerExits) {
 			pendingExit = {
 				animeId: match.id,
@@ -387,7 +380,7 @@ async function runTick(): Promise<void> {
 				episode,
 			};
 		} else {
-			appliedFingerprint = key;
+			appliedFingerprint = applyKey;
 			await applyProgress(match, episode);
 		}
 	}
@@ -423,7 +416,6 @@ export async function confirmPendingUpdate(): Promise<void> {
 	}
 	const match = snapshot.match;
 	if (match && match.id === pending.animeId) {
-		appliedFingerprint = lastFingerprint;
 		await applyProgress(match, pending.episode);
 		pushNotice({
 			source: "watch-confirm",
@@ -436,9 +428,13 @@ export async function confirmPendingUpdate(): Promise<void> {
 }
 
 export async function skipPendingUpdate(): Promise<void> {
-	appliedFingerprint = lastFingerprint;
-	if (lastFingerprint) {
-		rememberPlaybackApplied(lastFingerprint);
+	const match = snapshot.match;
+	const episode = snapshot.parsed?.episode;
+	const applied =
+		lastFingerprint && match && episode != null ? `${lastFingerprint}|${match.id}|${episode}` : lastFingerprint;
+	appliedFingerprint = applied;
+	if (applied) {
+		rememberPlaybackApplied(applied);
 	}
 	pending = null;
 	emit({ ...snapshot, pendingConfirm: null });

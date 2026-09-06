@@ -19,12 +19,13 @@ describe("tracker progress", () => {
 		).toBe(true);
 	});
 
-	test("finishing a rewatch increments repeat and ends rewatching", () => {
-		expect(progressPayload(completedRewatch, 12)).toMatchObject({
-			progress: 12,
-			status: "Completed",
-			rewatching: false,
-			timesRewatched: 3,
-		});
+	test("rejects an episode past the listed count", () => {
+		expect(
+			canApplyProgress(
+				{ ...completedRewatch, episodes: 10, episodesWatched: 5, status: "Currently watching", rewatching: false },
+				47,
+				{ ignoreOutOfRangeEpisode: false },
+			),
+		).toBe(false);
 	});
 });

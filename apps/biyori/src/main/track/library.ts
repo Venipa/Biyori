@@ -1,6 +1,6 @@
 import { logger as log } from "@biyori/logger";
 import { pathUnderRoot } from "@biyori/recognition";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { shell } from "electron";
 import { randomUUID } from "node:crypto";
 import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
@@ -12,6 +12,9 @@ import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
 import { hana, type ScanHit, type ScanProgress } from "./hana-client";
 import { invalidateCandidateCache, loadCandidates } from "./match";
+import { resolveFileMatch } from "./match-resolve";
+import { parseFilename } from "./parse";
+import { refreshRelations } from "./relations";
 
 const VIDEO_EXT = /\.(mkv|mp4|avi|webm|mov|wmv|flv|ts|m2ts|mpg|mpeg)$/i;
 
@@ -39,6 +42,33 @@ function toScanCandidates(candidates: Awaited<ReturnType<typeof loadCandidates>>
 		folder: candidate.folder ?? "",
 		status: candidate.status,
 	}));
+}
+
+function remapScanHits(hits: ScanHit[], candidates: Awaited<ReturnType<typeof loadCandidates>>): ScanHit[] {
+	const next: ScanHit[] = [];
+	for (const hit of hits) {
+		const parsed = parseFilename(hit.path);
+		if (!parsed) {
+			if (hit.animeId > 0) {
+				next.push(hit);
+			}
+			continue;
+		}
+		const resolved = resolveFileMatch(
+			{ title: parsed.rawTitle, season: parsed.season, year: parsed.year },
+			parsed.episode,
+			candidates,
+		);
+		if (!resolved.match) {
+			continue;
+		}
+		next.push({
+			...hit,
+			animeId: resolved.match.id,
+			episode: resolved.episode ?? hit.episode,
+		});
+	}
+	return next;
 }
 
 function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: ScanHit[]): void {
@@ -213,6 +243,7 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 	}
 	const settings = loadAppSettings();
 	const candidates = await loadCandidates(database);
+	await refreshRelations(database);
 	if (kind !== "watch") {
 		const title = kind === "quick" ? "Checking known folders..." : "Scanning library...";
 		setAppNotice(title, { toast: false, busy: true });
@@ -227,18 +258,19 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 			},
 			kind === "watch" ? undefined : (progress) => onScanProgress(kind, progress),
 		);
-		applyScanHits(database, result.scannedRoots, result.hits);
+		const hits = remapScanHits(result.hits, candidates);
+		applyScanHits(database, result.scannedRoots, hits);
 		if (kind !== "watch") {
-			const title = `Library scan: ${result.files} files, ${result.hits.length} matched`;
+			const title = `Library scan: ${result.files} files, ${hits.length} matched`;
 			setAppNotice(title, { toast: false, busy: false });
 			completeActivity({
 				source: "library-scan",
 				title: "Library scan",
-				body: `${result.files} files, ${result.hits.length} matched`,
+				body: `${result.files} files, ${hits.length} matched`,
 				status: "ok",
 			});
 		}
-		return { files: result.files, matched: result.hits.length };
+		return { files: result.files, matched: hits.length };
 	} catch (error) {
 		if (kind !== "watch") {
 			const title = "Library scan failed";
@@ -269,6 +301,14 @@ export async function listEpisodes(database: DatabaseClient, animeId: number): P
 }
 
 async function findEpisodePath(database: DatabaseClient, animeId: number, episode: number): Promise<string | null> {
+	const indexed = await database
+		.select({ path: episodeFile.path })
+		.from(episodeFile)
+		.where(and(eq(episodeFile.animeId, animeId), eq(episodeFile.episode, episode)))
+		.limit(1);
+	if (indexed[0]?.path && existsSync(indexed[0].path)) {
+		return indexed[0].path;
+	}
 	const folder = await seriesFolder(database, animeId);
 	if (!folder || !existsSync(folder)) {
 		return null;

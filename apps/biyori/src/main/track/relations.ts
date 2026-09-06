@@ -85,6 +85,11 @@ export function uniqueRedirect(episode: number, candidates: Array<{ id: number; 
 	return uniqueOutOfRangeRedirect(episode, candidates, rules);
 }
 
+export function replaceRelationRules(next: RelationRule[]): void {
+	rules = next;
+	loadedAt = Date.now();
+}
+
 export async function refreshRelations(db: DatabaseClient): Promise<void> {
 	if (rules.length > 0 && Date.now() - loadedAt < REFRESH_MS) {
 		return;

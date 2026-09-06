@@ -148,9 +148,7 @@ pub fn scan_library(input: ScanInput, mut report: impl FnMut(ScanProgress)) -> S
 		let Some(parsed) = parsed else {
 			continue;
 		};
-		let Some(anime_id) = identify(&parsed, &input.candidates, Some(&display)) else {
-			continue;
-		};
+		let anime_id = identify(&parsed, &input.candidates, Some(&display)).unwrap_or(0);
 		hits.push(ScanHit {
 			path: display,
 			anime_id,
