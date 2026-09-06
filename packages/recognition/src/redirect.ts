@@ -25,3 +25,27 @@ export function redirectIfOutOfRange(match: { id: number; episodes: number }, ep
 	}
 	return applyRelationRule(match.id, episode, rules);
 }
+
+export function uniqueOutOfRangeRedirect(
+	episode: number,
+	candidates: Array<{ id: number; episodes: number }>,
+	rules: RelationRule[],
+): { id: number; episode: number } | null {
+	const dest = new Map<number, number>();
+	for (const candidate of candidates) {
+		const redirected = redirectIfOutOfRange(candidate, episode, rules);
+		if (redirected.id === candidate.id && redirected.episode === episode) {
+			continue;
+		}
+		const prev = dest.get(redirected.id);
+		if (prev != null && prev !== redirected.episode) {
+			return null;
+		}
+		dest.set(redirected.id, redirected.episode);
+	}
+	if (dest.size !== 1) {
+		return null;
+	}
+	const [id, destEpisode] = [...dest][0]!;
+	return { id, episode: destEpisode };
+}

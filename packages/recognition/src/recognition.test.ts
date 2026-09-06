@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { extendTitle } from "./extend-title";
 import { matchParsed, matchTitle, rankTitles } from "./match";
 import { recognizeFilename, recognizePath } from "./recognize";
-import { redirectIfOutOfRange } from "./redirect";
+import { redirectIfOutOfRange, uniqueOutOfRangeRedirect } from "./redirect";
 import type { TitleCandidate, TitleParts } from "./types";
 
 const s1: TitleCandidate = {
@@ -166,5 +166,38 @@ describe("redirectIfOutOfRange", () => {
 		expect(redirectIfOutOfRange({ id: 2, episodes: 10 }, 47, bang)).toEqual({ id: 2, episode: 7 });
 		expect(redirectIfOutOfRange({ id: 1, episodes: 13 }, 47, bang)).toEqual({ id: 2, episode: 7 });
 		expect(redirectIfOutOfRange({ id: 2, episodes: 10 }, 5, bang)).toEqual({ id: 2, episode: 5 });
+	});
+});
+
+describe("uniqueOutOfRangeRedirect", () => {
+	const bang = [
+		{
+			fromId: 1,
+			fromStart: 41,
+			fromEnd: 50,
+			toId: 2,
+			toStart: 1,
+		},
+		{
+			fromId: 2,
+			fromStart: 41,
+			fromEnd: 50,
+			toId: 2,
+			toStart: 1,
+		},
+	];
+
+	test("picks the unique dest when season 1 is in range and a cour is not", () => {
+		expect(
+			uniqueOutOfRangeRedirect(47, [
+				{ id: 269, episodes: 366 },
+				{ id: 1, episodes: 13 },
+				{ id: 2, episodes: 10 },
+			], bang),
+		).toEqual({ id: 2, episode: 7 });
+	});
+
+	test("returns null when nothing remaps", () => {
+		expect(uniqueOutOfRangeRedirect(47, [{ id: 269, episodes: 366 }], bang)).toBeNull();
 	});
 });

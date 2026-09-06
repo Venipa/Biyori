@@ -5,7 +5,7 @@ import { anime, listEntry } from "../db/schema";
 import { type Candidate, namesFrom } from "./match-core";
 
 export type { Candidate } from "./match-core";
-export { matchById, matchParsed, matchTitle, namesFrom, similarParsed, suggestTitles } from "./match-core";
+export { matchById, matchParsed, matchTitle, namesFrom, relationHopCandidates, similarParsed, suggestTitles } from "./match-core";
 
 const CANDIDATE_TTL_MS = 15_000;
 let candidateCache: { at: number; rows: Candidate[] } | null = null;

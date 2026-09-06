@@ -6,5 +6,5 @@ export type { RankedTitle } from "./match";
 export { candidatesInFolder, pathUnderRoot } from "./path";
 export type { Recognized } from "./recognize";
 export { recognizeFilename, recognizePath } from "./recognize";
-export { applyRelationRule, redirectIfOutOfRange } from "./redirect";
+export { applyRelationRule, redirectIfOutOfRange, uniqueOutOfRangeRedirect } from "./redirect";
 export type { RelationRule, TitleCandidate, TitleParts } from "./types";

@@ -1,4 +1,4 @@
-import { applyRelationRule, type RelationRule, redirectIfOutOfRange } from "@biyori/recognition";
+import { applyRelationRule, type RelationRule, redirectIfOutOfRange, uniqueOutOfRangeRedirect } from "@biyori/recognition";
 import { eq } from "drizzle-orm";
 import type { DatabaseClient } from "../db";
 import { relationsCache } from "../db/schema";
@@ -79,6 +79,10 @@ export function applyRelation(id: number, episode: number): { id: number; episod
 
 export function redirectEpisode(match: { id: number; episodes: number }, episode: number): { id: number; episode: number } {
 	return redirectIfOutOfRange(match, episode, rules);
+}
+
+export function uniqueRedirect(episode: number, candidates: Array<{ id: number; episodes: number }>): { id: number; episode: number } | null {
+	return uniqueOutOfRangeRedirect(episode, candidates, rules);
 }
 
 export async function refreshRelations(db: DatabaseClient): Promise<void> {

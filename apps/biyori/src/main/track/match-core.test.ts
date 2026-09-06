@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { type Candidate, namesFrom, suggestTitles } from "./match-core";
+import { type Candidate, namesFrom, relationHopCandidates, suggestTitles } from "./match-core";
 
-function candidate(input: { id: number; title: string; names?: string[] }): Candidate {
+function candidate(input: { id: number; title: string; names?: string[]; episodes?: number }): Candidate {
 	return {
 		id: input.id,
 		title: input.title,
@@ -10,7 +10,7 @@ function candidate(input: { id: number; title: string; names?: string[] }): Cand
 		type: "TV",
 		coverUrl: "",
 		bannerUrl: "",
-		episodes: 12,
+		episodes: input.episodes ?? 12,
 		episodesWatched: 3,
 		status: "Currently watching",
 		rewatching: false,
@@ -48,5 +48,19 @@ describe("suggestTitles", () => {
 		]);
 		expect(hits[0]?.id).toBe(1);
 		expect(hits[0]?.score ?? 0).toBeGreaterThan(hits[1]?.score ?? 0);
+	});
+});
+
+describe("relationHopCandidates", () => {
+	test("includes same-base-title cours that rankParsed might score low", () => {
+		const original = candidate({ id: 269, title: "Bleach", episodes: 366 });
+		const calamity = candidate({
+			id: 185874,
+			title: "Bleach: Thousand-Year Blood War - The Calamity",
+			episodes: 10,
+		});
+		const hits = relationHopCandidates({ title: "Bleach", season: 17, year: 2004 }, [original, calamity]);
+		expect(hits.map((row) => row.id)).toEqual(expect.arrayContaining([269, 185874]));
+		expect(hits).toHaveLength(2);
 	});
 });

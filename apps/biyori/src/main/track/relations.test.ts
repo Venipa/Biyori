@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { redirectIfOutOfRange } from "@biyori/recognition";
+import { redirectIfOutOfRange, uniqueOutOfRangeRedirect } from "@biyori/recognition";
 import { parseRelations } from "./relations";
 
 const TYBW = `- 41467|43078|116674:41-50 -> 60636|49444|185874:1-10!
@@ -48,5 +48,20 @@ describe("parseRelations", () => {
 			id: 185874,
 			episode: 5,
 		});
+	});
+
+	test("hops S17E47 to Calamity when title match never lands on a cour", () => {
+		const rules = parseRelations(TYBW);
+		expect(
+			uniqueOutOfRangeRedirect(
+				47,
+				[
+					{ id: 269, episodes: 366 },
+					{ id: 116674, episodes: 13 },
+					{ id: 185874, episodes: 10 },
+				],
+				rules,
+			),
+		).toEqual({ id: 185874, episode: 7 });
 	});
 });

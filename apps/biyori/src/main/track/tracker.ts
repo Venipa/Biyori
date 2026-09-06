@@ -14,10 +14,10 @@ import { syncDiscordPresence } from "../share/discord";
 import { setNowPlayingForHttp } from "../share/http";
 import { rememberPlaybackApplied, wasPlaybackApplied } from "./applied-playback";
 import { getNowPlayingMedia } from "./detect";
-import { type Candidate, invalidateCandidateCache, loadCandidates, matchById, matchParsed, namesFrom, similarParsed } from "./match";
+import { type Candidate, invalidateCandidateCache, loadCandidates, matchById, matchParsed, namesFrom, relationHopCandidates, similarParsed } from "./match";
 import { parsePlayback } from "./parse";
 import { enqueueUpdate, initQueueFlush } from "./queue";
-import { redirectEpisode, refreshRelations } from "./relations";
+import { redirectEpisode, refreshRelations, uniqueRedirect } from "./relations";
 import { canApplyProgress, progressPayload } from "./tracker-progress";
 import type { MatchedAnime, NowPlayingMedia, NowPlayingSnapshot, NowPlayingUser, PendingConfirm } from "./types";
 
@@ -80,7 +80,7 @@ let appliedFingerprint = "";
 let progressRevision = 0;
 let pending: PendingConfirm | null = null;
 let pendingExit: PendingConfirm | null = null;
-let boundMatch: { fingerprint: string; animeId: number } | null = null;
+let boundMatch: { identity: string; animeId: number } | null = null;
 const listeners = new Set<Listener>();
 
 function emit(next: NowPlayingSnapshot): void {
@@ -282,29 +282,29 @@ async function runTick(): Promise<void> {
 
 		fileEpisode = parsed.episode;
 		const candidates = await loadCandidates(db);
-		match = matchParsed(
-			{
-				title: parsed.rawTitle,
-				season: parsed.season,
-				year: parsed.year,
-			},
-			candidates,
-		);
-		if (match && parsed.episode != null) {
-			const redirected = applyRedirect(match, parsed.episode, candidates);
-			match = redirected.match;
-			parsed.episode = redirected.episode;
+		const parts = {
+			title: parsed.rawTitle,
+			season: parsed.season,
+			year: parsed.year,
+		};
+		match = matchParsed(parts, candidates);
+		if (parsed.episode != null) {
+			const hopped =
+				parsed.season != null && parsed.season > 1
+					? uniqueRedirect(parsed.episode, relationHopCandidates(parts, candidates))
+					: null;
+			if (hopped && hopped.id !== match?.id) {
+				match = matchById(hopped.id, candidates);
+				parsed.episode = hopped.episode;
+			} else if (match) {
+				const redirected = applyRedirect(match, parsed.episode, candidates);
+				match = redirected.match;
+				parsed.episode = redirected.episode;
+			}
 		}
 		similar = match
 			? []
-			: similarParsed(
-					{
-						title: parsed.rawTitle,
-						season: parsed.season,
-						year: parsed.year,
-					},
-					candidates,
-				);
+			: similarParsed(parts, candidates);
 	}
 	if (!parsed) {
 		emit({
@@ -326,7 +326,9 @@ async function runTick(): Promise<void> {
 	const key = fingerprint(media, fileEpisode);
 	if (key !== lastFingerprint) {
 		lastFingerprint = key;
-		boundMatch = null;
+		if (boundMatch?.identity !== identity) {
+			boundMatch = null;
+		}
 		delayElapsedSeconds = 0;
 		delayLastTickAt = Date.now();
 		sessionStartedAt = delayLastTickAt;
@@ -348,7 +350,7 @@ async function runTick(): Promise<void> {
 		appliedFingerprint = key;
 	}
 
-	if (!match && boundMatch?.fingerprint === key) {
+	if (!match && boundMatch?.identity === identity) {
 		const candidates = await loadCandidates(db);
 		match = matchById(boundMatch.animeId, candidates);
 		const sourceEpisode = fileEpisode ?? parsed.episode;
@@ -477,11 +479,11 @@ async function rememberUserSynonym(animeId: number, rawTitle: string): Promise<v
 }
 
 export async function chooseNowPlayingMatch(animeId: number): Promise<void> {
-	if (!db || !lastFingerprint) {
+	if (!db || !lastMediaIdentity) {
 		return;
 	}
 	const playingTitle = snapshot.parsed?.rawTitle ?? snapshot.parsed?.title ?? "";
-	boundMatch = { fingerprint: lastFingerprint, animeId };
+	boundMatch = { identity: lastMediaIdentity, animeId };
 	await rememberUserSynonym(animeId, playingTitle);
 	forceRematch = true;
 	while (tickInFlight) {

@@ -90,6 +90,22 @@ export function matchById(id: number, candidates: Candidate[]): MatchedAnime | n
 	return hit ? toMatch(hit) : null;
 }
 
+export function relationHopCandidates(parsed: TitleParts, candidates: Candidate[]): Candidate[] {
+	const ranked = rankParsed(parsed, candidates).map((hit) => hit.candidate);
+	const base = normalizeTitle(parsed.title);
+	const extra = base ? candidates.filter((candidate) => candidate.names.some((name) => name === base || name.startsWith(`${base} `))) : [];
+	const seen = new Set<number>();
+	const next: Candidate[] = [];
+	for (const candidate of [...ranked, ...extra]) {
+		if (seen.has(candidate.id)) {
+			continue;
+		}
+		seen.add(candidate.id);
+		next.push(candidate);
+	}
+	return next;
+}
+
 export function similarParsed(parsed: TitleParts, candidates: Candidate[]): SimilarTitle[] {
 	return rankParsed(parsed, candidates).map((hit) => ({
 		id: hit.candidate.id,

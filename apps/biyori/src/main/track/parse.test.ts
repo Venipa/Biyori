@@ -18,13 +18,13 @@ describe("parseFilename playback", () => {
 		});
 	});
 
-	test("parses mpv.net window titles the same as the filename", () => {
-		expect(parseFilename("BLACK TORCH (2026) - S01E09 - 009 - ONE [WEBDL-1080p][8bit][x264][AAC 2.0][JA]-Erai-raws - mpv.net")).toMatchObject({
-			title: "BLACK TORCH (2026)",
-			rawTitle: "BLACK TORCH",
-			season: 1,
-			year: 2026,
-			episode: 9,
+	test("parses a TVDB-style Bleach S17E47 filename as season 17 episode 47", () => {
+		expect(parseFilename("Bleach (2004) - S17E47 - 413 - THE END 2 [WEBDL-1080p][8bit][h265][AAC 2.0][JA]-ToonsHub.mkv")).toMatchObject({
+			title: "Bleach Season 17 (2004)",
+			rawTitle: "Bleach",
+			season: 17,
+			year: 2004,
+			episode: 47,
 		});
 	});
 });
