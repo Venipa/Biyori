@@ -1,7 +1,7 @@
 import { logger as log } from "@biyori/logger";
 import { pathUnderRoot } from "@biyori/recognition";
 import { eq } from "drizzle-orm";
-import { shell } from "electron";
+import { openPathInOs, restoreAppWindowsEnabled } from "../lib/open-path";
 import { randomUUID } from "node:crypto";
 import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
 import { dirname, join } from "node:path";
@@ -292,7 +292,8 @@ export async function playEpisode(database: DatabaseClient, animeId: number, epi
 	if (!path) {
 		return { ok: false, path: null };
 	}
-	void shell.openPath(path);
+	openPathInOs(path);
+	restoreAppWindowsEnabled();
 	return { ok: true, path };
 }
 

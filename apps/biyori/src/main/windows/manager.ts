@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { is } from "@electron-toolkit/utils";
 import { app, BrowserWindow, type BrowserWindowConstructorOptions, nativeTheme, shell } from "electron";
 import icon from "../../../resources/icon.png?asset";
+import { restoreAppWindowsEnabled } from "../lib/open-path";
 import { attachTrpcWindow } from "../trpc-handler";
 import { attachRendererNavigationGuard } from "./navigation";
 import { attachWindowState } from "./state";
@@ -103,7 +104,7 @@ export class WindowManager<TId extends string> {
 
 	hasModalChild(): boolean {
 		for (const [id, entry] of this.windows) {
-			if (id === "main" || entry.win.isDestroyed()) {
+			if (id === "main" || entry.win.isDestroyed() || !entry.win.isVisible()) {
 				continue;
 			}
 			if (this.definitions[id]?.modal) {
@@ -130,6 +131,8 @@ export class WindowManager<TId extends string> {
 			entry.win.focus();
 			return;
 		}
+		restoreAppWindowsEnabled();
+		this.emitModalChild();
 	}
 
 	open(id: TId, options: OpenWindowOptions = {}): BrowserWindow {
@@ -165,6 +168,12 @@ export class WindowManager<TId extends string> {
 		});
 
 		this.windows.set(id, { id, win });
+		win.on("show", () => {
+			this.emitModalChild();
+		});
+		win.on("hide", () => {
+			this.emitModalChild();
+		});
 		win.on("closed", () => {
 			if (this.windows.get(id)?.win === win) {
 				this.windows.delete(id);

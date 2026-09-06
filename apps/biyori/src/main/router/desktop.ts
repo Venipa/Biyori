@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requestQuit } from "../handlers/quit-handler";
 import { setTrayState } from "../handlers/tray-state";
 import { decryptPublicData, encryptPublicData } from "../lib/store/createYmlStore";
+import { openPathInOs, restoreAppWindowsEnabled } from "../lib/open-path";
 import { t } from "../trpc";
 import { downloadAppUpdate, getUpdateState } from "../updater";
 import { windowManager } from "../windows";
@@ -163,11 +164,13 @@ export const desktopRouter = t.router({
 		return { maximized: win?.isMaximized() ?? false };
 	}),
 	openPath: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(({ input }) => {
-		void shell.openPath(input.path);
+		openPathInOs(input.path);
+		restoreAppWindowsEnabled();
 		return { ok: true as const };
 	}),
 	openExternal: t.procedure.input(z.object({ url: z.string().min(1) })).mutation(({ input }) => {
 		void shell.openExternal(input.url);
+		restoreAppWindowsEnabled();
 		return { ok: true as const };
 	}),
 	pickFolder: t.procedure.mutation(async ({ ctx }) => {

@@ -77,13 +77,11 @@ class IPCHandler<TRouter extends AnyRouter> {
 
 	#attachSubscriptionCleanupHandlers(win: BrowserWindow): void {
 		const webContentsId = win.webContents.id;
-		win.webContents.on("did-start-navigation", ({ isSameDocument, frame }) => {
-			if (!isSameDocument && frame) {
-				this.#cleanUpSubscriptions({
-					webContentsId,
-					frameRoutingId: frame.routingId,
-				});
-			}
+		win.webContents.on("did-frame-navigate", (_event, _url, _code, _status, _isMainFrame, _frameProcessId, frameRoutingId) => {
+			this.#cleanUpSubscriptions({
+				webContentsId,
+				frameRoutingId,
+			});
 		});
 		win.webContents.on("destroyed", () => {
 			this.detachWindow(win, webContentsId);
