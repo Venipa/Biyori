@@ -3,7 +3,12 @@ import { Separator } from "@/mainview/components/ui/separator";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { trpc } from "@/mainview/trpc";
-import type { ReactElement } from "react";
+import { type ReactElement, useState } from "react";
+
+const tabTriggerClass =
+	"rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none";
+
+type StatsTab = "overview" | "mix" | "genres" | "library";
 
 const CHART_VARS = ["--chart-1", "--chart-2", "--chart-3", "--chart-4", "--chart-5"] as const;
 const CHART_BG = ["bg-chart-1", "bg-chart-2", "bg-chart-3", "bg-chart-4", "bg-chart-5"] as const;
@@ -126,25 +131,43 @@ export function StatisticsView(): ReactElement {
 	const query = trpc.statistics.summary.useQuery();
 	const data = query.data;
 	const coverage = data?.libraryCoverage ?? { have: 0, aired: 0, ratio: 0, byStatus: [] };
+	const [tab, setTab] = useState<StatsTab>("overview");
 
 	return (
-		<ScrollArea viewportClassName='flex min-h-0 flex-col gap-5 px-6 py-5'>
-			{query.isPending && !data ? (
-				<div>
-					<Skeleton className='mb-2 h-5 w-64' />
-					<Skeleton className='mb-2 h-5 w-56' />
-					<Skeleton className='mb-2 h-5 w-72' />
-					<Skeleton className='h-5 w-40' />
-				</div>
-			) : data ? (
-				<Tabs defaultValue='overview' className='gap-4'>
-					<TabsList variant='line' className='shrink-0'>
-						<TabsTrigger value='overview'>Overview</TabsTrigger>
-						<TabsTrigger value='mix'>Mix</TabsTrigger>
-						<TabsTrigger value='genres'>Genres</TabsTrigger>
-						<TabsTrigger value='library'>Library</TabsTrigger>
+		<div className='flex h-full min-h-0 flex-col'>
+			<Tabs
+				value={tab}
+				onValueChange={(value) => {
+					setTab(value as StatsTab);
+				}}
+				className='flex h-full min-h-0 flex-col gap-0'>
+				<div className='shrink-0 border-b bg-card px-2 pt-2'>
+					<TabsList className='h-auto bg-transparent p-0'>
+						<TabsTrigger value='overview' className={tabTriggerClass}>
+							Overview
+						</TabsTrigger>
+						<TabsTrigger value='mix' className={tabTriggerClass}>
+							Mix
+						</TabsTrigger>
+						<TabsTrigger value='genres' className={tabTriggerClass}>
+							Genres
+						</TabsTrigger>
+						<TabsTrigger value='library' className={tabTriggerClass}>
+							Library
+						</TabsTrigger>
 					</TabsList>
-					<TabsContent value='overview' keepMounted={false} className='mt-0 flex flex-col gap-5'>
+				</div>
+				<TabsContent value={tab} keepMounted={false} className='m-0 min-h-0 flex-1'>
+					<ScrollArea className='h-full min-h-0' viewportClassName='flex min-h-0 flex-col gap-5 px-6 py-5'>
+						{query.isPending && !data ? (
+							<div>
+								<Skeleton className='mb-2 h-5 w-64' />
+								<Skeleton className='mb-2 h-5 w-56' />
+								<Skeleton className='mb-2 h-5 w-72' />
+								<Skeleton className='h-5 w-40' />
+							</div>
+						) : data && tab === "overview" ? (
+							<>
 						<section>
 							<h1 className='text-base font-semibold'>Anime list</h1>
 							<Separator className='my-2' />
@@ -183,8 +206,9 @@ export function StatisticsView(): ReactElement {
 							<StatRow label='Connections:' value={`${data.connectionCount}${data.connectionsFailed > 0 ? ` (${data.connectionsFailed} failed)` : ""}`} />
 							<StatRow label='Uptime:' value={formatUptime(data.uptimeSeconds)} />
 						</section>
-					</TabsContent>
-					<TabsContent value='mix' keepMounted={false} className='mt-0 flex flex-col gap-5'>
+							</>
+						) : data && tab === "mix" ? (
+							<>
 						<section>
 							<h2 className='text-sm font-semibold'>List status</h2>
 							<Separator className='my-2' />
@@ -195,15 +219,17 @@ export function StatisticsView(): ReactElement {
 							<Separator className='my-2' />
 							<BarList items={data.typeDistribution} />
 						</section>
-					</TabsContent>
-					<TabsContent value='genres' keepMounted={false} className='mt-0 flex flex-col gap-5'>
+							</>
+						) : data && tab === "genres" ? (
+							<>
 						<section>
 							<h2 className='text-sm font-semibold'>Top genres</h2>
 							<Separator className='my-2' />
 							<BarList items={data.genreDistribution} />
 						</section>
-					</TabsContent>
-					<TabsContent value='library' keepMounted={false} className='mt-0 flex flex-col gap-5'>
+							</>
+						) : data && tab === "library" ? (
+							<>
 						<section>
 							<h2 className='text-sm font-semibold'>Library coverage</h2>
 							<Separator className='my-2' />
@@ -222,9 +248,11 @@ export function StatisticsView(): ReactElement {
 							<Separator className='my-2' />
 							<BarList items={data.rewatchDistribution} />
 						</section>
-					</TabsContent>
-				</Tabs>
-			) : null}
-		</ScrollArea>
+							</>
+						) : null}
+					</ScrollArea>
+				</TabsContent>
+			</Tabs>
+		</div>
 	);
 }
