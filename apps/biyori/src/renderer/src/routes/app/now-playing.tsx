@@ -421,9 +421,16 @@ function ContinueWatchingCard({ item, disabled, description, onActivate }: { ite
 			className='h-auto w-full min-w-0 rounded-xl p-0 text-left font-normal whitespace-normal hover:bg-transparent dark:hover:bg-transparent'
 			disabled={disabled}
 			onClick={onActivate}>
-			<Card size='sm' className='w-full overflow-hidden py-0'>
-				<span className='relative block aspect-square h-60 w-full overflow-hidden bg-muted md:h-75'>
-					<AnimeCover id={item.animeId} kind='cover' coverUrl={item.coverUrl} alt='' lazy className='size-full' />
+			<Card size='sm' className='isolate w-full overflow-clip py-0'>
+				<span className='relative block aspect-square h-60 w-full overflow-clip rounded-xl bg-muted transform-gpu [-webkit-mask-image:-webkit-radial-gradient(#fff,#000)] md:h-75'>
+					<AnimeCover
+						id={item.animeId}
+						kind='cover'
+						coverUrl={item.coverUrl}
+						alt=''
+						lazy
+						className='size-full [&_img]:block [&_img]:rounded-xl [&_img]:transform-gpu [&_img]:[clip-path:inset(0_round_var(--radius-xl))] [&_img]:[filter:none] [&_img]:transition-none'
+					/>
 					<span className='pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/85 via-black/55 to-transparent p-2 pt-8'>
 						<span className='block text-sm font-medium leading-snug wrap-break-word text-white'>{item.title}</span>
 						<span className='mt-0.5 block text-xs leading-snug wrap-break-word text-white/80'>{caption}</span>
