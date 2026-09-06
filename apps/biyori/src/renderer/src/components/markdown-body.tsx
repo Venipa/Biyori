@@ -1,11 +1,30 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ComponentProps } from "react";
+import type { ComponentProps, MouseEvent } from "react";
+import { desktopRpc } from "@/desktop-rpc";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { type MDXContent, parseReleaseMarkdown } from "@/mainview/lib/markdown-parser";
 import { cn } from "@/mainview/lib/utils";
 
+function openMarkdownLink(event: MouseEvent<HTMLAnchorElement>, href: string | undefined): void {
+	event.preventDefault();
+	if (!href) {
+		return;
+	}
+	void desktopRpc.request.openExternal({ url: href });
+}
+
 const mdxComponents = {
-	a: (props: ComponentProps<"a">) => <a {...props} className={cn("text-primary underline-offset-2 hover:underline", props.className)} target='_blank' rel='noreferrer' />,
+	a: (props: ComponentProps<"a">) => (
+		<a
+			{...props}
+			className={cn("text-primary underline-offset-2 hover:underline", props.className)}
+			target='_blank'
+			rel='noreferrer'
+			onClick={(event) => {
+				openMarkdownLink(event, props.href);
+			}}
+		/>
+	),
 	img: (props: ComponentProps<"img">) => (
 		<img {...props} className={cn("inline-block size-5 rounded-full align-middle ring-1 ring-border", props.className)} alt={props.alt ?? ""} />
 	),

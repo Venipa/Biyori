@@ -162,12 +162,12 @@ export const desktopRouter = t.router({
 		const win = ctx.getBrowserWindow();
 		return { maximized: win?.isMaximized() ?? false };
 	}),
-	openPath: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(async ({ input }) => {
-		const error = await shell.openPath(input.path);
-		return { ok: error.length === 0 };
+	openPath: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(({ input }) => {
+		void shell.openPath(input.path);
+		return { ok: true as const };
 	}),
-	openExternal: t.procedure.input(z.object({ url: z.string().min(1) })).mutation(async ({ input }) => {
-		await shell.openExternal(input.url);
+	openExternal: t.procedure.input(z.object({ url: z.string().min(1) })).mutation(({ input }) => {
+		void shell.openExternal(input.url);
 		return { ok: true as const };
 	}),
 	pickFolder: t.procedure.mutation(async ({ ctx }) => {

@@ -1,4 +1,5 @@
 import Logo from "@/mainview/components/logo";
+import { splashSegmentState } from "@/mainview/lib/splash-progress";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import { createFileRoute } from "@tanstack/react-router";
@@ -6,18 +7,6 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/splash")({
 	component: SplashPage,
 });
-
-function parseRatio(body: string): { current: number; total: number } | null {
-	const matched = /^(\d+)\/(\d+)/.exec(body);
-	if (!matched) {
-		return null;
-	}
-	const total = Number(matched[2]);
-	if (total <= 0) {
-		return null;
-	}
-	return { current: Number(matched[1]), total };
-}
 
 function SegmentedProgress({
 	completed,
@@ -61,15 +50,17 @@ function SplashPage() {
 	const live = activityQuery.data?.live ?? [];
 	const boot = live.find((item) => item.source === "startup");
 	const scan = live.find((item) => item.source === "library-scan");
-	const bootRatio = boot?.body ? parseRatio(boot.body) : null;
-	const innerRatio = scan?.body ? parseRatio(scan.body) : null;
-	const inner = innerRatio ? Math.min(100, Math.round((innerRatio.current / innerRatio.total) * 100)) : null;
+	const { completed, total, inner } = splashSegmentState({
+		bootBody: boot?.body,
+		scanTitle: scan?.title,
+		scanBody: scan?.body,
+	});
 	const label = [boot?.title ?? "Starting", scan?.body].filter(Boolean).join(" · ");
 
 	return (
 		<div className='app-region-drag pointer-events-drag flex min-h-0 flex-1 select-none flex-col items-center justify-center gap-5 bg-background px-8'>
 			<Logo className='size-14' />
-			<SegmentedProgress completed={bootRatio?.current ?? 0} total={bootRatio?.total ?? 1} inner={inner} />
+			<SegmentedProgress completed={completed} total={total} inner={inner} />
 			<p className='text-center text-xs text-muted-foreground'>{label}</p>
 		</div>
 	);

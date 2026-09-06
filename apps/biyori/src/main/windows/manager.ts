@@ -3,6 +3,7 @@ import { is } from "@electron-toolkit/utils";
 import { app, BrowserWindow, type BrowserWindowConstructorOptions, nativeTheme, shell } from "electron";
 import icon from "../../../resources/icon.png?asset";
 import { attachTrpcWindow } from "../trpc-handler";
+import { attachRendererNavigationGuard } from "./navigation";
 import { attachWindowState } from "./state";
 import { attachWindowZoom, startWindowZoomSync } from "./zoom";
 
@@ -284,6 +285,7 @@ export class WindowManager<TId extends string> {
 			void shell.openExternal(details.url);
 			return { action: "deny" };
 		});
+		attachRendererNavigationGuard(win);
 
 		attachTrpcWindow(win);
 		attachWindowZoom(win);

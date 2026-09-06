@@ -1,3 +1,4 @@
+import { desktopRpc } from "@/desktop-rpc";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import { AnimeCover } from "@/mainview/components/anime-cover";
@@ -299,7 +300,13 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 								Watch next episode
 							</Button>
 						) : null}
-						<Button type='button' variant='ghost' size='sm' render={<a href={`https://anilist.co/anime/${match.id}`} target='_blank' rel='noreferrer noopener' />}>
+						<Button
+							type='button'
+							variant='ghost'
+							size='sm'
+							onClick={() => {
+								void desktopRpc.request.openExternal({ url: `https://anilist.co/anime/${match.id}` });
+							}}>
 							AniList
 							<ExternalLinkIcon data-icon='inline-end' />
 						</Button>

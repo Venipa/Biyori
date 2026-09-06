@@ -292,8 +292,8 @@ export async function playEpisode(database: DatabaseClient, animeId: number, epi
 	if (!path) {
 		return { ok: false, path: null };
 	}
-	const error = await shell.openPath(path);
-	return { ok: error.length === 0, path };
+	void shell.openPath(path);
+	return { ok: true, path };
 }
 
 export async function playNext(database: DatabaseClient, animeId: number, episodesWatched: number): Promise<{ ok: boolean; path: string | null; episode: number | null }> {

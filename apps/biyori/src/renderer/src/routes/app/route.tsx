@@ -22,9 +22,11 @@ function MainLayout(): ReactElement {
 	});
 	const utils = trpc.useUtils();
 	const navigate = useNavigate();
-	const onboardingComplete = trpc.settings.get.useQuery(undefined, {
-		select: (settings) => settings.onboardingComplete,
-	});
+	const settingsQuery = trpc.settings.get.useQuery();
+	const sawSettings = useRef(false);
+	if (settingsQuery.data) {
+		sawSettings.current = true;
+	}
 	const lastPlayKey = useRef("");
 	const lastProgressRevision = useRef(0);
 	trpc.settings.onChange.useSubscription(undefined, {
@@ -57,12 +59,12 @@ function MainLayout(): ReactElement {
 		},
 	});
 
-	if (onboardingComplete.data === false) {
+	if (settingsQuery.data?.onboardingComplete === false) {
 		return <Navigate to='/onboarding' />;
 	}
 
 	return (
-		<PageLoad loading={onboardingComplete.data === undefined}>
+		<PageLoad loading={!sawSettings.current && settingsQuery.data === undefined}>
 			<div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'>
 				<TopMenuBar />
 				<AppToolbar />
