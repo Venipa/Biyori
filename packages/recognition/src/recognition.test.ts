@@ -145,4 +145,26 @@ describe("redirectIfOutOfRange", () => {
 			episode: 40,
 		});
 	});
+
+	test("maps a sequel match with absolute numbers via a dest-id rule", () => {
+		const bang = [
+			{
+				fromId: 1,
+				fromStart: 41,
+				fromEnd: 50,
+				toId: 2,
+				toStart: 1,
+			},
+			{
+				fromId: 2,
+				fromStart: 41,
+				fromEnd: 50,
+				toId: 2,
+				toStart: 1,
+			},
+		];
+		expect(redirectIfOutOfRange({ id: 2, episodes: 10 }, 47, bang)).toEqual({ id: 2, episode: 7 });
+		expect(redirectIfOutOfRange({ id: 1, episodes: 13 }, 47, bang)).toEqual({ id: 2, episode: 7 });
+		expect(redirectIfOutOfRange({ id: 2, episodes: 10 }, 5, bang)).toEqual({ id: 2, episode: 5 });
+	});
 });

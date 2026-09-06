@@ -43,7 +43,9 @@ export function parseRelations(body: string): RelationRule[] {
 		}
 		const [fromRaw, toRaw] = mapped.map((part) => part.trim());
 		const [fromIds, fromEps] = fromRaw.split(":");
-		const [toIds, toEps] = toRaw.split(":");
+		const [toIds, toEpsRaw] = toRaw.split(":");
+		const bang = toEpsRaw?.endsWith("!") ?? false;
+		const toEps = bang ? toEpsRaw.slice(0, -1) : toEpsRaw;
 		const fromId = parseIds(fromIds);
 		const toId = parseIds(toIds);
 		if (fromId == null || toId == null || !fromEps || !toEps) {
@@ -58,6 +60,15 @@ export function parseRelations(body: string): RelationRule[] {
 			toId,
 			toStart: toRange.start,
 		});
+		if (bang) {
+			next.push({
+				fromId: toId,
+				fromStart: fromRange.start,
+				fromEnd: fromRange.end,
+				toId,
+				toStart: toRange.start,
+			});
+		}
 	}
 	return next;
 }

@@ -14,7 +14,7 @@ import { syncDiscordPresence } from "../share/discord";
 import { setNowPlayingForHttp } from "../share/http";
 import { rememberPlaybackApplied, wasPlaybackApplied } from "./applied-playback";
 import { getNowPlayingMedia } from "./detect";
-import { invalidateCandidateCache, loadCandidates, matchById, matchParsed, namesFrom, similarParsed } from "./match";
+import { type Candidate, invalidateCandidateCache, loadCandidates, matchById, matchParsed, namesFrom, similarParsed } from "./match";
 import { parsePlayback } from "./parse";
 import { enqueueUpdate, initQueueFlush } from "./queue";
 import { redirectEpisode, refreshRelations } from "./relations";
@@ -40,6 +40,18 @@ function idleSnapshot(user: NowPlayingUser): NowPlayingSnapshot {
 	return { ...IDLE, progressRevision, user };
 }
 
+function applyRedirect(
+	match: MatchedAnime,
+	episode: number,
+	candidates: Candidate[],
+): { match: MatchedAnime; episode: number } {
+	const redirected = redirectEpisode(match, episode);
+	if (redirected.id === match.id) {
+		return { match, episode: redirected.episode };
+	}
+	return { match: matchById(redirected.id, candidates) ?? match, episode: redirected.episode };
+}
+
 async function resolveNowPlayingUser(settings: AppSettings): Promise<NowPlayingUser> {
 	const provider: DefaultService = settings.defaultService;
 	if (provider === "anilist") {
@@ -62,6 +74,7 @@ let delayLastTickAt = 0;
 let sessionStartedAt = 0;
 let lastFingerprint = "";
 let lastMediaIdentity = "";
+let fileEpisode: number | null = null;
 let forceRematch = false;
 let appliedFingerprint = "";
 let progressRevision = 0;
@@ -177,6 +190,7 @@ async function runTick(): Promise<void> {
 		sessionStartedAt = 0;
 		lastFingerprint = "";
 		lastMediaIdentity = "";
+		fileEpisode = null;
 		pending = null;
 		pendingExit = null;
 		boundMatch = null;
@@ -209,6 +223,7 @@ async function runTick(): Promise<void> {
 		delayLastTickAt = 0;
 		sessionStartedAt = 0;
 		lastFingerprint = "";
+		fileEpisode = null;
 		boundMatch = null;
 		if (snapshot.media || snapshot.parsed || snapshot.match) {
 			emit(idleSnapshot(user));
@@ -248,6 +263,7 @@ async function runTick(): Promise<void> {
 			ignoredStrings: settings.ignoredStrings,
 		});
 		if (!parsed) {
+			fileEpisode = null;
 			emit({
 				media,
 				parsed: null,
@@ -264,6 +280,7 @@ async function runTick(): Promise<void> {
 			return;
 		}
 
+		fileEpisode = parsed.episode;
 		const candidates = await loadCandidates(db);
 		match = matchParsed(
 			{
@@ -274,11 +291,9 @@ async function runTick(): Promise<void> {
 			candidates,
 		);
 		if (match && parsed.episode != null) {
-			const redirected = redirectEpisode(match, parsed.episode);
+			const redirected = applyRedirect(match, parsed.episode, candidates);
+			match = redirected.match;
 			parsed.episode = redirected.episode;
-			if (redirected.id !== match.id) {
-				match = matchById(redirected.id, candidates) ?? match;
-			}
 		}
 		similar = match
 			? []
@@ -308,7 +323,7 @@ async function runTick(): Promise<void> {
 		return;
 	}
 
-	const key = fingerprint(media, parsed.episode);
+	const key = fingerprint(media, fileEpisode);
 	if (key !== lastFingerprint) {
 		lastFingerprint = key;
 		boundMatch = null;
@@ -336,6 +351,12 @@ async function runTick(): Promise<void> {
 	if (!match && boundMatch?.fingerprint === key) {
 		const candidates = await loadCandidates(db);
 		match = matchById(boundMatch.animeId, candidates);
+		const sourceEpisode = fileEpisode ?? parsed.episode;
+		if (match && sourceEpisode != null) {
+			const redirected = applyRedirect(match, sourceEpisode, candidates);
+			match = redirected.match;
+			parsed.episode = redirected.episode;
+		}
 	}
 
 	const now = Date.now();
