@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { canApplyProgress } from "./tracker-progress";
+import { canApplyProgress, withAppliedProgress } from "./tracker-progress";
 
 const completedRewatch = {
 	episodes: 12,
@@ -23,5 +23,21 @@ describe("tracker progress", () => {
 		expect(
 			canApplyProgress({ ...completedRewatch, episodes: 10, episodesWatched: 5, status: "Currently watching", rewatching: false }, 47, { ignoreOutOfRangeEpisode: false }),
 		).toBe(false);
+	});
+
+	test("patches list progress onto the now playing match", () => {
+		const next = withAppliedProgress(
+			{
+				episodes: 12,
+				episodesWatched: 4,
+				status: "Currently watching",
+				rewatching: false,
+				timesRewatched: 0,
+				dateStarted: "2026-01-01",
+			},
+			5,
+		);
+		expect(next.episodesWatched).toBe(5);
+		expect(next.status).toBe("Currently watching");
 	});
 });

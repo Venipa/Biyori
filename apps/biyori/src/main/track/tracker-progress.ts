@@ -33,3 +33,16 @@ export function progressPayload(match: ProgressMatch, episode: number): QueuePay
 		dateCompleted: finished ? new Date().toISOString().slice(0, 10) : undefined,
 	};
 }
+
+export function withAppliedProgress<T extends ProgressMatch>(match: T, episode: number): T {
+	const payload = progressPayload(match, episode);
+	return {
+		...match,
+		episodesWatched: payload.progress ?? episode,
+		status: payload.status ?? match.status,
+		rewatching: payload.rewatching ?? match.rewatching,
+		timesRewatched: payload.timesRewatched ?? match.timesRewatched,
+		dateStarted: payload.dateStarted !== undefined ? payload.dateStarted : match.dateStarted,
+		dateCompleted: payload.dateCompleted !== undefined ? payload.dateCompleted : match.dateCompleted,
+	};
+}

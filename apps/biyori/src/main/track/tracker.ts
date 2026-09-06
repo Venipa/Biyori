@@ -19,7 +19,7 @@ import { resolveFileMatch } from "./match-resolve";
 import { parsePlayback } from "./parse";
 import { enqueueUpdate, initQueueFlush } from "./queue";
 import { redirectEpisode, refreshRelations } from "./relations";
-import { canApplyProgress, progressPayload } from "./tracker-progress";
+import { canApplyProgress, progressPayload, withAppliedProgress } from "./tracker-progress";
 import type { MatchedAnime, NowPlayingMedia, NowPlayingSnapshot, NowPlayingUser, PendingConfirm } from "./types";
 
 type Listener = (snapshot: NowPlayingSnapshot) => void;
@@ -123,13 +123,21 @@ export function nowPlayingObservable(): ReturnType<typeof observable<NowPlayingS
 	});
 }
 
-async function applyProgress(match: MatchedAnime, episode: number): Promise<void> {
+async function reloadMatch(animeId: number): Promise<MatchedAnime | null> {
 	if (!db) {
-		return;
+		return null;
+	}
+	invalidateCandidateCache();
+	return matchById(animeId, await loadCandidates(db)) ?? null;
+}
+
+async function applyProgress(match: MatchedAnime, episode: number): Promise<MatchedAnime> {
+	if (!db) {
+		return match;
 	}
 	const settings = loadAppSettings();
 	if (!canApplyProgress(match, episode, settings)) {
-		return;
+		return match;
 	}
 	await enqueueUpdate(db, {
 		animeId: match.id,
@@ -143,20 +151,19 @@ async function applyProgress(match: MatchedAnime, episode: number): Promise<void
 		rememberPlaybackApplied(applied);
 	}
 	progressRevision += 1;
+	return (await reloadMatch(match.id)) ?? withAppliedProgress(match, episode);
 }
 
 export async function noteManualListUpdate(animeId: number): Promise<void> {
-	invalidateCandidateCache();
 	if (lastFingerprint && snapshot.match?.id === animeId) {
 		const applied = snapshot.parsed?.episode != null ? `${lastFingerprint}|${animeId}|${snapshot.parsed.episode}` : lastFingerprint;
 		appliedFingerprint = applied;
 		rememberPlaybackApplied(applied);
 	}
-	if (!db || snapshot.match?.id !== animeId) {
+	if (snapshot.match?.id !== animeId) {
 		return;
 	}
-	const candidates = await loadCandidates(db);
-	const match = matchById(animeId, candidates);
+	const match = await reloadMatch(animeId);
 	if (!match) {
 		return;
 	}
@@ -375,7 +382,7 @@ async function runTick(): Promise<void> {
 			};
 		} else {
 			appliedFingerprint = applyKey;
-			await applyProgress(match, episode);
+			match = await applyProgress(match, episode);
 		}
 	}
 
@@ -409,8 +416,9 @@ export async function confirmPendingUpdate(): Promise<void> {
 		return;
 	}
 	const match = snapshot.match;
+	let nextMatch = match;
 	if (match && match.id === pending.animeId) {
-		await applyProgress(match, pending.episode);
+		nextMatch = await applyProgress(match, pending.episode);
 		pushNotice({
 			source: "watch-confirm",
 			title: `Update ${pending.title}`,
@@ -418,7 +426,7 @@ export async function confirmPendingUpdate(): Promise<void> {
 		});
 	}
 	pending = null;
-	emit({ ...snapshot, pendingConfirm: null });
+	emit({ ...snapshot, match: nextMatch, pendingConfirm: null, progressRevision });
 }
 
 export async function skipPendingUpdate(): Promise<void> {
