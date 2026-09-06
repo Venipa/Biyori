@@ -8,6 +8,8 @@ import { trpc } from "@/mainview/trpc";
 import { ANIME_LIST_SEARCH_TAB } from "@/shared/list";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, HistoryIcon, ListIcon, PlayIcon, SearchIcon } from "lucide-react";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
+import { type ReactNode, useRef } from "react";
 
 const listItems = [
 	{ to: "/app/history", label: "History", icon: HistoryIcon },
@@ -20,6 +22,49 @@ const toolItems = [
 	{ to: "/app/torrents", label: "Torrents", icon: DownloadIcon },
 ] as const;
 
+const navDestinations: string[] = ["/app/now-playing", "/app/anime-list", ...listItems.map((item) => item.to), ...toolItems.map((item) => item.to)];
+
+const navPillSpring = { type: "spring", stiffness: 420, damping: 32 } as const;
+const navPillFade = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const;
+
+function navItemClass(active: boolean): string {
+	return cn(
+		"relative flex w-full items-center gap-2 rounded-md py-1.5 pr-2 pl-4 text-left text-sm transition-colors",
+		active ? "text-foreground" : "text-foreground/80 hover:bg-muted",
+	);
+}
+
+function NavGroup({ label, children }: { label: string; children: ReactNode }) {
+	return (
+		<div className='flex flex-col gap-0.5'>
+			<p className='px-2 py-1 text-xs text-muted-foreground'>{label}</p>
+			{children}
+		</div>
+	);
+}
+
+function ActiveNavPill({ active, isEnter }: { active: boolean; isEnter: boolean }) {
+	return (
+		<AnimatePresence>
+			{active ? (
+				<motion.span
+					layoutId='app-nav-pill'
+					aria-hidden
+					className='absolute top-1/2 left-1.5 h-3.5 w-1 rounded-full bg-primary'
+					initial={isEnter ? { opacity: 0, scale: 0.5, y: "-50%" } : false}
+					animate={{ opacity: 1, scale: 1, y: "-50%" }}
+					exit={{ opacity: 0, scale: 0.5, y: "-50%" }}
+					transition={{
+						layout: navPillSpring,
+						opacity: navPillFade,
+						scale: navPillFade,
+					}}
+				/>
+			) : null}
+		</AnimatePresence>
+	);
+}
+
 export function AppSidebar() {
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
@@ -29,23 +74,40 @@ export function AppSidebar() {
 	});
 	const queuedCount = historyQuery.data ?? 0;
 	const update = useUpdateStatus();
+	const hasActive = navDestinations.includes(pathname);
+	const pillShown = useRef(false);
+	if (!hasActive) {
+		pillShown.current = false;
+	}
+	const isEnter = hasActive && !pillShown.current;
+	if (hasActive) {
+		pillShown.current = true;
+	}
 
 	return (
 		<nav aria-label='Main navigation' className='flex h-full min-h-0 w-56 shrink-0 flex-col gap-4 overflow-y-auto border-r bg-sidebar p-2'>
-			<div className='flex flex-col gap-0.5'>
-				<NowPlayingNavLink active={pathname === "/app/now-playing"} />
-			</div>
-			<div className='flex flex-col gap-0.5 border-t pt-2'>
-				<AnimeListNavLink active={pathname === "/app/anime-list"} />
-				{listItems.map((item) => (
-					<NavLink key={item.to} {...item} active={pathname === item.to} badge={item.to === "/app/history" ? queuedCount : undefined} />
-				))}
-			</div>
-			<div className='flex flex-col gap-0.5 border-t pt-2'>
-				{toolItems.map((item) => (
-					<NavLink key={item.to} {...item} active={pathname === item.to} />
-				))}
-			</div>
+			<LayoutGroup id='app-sidebar-nav'>
+				<div className='flex flex-col gap-0.5'>
+					<NowPlayingNavLink active={pathname === "/app/now-playing"} isEnter={isEnter} />
+				</div>
+				<NavGroup label='Library'>
+					<AnimeListNavLink active={pathname === "/app/anime-list"} isEnter={isEnter} />
+					{listItems.map((item) => (
+						<NavLink
+							key={item.to}
+							{...item}
+							active={pathname === item.to}
+							isEnter={isEnter}
+							badge={item.to === "/app/history" ? queuedCount : undefined}
+						/>
+					))}
+				</NavGroup>
+				<NavGroup label='Discover'>
+					{toolItems.map((item) => (
+						<NavLink key={item.to} {...item} active={pathname === item.to} isEnter={isEnter} />
+					))}
+				</NavGroup>
+			</LayoutGroup>
 			{update.updateAvailable ? (
 				<div className='mt-auto rounded-md border border-primary/30 bg-primary/10 p-2'>
 					<p className='text-sm font-medium text-foreground'>Update available</p>
@@ -86,7 +148,7 @@ function nowPlayingSubLines(snapshot: {
 	return lines;
 }
 
-function NowPlayingNavLink({ active }: { active: boolean }) {
+function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: boolean }) {
 	const snapshot = trpc.media.nowPlaying.useQuery().data;
 	const playing = Boolean(snapshot?.media);
 	const coverId = snapshot?.match?.id;
@@ -96,14 +158,16 @@ function NowPlayingNavLink({ active }: { active: boolean }) {
 
 	return (
 		<Button
-			variant={active ? "secondary" : "ghost"}
+			variant='ghost'
 			render={<Link to='/app/now-playing' aria-current={active ? "page" : undefined} />}
 			nativeButton={false}
 			className={cn(
-				"relative isolate h-auto min-h-8 w-full justify-start overflow-hidden py-1.5",
+				"relative isolate h-auto min-h-8 w-full justify-start py-1.5 pr-2 pl-4 has-data-[icon=inline-start]:pl-4",
 				showCover ? "items-stretch" : "items-start",
 				subLines.length > 0 ? "whitespace-normal" : undefined,
+				active ? "text-foreground" : "text-foreground/80",
 			)}>
+			<ActiveNavPill active={active} isEnter={isEnter} />
 			{showCover ? (
 				<span aria-hidden className='pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]'>
 					<AnimeCover id={coverId} coverUrl={coverUrl || undefined} alt='' className='size-full scale-110 object-cover opacity-10 blur-[2px]' />
@@ -126,7 +190,7 @@ function NowPlayingNavLink({ active }: { active: boolean }) {
 	);
 }
 
-function AnimeListNavLink({ active }: { active: boolean }) {
+function AnimeListNavLink({ active, isEnter }: { active: boolean; isEnter: boolean }) {
 	const listFilter = useListFilterText();
 	const searching = listFilter.trim().length > 0;
 	return (
@@ -134,25 +198,32 @@ function AnimeListNavLink({ active }: { active: boolean }) {
 			to='/app/anime-list'
 			search={searching ? { tab: ANIME_LIST_SEARCH_TAB } : true}
 			aria-current={active ? "page" : undefined}
-			className={cn(
-				"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
-				active ? "border border-accent-foreground/15 bg-accent text-accent-foreground" : "border border-transparent text-foreground/80 hover:bg-muted",
-			)}>
+			className={navItemClass(active)}>
+			<ActiveNavPill active={active} isEnter={isEnter} />
 			<ListIcon className='size-4 shrink-0 text-current' />
 			<span className='flex-1 truncate'>Anime List</span>
 		</Link>
 	);
 }
 
-function NavLink({ to, label, icon: Icon, badge, active }: { to: string; label: string; icon: typeof PlayIcon; badge?: number; active: boolean }) {
+function NavLink({
+	to,
+	label,
+	icon: Icon,
+	badge,
+	active,
+	isEnter,
+}: {
+	to: string;
+	label: string;
+	icon: typeof PlayIcon;
+	badge?: number;
+	active: boolean;
+	isEnter: boolean;
+}) {
 	return (
-		<Link
-			to={to}
-			aria-current={active ? "page" : undefined}
-			className={cn(
-				"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
-				active ? "border border-accent-foreground/15 bg-accent text-accent-foreground" : "border border-transparent text-foreground/80 hover:bg-muted",
-			)}>
+		<Link to={to} aria-current={active ? "page" : undefined} className={navItemClass(active)}>
+			<ActiveNavPill active={active} isEnter={isEnter} />
 			<Icon className='size-4 shrink-0 text-current' />
 			<span className='flex-1 truncate'>{label}</span>
 			{typeof badge === "number" && badge > 0 ? <span className='text-xs text-muted-foreground'>({badge})</span> : null}
