@@ -3,11 +3,11 @@ import { type Candidate, namesFrom } from "./match-core";
 import { resolveFileMatch } from "./match-resolve";
 import { parseRelations, replaceRelationRules } from "./relations";
 
-function candidate(input: { id: number; title: string; episodes: number }): Candidate {
+function candidate(input: { id: number; title: string; episodes: number; alternativeTitles?: string }): Candidate {
 	return {
 		id: input.id,
 		title: input.title,
-		alternativeTitles: "",
+		alternativeTitles: input.alternativeTitles ?? "",
 		userSynonyms: "",
 		type: "TV",
 		coverUrl: "",
@@ -30,7 +30,7 @@ function candidate(input: { id: number; title: string; episodes: number }): Cand
 		timesRewatched: 0,
 		dateStarted: null,
 		dateCompleted: null,
-		names: namesFrom(input.title, ""),
+		names: namesFrom(input.title, input.alternativeTitles ?? ""),
 	};
 }
 
@@ -43,5 +43,43 @@ describe("resolveFileMatch", () => {
 		]);
 		expect(resolved.match?.id).toBe(185874);
 		expect(resolved.episode).toBe(7);
+	});
+
+	test("keeps Re:Zero S04E16 on 4th season instead of hopping S2 part 2", () => {
+		replaceRelationRules(parseRelations("- 0|0|2:14-25 -> 0|0|3:1-12!\n"));
+		const list = [
+			candidate({
+				id: 2,
+				title: "Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season",
+				alternativeTitles: "Re - ZERO, Starting Life in Another World 2nd Season",
+				episodes: 13,
+			}),
+			candidate({
+				id: 3,
+				title: "Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season Part 2",
+				alternativeTitles: "Re - ZERO, Starting Life in Another World 2nd Season Part 2",
+				episodes: 12,
+			}),
+			candidate({
+				id: 4,
+				title: "Re:Zero kara Hajimeru Isekai Seikatsu 4th Season",
+				alternativeTitles: "Re - ZERO, Starting Life in Another World 4th Season",
+				episodes: 12,
+			}),
+		];
+		const resolved = resolveFileMatch({ title: "Re - ZERO, Starting Life in Another World", season: 4, year: 2016 }, 16, list);
+		expect(resolved.match?.id).toBe(4);
+		expect(resolved.episode).toBe(16);
+	});
+
+	test("picks 4th season from listed season even when English and Japanese titles differ", () => {
+		replaceRelationRules(parseRelations("- 0|0|2:14-25 -> 0|0|3:1-12!\n"));
+		const resolved = resolveFileMatch({ title: "Re - ZERO, Starting Life in Another World", season: 4, year: 2016 }, 16, [
+			candidate({ id: 2, title: "Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season", episodes: 13 }),
+			candidate({ id: 3, title: "Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season Part 2", episodes: 12 }),
+			candidate({ id: 4, title: "Re:Zero kara Hajimeru Isekai Seikatsu 4th Season", episodes: 25 }),
+		]);
+		expect(resolved.match?.id).toBe(4);
+		expect(resolved.episode).toBe(16);
 	});
 });
