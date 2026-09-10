@@ -158,6 +158,7 @@ export function DataTable<TData>({
 	groupOrder,
 	groupLabel,
 	compact = false,
+	rowSize: rowSizeProp,
 }: {
 	table: TanstackTable<TData>;
 	onRowClick?: (row: Row<TData>) => void;
@@ -166,12 +167,13 @@ export function DataTable<TData>({
 	groupOrder?: readonly string[];
 	groupLabel?: (groupingValue: unknown) => ReactNode;
 	compact?: boolean;
+	rowSize?: number;
 }) {
 	const rootRef = useRef<HTMLDivElement>(null);
 	const colSpan = table.getVisibleLeafColumns().length;
 	const leaves = table.getRowModel().rows.filter((row) => row.depth === 0);
 	const items = flattenTableItems(leaves, groupBy, groupOrder, groupLabel);
-	const rowSize = compact ? 32 : 40;
+	const rowSize = rowSizeProp ?? (compact ? 32 : 40);
 	const virtualizer = useVirtualizer({
 		count: items.length,
 		getScrollElement: () => rootRef.current?.closest("[data-slot=scroll-area-viewport]") ?? null,
@@ -193,7 +195,10 @@ export function DataTable<TData>({
 
 	return (
 		<div ref={rootRef}>
-			<Table containerClassName='overflow-visible' className={cn("table-fixed", compact ? "[&_th]:h-8 [&_td]:py-1" : undefined)} style={{ width: table.getTotalSize() }}>
+			<Table
+				containerClassName='overflow-visible'
+				className={cn("table-fixed", compact ? "[&_th]:h-8 [&_td]:py-1" : rowSize >= 56 ? "[&_th]:h-10 [&_td]:py-2" : undefined)}
+				style={{ width: table.getTotalSize() }}>
 				<TableHeader className='sticky top-0 z-20 bg-card'>
 					{table.getHeaderGroups().map((headerGroup) => (
 						<TableRow key={headerGroup.id} className='hover:bg-transparent'>

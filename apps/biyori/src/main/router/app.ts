@@ -165,6 +165,7 @@ export const appRouter = t.router({
 					status: listEntry.status,
 					notes: listEntry.notes,
 					folder: anime.folder,
+					coverUrl: anime.coverUrl,
 					fansub: anime.fansub,
 					lastAiredEpisode: anime.lastAiredEpisode,
 					nextAiringAt: anime.nextAiringAt,

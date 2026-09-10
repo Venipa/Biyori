@@ -43,6 +43,11 @@ describe("parseAppSettings torrent filters", () => {
 		expect(parseAppSettings({ nowPlayingView: "table" }).nowPlayingView).toBe("table");
 	});
 
+	test("defaults animeListViewAs to compact", () => {
+		expect(parseAppSettings({}).animeListViewAs).toBe("compact");
+		expect(parseAppSettings({ animeListViewAs: "rich" }).animeListViewAs).toBe("rich");
+	});
+
 	test("defaults missing uiZoom to 100", () => {
 		expect(parseAppSettings({}).uiZoom).toBe(100);
 	});

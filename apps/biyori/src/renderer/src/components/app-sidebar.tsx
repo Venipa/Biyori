@@ -5,11 +5,11 @@ import { type ReactNode, useRef } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { Button } from "@/mainview/components/ui/button";
-import { useListFilterText } from "@/mainview/lib/list-filter";
+import { clearListFilterText, useListFilterText } from "@/mainview/lib/list-filter";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
-import { ANIME_LIST_SEARCH_TAB } from "@/shared/list";
+import { ANIME_LIST_SEARCH_TAB, animeListTabSchema, listStatusSchema, listStatusShortLabel } from "@/shared/list";
 
 const listItems = [
 	{ to: "/app/history", label: "History", icon: HistoryIcon },
@@ -29,7 +29,14 @@ const navPillSpring = { type: "spring", stiffness: 500, damping: 40 } as const;
 function navItemClass(active: boolean): string {
 	return cn(
 		"relative flex w-full items-center gap-2 rounded-md py-1.5 pr-2 pl-4 text-left text-sm transition-colors",
-		active ? "text-foreground bg-muted" : "text-foreground/80 hover:bg-muted",
+		active ? "bg-muted text-foreground" : "text-foreground/80 hover:bg-muted",
+	);
+}
+
+function navChildClass(active: boolean): string {
+	return cn(
+		"relative flex w-full items-center gap-2 py-1 pr-2 pl-3 text-left text-sm transition-colors",
+		active ? "font-medium text-foreground" : "text-foreground/70 hover:text-foreground",
 	);
 }
 
@@ -54,6 +61,22 @@ function ActiveNavPill({ active, isEnter }: { active: boolean; isEnter: boolean 
 			className='pointer-events-none absolute top-1/2 left-1.5 mt-[-7px] h-3.5 w-1 rounded-full bg-primary'
 			initial={isEnter ? { opacity: 0 } : false}
 			animate={{ opacity: 1 }}
+			transition={navPillSpring}
+		/>
+	);
+}
+
+function ChildNavPill({ active }: { active: boolean }) {
+	if (!active) {
+		return null;
+	}
+	return (
+		<motion.span
+			layoutId='app-nav-child-pill'
+			aria-hidden
+			className='pointer-events-none absolute top-1/2 left-0 h-3.5 w-1 rounded-full bg-primary'
+			initial={false}
+			animate={{ x: "-50%", y: "-50%" }}
 			transition={navPillSpring}
 		/>
 	);
@@ -85,7 +108,7 @@ export function AppSidebar() {
 					<NowPlayingNavLink active={pathname === "/app/now-playing"} isEnter={isEnter} />
 				</div>
 				<NavGroup label='Library'>
-					<AnimeListNavLink active={pathname === "/app/anime-list"} isEnter={isEnter} />
+					<AnimeListNavSection pathname={pathname} isEnter={isEnter} />
 					{listItems.map((item) => (
 						<NavLink key={item.to} {...item} active={pathname === item.to} isEnter={isEnter} badge={item.to === "/app/history" ? queuedCount : undefined} />
 					))}
@@ -183,15 +206,70 @@ function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: bool
 	);
 }
 
-function AnimeListNavLink({ active, isEnter }: { active: boolean; isEnter: boolean }) {
+function listTabFromSearch(search: unknown): unknown {
+	if (search == null) {
+		return undefined;
+	}
+	if (typeof search === "string") {
+		return new URLSearchParams(search.startsWith("?") ? search.slice(1) : search).get("tab") ?? undefined;
+	}
+	if (typeof search === "object" && "tab" in search) {
+		return search.tab;
+	}
+	return undefined;
+}
+
+function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter: boolean }) {
 	const listFilter = useListFilterText();
 	const searching = listFilter.trim().length > 0;
+	const countsQuery = trpc.anime.counts.useQuery();
+	const tabRaw = useRouterState({
+		select: (state) => listTabFromSearch(state.location.search),
+	});
+	const parsedTab = animeListTabSchema.safeParse(tabRaw);
+	const onList = pathname === "/app/anime-list" || pathname === "/app/anime-list/";
+	const statusTab = parsedTab.success && parsedTab.data !== ANIME_LIST_SEARCH_TAB ? parsedTab.data : "Currently watching";
+	const childTab = onList && !searching && parsedTab.data !== ANIME_LIST_SEARCH_TAB ? statusTab : undefined;
+
+	function goToStatus(): void {
+		clearListFilterText();
+	}
+
 	return (
-		<Link to='/app/anime-list' search={searching ? { tab: ANIME_LIST_SEARCH_TAB } : true} aria-current={active ? "page" : undefined} className={navItemClass(active)}>
-			<ActiveNavPill active={active} isEnter={isEnter} />
-			<ListIcon className='size-4 shrink-0 text-current' />
-			<span className='flex-1 truncate'>Anime List</span>
-		</Link>
+		<div className='flex flex-col gap-0.5'>
+			<Link
+				to='/app/anime-list'
+				search={{ tab: "Currently watching" }}
+				aria-current={onList && !childTab ? "page" : undefined}
+				onClick={goToStatus}
+				className={navItemClass(onList)}>
+				<ActiveNavPill active={onList} isEnter={isEnter} />
+				<ListIcon className='size-4 shrink-0 text-current' />
+				<span className='flex-1 truncate'>Anime List</span>
+			</Link>
+			<LayoutGroup id='app-anime-list-subnav'>
+				<div className='relative ml-2 flex flex-col border-l border-border'>
+					{listStatusSchema.options.map((status) => {
+						const childActive = childTab === status;
+						return (
+							<Link
+								key={status}
+								to='/app/anime-list'
+								search={{ tab: status }}
+								aria-current={childActive ? "page" : undefined}
+								aria-label={status}
+								title={status}
+								onClick={goToStatus}
+								className={navChildClass(childActive)}>
+								<ChildNavPill active={childActive} />
+								<span className='flex-1 truncate'>{listStatusShortLabel(status)}</span>
+								<span className={cn("text-xs tabular-nums", childActive ? "text-foreground" : "text-muted-foreground")}>{countsQuery.data?.[status] ?? 0}</span>
+							</Link>
+						);
+					})}
+				</div>
+			</LayoutGroup>
+		</div>
 	);
 }
 
