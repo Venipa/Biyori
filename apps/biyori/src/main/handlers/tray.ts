@@ -1,5 +1,7 @@
+import { platform } from "@electron-toolkit/utils";
 import { Menu, nativeImage, Tray } from "electron";
 import icon from "../../../resources/biyori-frame32x.png?asset";
+import iconWin from "../../../resources/icon.ico?asset";
 import { setTrayState, toggleTrayState } from "./tray-state";
 
 let tray: Tray | null = null;
@@ -9,7 +11,7 @@ function trayMenu(onQuit: () => void): Electron.Menu {
 }
 
 function trayImage(): Electron.NativeImage | string {
-	const image = nativeImage.createFromPath(icon);
+	const image = nativeImage.createFromPath(platform.isWindows ? iconWin : icon);
 	if (image.isEmpty()) {
 		return icon;
 	}

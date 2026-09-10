@@ -1,7 +1,9 @@
 import { join } from "node:path";
-import { is } from "@electron-toolkit/utils";
+import { is, platform } from "@electron-toolkit/utils";
 import { app, BrowserWindow, type BrowserWindowConstructorOptions, nativeTheme, shell } from "electron";
-import icon from "../../../resources/icon.png?asset";
+import icon32 from "../../../resources/biyori32x.png?asset";
+import iconWin from "../../../resources/icon.ico?asset";
+import icon from "../../../resources/logo.png?asset";
 import { attachTrpcWindow } from "../trpc-handler";
 import { attachRendererNavigationGuard } from "./navigation";
 import { attachWindowState } from "./state";
@@ -243,8 +245,6 @@ export class WindowManager<TId extends string> {
 		parent?: BrowserWindow;
 		resizable?: boolean;
 	}): BrowserWindow {
-		const isMac = process.platform === "darwin";
-		const isLinux = process.platform === "linux";
 		const ctor: BrowserWindowConstructorOptions = {
 			title: options.title,
 			width: options.width,
@@ -254,7 +254,7 @@ export class WindowManager<TId extends string> {
 			maxWidth: options.maxWidth,
 			maxHeight: options.maxHeight,
 			show: false,
-			skipTaskbar: isMac ? false : options.skipTaskbar,
+			skipTaskbar: platform.isMacOS ? false : options.skipTaskbar,
 			alwaysOnTop: options.alwaysOnTop,
 			modal: options.modal,
 			parent: options.parent,
@@ -263,8 +263,9 @@ export class WindowManager<TId extends string> {
 			fullscreenable: !options.parent,
 			backgroundColor: windowBackgroundColor(),
 			autoHideMenuBar: true,
-			acceptFirstMouse: isMac,
-			...(isLinux ? { icon } : {}),
+			acceptFirstMouse: platform.isMacOS,
+			...(platform.isLinux ? { icon } : {}),
+			...(platform.isWindows ? { icon: iconWin } : {}),
 			...(options.resizable === false ? { resizable: false } : {}),
 			webPreferences: {
 				preload: join(__dirname, "../preload/index.js"),
