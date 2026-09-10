@@ -1,5 +1,5 @@
 import { Menu, nativeImage, Tray } from "electron";
-import icon from "../../../resources/icon.png?asset";
+import icon from "../../../resources/biyori-frame32x.png?asset";
 import { setTrayState, toggleTrayState } from "./tray-state";
 
 let tray: Tray | null = null;

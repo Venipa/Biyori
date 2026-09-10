@@ -80,7 +80,7 @@ export default async function HomePage() {
 				<div className='relative z-10 grid items-start gap-10 px-6 py-12 md:px-12 md:py-16 lg:grid-cols-[1.15fr_0.85fr]'>
 					<div className='flex flex-col items-start text-left'>
 						<div className='mb-6 inline-flex items-center gap-3.5'>
-							<Image src={assetPath("/logo.png")} alt='' width={48} height={48} className='size-12 shrink-0 rounded-xl' priority />
+							<Image src={assetPath("/logo.svg")} alt='' width={48} height={48} className='size-12 shrink-0 rounded-xl' unoptimized priority />
 							<span className='text-2xl font-semibold tracking-tight md:text-3xl'>{appName}</span>
 						</div>
 						<h1 className='max-w-2xl text-4xl font-semibold tracking-tight text-balance md:text-5xl'>{appTagline}</h1>

@@ -12,7 +12,7 @@ interface LogoProps {
 export function Logo({ className, size = 24, showText = true }: LogoProps) {
 	return (
 		<span className={cn("inline-flex items-center gap-2 font-medium", className)}>
-			<Image src={assetPath("/logo.png")} alt='' width={size} height={size} className='rounded-md' priority />
+			<Image src={assetPath("/logo.svg")} alt='' width={size} height={size} className='rounded-md' unoptimized priority />
 			{showText ? <span>{appName}</span> : null}
 		</span>
 	);
