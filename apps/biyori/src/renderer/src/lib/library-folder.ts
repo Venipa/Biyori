@@ -21,6 +21,7 @@ export function useAddLibraryFolder() {
 	const add = trpc.settings.addLibraryFolder.useMutation({
 		onSuccess: (settings) => {
 			utils.settings.get.setData(undefined, settings);
+			void utils.library.summary.invalidate();
 		},
 	});
 

@@ -7,6 +7,7 @@ export const anilistAuthSchema = z.object({
 	expiresAt: z.number(),
 	userId: z.number(),
 	username: z.string(),
+	avatarUrl: z.string().optional(),
 });
 
 export type AnilistAuth = z.infer<typeof anilistAuthSchema>;
@@ -16,6 +17,7 @@ export type AnilistPublicStatus = {
 	username: string | null;
 	userId: number | null;
 	expiresAt: number | null;
+	avatarUrl: string | null;
 };
 
 export function readAnilistAuth(): AnilistAuth | null {
@@ -34,12 +36,14 @@ export function clearAnilistAuth(): void {
 }
 
 export function toPublicStatus(auth: AnilistAuth | null): AnilistPublicStatus {
+	const avatarUrl = auth?.avatarUrl?.trim() || null;
 	if (!auth || auth.expiresAt <= Date.now()) {
 		return {
 			connected: false,
 			username: auth?.username ?? null,
 			userId: auth?.userId ?? null,
 			expiresAt: auth?.expiresAt ?? null,
+			avatarUrl,
 		};
 	}
 	return {
@@ -47,5 +51,6 @@ export function toPublicStatus(auth: AnilistAuth | null): AnilistPublicStatus {
 		username: auth.username,
 		userId: auth.userId,
 		expiresAt: auth.expiresAt,
+		avatarUrl,
 	};
 }

@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { ActivityCenterPanel } from "@/mainview/components/activity-center-panel";
 import { Button } from "@/mainview/components/ui/button";
 import { Spinner } from "@/mainview/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/ui/tooltip";
 import { useWatchConfirm } from "@/mainview/components/watch-confirm-actions";
 import { setActivityPanelOpen, toggleActivityPanel, useActivityPanelState } from "@/mainview/lib/activity-panel";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
@@ -22,6 +23,7 @@ export function AppStatusBar() {
 			if (snapshot.lastSuccessAt != null && snapshot.lastSuccessAt !== lastSuccessAt.current) {
 				lastSuccessAt.current = snapshot.lastSuccessAt;
 				void invalidateAnimeQueries(utils, "synced");
+				void utils.anilist.status.invalidate();
 			}
 		},
 	});
@@ -92,18 +94,25 @@ export function AppStatusBar() {
 						{message}
 					</p>
 				</button>
-				<Button
-					type='button'
-					variant='ghost'
-					size='icon-xs'
-					aria-label={open ? "Close activity center" : "Open activity center"}
-					aria-expanded={open}
-					className='size-6 cursor-pointer rounded-none'
-					onClick={() => {
-						toggleActivityPanel();
-					}}>
-					<BellIcon />
-				</Button>
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								type='button'
+								variant='ghost'
+								size='icon-xs'
+								aria-label={open ? "Close activity center" : "Open activity center"}
+								aria-expanded={open}
+								className='size-6 cursor-pointer rounded-none'
+								onClick={() => {
+									toggleActivityPanel();
+								}}
+							/>
+						}>
+						<BellIcon />
+					</TooltipTrigger>
+					<TooltipContent>{open ? "Close activity" : "Activity"}</TooltipContent>
+				</Tooltip>
 				<div className='flex w-7 shrink-0 cursor-default items-center justify-center'>{running ? <Spinner size='xs' color={"foreground"} aria-hidden /> : null}</div>
 			</div>
 		</div>

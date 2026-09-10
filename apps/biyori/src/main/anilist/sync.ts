@@ -36,13 +36,16 @@ export async function fetchViewer(
 ): Promise<{
 	id: number;
 	name: string;
+	avatarUrl: string | null;
 }> {
 	const data = await anilistGraphql<{ Viewer: unknown }>({
 		query: GET_CURRENT_USER,
 		token,
 		signal,
 	});
-	return viewerSchema.parse(data.Viewer);
+	const viewer = viewerSchema.parse(data.Viewer);
+	const avatarUrl = viewer.avatar?.large?.trim() || null;
+	return { id: viewer.id, name: viewer.name, avatarUrl };
 }
 
 export async function fetchMediaListCollection(options: { token: string; userId: number; signal?: AbortSignal }): Promise<AnilistMediaList[]> {

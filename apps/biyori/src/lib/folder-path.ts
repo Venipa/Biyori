@@ -36,3 +36,20 @@ export function isPathInsideFolder(filePath: string, folderPath: string): boolea
 	const prefix = folder.endsWith("\\") ? folder : `${folder}\\`;
 	return file.startsWith(prefix);
 }
+
+/** Longest library root that contains the path. Nested roots win. */
+export function longestContainingFolder(filePath: string, folders: readonly string[]): string | null {
+	let best: string | null = null;
+	let bestLen = -1;
+	for (const folder of folders) {
+		if (!isPathInsideFolder(filePath, folder)) {
+			continue;
+		}
+		const len = foldPath(folder).length;
+		if (len > bestLen) {
+			best = folder;
+			bestLen = len;
+		}
+	}
+	return best;
+}

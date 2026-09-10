@@ -1,20 +1,57 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { ChevronDownIcon, FolderIcon, RefreshCwIcon, SearchIcon, SettingsIcon } from "lucide-react";
+import { RefreshCwIcon, SearchIcon, SettingsIcon } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { desktopRpc } from "@/desktop-rpc";
+import { profileInitials } from "@/lib/profile-initials";
 import { type AnilistSearchForm, type AnilistSearchFormInput, anilistSearchFormSchema } from "@/lib/schemas/anilist-search";
 import { handleSuggestKeyDown, SearchSuggestPanel, suggestionOptionCount } from "@/mainview/components/search-suggest";
 import { Button } from "@/mainview/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
+import { Image } from "@/mainview/components/ui/image";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/ui/tooltip";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
-import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
 import { setListFilterText, useListFilterResetToken } from "@/mainview/lib/list-filter";
 import { trpc } from "@/mainview/trpc";
 
 const LIST_FILTER_DEBOUNCE_MS = 250;
+
+function AccountButton() {
+	const statusQuery = trpc.anilist.status.useQuery();
+	const connected = Boolean(statusQuery.data?.connected);
+	const username = statusQuery.data?.username?.trim() ?? "";
+	const avatarUrl = statusQuery.data?.avatarUrl?.trim() || null;
+	const initials = profileInitials(username);
+	const label = connected && username ? username : "AniList account";
+
+	return (
+		<Tooltip>
+			<TooltipTrigger
+				render={
+					<Button
+						variant='ghost'
+						size='icon'
+						aria-label={label}
+						className='overflow-hidden rounded-full'
+						onClick={() => {
+							if (connected && username) {
+								void desktopRpc.request.openExternal({ url: `https://anilist.co/user/${encodeURIComponent(username)}/` });
+								return;
+							}
+							void desktopRpc.request.openSettings({});
+						}}
+					/>
+				}>
+				<span className='relative flex size-7 items-center justify-center overflow-hidden rounded-full bg-muted text-[11px] font-medium text-muted-foreground'>
+					{initials}
+					{avatarUrl ? <Image src={avatarUrl} alt='' className='absolute inset-0 size-full rounded-full' skeletonClassName='rounded-full' /> : null}
+				</span>
+			</TooltipTrigger>
+			<TooltipContent>{label}</TooltipContent>
+		</Tooltip>
+	);
+}
 
 export function AppToolbar() {
 	const navigate = useNavigate();
@@ -31,10 +68,7 @@ export function AppToolbar() {
 	});
 	const syncStatus = trpc.anilist.syncStatus.useQuery();
 	const sync = trpc.anilist.sync.useMutation();
-	const settingsQuery = trpc.settings.get.useQuery();
-	const addLibraryFolder = useAddLibraryFolder();
 	const syncRunning = syncStatus.data?.phase === "running";
-	const folders = settingsQuery.data?.libraryFolders ?? [];
 	const searchId = useId();
 	const listId = `${searchId}-suggest`;
 	const filterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -123,57 +157,27 @@ export function AppToolbar() {
 	}, [trimmedQ, isLiveFilterPage]);
 
 	return (
-		<div className='flex h-11 shrink-0 items-center gap-1.5 border-b bg-card pl-2 z-40'>
-			<Button
-				variant='ghost'
-				size='icon'
-				aria-label='Synchronize'
-				disabled={syncRunning || sync.isPending}
-				onClick={() => {
-					void sync.mutateAsync();
-				}}>
-				<RefreshCwIcon />
-			</Button>
-
-			<DropdownMenu>
-				<DropdownMenuTrigger render={<Button variant='ghost' className='gap-1 px-2' aria-label='Library folders' />}>
-					<FolderIcon data-icon='inline-start' />
-					<ChevronDownIcon className='size-3.5 text-muted-foreground' />
-				</DropdownMenuTrigger>
-				<DropdownMenuContent className='w-auto min-w-56'>
-					{folders.map((folder) => (
-						<DropdownMenuItem
-							key={folder.path}
+		<div className='z-40 flex h-11 shrink-0 items-center gap-1.5 border-b bg-card pr-2 pl-2'>
+			<Tooltip>
+				<TooltipTrigger
+					render={
+						<Button
+							variant='ghost'
+							size='icon'
+							aria-label='Synchronize'
+							disabled={syncRunning || sync.isPending}
 							onClick={() => {
-								void desktopRpc.request.openPath({ path: folder.path });
-							}}>
-							{folder.path}
-						</DropdownMenuItem>
-					))}
-					{folders.length > 0 ? <DropdownMenuSeparator /> : null}
-					<DropdownMenuItem
-						onClick={() => {
-							window.setTimeout(() => {
-								void addLibraryFolder.addFromPicker();
-							}, 0);
-						}}>
-						Add new folder...
-					</DropdownMenuItem>
-				</DropdownMenuContent>
-			</DropdownMenu>
-
-			<Button
-				variant='ghost'
-				size='icon'
-				aria-label='Settings'
-				onClick={() => {
-					void desktopRpc.request.openSettings({});
-				}}>
-				<SettingsIcon />
-			</Button>
+								void sync.mutateAsync();
+							}}
+						/>
+					}>
+					<RefreshCwIcon />
+				</TooltipTrigger>
+				<TooltipContent>Synchronize</TooltipContent>
+			</Tooltip>
 
 			<form
-				className='relative z-20 ml-auto flex h-full min-w-0 flex-1 items-stretch'
+				className='relative z-20 flex h-full min-w-0 flex-1 items-stretch'
 				onSubmit={form.handleSubmit((data) => {
 					goToAnilistSearch(data.q.trim());
 				})}>
@@ -230,9 +234,12 @@ export function AppToolbar() {
 								}}
 							/>
 							<InputGroupAddon align='inline-end'>
-								<InputGroupButton type='submit' size='icon-xs' aria-label='Search AniList' disabled={!canSubmit}>
-									<SearchIcon />
-								</InputGroupButton>
+								<Tooltip>
+									<TooltipTrigger render={<InputGroupButton type='submit' size='icon-xs' aria-label='Search AniList' disabled={!canSubmit} />}>
+										<SearchIcon />
+									</TooltipTrigger>
+									<TooltipContent>Search AniList</TooltipContent>
+								</Tooltip>
 							</InputGroupAddon>
 						</InputGroup>
 					)}
@@ -256,6 +263,26 @@ export function AppToolbar() {
 					/>
 				) : null}
 			</form>
+
+			<div className='ml-2 flex shrink-0 items-center gap-1.5'>
+				<AccountButton />
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								variant='ghost'
+								size='icon'
+								aria-label='Settings'
+								onClick={() => {
+									void desktopRpc.request.openSettings({});
+								}}
+							/>
+						}>
+						<SettingsIcon />
+					</TooltipTrigger>
+					<TooltipContent>Settings</TooltipContent>
+				</Tooltip>
+			</div>
 		</div>
 	);
 }

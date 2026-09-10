@@ -4,6 +4,7 @@ import type { ComponentType, ReactNode } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Spinner } from "@/mainview/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/ui/tooltip";
 import { WatchConfirmActions } from "@/mainview/components/watch-confirm-actions";
 import { cn } from "@/mainview/lib/utils";
 
@@ -103,19 +104,26 @@ export function ActivityCenterPanel({
 								<p className='truncate text-xs font-medium'>Activity</p>
 								<p className='truncate text-[11px] text-muted-foreground'>{subtitle}</p>
 							</div>
-							<Button
-								type='button'
-								variant='ghost'
-								size='icon-xs'
-								className='cursor-pointer'
-								aria-label='Close activity center'
-								onPointerDown={(event) => {
-									event.preventDefault();
-									event.stopPropagation();
-									onClose();
-								}}>
-								<XIcon />
-							</Button>
+							<Tooltip>
+								<TooltipTrigger
+									render={
+										<Button
+											type='button'
+											variant='ghost'
+											size='icon-xs'
+											className='cursor-pointer'
+											aria-label='Close activity center'
+											onPointerDown={(event) => {
+												event.preventDefault();
+												event.stopPropagation();
+												onClose();
+											}}
+										/>
+									}>
+									<XIcon />
+								</TooltipTrigger>
+								<TooltipContent>Close</TooltipContent>
+							</Tooltip>
 						</div>
 						<ScrollArea className='min-h-0 max-h-72 overflow-hidden' viewportClassName='max-h-72 overflow-y-auto'>
 							{empty ? (

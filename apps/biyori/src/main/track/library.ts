@@ -5,6 +5,7 @@ import { logger as log } from "@biyori/logger";
 import { pathUnderRoot } from "@biyori/recognition";
 import { and, eq } from "drizzle-orm";
 import { shell } from "electron";
+import { type LibrarySummary, summarizeLibraryFolders } from "../../lib/library-summary";
 import { completeActivity, pushNotice, upsertActivity } from "../activity";
 import type { DatabaseClient } from "../db";
 import { anime, episodeFile } from "../db/schema";
@@ -209,6 +210,23 @@ function pruneGone(database: DatabaseClient, gone: string[]): void {
 
 export async function scanLibrary(database: DatabaseClient = requiredDb()): Promise<{ files: number; matched: number }> {
 	return enqueueScan(() => runScan(database, libraryRoots(), "full"));
+}
+
+export async function scanLibraryPaths(database: DatabaseClient, roots: string[]): Promise<{ files: number; matched: number }> {
+	const existing = collapseRoots(roots.filter((root) => root.length > 0 && existsSync(root)));
+	return enqueueScan(() => runScan(database, existing, "full"));
+}
+
+export async function loadLibrarySummary(database: DatabaseClient): Promise<LibrarySummary> {
+	const folders = loadAppSettings().libraryFolders.map((folder) => ({
+		path: folder.path,
+		missing: !existsSync(folder.path),
+	}));
+	const [files, seriesFolders] = await Promise.all([
+		database.select({ path: episodeFile.path, animeId: episodeFile.animeId, episode: episodeFile.episode, size: episodeFile.size }).from(episodeFile),
+		database.select({ id: anime.id, folder: anime.folder }).from(anime),
+	]);
+	return summarizeLibraryFolders(folders, files, seriesFolders);
 }
 
 export async function scanAvailableEpisodes(database: DatabaseClient = requiredDb()): Promise<{ files: number; matched: number }> {

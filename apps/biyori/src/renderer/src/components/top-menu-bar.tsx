@@ -33,8 +33,16 @@ export function TopMenuBar() {
 	const folders = settingsQuery.data?.libraryFolders ?? [];
 	const addLibraryFolder = useAddLibraryFolder();
 	const selected = useSelectedAnime();
-	const scan = trpc.library.scan.useMutation();
-	const scanAll = trpc.library.scanAll.useMutation();
+	const scan = trpc.library.scan.useMutation({
+		onSuccess: () => {
+			void utils.library.summary.invalidate();
+		},
+	});
+	const scanAll = trpc.library.scanAll.useMutation({
+		onSuccess: () => {
+			void utils.library.summary.invalidate();
+		},
+	});
 	const playNext = trpc.library.playNext.useMutation();
 	const playRandom = trpc.library.playRandom.useMutation();
 	const [theme, _setTheme] = useTheme();
@@ -49,6 +57,12 @@ export function TopMenuBar() {
 				<MenubarMenu>
 					<MenubarTrigger>File</MenubarTrigger>
 					<MenubarContent>
+						<MenubarItem
+							onClick={() => {
+								void navigate({ to: "/app/library" });
+							}}>
+							Library
+						</MenubarItem>
 						<MenubarSub>
 							<MenubarSubTrigger>Library folders</MenubarSubTrigger>
 							<MenubarSubContent>

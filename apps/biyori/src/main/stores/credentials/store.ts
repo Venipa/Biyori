@@ -7,6 +7,7 @@ export type CredentialsFile = {
 		expiresAt: number;
 		userId: number;
 		username: string;
+		avatarUrl?: string;
 	} | null;
 };
 

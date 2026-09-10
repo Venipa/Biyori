@@ -1,5 +1,19 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, HistoryIcon, ListIcon, PlayIcon, SearchIcon } from "lucide-react";
+import {
+	BarChart3Icon,
+	BookmarkIcon,
+	CalendarDaysIcon,
+	CheckIcon,
+	FolderIcon,
+	HistoryIcon,
+	HomeIcon,
+	ListIcon,
+	PauseIcon,
+	PlayIcon,
+	RssIcon,
+	SearchIcon,
+	XIcon,
+} from "lucide-react";
 import { LayoutGroup, motion } from "motion/react";
 import { type ReactNode, useRef } from "react";
 import { desktopRpc } from "@/desktop-rpc";
@@ -9,9 +23,10 @@ import { clearListFilterText, useListFilterText } from "@/mainview/lib/list-filt
 import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
-import { ANIME_LIST_SEARCH_TAB, animeListTabSchema, listStatusSchema, listStatusShortLabel } from "@/shared/list";
+import { ANIME_LIST_SEARCH_TAB, animeListTabSchema, type ListStatus, listStatusSchema, listStatusShortLabel } from "@/shared/list";
 
 const listItems = [
+	{ to: "/app/library", label: "Library", icon: FolderIcon },
 	{ to: "/app/history", label: "History", icon: HistoryIcon },
 	{ to: "/app/statistics", label: "Statistics", icon: BarChart3Icon },
 ] as const;
@@ -19,8 +34,16 @@ const listItems = [
 const toolItems = [
 	{ to: "/app/search", label: "Search", icon: SearchIcon },
 	{ to: "/app/seasons", label: "Seasons", icon: CalendarDaysIcon },
-	{ to: "/app/torrents", label: "Torrents", icon: DownloadIcon },
+	{ to: "/app/torrents", label: "Torrents", icon: RssIcon },
 ] as const;
+
+const listStatusIcons = {
+	"Currently watching": PlayIcon,
+	Completed: CheckIcon,
+	"On hold": PauseIcon,
+	Dropped: XIcon,
+	"Plan to watch": BookmarkIcon,
+} as const satisfies Record<ListStatus, typeof PlayIcon>;
 
 const navDestinations: string[] = ["/app/now-playing", "/app/anime-list", ...listItems.map((item) => item.to), ...toolItems.map((item) => item.to)];
 
@@ -35,7 +58,7 @@ function navItemClass(active: boolean): string {
 
 function navChildClass(active: boolean): string {
 	return cn(
-		"relative flex w-full items-center gap-2 py-1 pr-2 pl-3 text-left text-sm transition-colors",
+		"relative flex w-full items-center gap-2 py-1 pr-2 pl-7 text-left text-sm transition-colors",
 		active ? "font-medium text-foreground" : "text-foreground/70 hover:text-foreground",
 	);
 }
@@ -58,7 +81,7 @@ function ActiveNavPill({ active, isEnter }: { active: boolean; isEnter: boolean 
 			layoutId='app-nav-pill'
 			layout='position'
 			aria-hidden
-			className='pointer-events-none absolute top-1/2 left-1.5 mt-[-7px] h-3.5 w-1 rounded-full bg-primary'
+			className='pointer-events-none absolute top-1/2 left-1.5 z-20 mt-[-7px] h-3.5 w-1 rounded-full bg-primary'
 			initial={isEnter ? { opacity: 0 } : false}
 			animate={{ opacity: 1 }}
 			transition={navPillSpring}
@@ -74,12 +97,16 @@ function ChildNavPill({ active }: { active: boolean }) {
 		<motion.span
 			layoutId='app-nav-child-pill'
 			aria-hidden
-			className='pointer-events-none absolute top-1/2 left-0 h-3.5 w-1 rounded-full bg-primary'
+			className='pointer-events-none absolute top-1/2 left-2 z-20 h-3.5 w-1 rounded-full bg-primary'
 			initial={false}
 			animate={{ x: "-50%", y: "-50%" }}
 			transition={navPillSpring}
 		/>
 	);
+}
+
+function NavRailDot() {
+	return <span aria-hidden className='pointer-events-none absolute top-1/2 left-2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-border' />;
 }
 
 export function AppSidebar() {
@@ -191,11 +218,13 @@ function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: bool
 			) : null}
 			{showCover ? (
 				<AnimeCover id={coverId} coverUrl={coverUrl || undefined} alt='' className='relative aspect-2/3 w-10 shrink-0 overflow-hidden rounded-md' />
+			) : playing ? (
+				<PlayIcon data-icon='inline-start' className='relative fill-current text-success' />
 			) : (
-				<PlayIcon data-icon='inline-start' className={cn("relative", playing ? "fill-current text-success" : undefined)} />
+				<HomeIcon data-icon='inline-start' className='relative' />
 			)}
 			<span className='relative flex min-w-0 flex-1 flex-col items-start gap-0.5'>
-				<span className='truncate'>Now Playing</span>
+				<span className='truncate'>Home</span>
 				{subLines.map((line) => (
 					<span key={line} className='w-full truncate text-xs font-normal text-muted-foreground'>
 						{line}
@@ -236,7 +265,8 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 	}
 
 	return (
-		<div className='flex flex-col gap-0.5'>
+		<div className='relative flex flex-col gap-0.5'>
+			<span aria-hidden className='pointer-events-none absolute top-4 bottom-3.5 left-2 z-0 w-px -translate-x-1/2 bg-border' />
 			<Link
 				to='/app/anime-list'
 				search={{ tab: "Currently watching" }}
@@ -244,13 +274,16 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 				onClick={goToStatus}
 				className={navItemClass(onList)}>
 				<ActiveNavPill active={onList} isEnter={isEnter} />
+				<NavRailDot />
 				<ListIcon className='size-4 shrink-0 text-current' />
 				<span className='flex-1 truncate'>Anime List</span>
 			</Link>
 			<LayoutGroup id='app-anime-list-subnav'>
-				<div className='relative ml-2 flex flex-col border-l border-border'>
-					{listStatusSchema.options.map((status) => {
+				<div className='flex flex-col'>
+					{listStatusSchema.options.map((status, index) => {
 						const childActive = childTab === status;
+						const StatusIcon = listStatusIcons[status];
+						const isLast = index === listStatusSchema.options.length - 1;
 						return (
 							<Link
 								key={status}
@@ -262,6 +295,8 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 								onClick={goToStatus}
 								className={navChildClass(childActive)}>
 								<ChildNavPill active={childActive} />
+								{isLast ? <NavRailDot /> : null}
+								<StatusIcon aria-hidden className='size-3.5 shrink-0' />
 								<span className='flex-1 truncate'>{listStatusShortLabel(status)}</span>
 								<span className={cn("text-xs tabular-nums", childActive ? "text-foreground" : "text-muted-foreground")}>{countsQuery.data?.[status] ?? 0}</span>
 							</Link>

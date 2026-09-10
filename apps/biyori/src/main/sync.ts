@@ -145,6 +145,7 @@ async function runSync(): Promise<void> {
 			...auth,
 			userId: viewer.id,
 			username: viewer.name,
+			avatarUrl: viewer.avatarUrl ?? undefined,
 		});
 
 		const covers = await syncAniListList(db, {

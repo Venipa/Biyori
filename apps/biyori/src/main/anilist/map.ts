@@ -100,6 +100,12 @@ export type AnilistMediaList = z.infer<typeof anilistMediaListSchema>;
 export const viewerSchema = z.object({
 	id: z.number(),
 	name: z.string(),
+	avatar: z
+		.object({
+			large: z.string().nullable().optional(),
+		})
+		.nullable()
+		.optional(),
 });
 
 export const mediaListCollectionSchema = z.object({

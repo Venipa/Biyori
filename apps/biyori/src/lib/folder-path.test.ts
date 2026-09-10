@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { folderDisplayName, folderPathExists, isPathInsideFolder, normalizeFolderPath, sameFolderPath } from "./folder-path";
+import { folderDisplayName, folderPathExists, isPathInsideFolder, longestContainingFolder, normalizeFolderPath, sameFolderPath } from "./folder-path";
 
 describe("folder paths", () => {
 	test("strips trailing separators except drive roots", () => {
@@ -21,5 +21,10 @@ describe("folder paths", () => {
 	test("does not treat a prefix sibling as inside the library folder", () => {
 		expect(isPathInsideFolder("D:\\AnimeExtra\\ep.mkv", "D:\\Anime")).toBe(false);
 		expect(isPathInsideFolder("D:\\Anime\\show\\ep.mkv", "D:\\Anime")).toBe(true);
+	});
+
+	test("picks the longest containing library root", () => {
+		expect(longestContainingFolder("D:\\Anime\\Kids\\ep.mkv", ["D:\\Anime", "D:\\Anime\\Kids"])).toBe("D:\\Anime\\Kids");
+		expect(longestContainingFolder("E:\\Other\\ep.mkv", ["D:\\Anime"])).toBe(null);
 	});
 });

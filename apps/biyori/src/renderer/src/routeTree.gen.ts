@@ -19,6 +19,7 @@ import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppAboutRouteImport } from './routes/app/about'
 import { Route as AppAnimeListRouteImport } from './routes/app/anime-list'
 import { Route as AppHistoryRouteImport } from './routes/app/history'
+import { Route as AppLibraryRouteImport } from './routes/app/library'
 import { Route as AppNowPlayingRouteImport } from './routes/app/now-playing'
 import { Route as AppSearchRouteImport } from './routes/app/search'
 import { Route as AppSeasonsRouteImport } from './routes/app/seasons'
@@ -87,6 +88,11 @@ const AppAnimeListRoute = AppAnimeListRouteImport.update({
 const AppHistoryRoute = AppHistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppLibraryRoute = AppLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppNowPlayingRoute = AppNowPlayingRouteImport.update({
@@ -201,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/app/about': typeof AppAboutRoute
   '/app/anime-list': typeof AppAnimeListRoute
   '/app/history': typeof AppHistoryRoute
+  '/app/library': typeof AppLibraryRoute
   '/app/now-playing': typeof AppNowPlayingRoute
   '/app/search': typeof AppSearchRoute
   '/app/seasons': typeof AppSeasonsRoute
@@ -230,6 +237,7 @@ export interface FileRoutesByTo {
   '/app/about': typeof AppAboutRoute
   '/app/anime-list': typeof AppAnimeListRoute
   '/app/history': typeof AppHistoryRoute
+  '/app/library': typeof AppLibraryRoute
   '/app/now-playing': typeof AppNowPlayingRoute
   '/app/search': typeof AppSearchRoute
   '/app/seasons': typeof AppSeasonsRoute
@@ -262,6 +270,7 @@ export interface FileRoutesById {
   '/app/about': typeof AppAboutRoute
   '/app/anime-list': typeof AppAnimeListRoute
   '/app/history': typeof AppHistoryRoute
+  '/app/library': typeof AppLibraryRoute
   '/app/now-playing': typeof AppNowPlayingRoute
   '/app/search': typeof AppSearchRoute
   '/app/seasons': typeof AppSeasonsRoute
@@ -295,6 +304,7 @@ export interface FileRouteTypes {
     | '/app/about'
     | '/app/anime-list'
     | '/app/history'
+    | '/app/library'
     | '/app/now-playing'
     | '/app/search'
     | '/app/seasons'
@@ -324,6 +334,7 @@ export interface FileRouteTypes {
     | '/app/about'
     | '/app/anime-list'
     | '/app/history'
+    | '/app/library'
     | '/app/now-playing'
     | '/app/search'
     | '/app/seasons'
@@ -355,6 +366,7 @@ export interface FileRouteTypes {
     | '/app/about'
     | '/app/anime-list'
     | '/app/history'
+    | '/app/library'
     | '/app/now-playing'
     | '/app/search'
     | '/app/seasons'
@@ -453,6 +465,13 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/app/history'
       preLoaderRoute: typeof AppHistoryRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/library': {
+      id: '/app/library'
+      path: '/library'
+      fullPath: '/app/library'
+      preLoaderRoute: typeof AppLibraryRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/app/now-playing': {
@@ -595,6 +614,7 @@ interface AppRouteRouteChildren {
   AppAboutRoute: typeof AppAboutRoute
   AppAnimeListRoute: typeof AppAnimeListRoute
   AppHistoryRoute: typeof AppHistoryRoute
+  AppLibraryRoute: typeof AppLibraryRoute
   AppNowPlayingRoute: typeof AppNowPlayingRoute
   AppSearchRoute: typeof AppSearchRoute
   AppSeasonsRoute: typeof AppSeasonsRoute
@@ -607,6 +627,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAboutRoute: AppAboutRoute,
   AppAnimeListRoute: AppAnimeListRoute,
   AppHistoryRoute: AppHistoryRoute,
+  AppLibraryRoute: AppLibraryRoute,
   AppNowPlayingRoute: AppNowPlayingRoute,
   AppSearchRoute: AppSearchRoute,
   AppSeasonsRoute: AppSeasonsRoute,
