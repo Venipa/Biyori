@@ -1,7 +1,6 @@
 import { join } from "node:path";
 import { is, platform } from "@electron-toolkit/utils";
 import { app, BrowserWindow, type BrowserWindowConstructorOptions, nativeTheme, shell } from "electron";
-import icon32 from "../../../resources/biyori32x.png?asset";
 import iconWin from "../../../resources/icon.ico?asset";
 import icon from "../../../resources/logo.png?asset";
 import { attachTrpcWindow } from "../trpc-handler";
