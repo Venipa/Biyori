@@ -75,6 +75,8 @@ export async function initDatabase() {
 export type DatabaseClient = ReturnType<typeof createDatabase>;
 export type SelectDatabase = Pick<DatabaseClient, "select">;
 export type {
+	Account,
+	AccountInsert,
 	Activity,
 	ActivityInsert,
 	Anime,

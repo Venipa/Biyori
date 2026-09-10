@@ -1,14 +1,14 @@
 import { createEncryptedStore } from "../../lib/store/createYmlStore";
 import { credentialsStoreMigrations } from "./migrations";
 
+export type AccountToken = {
+	accessToken: string;
+	expiresAt: number;
+};
+
 export type CredentialsFile = {
-	anilist?: {
-		accessToken: string;
-		expiresAt: number;
-		userId: number;
-		username: string;
-		avatarUrl?: string;
-	} | null;
+	activeAccountId?: number | null;
+	tokens?: Record<string, AccountToken>;
 };
 
 export const credentialsStore = createEncryptedStore<CredentialsFile>("credentials", {

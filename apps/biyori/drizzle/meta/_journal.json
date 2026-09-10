@@ -43,6 +43,13 @@
       "when": 1788780000000,
       "tag": "0005_anime_airing_dates",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1789074215449,
+      "tag": "0006_ambitious_mandarin",
+      "breakpoints": true
     }
   ]
 }

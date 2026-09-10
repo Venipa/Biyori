@@ -109,3 +109,10 @@ export const activity = sqliteTable("activity", {
 	status: text("status").notNull(),
 	createdAt: text("created_at").notNull(),
 });
+
+/** Signed-in list provider. PK is the remote user id (AniList Viewer.id). */
+export const account = sqliteTable("account", {
+	id: integer("id").primaryKey(),
+	username: text("username").notNull(),
+	avatarUrl: text("avatar_url").notNull().default(""),
+});

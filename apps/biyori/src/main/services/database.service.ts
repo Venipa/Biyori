@@ -1,4 +1,5 @@
 import { initActivityCenter } from "../activity";
+import { initAnilistAuth } from "../anilist/store";
 import type { DatabaseClient } from "../db";
 import { initDatabase } from "../db";
 import { Service } from "./service";
@@ -18,6 +19,7 @@ export default class DatabaseService extends Service {
 
 	async beforeLoad(): Promise<void> {
 		db = await initDatabase();
+		initAnilistAuth(db);
 		await initActivityCenter(db);
 	}
 }

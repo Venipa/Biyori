@@ -1,4 +1,4 @@
-import type { activity, anime, appSetting, episodeFile, history, listEntry, mediaCache, relationsCache, syncQueue, torrentArchive } from "./schema";
+import type { account, activity, anime, appSetting, episodeFile, history, listEntry, mediaCache, relationsCache, syncQueue, torrentArchive } from "./schema";
 
 export type Anime = typeof anime.$inferSelect;
 export type AnimeInsert = typeof anime.$inferInsert;
@@ -29,3 +29,6 @@ export type MediaCacheInsert = typeof mediaCache.$inferInsert;
 
 export type Activity = typeof activity.$inferSelect;
 export type ActivityInsert = typeof activity.$inferInsert;
+
+export type Account = typeof account.$inferSelect;
+export type AccountInsert = typeof account.$inferInsert;
