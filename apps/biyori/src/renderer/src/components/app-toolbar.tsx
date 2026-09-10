@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { RefreshCwIcon, SearchIcon, SettingsIcon } from "lucide-react";
+import { ExternalLinkIcon, InfoIcon, LogOutIcon, RefreshCwIcon, SearchIcon, SettingsIcon } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { desktopRpc } from "@/desktop-rpc";
@@ -8,6 +8,15 @@ import { profileInitials } from "@/lib/profile-initials";
 import { type AnilistSearchForm, type AnilistSearchFormInput, anilistSearchFormSchema } from "@/lib/schemas/anilist-search";
 import { handleSuggestKeyDown, SearchSuggestPanel, suggestionOptionCount } from "@/mainview/components/search-suggest";
 import { Button } from "@/mainview/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/mainview/components/ui/dropdown-menu";
 import { Image } from "@/mainview/components/ui/image";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/ui/tooltip";
@@ -18,38 +27,109 @@ import { trpc } from "@/mainview/trpc";
 const LIST_FILTER_DEBOUNCE_MS = 250;
 
 function AccountButton() {
+	const navigate = useNavigate();
+	const utils = trpc.useUtils();
 	const statusQuery = trpc.anilist.status.useQuery();
+	const disconnect = trpc.anilist.disconnect.useMutation();
+	const authorize = trpc.anilist.authorize.useMutation();
+	const setSettings = trpc.settings.set.useMutation({
+		onSuccess: (settings) => {
+			utils.settings.get.setData(undefined, settings);
+		},
+	});
 	const connected = Boolean(statusQuery.data?.connected);
 	const username = statusQuery.data?.username?.trim() ?? "";
 	const avatarUrl = statusQuery.data?.avatarUrl?.trim() || null;
 	const initials = profileInitials(username);
-	const label = connected && username ? username : "AniList account";
+	const label = connected && username ? username : "Account";
+	const signingOut = disconnect.isPending || setSettings.isPending;
+
+	function openProfile(): void {
+		if (!username) {
+			return;
+		}
+		void desktopRpc.request.openExternal({ url: `https://anilist.co/user/${encodeURIComponent(username)}/` });
+	}
+
+	function logOut(): void {
+		window.setTimeout(() => {
+			void (async () => {
+				await disconnect.mutateAsync();
+				await setSettings.mutateAsync({ onboardingComplete: false });
+				await utils.anilist.status.invalidate();
+				void desktopRpc.request.closeSettings({});
+				void navigate({ to: "/onboarding" });
+			})();
+		}, 0);
+	}
 
 	return (
-		<Tooltip>
-			<TooltipTrigger
-				render={
-					<Button
-						variant='ghost'
-						size='icon'
-						aria-label={label}
-						className='overflow-hidden rounded-full'
-						onClick={() => {
-							if (connected && username) {
-								void desktopRpc.request.openExternal({ url: `https://anilist.co/user/${encodeURIComponent(username)}/` });
-								return;
-							}
-							void desktopRpc.request.openSettings({});
-						}}
-					/>
-				}>
+		<DropdownMenu>
+			<DropdownMenuTrigger render={<Button variant='ghost' size='icon' aria-label={label} aria-haspopup='menu' className='overflow-hidden rounded-full' disabled={signingOut} />}>
 				<span className='relative flex size-7 items-center justify-center overflow-hidden rounded-full bg-muted text-[11px] font-medium text-muted-foreground'>
 					{initials}
 					{avatarUrl ? <Image src={avatarUrl} alt='' className='absolute inset-0 size-full rounded-full' skeletonClassName='rounded-full' /> : null}
 				</span>
-			</TooltipTrigger>
-			<TooltipContent>{label}</TooltipContent>
-		</Tooltip>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align='end' className='min-w-52'>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel className='font-normal'>
+						<p className='truncate text-sm font-medium text-foreground'>{connected && username ? username : "Not signed in"}</p>
+						<p className='truncate text-xs'>{connected ? "AniList" : "Connect to use your list"}</p>
+					</DropdownMenuLabel>
+				</DropdownMenuGroup>
+				<DropdownMenuSeparator />
+				<DropdownMenuGroup>
+					{connected ? (
+						<DropdownMenuItem
+							onClick={() => {
+								openProfile();
+							}}>
+							<ExternalLinkIcon />
+							View on AniList
+						</DropdownMenuItem>
+					) : (
+						<DropdownMenuItem
+							onClick={() => {
+								void authorize.mutateAsync();
+							}}>
+							<ExternalLinkIcon />
+							Connect AniList
+						</DropdownMenuItem>
+					)}
+					<DropdownMenuItem
+						onClick={() => {
+							void desktopRpc.request.openSettings({});
+						}}>
+						<SettingsIcon />
+						Account settings
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={() => {
+							void navigate({ to: "/app/about" });
+						}}>
+						<InfoIcon />
+						About
+					</DropdownMenuItem>
+				</DropdownMenuGroup>
+				{connected ? (
+					<>
+						<DropdownMenuSeparator />
+						<DropdownMenuGroup>
+							<DropdownMenuItem
+								variant='destructive'
+								disabled={signingOut}
+								onClick={() => {
+									logOut();
+								}}>
+								<LogOutIcon />
+								Log out
+							</DropdownMenuItem>
+						</DropdownMenuGroup>
+					</>
+				) : null}
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
 
