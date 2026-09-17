@@ -193,9 +193,9 @@ function IdleNowPlaying() {
 						watchedLastWeek={watchedLastWeek}
 					/>
 				) : continueWatching.length > 0 || hasAiring ? (
-					<div className='flex min-w-0 items-start gap-3'>
+					<div className='flex min-w-0 flex-col gap-6 @3xl:flex-row @3xl:items-start @3xl:gap-3'>
 						{continueWatching.length > 0 ? (
-							<section className='flex w-fit min-w-0 max-w-1/2 flex-col'>
+							<section className='flex w-full min-w-0 flex-col @3xl:max-w-max @3xl:flex-1'>
 								<IdlePosterStrip
 									heading='Continue watching'
 									label='Continue watching'
@@ -209,7 +209,7 @@ function IdleNowPlaying() {
 									}}
 								/>
 								{watchedLastWeek > 0 ? (
-									<p className='mt-3 text-sm text-muted-foreground'>
+									<p className='mt-3 w-0 min-w-full text-sm text-muted-foreground'>
 										You've watched {watchedLastWeek} episode
 										{watchedLastWeek === 1 ? "" : "s"} last week.
 									</p>
@@ -217,7 +217,7 @@ function IdleNowPlaying() {
 							</section>
 						) : null}
 						{hasAiring ? (
-							<section className='min-w-0 flex-1'>
+							<section className='w-full min-w-0 @3xl:max-w-max @3xl:flex-1'>
 								<IdleAiringRail
 									groups={airing.map((group) => ({
 										label: group.label,
@@ -445,7 +445,7 @@ function IdlePosterStrip({
 }) {
 	return (
 		<ScrollArea className='h-auto min-w-0 max-w-full' viewportClassName='overflow-x-auto overflow-y-hidden'>
-			{heading ? <IdleColumnHeading>{heading}</IdleColumnHeading> : null}
+			{heading ? <IdleColumnHeading sticky>{heading}</IdleColumnHeading> : null}
 			<ul aria-label={label} className='flex w-max snap-x snap-mandatory gap-3 pb-1'>
 				{items.map((item) => (
 					<li key={item.animeId} className='w-40 shrink-0 snap-start md:w-50'>
