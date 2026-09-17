@@ -105,10 +105,6 @@ function ChildNavPill({ active }: { active: boolean }) {
 	);
 }
 
-function NavRailDot() {
-	return <span aria-hidden className='pointer-events-none absolute top-1/2 left-2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-border' />;
-}
-
 export function AppSidebar() {
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
@@ -265,8 +261,7 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 	}
 
 	return (
-		<div className='relative flex flex-col gap-0.5'>
-			<span aria-hidden className='pointer-events-none absolute top-4 bottom-3.5 left-2 z-0 w-px -translate-x-1/2 bg-border' />
+		<div className='flex flex-col gap-0.5'>
 			<Link
 				to='/app/anime-list'
 				search={{ tab: "Currently watching" }}
@@ -274,16 +269,14 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 				onClick={goToStatus}
 				className={navItemClass(onList)}>
 				<ActiveNavPill active={onList} isEnter={isEnter} />
-				<NavRailDot />
 				<ListIcon className='size-4 shrink-0 text-current' />
 				<span className='flex-1 truncate'>Anime List</span>
 			</Link>
 			<LayoutGroup id='app-anime-list-subnav'>
 				<div className='flex flex-col'>
-					{listStatusSchema.options.map((status, index) => {
+					{listStatusSchema.options.map((status) => {
 						const childActive = childTab === status;
 						const StatusIcon = listStatusIcons[status];
-						const isLast = index === listStatusSchema.options.length - 1;
 						return (
 							<Link
 								key={status}
@@ -295,7 +288,6 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 								onClick={goToStatus}
 								className={navChildClass(childActive)}>
 								<ChildNavPill active={childActive} />
-								{isLast ? <NavRailDot /> : null}
 								<StatusIcon aria-hidden className='size-3.5 shrink-0' />
 								<span className='flex-1 truncate'>{listStatusShortLabel(status)}</span>
 								<span className={cn("text-xs tabular-nums", childActive ? "text-foreground" : "text-muted-foreground")}>{countsQuery.data?.[status] ?? 0}</span>
