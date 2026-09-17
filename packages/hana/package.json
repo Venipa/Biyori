@@ -23,7 +23,7 @@
 		}
 	},
 	"scripts": {
-		"build": "bun scripts/napi-build.mjs",
+		"build": "bun scripts/napi-build.mjs --release",
 		"build:release": "bun scripts/napi-build.mjs --release",
 		"test": "cargo test"
 	},

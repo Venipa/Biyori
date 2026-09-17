@@ -1,5 +1,11 @@
 use crate::parse::extend_title;
-use crate::types::{Candidate, Parsed};
+use crate::types::{Candidate, Parsed, RelationRule};
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
+
+thread_local! {
+	static LOOKUP_CACHE: RefCell<HashMap<String, String>> = RefCell::new(HashMap::new());
+}
 
 fn normalize_title(value: &str) -> String {
 	let mut out = String::new();
@@ -42,9 +48,16 @@ fn replace_season_phrases(value: &str) -> String {
 }
 
 pub fn normalize_for_lookup(value: &str) -> String {
-	let spaced = normalize_title(value);
-	let seasons = replace_season_phrases(&spaced);
-	seasons.chars().filter(|ch| ch.is_alphanumeric()).collect()
+	LOOKUP_CACHE.with(|cache| {
+		if let Some(cached) = cache.borrow().get(value) {
+			return cached.clone();
+		}
+		let spaced = normalize_title(value);
+		let seasons = replace_season_phrases(&spaced);
+		let computed: String = seasons.chars().filter(|ch| ch.is_alphanumeric()).collect();
+		cache.borrow_mut().insert(value.to_string(), computed.clone());
+		computed
+	})
 }
 
 fn lookup_keys(query: &str) -> Vec<String> {
@@ -63,22 +76,41 @@ fn lookup_keys(query: &str) -> Vec<String> {
 	keys
 }
 
+fn normalize_fs_path(value: &str) -> String {
+	let mut path = value.replace('\\', "/").to_lowercase();
+	if let Some(stripped) = path.strip_prefix("//?/") {
+		path = stripped.to_string();
+	} else if let Some(stripped) = path.strip_prefix("//./") {
+		path = stripped.to_string();
+	}
+	if let Some(stripped) = path.strip_prefix("unc/") {
+		path = stripped.to_string();
+	}
+	while path.ends_with('/') {
+		path.pop();
+	}
+	path
+}
+
 fn path_under(file: &str, root: &str) -> bool {
 	if root.is_empty() {
 		return false;
 	}
-	let file = file.replace('\\', "/").to_ascii_lowercase();
-	let folder = root.replace('\\', "/").to_ascii_lowercase().trim_end_matches('/').to_string();
+	let file = normalize_fs_path(file);
+	let folder = normalize_fs_path(root);
+	if folder.is_empty() {
+		return false;
+	}
 	file == folder || file.starts_with(&format!("{folder}/"))
 }
 
-fn pool_for_path<'a>(path: &str, candidates: &'a [Candidate]) -> Vec<&'a Candidate> {
+fn pool_for_path<'a>(path: &str, candidates: &'a [Candidate]) -> (Vec<&'a Candidate>, bool) {
 	let mut hits: Vec<&Candidate> = candidates
 		.iter()
 		.filter(|candidate| path_under(path, candidate.folder.as_deref().unwrap_or("")))
 		.collect();
 	if hits.is_empty() {
-		return candidates.iter().collect();
+		return (candidates.iter().collect(), false);
 	}
 	let longest = hits
 		.iter()
@@ -86,7 +118,7 @@ fn pool_for_path<'a>(path: &str, candidates: &'a [Candidate]) -> Vec<&'a Candida
 		.max()
 		.unwrap_or(0);
 	hits.retain(|candidate| candidate.folder.as_deref().unwrap_or("").len() == longest);
-	hits
+	(hits, true)
 }
 
 fn season_from_names(names: &[String]) -> Option<i32> {
@@ -131,9 +163,310 @@ fn season_compatible(parsed: &Parsed, candidate: &Candidate) -> bool {
 	}
 }
 
+const MATCH_FLOOR: f32 = 0.72;
+const UNIQUE_MARGIN: f32 = 0.08;
+const SIMILAR_FLOOR: f32 = 0.25;
+const SIMILAR_LIMIT: usize = 10;
+const DICE_POOL_MAX: usize = 32;
+
+fn strip_season(value: &str) -> String {
+	use std::sync::OnceLock;
+	static RE: OnceLock<regex::Regex> = OnceLock::new();
+	let re = RE.get_or_init(|| {
+		#[allow(clippy::expect_used)]
+		regex::Regex::new(r"(?i-u)\b(?:[0-9]+(?:st|nd|rd|th) +season|season +[0-9]+|series +[0-9]+|s[0-9]+)\b").expect("strip season")
+	});
+	re.replace_all(value, " ").split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn dice(left: &str, right: &str) -> f32 {
+	if left.is_empty() || right.is_empty() {
+		return 0.0;
+	}
+	if left == right {
+		return 1.0;
+	}
+	let mut grams = HashSet::new();
+	let right_chars: Vec<char> = right.chars().collect();
+	for pair in right_chars.windows(2) {
+		grams.insert((pair[0], pair[1]));
+	}
+	let left_chars: Vec<char> = left.chars().collect();
+	if left_chars.len() < 2 || right_chars.len() < 2 {
+		return 0.0;
+	}
+	let mut hits = 0u32;
+	for pair in left_chars.windows(2) {
+		if grams.contains(&(pair[0], pair[1])) {
+			hits += 1;
+		}
+	}
+	(2.0 * hits as f32) / (left_chars.len().saturating_sub(1) as f32 + grams.len() as f32)
+}
+
+fn length_ratio(left: &str, right: &str) -> f32 {
+	let max = left.len().max(right.len());
+	if max == 0 {
+		0.0
+	} else {
+		left.len().min(right.len()) as f32 / max as f32
+	}
+}
+
+fn extra_season(value: &str) -> bool {
+	use std::sync::OnceLock;
+	static RE: OnceLock<regex::Regex> = OnceLock::new();
+	let re = RE.get_or_init(|| {
+		#[allow(clippy::expect_used)]
+		regex::Regex::new(r"(?i-u)^(season [0-9]+|[0-9]+th season|s[0-9]+)$").expect("extra season")
+	});
+	re.is_match(value)
+}
+
+fn name_score(name: &str, needle: &str, needle_key: &str) -> f32 {
+	if name == needle || normalize_for_lookup(name) == needle_key {
+		return 1.0;
+	}
+	let base_name = strip_season(name);
+	let base_needle = strip_season(needle);
+	if !base_name.is_empty()
+		&& !base_needle.is_empty()
+		&& normalize_for_lookup(&base_name) == normalize_for_lookup(&base_needle)
+	{
+		return 0.92;
+	}
+	if name.contains(needle) {
+		return length_ratio(name, needle);
+	}
+	if needle.contains(name) {
+		let extra = needle[needle.find(name).unwrap_or(0) + name.len()..].trim();
+		if extra.chars().all(|ch| ch.is_ascii_digit()) && extra.len() == 4 {
+			return 0.92;
+		}
+		return if extra_season(extra) {
+			0.35
+		} else {
+			length_ratio(name, needle) * 0.9
+		};
+	}
+	dice(if base_name.is_empty() { name } else { &base_name }, if base_needle.is_empty() { needle } else { &base_needle })
+}
+
+fn score_candidate(candidate: &Candidate, needle: &str, needle_key: &str, season: Option<i32>) -> f32 {
+	let mut score = 0.0f32;
+	for name in &candidate.names {
+		score = score.max(name_score(name, needle, needle_key));
+	}
+	if season.unwrap_or(0) <= 1 {
+		return score;
+	}
+	match season_from_names(&candidate.names) {
+		Some(listed) if listed == season.unwrap_or(0) => score + 0.12,
+		Some(_) => score - 0.35,
+		None if score >= 0.7 => score - 0.2,
+		None => score,
+	}
+}
+
+fn match_title<'a>(query: &str, pool: &[&'a Candidate], season: Option<i32>) -> Option<&'a Candidate> {
+	let needle = normalize_title(query);
+	if needle.is_empty() {
+		return None;
+	}
+	let lookup_key = normalize_for_lookup(query);
+	let keys = lookup_keys(query);
+	let exact: Vec<&Candidate> = pool
+		.iter()
+		.copied()
+		.filter(|candidate| candidate.names.iter().any(|name| keys.iter().any(|key| normalize_for_lookup(name) == *key)))
+		.collect();
+	if exact.len() == 1 {
+		return Some(exact[0]);
+	}
+	if pool.len() > DICE_POOL_MAX {
+		return None;
+	}
+	let scored = if exact.len() > 1 { exact } else { pool.to_vec() };
+	let mut best: Option<(&Candidate, f32)> = None;
+	let mut second = 0.0f32;
+	for candidate in scored {
+		let score = score_candidate(candidate, &needle, &lookup_key, season);
+		if let Some((_, best_score)) = best {
+			if score > best_score {
+				second = best_score;
+				best = Some((candidate, score));
+			} else if score > second {
+				second = score;
+			}
+		} else {
+			best = Some((candidate, score));
+		}
+	}
+	let (candidate, score) = best?;
+	if score < MATCH_FLOOR {
+		return None;
+	}
+	if score < 1.0 && score - second < UNIQUE_MARGIN {
+		return None;
+	}
+	Some(candidate)
+}
+
+fn rank_parsed<'a>(parsed: &Parsed, pool: &[&'a Candidate]) -> Vec<&'a Candidate> {
+	if pool.len() > DICE_POOL_MAX {
+		return Vec::new();
+	}
+	let query = extend_title(parsed);
+	let needle = normalize_title(&query);
+	if needle.is_empty() {
+		return Vec::new();
+	}
+	let lookup_key = normalize_for_lookup(&query);
+	let mut ranked: Vec<(&Candidate, f32)> = pool
+		.iter()
+		.copied()
+		.map(|candidate| (candidate, score_candidate(candidate, &needle, &lookup_key, parsed.season)))
+		.filter(|item| item.1 >= SIMILAR_FLOOR)
+		.collect();
+	ranked.sort_by(|left, right| right.1.partial_cmp(&left.1).unwrap_or(std::cmp::Ordering::Equal));
+	ranked.into_iter().take(SIMILAR_LIMIT).map(|item| item.0).collect()
+}
+
+fn apply_relation_rule(id: i64, episode: i32, rules: &[RelationRule]) -> (i64, i32) {
+	for rule in rules {
+		if rule.from_id != id {
+			continue;
+		}
+		if episode < rule.from_start {
+			continue;
+		}
+		if rule.from_end.is_some_and(|end| episode > end) {
+			continue;
+		}
+		return (rule.to_id, episode - rule.from_start + rule.to_start);
+	}
+	(id, episode)
+}
+
+fn redirect_if_out_of_range(candidate: &Candidate, episode: i32, rules: &[RelationRule]) -> (i64, i32) {
+	if candidate.episodes <= 0 || episode <= candidate.episodes {
+		return (candidate.id, episode);
+	}
+	apply_relation_rule(candidate.id, episode, rules)
+}
+
+fn unique_redirect(episode: i32, candidates: &[&Candidate], rules: &[RelationRule]) -> Option<(i64, i32)> {
+	let mut dest: Vec<(i64, i32)> = Vec::new();
+	for candidate in candidates {
+		let redirected = redirect_if_out_of_range(candidate, episode, rules);
+		if redirected.0 == candidate.id && redirected.1 == episode {
+			continue;
+		}
+		if dest.iter().any(|(id, ep)| *id == redirected.0 && *ep != redirected.1) {
+			return None;
+		}
+		if !dest.iter().any(|(id, _)| *id == redirected.0) {
+			dest.push(redirected);
+		}
+	}
+	if dest.len() == 1 {
+		Some(dest[0])
+	} else {
+		None
+	}
+}
+
+fn relation_hop_candidates<'a>(parsed: &Parsed, pool: &[&'a Candidate]) -> Vec<&'a Candidate> {
+	let ranked = rank_parsed(parsed, pool);
+	let base = normalize_title(&parsed.title);
+	let extra = if base.is_empty() {
+		Vec::new()
+	} else {
+		let prefix = format!("{base} ");
+		pool.iter()
+			.copied()
+			.filter(|candidate| candidate.names.iter().any(|name| name == &base || name.starts_with(&prefix)))
+			.collect()
+	};
+	let mut seen = HashSet::new();
+	let mut next = Vec::new();
+	for candidate in ranked.into_iter().chain(extra) {
+		if seen.insert(candidate.id) {
+			next.push(candidate);
+		}
+	}
+	next
+}
+
+fn pick_season_compatible<'a>(parsed: &Parsed, pool: &[&'a Candidate]) -> Option<&'a Candidate> {
+	if parsed.season.unwrap_or(0) <= 1 {
+		return None;
+	}
+	let fits: Vec<&Candidate> = pool.iter().copied().filter(|candidate| season_compatible(parsed, candidate)).collect();
+	match fits.len() {
+		0 => None,
+		1 => Some(fits[0]),
+		_ => rank_parsed(parsed, &fits).into_iter().next(),
+	}
+}
+
+fn with_redirect(hit: &Candidate, episode: i32, all: &[Candidate], rules: &[RelationRule]) -> (i64, i32) {
+	let redirected = redirect_if_out_of_range(hit, episode, rules);
+	if redirected.0 == hit.id || all.iter().any(|candidate| candidate.id == redirected.0) {
+		redirected
+	} else {
+		(hit.id, redirected.1)
+	}
+}
+
+fn resolve_on_pool(parsed: &Parsed, pool: &[&Candidate], all: &[Candidate], rules: &[RelationRule]) -> Option<(i64, i32)> {
+	if pool.is_empty() {
+		return None;
+	}
+	let query = extend_title(parsed);
+	let matched = match_title(&query, pool, parsed.season);
+	let Some(episode) = parsed.episode else {
+		return matched.map(|hit| (hit.id, 1));
+	};
+	if let Some(hit) = matched {
+		if season_compatible(parsed, hit) {
+			return Some(with_redirect(hit, episode, all, rules));
+		}
+	}
+	if pool.len() > DICE_POOL_MAX {
+		return matched.map(|hit| with_redirect(hit, episode, all, rules));
+	}
+	if let Some(season_hit) = pick_season_compatible(parsed, pool) {
+		return Some(with_redirect(season_hit, episode, all, rules));
+	}
+	if parsed.season.unwrap_or(0) > 1 {
+		if let Some(hopped) = unique_redirect(episode, &relation_hop_candidates(parsed, pool), rules) {
+			return Some(hopped);
+		}
+	}
+	matched.map(|hit| with_redirect(hit, episode, all, rules))
+}
+
+pub fn resolve_scan_hit(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>, rules: &[RelationRule]) -> Option<(i64, i32)> {
+	let all_refs: Vec<&Candidate> = candidates.iter().collect();
+	let (scoped, folder_scoped) = if let Some(path) = path {
+		pool_for_path(path, candidates)
+	} else {
+		(all_refs.clone(), false)
+	};
+	let hit = resolve_on_pool(parsed, &scoped, candidates, rules);
+	if hit.is_some() || folder_scoped {
+		return hit;
+	}
+	if scoped.len() == all_refs.len() {
+		return hit;
+	}
+	resolve_on_pool(parsed, &all_refs, candidates, rules)
+}
+
 pub fn identify(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>) -> Option<i64> {
 	let pool = if let Some(path) = path {
-		pool_for_path(path, candidates)
+		pool_for_path(path, candidates).0
 	} else {
 		candidates.iter().collect()
 	};
@@ -151,6 +484,9 @@ pub fn identify(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>) -
 		{
 			exact.push(candidate);
 		}
+	}
+	if exact.is_empty() && pool.len() > DICE_POOL_MAX {
+		return None;
 	}
 	let matched: Vec<&Candidate> = if exact.is_empty() { pool } else { exact };
 	let hits: Vec<&Candidate> = matched
@@ -188,6 +524,15 @@ mod tests {
 		assert_eq!(identify(&parsed, &[slime, sao], Some(path)), Some(10));
 	}
 
+	#[test]
+	fn folder_scope_matches_windows_extended_prefix() {
+		let slime = candidate(10, "tensei shitara slime datta ken 4th season", r"D:\Anime\Tensei Shitara Slime Datta Ken 4th Season");
+		let sao = candidate(20, "sword art online season 4", r"D:\Anime\Sword Art Online Season 4");
+		let parsed = parse_file_path(r"D:\Anime\Tensei Shitara Slime Datta Ken 4th Season\05.mkv").expect("parse");
+		let path = r"\\?\D:\Anime\Tensei Shitara Slime Datta Ken 4th Season\05.mkv";
+		assert_eq!(identify(&parsed, &[slime, sao], Some(path)), Some(10));
+	}
+
 	fn rezero(id: i64, name: &str, episodes: i32, folder: &str) -> Candidate {
 		Candidate {
 			id,
@@ -222,5 +567,103 @@ mod tests {
 		);
 		let parsed = parse_file_path(&path).expect("parse");
 		assert_eq!(identify(&parsed, &[s3, s4], Some(&path)), Some(3));
+	}
+
+	fn listed(id: i64, names: &[&str], episodes: i32) -> Candidate {
+		Candidate {
+			id,
+			names: names.iter().map(|name| name.to_string()).collect(),
+			episodes,
+			folder: None,
+			status: None,
+		}
+	}
+
+	fn parts(title: &str, season: i32, year: i32, episode: i32) -> Parsed {
+		Parsed {
+			title: title.into(),
+			season: Some(season),
+			year: Some(year),
+			episode: Some(episode),
+			episode_low: Some(episode),
+			episode_high: Some(episode),
+			group: None,
+			video_resolution: String::new(),
+			video_term: String::new(),
+			release_version: 1,
+			file_extension: String::new(),
+		}
+	}
+
+	#[test]
+	fn hops_bleach_s17e47_to_calamity() {
+		let rules = [
+			RelationRule {
+				from_id: 116674,
+				from_start: 41,
+				from_end: Some(50),
+				to_id: 185874,
+				to_start: 1,
+			},
+			RelationRule {
+				from_id: 185874,
+				from_start: 41,
+				from_end: Some(50),
+				to_id: 185874,
+				to_start: 1,
+			},
+		];
+		let list = [
+			listed(269, &["bleach"], 366),
+			listed(185874, &["bleach thousand year blood war the calamity"], 10),
+		];
+		assert_eq!(
+			resolve_scan_hit(&parts("Bleach", 17, 2004, 47), &list, None, &rules),
+			Some((185874, 7))
+		);
+	}
+
+	#[test]
+	fn keeps_rezero_s04e16_on_fourth_season() {
+		let rules = [
+			RelationRule {
+				from_id: 2,
+				from_start: 14,
+				from_end: Some(25),
+				to_id: 3,
+				to_start: 1,
+			},
+			RelationRule {
+				from_id: 3,
+				from_start: 14,
+				from_end: Some(25),
+				to_id: 3,
+				to_start: 1,
+			},
+		];
+		let list = [
+			listed(
+				2,
+				&["re:zero kara hajimeru isekai seikatsu 2nd season", "re - zero, starting life in another world 2nd season"],
+				13,
+			),
+			listed(
+				3,
+				&[
+					"re:zero kara hajimeru isekai seikatsu 2nd season part 2",
+					"re - zero, starting life in another world 2nd season part 2",
+				],
+				12,
+			),
+			listed(
+				4,
+				&["re:zero kara hajimeru isekai seikatsu 4th season", "re - zero, starting life in another world 4th season"],
+				12,
+			),
+		];
+		assert_eq!(
+			resolve_scan_hit(&parts("Re - ZERO, Starting Life in Another World", 4, 2016, 16), &list, None, &rules),
+			Some((4, 16))
+		);
 	}
 }

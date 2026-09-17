@@ -43,6 +43,15 @@ export type ScanInput = {
 	roots: string[];
 	threshold: number;
 	candidates: Candidate[];
+	relations?: RelationRule[];
+};
+
+export type RelationRule = {
+	fromId: number;
+	fromStart: number;
+	fromEnd?: number;
+	toId: number;
+	toStart: number;
 };
 
 export type ScanResult = {

@@ -73,6 +73,10 @@ export function parseRelations(body: string): RelationRule[] {
 	return next;
 }
 
+export function relationRules(): RelationRule[] {
+	return rules;
+}
+
 export function applyRelation(id: number, episode: number): { id: number; episode: number } {
 	return applyRelationRule(id, episode, rules);
 }

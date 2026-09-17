@@ -3,7 +3,7 @@ import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
 import { dirname, join } from "node:path";
 import { logger as log } from "@biyori/logger";
 import { pathUnderRoot } from "@biyori/recognition";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { shell } from "electron";
 import { type LibrarySummary, summarizeLibraryFolders } from "../../lib/library-summary";
 import { completeActivity, pushNotice, upsertActivity } from "../activity";
@@ -13,9 +13,7 @@ import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
 import { hana, type ScanHit, type ScanProgress } from "./hana-client";
 import { invalidateCandidateCache, loadCandidates } from "./match";
-import { resolveFileMatch } from "./match-resolve";
-import { parseFilename } from "./parse";
-import { refreshRelations } from "./relations";
+import { refreshRelations, relationRules } from "./relations";
 
 const VIDEO_EXT = /\.(mkv|mp4|avi|webm|mov|wmv|flv|ts|m2ts|mpg|mpeg)$/i;
 
@@ -45,69 +43,74 @@ function toScanCandidates(candidates: Awaited<ReturnType<typeof loadCandidates>>
 	}));
 }
 
-function remapScanHits(hits: ScanHit[], candidates: Awaited<ReturnType<typeof loadCandidates>>): ScanHit[] {
-	const byId = new Map(candidates.map((candidate) => [candidate.id, candidate]));
-	const next: ScanHit[] = [];
-	for (const hit of hits) {
-		const listed = hit.animeId > 0 ? byId.get(hit.animeId) : undefined;
-		const inRange = listed != null && (listed.episodes < 1 || hit.episode <= listed.episodes);
-		if (inRange) {
-			next.push(hit);
-			continue;
-		}
-		const parsed = parseFilename(hit.path);
-		if (!parsed) {
-			if (hit.animeId > 0) {
-				next.push(hit);
-			}
-			continue;
-		}
-		const resolved = resolveFileMatch({ title: parsed.rawTitle, season: parsed.season, year: parsed.year }, parsed.episode, candidates);
-		if (resolved.match) {
-			next.push({
-				...hit,
-				animeId: resolved.match.id,
-				episode: resolved.episode ?? hit.episode,
-			});
-			continue;
-		}
-		if (hit.animeId > 0) {
-			next.push(hit);
-		}
-	}
-	return next;
+function toScanRelations() {
+	return relationRules().map((rule) => ({
+		fromId: rule.fromId,
+		fromStart: rule.fromStart,
+		toId: rule.toId,
+		toStart: rule.toStart,
+		...(rule.fromEnd == null ? {} : { fromEnd: rule.fromEnd }),
+	}));
+}
+
+const INSERT_CHUNK = 80;
+const KEEP_CHUNK = 400;
+
+function filesUnderRootSql(root: string) {
+	const folder = root.replaceAll("\\", "/").toLowerCase().replace(/\/+$/, "");
+	return sql`(lower(replace(${episodeFile.path}, char(92), '/')) = ${folder} or lower(replace(${episodeFile.path}, char(92), '/')) like ${`${folder}/%`})`;
+}
+
+function filesUnderAnyRootSql(roots: string[]) {
+	return sql.join(
+		roots.map((root) => filesUnderRootSql(root)),
+		sql` or `,
+	);
 }
 
 function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: ScanHit[]): void {
+	const matched = hits.filter((hit) => hit.animeId > 0);
 	database.transaction((tx) => {
-		const stored = tx.select().from(episodeFile).all();
-		const byPath = new Map(stored.map((row) => [row.path, row]));
-		const assignedFolder = new Set<number>();
-		const hitPaths = new Set<string>();
-
-		for (const hit of hits) {
-			hitPaths.add(hit.path);
-			const existing = byPath.get(hit.path);
-			if (existing) {
-				tx.update(episodeFile)
-					.set({
-						animeId: hit.animeId,
-						episode: hit.episode,
-						size: hit.size,
-					})
-					.where(eq(episodeFile.id, existing.id))
-					.run();
-			} else {
-				tx.insert(episodeFile)
-					.values({
+		for (let index = 0; index < matched.length; index += INSERT_CHUNK) {
+			const chunk = matched.slice(index, index + INSERT_CHUNK);
+			tx.insert(episodeFile)
+				.values(
+					chunk.map((hit) => ({
 						id: randomUUID(),
 						animeId: hit.animeId,
 						episode: hit.episode,
 						path: hit.path,
 						size: hit.size,
-					})
-					.run();
+					})),
+				)
+				.onConflictDoUpdate({
+					target: episodeFile.path,
+					set: {
+						animeId: sql`excluded.anime_id`,
+						episode: sql`excluded.episode`,
+						size: sql`excluded.size`,
+					},
+				})
+				.run();
+		}
+		if (scannedRoots.length > 0) {
+			tx.run(sql`create temp table if not exists scan_keep (path text primary key not null)`);
+			tx.run(sql`delete from scan_keep`);
+			for (let index = 0; index < matched.length; index += KEEP_CHUNK) {
+				const chunk = matched.slice(index, index + KEEP_CHUNK);
+				tx.run(
+					sql`insert or ignore into scan_keep (path) values ${sql.join(
+						chunk.map((hit) => sql`(${hit.path})`),
+						sql`, `,
+					)}`,
+				);
 			}
+			tx.delete(episodeFile)
+				.where(sql`(${filesUnderAnyRootSql(scannedRoots)}) and ${episodeFile.path} not in (select path from scan_keep)`)
+				.run();
+		}
+		const assignedFolder = new Set<number>();
+		for (const hit of matched) {
 			if (assignedFolder.has(hit.animeId)) {
 				continue;
 			}
@@ -116,27 +119,11 @@ function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: S
 				assignedFolder.add(hit.animeId);
 				continue;
 			}
-			const folderRow = tx.select({ folder: anime.folder }).from(anime).where(eq(anime.id, hit.animeId)).get();
-			if (folderRow && !folderRow.folder) {
-				tx.update(anime)
-					.set({ folder: dirname(hit.path) })
-					.where(eq(anime.id, hit.animeId))
-					.run();
-			}
+			tx.update(anime)
+				.set({ folder: parent })
+				.where(and(eq(anime.id, hit.animeId), eq(anime.folder, "")))
+				.run();
 			assignedFolder.add(hit.animeId);
-		}
-
-		if (scannedRoots.length === 0) {
-			return;
-		}
-		for (const row of stored) {
-			const underScannedRoot = scannedRoots.some((root) => pathUnderRoot(row.path, root));
-			if (!underScannedRoot) {
-				continue;
-			}
-			if (!hitPaths.has(row.path)) {
-				tx.delete(episodeFile).where(eq(episodeFile.id, row.id)).run();
-			}
 		}
 	});
 	invalidateCandidateCache();
@@ -191,12 +178,8 @@ function pruneGone(database: DatabaseClient, gone: string[]): void {
 		return;
 	}
 	database.transaction((tx) => {
-		const stored = tx.select().from(episodeFile).all();
-		for (const row of stored) {
-			if (!gone.some((root) => pathUnderRoot(row.path, root))) {
-				continue;
-			}
-			tx.delete(episodeFile).where(eq(episodeFile.id, row.id)).run();
+		for (const root of gone) {
+			tx.delete(episodeFile).where(filesUnderRootSql(root)).run();
 		}
 		const folders = tx.select({ id: anime.id, folder: anime.folder }).from(anime).all();
 		for (const row of folders) {
@@ -296,22 +279,22 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 				roots: existing,
 				threshold: settings.fileSizeThreshold,
 				candidates: toScanCandidates(candidates),
+				relations: toScanRelations(),
 			},
 			kind === "watch" ? undefined : (progress) => onScanProgress(kind, progress),
 		);
-		const hits = remapScanHits(result.hits, candidates);
-		applyScanHits(database, result.scannedRoots, hits);
+		applyScanHits(database, result.scannedRoots, result.hits);
 		if (kind !== "watch") {
-			const title = `Library scan: ${result.files} files, ${hits.length} matched`;
+			const title = `Library scan: ${result.files} files, ${result.hits.length} matched`;
 			setAppNotice(title, { toast: false, busy: false });
 			completeActivity({
 				source: "library-scan",
 				title: "Library scan",
-				body: `${result.files} files, ${hits.length} matched`,
+				body: `${result.files} files, ${result.hits.length} matched`,
 				status: "ok",
 			});
 		}
-		return { files: result.files, matched: hits.length };
+		return { files: result.files, matched: result.hits.length };
 	} catch (error) {
 		if (kind !== "watch") {
 			const title = "Library scan failed";

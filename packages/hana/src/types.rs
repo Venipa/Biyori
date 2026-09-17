@@ -68,10 +68,26 @@ pub struct ScanHit {
 
 #[napi(object)]
 #[derive(Debug, Clone)]
+pub struct RelationRule {
+	#[napi(js_name = "fromId")]
+	pub from_id: i64,
+	#[napi(js_name = "fromStart")]
+	pub from_start: i32,
+	#[napi(js_name = "fromEnd")]
+	pub from_end: Option<i32>,
+	#[napi(js_name = "toId")]
+	pub to_id: i64,
+	#[napi(js_name = "toStart")]
+	pub to_start: i32,
+}
+
+#[napi(object)]
+#[derive(Debug, Clone)]
 pub struct ScanInput {
 	pub roots: Vec<String>,
 	pub threshold: i64,
 	pub candidates: Vec<Candidate>,
+	pub relations: Option<Vec<RelationRule>>,
 }
 
 #[napi(object)]

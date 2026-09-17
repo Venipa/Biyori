@@ -1,4 +1,4 @@
-use crate::identify::identify;
+use crate::identify::{identify, resolve_scan_hit};
 use crate::parse::parse_file_paths;
 use crate::types::{FindEpisodeInput, Parsed, ScanHit, ScanInput, ScanProgress, ScanResult};
 use dua_core::{walk, Options, Order};
@@ -143,19 +143,22 @@ pub fn scan_library(input: ScanInput, mut report: impl FnMut(ScanProgress)) -> S
 		files: total,
 		hits: 0,
 	});
+	let relations = input.relations.as_deref().unwrap_or(&[]);
 	for (file, parsed) in files.iter().zip(parse_videos(&files)) {
 		let display = file.path.to_string_lossy().to_string();
 		let Some(parsed) = parsed else {
 			continue;
 		};
-		let anime_id = identify(&parsed, &input.candidates, Some(&display));
-		if anime_id.is_none() && parsed.season.unwrap_or(0) <= 1 {
+		let identified = identify(&parsed, &input.candidates, Some(&display)).map(|anime_id| (anime_id, parsed.episode.unwrap_or(1)));
+		let Some((anime_id, episode)) =
+			identified.or_else(|| resolve_scan_hit(&parsed, &input.candidates, Some(&display), relations))
+		else {
 			continue;
-		}
+		};
 		hits.push(ScanHit {
 			path: display,
-			anime_id: anime_id.unwrap_or(0),
-			episode: parsed.episode.unwrap_or(1),
+			anime_id,
+			episode,
 			size: file.size.min(i64::MAX as u64) as i64,
 		});
 		gate.emit(
@@ -246,6 +249,7 @@ mod tests {
 			ScanInput {
 				roots: vec![root.to_string_lossy().to_string()],
 				threshold: 1,
+				relations: None,
 				candidates: vec![
 					Candidate {
 						id: 10,
@@ -286,6 +290,7 @@ mod tests {
 			ScanInput {
 				roots: vec![root.to_string_lossy().to_string()],
 				threshold: 1,
+				relations: None,
 				candidates: vec![Candidate {
 					id: 30,
 					names: vec!["frieren".into()],
@@ -376,6 +381,7 @@ mod tests {
 			ScanInput {
 				roots: vec![file.to_string_lossy().to_string()],
 				threshold: 1,
+				relations: None,
 				candidates: vec![Candidate {
 					id: 40,
 					names: vec!["show".into()],
