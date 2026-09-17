@@ -1,3 +1,4 @@
+import type { StoredAnimeTitles } from "../../lib/anime-titles";
 import type { DefaultService } from "../../lib/schemas/app-settings";
 import type { Anime, ListEntry } from "../db/types";
 
@@ -22,22 +23,10 @@ export type ParsedPlayback = {
 
 export type MatchedAnime = Pick<
 	Anime,
-	| "id"
-	| "title"
-	| "alternativeTitles"
-	| "type"
-	| "coverUrl"
-	| "bannerUrl"
-	| "episodes"
-	| "folder"
-	| "fansub"
-	| "lastAiredEpisode"
-	| "airingStatus"
-	| "season"
-	| "averageScore"
-	| "synopsis"
+	"id" | "title" | "type" | "coverUrl" | "bannerUrl" | "episodes" | "folder" | "fansub" | "lastAiredEpisode" | "airingStatus" | "season" | "averageScore" | "synopsis"
 > &
 	Pick<ListEntry, "episodesWatched" | "status" | "score" | "notes" | "timesRewatched" | "dateStarted" | "dateCompleted"> & {
+		titles: StoredAnimeTitles;
 		rewatching: boolean;
 		genres: string[];
 		producers: string[];

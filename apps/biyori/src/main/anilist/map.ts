@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { parseStoredTitles, stringifyMediaTitles } from "../../lib/anime-titles";
 import type { AnilistMediaCard, AnilistMediaCardCached } from "../../lib/schemas/anilist-media-card";
+import type { TitleLanguage } from "../../lib/schemas/app-settings";
 import type { ListStatus } from "../../shared/list";
 import type { AnimeInsert, ListEntryInsert } from "../db/types";
 
@@ -224,14 +226,33 @@ export function mapAiringStatus(status: string | null | undefined): string {
 	}
 }
 
-export function pickTitle(title: AnilistMedia["title"], language: "Romaji" | "English" | "Native" = "Romaji"): string {
+export function pickTitle(
+	title: {
+		romaji?: string | null;
+		english?: string | null;
+		native?: string | null;
+		userPreferred?: string | null;
+	},
+	language: TitleLanguage = "Romaji",
+): string {
+	const romaji = title.romaji || "";
+	const english = title.english || "";
+	const native = title.native || "";
+	const fallback = title.userPreferred || romaji || english || native || "Untitled";
 	if (language === "English") {
-		return title.english || title.userPreferred || title.romaji || title.native || "Untitled";
+		return english || fallback;
 	}
 	if (language === "Native") {
-		return title.native || title.userPreferred || title.romaji || title.english || "Untitled";
+		return native || fallback;
 	}
-	return title.userPreferred || title.romaji || title.english || title.native || "Untitled";
+	return romaji || fallback;
+}
+
+export { parseStoredTitles, stringifyMediaTitles } from "../../lib/anime-titles";
+
+export function displayTitleFromRow(title: string, titlesJson: string | null | undefined, language: TitleLanguage): string {
+	const parsed = parseStoredTitles(titlesJson);
+	return parsed ? pickTitle(parsed, language) : title;
 }
 
 export function pickCoverUrl(media: AnilistMedia): string {
@@ -286,10 +307,8 @@ function nextAiringAtIso(airingAt: number | null | undefined): string | null {
 	return new Date(airingAt * 1000).toISOString();
 }
 
-export function toAnimeRow(media: AnilistMedia, titleLanguage: "Romaji" | "English" | "Native" = "Romaji"): AnimeInsert {
+export function toAnimeRow(media: AnilistMedia, titleLanguage: TitleLanguage = "Romaji"): AnimeInsert {
 	const preferred = pickTitle(media.title, titleLanguage);
-	const titles = [media.title.romaji, media.title.english, media.title.native, ...(media.synonyms ?? [])].filter((item): item is string => Boolean(item));
-	const uniqueTitles = [...new Set(titles)].filter((item) => item !== preferred);
 	const studios = (media.studios?.nodes ?? [])
 		.filter((node): node is NonNullable<typeof node> => Boolean(node))
 		.filter((node) => node.isAnimationStudio !== false)
@@ -298,7 +317,7 @@ export function toAnimeRow(media: AnilistMedia, titleLanguage: "Romaji" | "Engli
 	return {
 		id: media.id,
 		title: preferred,
-		alternativeTitles: uniqueTitles.join(", "),
+		titles: stringifyMediaTitles(media.title, media.synonyms),
 		type: mapFormat(media.format),
 		episodes: media.episodes ?? 0,
 		durationMinutes: media.duration ?? 0,
@@ -375,13 +394,13 @@ export function toMediaCardCached(media: AnilistMedia): AnilistMediaCardCached {
 	};
 }
 
-export function withMediaCardTitle(item: AnilistMediaCardCached, titleLanguage?: "Romaji" | "English" | "Native"): AnilistMediaCard {
+export function withMediaCardTitle(item: AnilistMediaCardCached, titleLanguage?: TitleLanguage): AnilistMediaCard {
 	return {
 		...item,
 		title: pickTitle(item.titles, titleLanguage),
 	};
 }
 
-export function toMediaCard(media: AnilistMedia, titleLanguage?: "Romaji" | "English" | "Native"): AnilistMediaCard {
+export function toMediaCard(media: AnilistMedia, titleLanguage?: TitleLanguage): AnilistMediaCard {
 	return withMediaCardTitle(toMediaCardCached(media), titleLanguage);
 }

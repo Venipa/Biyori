@@ -1,13 +1,14 @@
 import { describe, expect, test } from "bun:test";
+import { emptyStoredTitles } from "../../lib/anime-titles";
 import { type Candidate, namesFrom } from "./match-core";
 import { resolveFileMatch } from "./match-resolve";
 import { parseRelations, replaceRelationRules } from "./relations";
 
-function candidate(input: { id: number; title: string; episodes: number; alternativeTitles?: string }): Candidate {
+function candidate(input: { id: number; title: string; episodes: number; extraTitles?: string[] }): Candidate {
 	return {
 		id: input.id,
 		title: input.title,
-		alternativeTitles: input.alternativeTitles ?? "",
+		titles: { ...emptyStoredTitles, romaji: input.title, synonyms: input.extraTitles ?? [] },
 		userSynonyms: "",
 		type: "TV",
 		coverUrl: "",
@@ -30,7 +31,7 @@ function candidate(input: { id: number; title: string; episodes: number; alterna
 		timesRewatched: 0,
 		dateStarted: null,
 		dateCompleted: null,
-		names: namesFrom(input.title, input.alternativeTitles ?? ""),
+		names: namesFrom(input.title, input.extraTitles ?? []),
 	};
 }
 
@@ -51,19 +52,19 @@ describe("resolveFileMatch", () => {
 			candidate({
 				id: 2,
 				title: "Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season",
-				alternativeTitles: "Re - ZERO, Starting Life in Another World 2nd Season",
+				extraTitles: ["Re - ZERO, Starting Life in Another World 2nd Season"],
 				episodes: 13,
 			}),
 			candidate({
 				id: 3,
 				title: "Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season Part 2",
-				alternativeTitles: "Re - ZERO, Starting Life in Another World 2nd Season Part 2",
+				extraTitles: ["Re - ZERO, Starting Life in Another World 2nd Season Part 2"],
 				episodes: 12,
 			}),
 			candidate({
 				id: 4,
 				title: "Re:Zero kara Hajimeru Isekai Seikatsu 4th Season",
-				alternativeTitles: "Re - ZERO, Starting Life in Another World 4th Season",
+				extraTitles: ["Re - ZERO, Starting Life in Another World 4th Season"],
 				episodes: 12,
 			}),
 		];

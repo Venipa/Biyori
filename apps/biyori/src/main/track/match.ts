@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { parseStoredTitles, titleStrings, titlesFromFallback } from "../../lib/anime-titles";
 import { parseJsonArray } from "../../lib/parse-json-array";
 import type { DatabaseClient } from "../db";
 import { anime, listEntry } from "../db/schema";
@@ -22,7 +23,7 @@ export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 		.select({
 			id: anime.id,
 			title: anime.title,
-			alternativeTitles: anime.alternativeTitles,
+			titles: anime.titles,
 			userSynonyms: anime.userSynonyms,
 			type: anime.type,
 			coverUrl: anime.coverUrl,
@@ -52,7 +53,7 @@ export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 	const mapped = rows.map((row) => ({
 		id: row.id,
 		title: row.title,
-		alternativeTitles: row.alternativeTitles,
+		titles: parseStoredTitles(row.titles) ?? titlesFromFallback(row.title),
 		userSynonyms: row.userSynonyms,
 		type: row.type,
 		coverUrl: row.coverUrl,
@@ -75,7 +76,7 @@ export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 		timesRewatched: row.timesRewatched,
 		dateStarted: row.dateStarted,
 		dateCompleted: row.dateCompleted,
-		names: namesFrom(row.title, row.alternativeTitles, row.userSynonyms),
+		names: namesFrom(row.title, titleStrings(parseStoredTitles(row.titles) ?? titlesFromFallback(row.title)), row.userSynonyms),
 	}));
 	candidateCache = { at: Date.now(), rows: mapped };
 	return mapped;

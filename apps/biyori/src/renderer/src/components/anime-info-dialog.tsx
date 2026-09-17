@@ -8,6 +8,7 @@ import AnilistIcon from "@/assets/anilist.svg?react";
 import MyAnimeListIcon from "@/assets/mal.svg?react";
 import { Image } from "@/components/ui/image";
 import { desktopRpc } from "@/desktop-rpc";
+import { titleStrings } from "@/lib/anime-titles";
 import { type AnimeInfoFormInput, type AnimeInfoFormValues, animeInfoFormSchema } from "@/lib/schemas/anime-list-entry";
 import { joinTitleList, splitTitleList } from "@/lib/split-title-list";
 import { AnimeCover } from "@/mainview/components/anime-cover";
@@ -172,7 +173,6 @@ function AnimeInfoBody({
 			folder: anime.folder ?? "",
 			fansub: anime.fansub ?? "",
 			userSynonyms: anime.userSynonyms ?? "",
-			alternativeTitles: anime.alternativeTitles ?? "",
 		},
 	});
 	const setListStatus = (onChange: (value: ListStatus) => void, value: ListStatus) => {
@@ -230,7 +230,7 @@ function AnimeInfoBody({
 					</div>
 					<div className='flex min-h-0 min-w-0 flex-1 flex-col gap-2'>
 						<div className='flex min-h-14 shrink-0 items-end'>
-							<h2 className='text-balance text-lg font-semibold text-foreground drop-shadow-sm'>{anime.title}</h2>
+							<h2 className='cursor-text text-balance text-lg font-semibold text-foreground select-text drop-shadow-sm'>{anime.title}</h2>
 						</div>
 						<Tabs defaultValue={infoTab} className='flex min-h-0 flex-1 flex-col gap-2'>
 							<TabsList className='shrink-0' variant='line'>
@@ -390,7 +390,7 @@ function AnimeInfoBody({
 															render={({ field, fieldState }) => (
 																<UserSynonymsField
 																	id={altTitlesId}
-																	defaultTitles={splitTitleList(anime.alternativeTitles)}
+																	defaultTitles={titleStrings(anime.titles).filter((title) => title.toLowerCase() !== anime.title.toLowerCase())}
 																	value={field.value}
 																	onChange={field.onChange}
 																	error={fieldState.error}
@@ -484,7 +484,7 @@ function UserSynonymsField({
 			{defaultTitles.length > 0 ? (
 				<div className='flex flex-wrap gap-1'>
 					{defaultTitles.map((title) => (
-						<Badge key={title} variant='secondary'>
+						<Badge key={title} variant='secondary' className='h-auto max-w-full whitespace-normal select-text'>
 							{title}
 						</Badge>
 					))}
@@ -493,7 +493,7 @@ function UserSynonymsField({
 			{userTitles.length > 0 ? (
 				<div className='flex flex-wrap gap-1'>
 					{userTitles.map((title) => (
-						<Badge key={title} variant='outline' className='pr-0.5'>
+						<Badge key={title} variant='outline' className='h-auto max-w-full pr-0.5 whitespace-normal select-text'>
 							{title}
 							<Button
 								type='button'

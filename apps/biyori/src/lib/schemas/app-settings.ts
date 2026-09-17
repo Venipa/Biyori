@@ -8,6 +8,7 @@ import { anilistSeasonNameSchema, seasonGroupBySchema, seasonSortBySchema, seaso
 import { torrentFilterSchema, torrentFiltersFileDefaultValues } from "./torrent-filter";
 
 export const titleLanguageSchema = z.enum(["Romaji", "English", "Native"]);
+export type TitleLanguage = z.infer<typeof titleLanguageSchema>;
 export const torrentActionSchema = z.enum(["notify", "download"]);
 export const torrentAppModeSchema = z.enum(["default", "custom"]);
 export const torrentSortBySchema = z.enum(["episode_number", "release_date"]);

@@ -1,0 +1,1 @@
+ALTER TABLE `anime` DROP COLUMN `alternative_titles`;

@@ -50,6 +50,20 @@
       "when": 1789074215449,
       "tag": "0006_ambitious_mandarin",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1789670737394,
+      "tag": "0007_anime_titles",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1789671078268,
+      "tag": "0008_drop_alternative_titles",
+      "breakpoints": true
     }
   ]
 }

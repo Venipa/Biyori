@@ -1,0 +1,1 @@
+ALTER TABLE `anime` ADD `titles` text DEFAULT '{}' NOT NULL;

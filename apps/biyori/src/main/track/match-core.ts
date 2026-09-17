@@ -1,12 +1,13 @@
 import type { TitleParts } from "@biyori/recognition";
 import { matchParsed as matchParsedFilename, normalizeTitle, rankParsed, rankTitles, matchTitle as scoreTitle } from "@biyori/recognition";
+import type { StoredAnimeTitles } from "../../lib/anime-titles";
 import { splitTitleList } from "../../lib/split-title-list";
 import type { MatchedAnime, SimilarTitle } from "./types";
 
 export type Candidate = {
 	id: number;
 	title: string;
-	alternativeTitles: string;
+	titles: StoredAnimeTitles;
 	userSynonyms: string;
 	type: string;
 	coverUrl: string;
@@ -32,10 +33,10 @@ export type Candidate = {
 	names: string[];
 };
 
-export function namesFrom(title: string, alternativeTitles: string, userSynonyms = ""): string[] {
+export function namesFrom(title: string, extraTitles: readonly string[] = [], userSynonyms = ""): string[] {
 	const names: string[] = [];
 	const seen = new Set<string>();
-	for (const item of [title, ...splitTitleList(alternativeTitles), ...splitTitleList(userSynonyms)]) {
+	for (const item of [title, ...extraTitles, ...splitTitleList(userSynonyms)]) {
 		const name = normalizeTitle(item);
 		if (!name || seen.has(name)) {
 			continue;
@@ -50,7 +51,7 @@ function toMatch(candidate: Candidate): MatchedAnime {
 	return {
 		id: candidate.id,
 		title: candidate.title,
-		alternativeTitles: candidate.alternativeTitles,
+		titles: candidate.titles,
 		type: candidate.type,
 		coverUrl: candidate.coverUrl,
 		bannerUrl: candidate.bannerUrl,

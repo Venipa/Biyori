@@ -2,12 +2,14 @@ import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { parseStoredTitles, type StoredAnimeTitles, titlesFromFallback } from "../../lib/anime-titles";
 import { folderPathExists, normalizeFolderPath } from "../../lib/folder-path";
 import { parseJsonArray } from "../../lib/parse-json-array";
 import { settingsFormPatchSchema } from "../../lib/schemas/app-settings";
 import { cacheKindsSchema } from "../../lib/schemas/cache-kind";
 import { listStatusSchema } from "../../shared/list";
 import { getActivitySnapshot, subscribeActivity } from "../activity";
+import { displayTitleFromRow } from "../anilist/map";
 import { readAnilistAuth } from "../anilist/store";
 import { ensureAnimeCached } from "../anilist/sync";
 import { clearCacheKinds, loadCacheSummary } from "../cache";
@@ -17,6 +19,7 @@ import type { Anime } from "../db/types";
 import { getAppNotice, subscribeAppNotice } from "../notice";
 import { loadAppSettings, loadSettingsFormValues, patchAppSettings, patchSettingsForm, subscribeFilters, subscribeSettings } from "../settings";
 import { loadStatistics } from "../statistics";
+import { requestAniListSync } from "../sync";
 import {
 	applyTorrentView,
 	checkTorrents,
@@ -43,9 +46,10 @@ import { coversRouter } from "./covers";
 import { desktopRouter } from "./desktop";
 import { updaterRouter } from "./updater";
 
-type AnimeDetail = Omit<Anime, "durationMinutes" | "genres" | "producers"> & {
+type AnimeDetail = Omit<Anime, "durationMinutes" | "genres" | "producers" | "titles"> & {
 	genres: string[];
 	producers: string[];
+	titles: StoredAnimeTitles;
 	episodesWatched: number;
 	score: number | null;
 	status: string | null;
@@ -61,11 +65,12 @@ type AnimeDetail = Omit<Anime, "durationMinutes" | "genres" | "producers"> & {
 };
 
 async function loadAnimeDetail(db: SelectDatabase, id: number): Promise<AnimeDetail | null> {
+	const language = loadAppSettings().titleLanguage;
 	const rows = await db
 		.select({
 			id: anime.id,
 			title: anime.title,
-			alternativeTitles: anime.alternativeTitles,
+			titles: anime.titles,
 			userSynonyms: anime.userSynonyms,
 			type: anime.type,
 			episodes: anime.episodes,
@@ -105,9 +110,12 @@ async function loadAnimeDetail(db: SelectDatabase, id: number): Promise<AnimeDet
 	}
 
 	const onList = row.status != null;
+	const titles = parseStoredTitles(row.titles) ?? titlesFromFallback(row.title);
 
 	return {
 		...row,
+		title: displayTitleFromRow(row.title, row.titles, language),
+		titles,
 		genres: parseJsonArray(row.genres),
 		producers: parseJsonArray(row.producers),
 		episodesWatched: row.episodesWatched ?? 0,
@@ -145,11 +153,12 @@ export const appRouter = t.router({
 	})),
 	anime: t.router({
 		list: t.procedure.input(z.object({ status: listStatusSchema.optional() })).query(async ({ ctx, input }) => {
+			const language = loadAppSettings().titleLanguage;
 			const rows = await ctx.db
 				.select({
 					id: anime.id,
 					title: anime.title,
-					alternativeTitles: anime.alternativeTitles,
+					titles: anime.titles,
 					userSynonyms: anime.userSynonyms,
 					type: anime.type,
 					episodes: anime.episodes,
@@ -180,8 +189,11 @@ export const appRouter = t.router({
 
 			return rows.map((row) => {
 				const libraryEpisodes = libraryById.get(row.id) ?? [];
+				const { titles, ...rest } = row;
 				return {
-					...row,
+					...rest,
+					title: displayTitleFromRow(rest.title, titles, language),
+					titles: parseStoredTitles(titles) ?? titlesFromFallback(rest.title),
 					libraryEpisodes,
 					availableEpisode: libraryEpisodes.length > 0 ? Math.max(...libraryEpisodes) : 0,
 				};
@@ -202,10 +214,12 @@ export const appRouter = t.router({
 			return counts;
 		}),
 		listed: t.procedure.query(async ({ ctx }) => {
+			const language = loadAppSettings().titleLanguage;
 			const rows = await ctx.db
 				.select({
 					id: anime.id,
 					title: anime.title,
+					titles: anime.titles,
 					status: listEntry.status,
 					airingStatus: anime.airingStatus,
 					type: anime.type,
@@ -220,10 +234,14 @@ export const appRouter = t.router({
 				.from(anime)
 				.innerJoin(listEntry, eq(listEntry.animeId, anime.id));
 			const libraryById = await libraryEpisodesByAnime(ctx.db);
-			return rows.map((row) => ({
-				...row,
-				libraryEpisodes: libraryById.get(row.id) ?? [],
-			}));
+			return rows.map((row) => {
+				const { titles, ...rest } = row;
+				return {
+					...rest,
+					title: displayTitleFromRow(rest.title, titles, language),
+					libraryEpisodes: libraryById.get(row.id) ?? [],
+				};
+			});
 		}),
 		suggest: t.procedure.input(z.object({ q: z.string().trim().min(1) })).query(async ({ ctx, input }) => {
 			const candidates = await loadCandidates(ctx.db);
@@ -279,7 +297,6 @@ export const appRouter = t.router({
 					folder: z.string(),
 					fansub: z.string(),
 					userSynonyms: z.string().optional(),
-					alternativeTitles: z.string().optional(),
 				}),
 			)
 			.mutation(async ({ ctx, input }) => {
@@ -351,8 +368,16 @@ export const appRouter = t.router({
 				};
 			});
 		}),
-		set: t.procedure.input(settingsFormPatchSchema).mutation(({ input }) => {
-			return patchSettingsForm(input);
+		set: t.procedure.input(settingsFormPatchSchema).mutation(async ({ ctx, input }) => {
+			const prev = loadAppSettings();
+			const next = patchSettingsForm(input);
+			if (next.titleLanguage !== prev.titleLanguage) {
+				const rows = await ctx.db.select({ titles: anime.titles }).from(anime);
+				if (rows.some((row) => !parseStoredTitles(row.titles))) {
+					requestAniListSync();
+				}
+			}
+			return next;
 		}),
 		addLibraryFolder: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(({ input }) => {
 			const path = normalizeFolderPath(input.path);

@@ -1,9 +1,10 @@
+import { type StoredAnimeTitles, titleStrings } from "@/lib/anime-titles";
 import { parseJsonArray } from "@/lib/parse-json-array";
 import { splitTitleList } from "@/lib/split-title-list";
 
 export type ListFilterRow = {
 	title: string;
-	alternativeTitles?: string;
+	titles?: StoredAnimeTitles;
 	userSynonyms?: string;
 	genres?: string;
 	notes?: string;
@@ -108,7 +109,7 @@ function parseJsonStrings(value: string | undefined): string[] {
 }
 
 function titleBag(row: ListFilterRow): string[] {
-	return [row.title, ...splitTitleList(row.alternativeTitles), ...splitTitleList(row.userSynonyms)];
+	return [row.title, ...titleStrings(row.titles), ...splitTitleList(row.userSynonyms)];
 }
 
 function seasonYear(row: ListFilterRow): number {

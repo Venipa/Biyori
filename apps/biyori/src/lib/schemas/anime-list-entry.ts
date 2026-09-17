@@ -40,7 +40,6 @@ export const animeInfoFormSchema = animeListEntrySchema.extend({
 	folder: z.string(),
 	fansub: z.string(),
 	userSynonyms: z.string(),
-	alternativeTitles: z.string(),
 });
 
 export type AnimeListEntryInput = z.input<typeof animeListEntrySchema>;

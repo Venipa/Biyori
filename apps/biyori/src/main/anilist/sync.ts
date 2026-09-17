@@ -11,6 +11,7 @@ import {
 	anilistMediaListSchema,
 	anilistMediaSchema,
 	mediaListCollectionSchema,
+	parseStoredTitles,
 	searchPageSchema,
 	toAnimeRow,
 	toListEntryRow,
@@ -206,7 +207,7 @@ export async function upsertAnimeFromMedia(
 			.update(anime)
 			.set({
 				title: animeRow.title,
-				alternativeTitles: animeRow.alternativeTitles,
+				titles: animeRow.titles,
 				type: animeRow.type,
 				episodes: animeRow.episodes,
 				durationMinutes: animeRow.durationMinutes,
@@ -242,8 +243,8 @@ export async function ensureAnimeCached(options: {
 	titleLanguage: "Romaji" | "English" | "Native";
 	signal?: AbortSignal;
 }): Promise<{ id: number }> {
-	const existing = await options.db.select({ id: anime.id }).from(anime).where(eq(anime.id, options.id)).limit(1);
-	if (existing[0]) {
+	const existing = await options.db.select({ id: anime.id, titles: anime.titles }).from(anime).where(eq(anime.id, options.id)).limit(1);
+	if (existing[0] && parseStoredTitles(existing[0].titles)) {
 		return { id: existing[0].id };
 	}
 

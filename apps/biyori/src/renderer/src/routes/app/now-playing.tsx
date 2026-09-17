@@ -679,7 +679,8 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 					) : (
 						<AnimeSeriesInfo
 							anime={{
-								alternativeTitles: detail?.alternativeTitles ?? match.alternativeTitles ?? "",
+								title: detail?.title ?? match.title,
+								titles: detail?.titles ?? match.titles,
 								type: detail?.type ?? match.type ?? "",
 								episodes: detail?.episodes ?? match.episodes,
 								airingStatus: detail?.airingStatus ?? match.airingStatus ?? "",

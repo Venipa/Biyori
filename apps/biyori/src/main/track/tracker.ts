@@ -1,6 +1,7 @@
 import { normalizeTitle } from "@biyori/recognition";
 import { observable } from "@trpc/server/observable";
 import { eq } from "drizzle-orm";
+import { parseStoredTitles, titleStrings } from "../../lib/anime-titles";
 import { isPathInsideFolder } from "../../lib/folder-path";
 import type { AppSettings, DefaultService } from "../../lib/schemas/app-settings";
 import { joinTitleList, splitTitleList } from "../../lib/split-title-list";
@@ -452,7 +453,7 @@ async function rememberUserSynonym(animeId: number, rawTitle: string): Promise<v
 	const rows = await db
 		.select({
 			title: anime.title,
-			alternativeTitles: anime.alternativeTitles,
+			titles: anime.titles,
 			userSynonyms: anime.userSynonyms,
 		})
 		.from(anime)
@@ -462,7 +463,7 @@ async function rememberUserSynonym(animeId: number, rawTitle: string): Promise<v
 	if (!row) {
 		return;
 	}
-	const existing = namesFrom(row.title, row.alternativeTitles, row.userSynonyms);
+	const existing = namesFrom(row.title, titleStrings(parseStoredTitles(row.titles)), row.userSynonyms);
 	if (existing.includes(normalizeTitle(title))) {
 		return;
 	}

@@ -5,7 +5,7 @@ type AnimeType = string;
 export const anime = sqliteTable("anime", {
 	id: integer("id").primaryKey(),
 	title: text("title").notNull(),
-	alternativeTitles: text("alternative_titles").notNull().default(""),
+	titles: text("titles").notNull().default("{}"),
 	userSynonyms: text("user_synonyms").notNull().default(""),
 	type: text("type").notNull().$type<AnimeType>(),
 	episodes: integer("episodes").notNull(),

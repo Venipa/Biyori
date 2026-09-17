@@ -32,8 +32,16 @@ function MainLayout(): ReactElement {
 	const lastProgressRevision = useRef(0);
 	trpc.settings.onChange.useSubscription(undefined, {
 		onData: (settings) => {
+			const prev = utils.settings.get.getData();
 			utils.settings.get.setData(undefined, settings);
 			void utils.library.summary.invalidate();
+			if (prev?.titleLanguage !== settings.titleLanguage) {
+				void utils.anime.list.invalidate();
+				void utils.anime.listed.invalidate();
+				void utils.anime.byId.invalidate();
+				void utils.anilist.season.invalidate();
+				void utils.anilist.search.invalidate();
+			}
 		},
 	});
 	trpc.media.onNowPlaying.useSubscription(undefined, {

@@ -1,11 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { emptyStoredTitles } from "../../lib/anime-titles";
 import { type Candidate, namesFrom, relationHopCandidates, suggestTitles } from "./match-core";
 
 function candidate(input: { id: number; title: string; names?: string[]; episodes?: number }): Candidate {
 	return {
 		id: input.id,
 		title: input.title,
-		alternativeTitles: "",
+		titles: { ...emptyStoredTitles, romaji: input.title },
 		userSynonyms: "",
 		type: "TV",
 		coverUrl: "",
@@ -28,7 +29,7 @@ function candidate(input: { id: number; title: string; names?: string[]; episode
 		timesRewatched: 0,
 		dateStarted: null,
 		dateCompleted: null,
-		names: input.names ?? namesFrom(input.title, ""),
+		names: input.names ?? namesFrom(input.title),
 	};
 }
 
