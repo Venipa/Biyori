@@ -45,7 +45,7 @@ describe("toAnimeRow airing dates", () => {
 			],
 			popularity: 90000,
 		});
-		expect(JSON.parse(row.tags)).toEqual(["Isekai"]);
+		expect(row.tags).toBe(JSON.stringify(["Isekai"]));
 		expect(row.ratedRank).toBe(12);
 		expect(row.popularRank).toBe(45);
 		expect(row.popularity).toBe(90000);

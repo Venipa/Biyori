@@ -28,7 +28,7 @@ type ButtonToggleProps = Omit<ButtonPrimitive.Props, "children"> &
 	VariantProps<typeof buttonToggleVariants> & {
 		pressed: boolean;
 		onPressedChange: (pressed: boolean) => void;
-		children: ReactNode;
+		children?: ReactNode;
 	};
 
 function ButtonToggle({ className, variant = "default", size = "default", pressed, onPressedChange, onClick, children, ...props }: ButtonToggleProps) {
