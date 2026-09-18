@@ -365,7 +365,17 @@ function withClauseKeys(clauses: FilterClause[]): Array<{ clause: FilterClause; 
 	});
 }
 
-export function ListFilterBar({ clauses, tagNames, onClausesChange }: { clauses: FilterClause[]; tagNames: string[]; onClausesChange: (next: FilterClause[]) => void }) {
+export function ListFilterBar({
+	clauses,
+	tagNames,
+	onClausesChange,
+	onMenuOpenChange,
+}: {
+	clauses: FilterClause[];
+	tagNames: string[];
+	onClausesChange: (next: FilterClause[]) => void;
+	onMenuOpenChange?: (open: boolean) => void;
+}) {
 	function patch(index: number, next: FilterClause): void {
 		onClausesChange(clauses.map((clause, i) => (i === index ? next : clause)));
 	}
@@ -384,6 +394,7 @@ export function ListFilterBar({ clauses, tagNames, onClausesChange }: { clauses:
 					key={chip.key}
 					label={clauseLabel(chip.clause.field)}
 					value={clauseValue(chip.clause)}
+					onMenuOpenChange={onMenuOpenChange}
 					onRemove={() => {
 						remove(chip.index);
 					}}>
@@ -396,7 +407,7 @@ export function ListFilterBar({ clauses, tagNames, onClausesChange }: { clauses:
 					/>
 				</ListFilterChip>
 			))}
-			<DropdownMenu>
+			<DropdownMenu onOpenChange={onMenuOpenChange}>
 				<DropdownMenuTrigger render={<ButtonToggle pressed={false} onPressedChange={() => undefined} size='xs' />}>
 					<PlusIcon />
 					Add filter

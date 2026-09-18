@@ -1,13 +1,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { ExternalLinkIcon, FilterIcon, InfoIcon, LogOutIcon, RefreshCwIcon, SearchIcon, SettingsIcon } from "lucide-react";
+import { ExternalLinkIcon, InfoIcon, LogOutIcon, RefreshCwIcon, SearchIcon, SettingsIcon } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { desktopRpc } from "@/desktop-rpc";
 import { profileInitials } from "@/lib/profile-initials";
 import { type AnilistSearchForm, type AnilistSearchFormInput, anilistSearchFormSchema } from "@/lib/schemas/anilist-search";
 import { ListFilterBar } from "@/mainview/components/list-filter-bar";
-import { handleSuggestKeyDown, SearchSuggestPanel, suggestionOptionCount } from "@/mainview/components/search-suggest";
+import { handleSuggestKeyDown, SearchOverlayCard, SearchSuggestPanel, suggestionOptionCount } from "@/mainview/components/search-suggest";
 import { Button } from "@/mainview/components/ui/button";
 import {
 	DropdownMenu,
@@ -20,12 +21,10 @@ import {
 } from "@/mainview/components/ui/dropdown-menu";
 import { Image } from "@/mainview/components/ui/image";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
-import { Toggle } from "@/mainview/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/ui/tooltip";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { appendFilterClauses, parseFilterQuery, serializeFilterQuery } from "@/mainview/lib/anime-list-filter";
 import { getListFilterText, setListFilterText, useListFilterResetToken, useListFilterText } from "@/mainview/lib/list-filter";
-import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 
 const LIST_FILTER_DEBOUNCE_MS = 250;
@@ -159,7 +158,11 @@ export function AppToolbar() {
 	const filterResetToken = useListFilterResetToken();
 	const listFilter = useListFilterText();
 	const parsedFilter = parseFilterQuery(listFilter);
-	const [filtersOpen, setFiltersOpen] = useState(false);
+	const [searchHover, setSearchHover] = useState(false);
+	const [searchFocus, setSearchFocus] = useState(false);
+	const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+	const hasListFilter = parsedFilter.clauses.length > 0;
+	const showFilterCard = isLiveFilterPage && (searchFocus || filterMenuOpen || (hasListFilter && searchHover));
 	const qValue = form.watch("q");
 	const trimmedQ = (typeof qValue === "string" ? qValue : "").trim();
 	const canSubmit = trimmedQ.length > 0;
@@ -257,7 +260,7 @@ export function AppToolbar() {
 	}, [trimmedQ, isLiveFilterPage]);
 
 	return (
-		<div className={cn("z-40 flex shrink-0 flex-col border-b bg-card", isLiveFilterPage && filtersOpen ? "min-h-11" : "h-11")}>
+		<div className='z-40 flex h-11 shrink-0 flex-col border-b bg-card'>
 			<div className='flex h-11 items-center gap-1.5 pr-2 pl-2'>
 				<Tooltip>
 					<TooltipTrigger
@@ -276,32 +279,23 @@ export function AppToolbar() {
 					</TooltipTrigger>
 					<TooltipContent>Synchronize</TooltipContent>
 				</Tooltip>
-				{isLiveFilterPage ? (
-					<Tooltip>
-						<TooltipTrigger
-							render={
-								<Toggle
-									aria-label='Filters'
-									aria-expanded={filtersOpen}
-									pressed={filtersOpen}
-									onPressedChange={setFiltersOpen}
-									size='sm'
-									className='relative size-8 min-w-8 px-0'
-								/>
-							}>
-							<FilterIcon />
-							{parsedFilter.clauses.length > 0 ? (
-								<span className='absolute top-0.5 right-0.5 flex size-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-medium text-primary-foreground'>
-									{parsedFilter.clauses.length}
-								</span>
-							) : null}
-						</TooltipTrigger>
-						<TooltipContent>Filters</TooltipContent>
-					</Tooltip>
-				) : null}
 
 				<form
 					className='relative z-20 flex h-full min-w-0 flex-1 items-stretch'
+					onPointerEnter={() => {
+						setSearchHover(true);
+					}}
+					onPointerLeave={() => {
+						setSearchHover(false);
+					}}
+					onFocusCapture={() => {
+						setSearchFocus(true);
+					}}
+					onBlurCapture={(event) => {
+						if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+							setSearchFocus(false);
+						}
+					}}
 					onSubmit={form.handleSubmit((data) => {
 						goToAnilistSearch(data.q.trim());
 					})}>
@@ -368,24 +362,44 @@ export function AppToolbar() {
 							</InputGroup>
 						)}
 					/>
-					{showPanel ? (
-						<SearchSuggestPanel
-							listId={listId}
-							q={trimmedQ}
-							items={items}
-							activeIndex={Math.min(activeIndex, optionCount - 1)}
-							onActiveIndex={(index) => {
-								setActive({ q: debouncedQ, index });
-							}}
-							onOpen={(id) => {
-								setPanelOpen(false);
-								animeInfo.open({ id, infoTab: "main" });
-							}}
-							onSearchAnilist={() => {
-								goToAnilistSearch(trimmedQ);
-							}}
-						/>
-					) : null}
+					<AnimatePresence>
+						{showFilterCard ? (
+							<SearchOverlayCard key='list-filter' className='p-2'>
+								<ListFilterBar
+									clauses={parsedFilter.clauses}
+									tagNames={tagNames}
+									onMenuOpenChange={setFilterMenuOpen}
+									onClausesChange={(clauses) => {
+										setListFilterText(
+											serializeFilterQuery({
+												freeText: parsedFilter.freeText,
+												clauses,
+											}),
+										);
+									}}
+								/>
+							</SearchOverlayCard>
+						) : null}
+						{showPanel ? (
+							<SearchSuggestPanel
+								key='anilist-suggest'
+								listId={listId}
+								q={trimmedQ}
+								items={items}
+								activeIndex={Math.min(activeIndex, optionCount - 1)}
+								onActiveIndex={(index) => {
+									setActive({ q: debouncedQ, index });
+								}}
+								onOpen={(id) => {
+									setPanelOpen(false);
+									animeInfo.open({ id, infoTab: "main" });
+								}}
+								onSearchAnilist={() => {
+									goToAnilistSearch(trimmedQ);
+								}}
+							/>
+						) : null}
+					</AnimatePresence>
 				</form>
 
 				<div className='ml-2 flex shrink-0 items-center gap-1.5'>
@@ -408,23 +422,6 @@ export function AppToolbar() {
 					</Tooltip>
 				</div>
 			</div>
-			{isLiveFilterPage && filtersOpen ? (
-				<div className='flex min-w-0 flex-wrap items-center gap-1 px-2 pb-2'>
-					<ListFilterBar
-						clauses={parsedFilter.clauses}
-						tagNames={tagNames}
-						onClausesChange={(clauses) => {
-							setFiltersOpen(true);
-							setListFilterText(
-								serializeFilterQuery({
-									freeText: parsedFilter.freeText,
-									clauses,
-								}),
-							);
-						}}
-					/>
-				</div>
-			) : null}
 		</div>
 	);
 }

@@ -6,7 +6,21 @@ import { FilterPillButton } from "@/mainview/components/ui/filter-pill-button";
 
 const removeTransition = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const;
 
-export function ListFilterChip({ label, value, onRemove, children, size = "xs" }: { label: string; value: string; onRemove: () => void; children: ReactNode; size?: "xs" | "sm" }) {
+export function ListFilterChip({
+	label,
+	value,
+	onRemove,
+	onMenuOpenChange,
+	children,
+	size = "xs",
+}: {
+	label: string;
+	value: string;
+	onRemove: () => void;
+	onMenuOpenChange?: (open: boolean) => void;
+	children: ReactNode;
+	size?: "xs" | "sm";
+}) {
 	const [hovered, setHovered] = useState(false);
 	const [menuOpen, setMenuOpen] = useState(false);
 	const showRemove = hovered || menuOpen;
@@ -14,7 +28,11 @@ export function ListFilterChip({ label, value, onRemove, children, size = "xs" }
 	const slotPx = size === "sm" ? 30 : 26;
 
 	return (
-		<DropdownMenu onOpenChange={setMenuOpen}>
+		<DropdownMenu
+			onOpenChange={(open) => {
+				setMenuOpen(open);
+				onMenuOpenChange?.(open);
+			}}>
 			<div
 				className='relative inline-flex items-center'
 				onPointerEnter={() => {

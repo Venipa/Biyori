@@ -1,5 +1,6 @@
 import type { inferRouterOutputs } from "@trpc/server";
-import type { KeyboardEvent } from "react";
+import { motion } from "motion/react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { Badge } from "@/mainview/components/ui/badge";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
@@ -47,6 +48,30 @@ export function handleSuggestKeyDown(input: {
 	}
 }
 
+const searchOverlayCardClass =
+	"absolute top-full right-0 left-0 z-50 mt-1 origin-top overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10";
+
+const overlayMotion = {
+	initial: { opacity: 0, y: -6, scale: 0.98 },
+	animate: { opacity: 1, y: 0, scale: 1 },
+	exit: { opacity: 0, y: -6, scale: 0.98 },
+} as const;
+
+const overlayTransition = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const;
+
+export function SearchOverlayCard({ className, children }: { className?: string; children: ReactNode }) {
+	return (
+		<motion.div
+			className={cn(searchOverlayCardClass, className)}
+			initial={overlayMotion.initial}
+			animate={overlayMotion.animate}
+			exit={overlayMotion.exit}
+			transition={overlayTransition}>
+			{children}
+		</motion.div>
+	);
+}
+
 export function SearchSuggestPanel({
 	listId,
 	q,
@@ -66,7 +91,7 @@ export function SearchSuggestPanel({
 }) {
 	const footerIndex = items.length;
 	return (
-		<div className='absolute top-full right-0 left-0 z-50 bg-popover text-popover-foreground'>
+		<SearchOverlayCard>
 			<ScrollArea className='h-auto max-h-80 overflow-hidden' viewportClassName='h-auto max-h-80 w-full outline-none focus-visible:ring-0'>
 				<div id={listId} role='listbox' aria-label='Title suggestions' className='py-1'>
 					{items.map((item, index) => {
@@ -144,6 +169,6 @@ export function SearchSuggestPanel({
 					</button>
 				</div>
 			</ScrollArea>
-		</div>
+		</SearchOverlayCard>
 	);
 }
