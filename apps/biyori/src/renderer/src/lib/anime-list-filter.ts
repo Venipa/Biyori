@@ -1,28 +1,41 @@
-import { type StoredAnimeTitles, titleStrings } from "@/lib/anime-titles";
-import { parseJsonArray } from "@/lib/parse-json-array";
-import { splitTitleList } from "@/lib/split-title-list";
+import { type StoredAnimeTitles, titleStrings } from "../../../lib/anime-titles";
+import { parseJsonArray } from "../../../lib/parse-json-array";
+import { splitTitleList } from "../../../lib/split-title-list";
 
 export type ListFilterRow = {
 	title: string;
 	titles?: StoredAnimeTitles;
 	userSynonyms?: string;
 	genres?: string;
+	tags?: string;
 	notes?: string;
 	type?: string;
 	season?: string;
 	id?: number | null;
 	episodes?: number;
 	score?: number | null;
+	popularRank?: number | null;
 };
 
-type SearchField = "none" | "id" | "eps" | "title" | "genre" | "note" | "type" | "season" | "year" | "score";
+export type SearchField = "none" | "id" | "eps" | "title" | "genre" | "tags" | "note" | "type" | "season" | "year" | "score" | "popular";
 
-type SearchOperator = "eq" | "ge" | "gt" | "le" | "lt";
+export type SearchOperator = "eq" | "ge" | "gt" | "le" | "lt";
 
-type SearchTerm = {
+export type SearchTerm = {
 	field: SearchField;
 	op: SearchOperator;
 	value: string;
+};
+
+export type FilterClause = {
+	field: Exclude<SearchField, "none">;
+	op: SearchOperator;
+	value: string;
+};
+
+export type ParsedFilterQuery = {
+	freeText: string;
+	clauses: FilterClause[];
 };
 
 function parseOperator(raw: string | undefined): SearchOperator {
@@ -40,35 +53,117 @@ function parseOperator(raw: string | undefined): SearchOperator {
 	}
 }
 
-function parseTerm(raw: string): SearchTerm {
+export function formatSearchOperator(op: SearchOperator): string {
+	switch (op) {
+		case "ge":
+			return ">=";
+		case "gt":
+			return ">";
+		case "le":
+			return "<=";
+		case "lt":
+			return "<";
+		default:
+			return "";
+	}
+}
+
+function fieldFromPrefix(prefix: string): SearchField | null {
+	switch (prefix) {
+		case "id":
+			return "id";
+		case "eps":
+			return "eps";
+		case "title":
+			return "title";
+		case "genre":
+		case "genres":
+			return "genre";
+		case "tag":
+		case "tags":
+			return "tags";
+		case "note":
+			return "note";
+		case "type":
+			return "type";
+		case "season":
+			return "season";
+		case "year":
+			return "year";
+		case "score":
+			return "score";
+		case "popular":
+		case "popularity":
+			return "popular";
+		default:
+			return null;
+	}
+}
+
+export function parseTerm(raw: string): SearchTerm {
 	const match = /^([a-z]+):([!<>=]+)?(.+)$/i.exec(raw);
 	if (!match) {
 		return { field: "none", op: "eq", value: raw };
 	}
-	const prefix = match[1].toLowerCase();
-	const op = parseOperator(match[2]);
-	const value = match[3];
-	switch (prefix) {
-		case "id":
-			return { field: "id", op, value };
-		case "eps":
-			return { field: "eps", op, value };
-		case "title":
-			return { field: "title", op, value };
-		case "genre":
-			return { field: "genre", op, value };
-		case "note":
-			return { field: "note", op, value };
-		case "type":
-			return { field: "type", op, value };
-		case "season":
-			return { field: "season", op, value };
-		case "year":
-			return { field: "year", op, value };
-		case "score":
-			return { field: "score", op, value };
+	const field = fieldFromPrefix(match[1].toLowerCase());
+	if (!field) {
+		return { field: "none", op: "eq", value: raw };
+	}
+	return { field, op: parseOperator(match[2]), value: match[3] };
+}
+
+export function parseFilterQuery(raw: string | null | undefined): ParsedFilterQuery {
+	const words = (raw ?? "").trim().split(/\s+/).filter(Boolean);
+	const free: string[] = [];
+	const clauses: FilterClause[] = [];
+	for (const word of words) {
+		const term = parseTerm(word);
+		if (term.field === "none") {
+			free.push(term.value);
+			continue;
+		}
+		if (clauses.some((clause) => clause.field === term.field)) {
+			continue;
+		}
+		clauses.push({ field: term.field, op: term.op, value: term.value });
+	}
+	return { freeText: free.join(" "), clauses };
+}
+
+export function appendFilterClauses(current: FilterClause[], extra: FilterClause[]): FilterClause[] {
+	const used = new Set(current.map((clause) => clause.field));
+	const next = [...current];
+	for (const clause of extra) {
+		if (used.has(clause.field)) {
+			continue;
+		}
+		used.add(clause.field);
+		next.push(clause);
+	}
+	return next;
+}
+
+export function serializeFilterQuery(query: ParsedFilterQuery): string {
+	const tokens = query.clauses.filter((clause) => clause.value.trim().length > 0).map((clause) => `${clause.field}:${formatSearchOperator(clause.op)}${clause.value.trim()}`);
+	const free = query.freeText.trim();
+	if (free) {
+		tokens.push(free);
+	}
+	return tokens.join(" ");
+}
+
+function parseBool(value: string): boolean | null {
+	switch (value.trim().toLowerCase()) {
+		case "true":
+		case "yes":
+		case "1":
+			return true;
+		case "false":
+		case "no":
+		case "0":
+			return false;
 		default:
-			return { field: "none", op: "eq", value: raw };
+			return null;
 	}
 }
 
@@ -108,6 +203,22 @@ function parseJsonStrings(value: string | undefined): string[] {
 		.filter(Boolean);
 }
 
+function matchLabeledList(items: string[], expr: string): boolean {
+	const groups = expr
+		.split("|")
+		.map((group) =>
+			group
+				.split(",")
+				.map((part) => part.trim())
+				.filter(Boolean),
+		)
+		.filter((group) => group.length > 0);
+	if (groups.length === 0) {
+		return false;
+	}
+	return groups.some((needles) => needles.every((needle) => items.some((item) => includesInsensitive(item, needle))));
+}
+
 function titleBag(row: ListFilterRow): string[] {
 	return [row.title, ...titleStrings(row.titles), ...splitTitleList(row.userSynonyms)];
 }
@@ -120,6 +231,7 @@ function seasonYear(row: ListFilterRow): number {
 /**
  * Taiga-style list filter: space-separated AND terms.
  * Numeric fields support = >= > <= < (e.g. score:>=80, eps:>12, year:2024).
+ * genre/tags values: comma AND, pipe OR.
  */
 export function animeMatchesListFilter(row: ListFilterRow, rawFilter: string | null | undefined): boolean {
 	const text = (rawFilter ?? "").trim();
@@ -132,6 +244,7 @@ export function animeMatchesListFilter(row: ListFilterRow, rawFilter: string | n
 	}
 	const titles = titleBag(row);
 	const genres = parseJsonStrings(row.genres);
+	const tags = parseJsonStrings(row.tags);
 	const notes = row.notes ?? "";
 
 	for (const word of words) {
@@ -153,7 +266,12 @@ export function animeMatchesListFilter(row: ListFilterRow, rawFilter: string | n
 				}
 				break;
 			case "genre":
-				if (!genres.some((genre) => includesInsensitive(genre, term.value))) {
+				if (!matchLabeledList(genres, term.value)) {
+					return false;
+				}
+				break;
+			case "tags":
+				if (!matchLabeledList(tags, term.value)) {
 					return false;
 				}
 				break;
@@ -163,7 +281,7 @@ export function animeMatchesListFilter(row: ListFilterRow, rawFilter: string | n
 				}
 				break;
 			case "type":
-				if (!includesInsensitive(row.type ?? "", term.value)) {
+				if (!matchLabeledList([row.type ?? ""], term.value)) {
 					return false;
 				}
 				break;
@@ -187,6 +305,14 @@ export function animeMatchesListFilter(row: ListFilterRow, rawFilter: string | n
 					return false;
 				}
 				break;
+			case "popular": {
+				const want = parseBool(term.value);
+				const isPopular = (row.popularRank ?? 0) > 0;
+				if (want == null || isPopular !== want) {
+					return false;
+				}
+				break;
+			}
 			case "year":
 				if (!checkNumber(term.op, seasonYear(row), amount)) {
 					return false;

@@ -28,4 +28,26 @@ describe("toAnimeRow airing dates", () => {
 		expect(row.nextAiringAt).toBeNull();
 		expect(row.endDate).toBe("2024-03-15");
 	});
+
+	test("stores relevant tags and all-time ranks", () => {
+		const row = toAnimeRow({
+			id: 3,
+			title,
+			tags: [
+				{ name: "Isekai", rank: 80, isMediaSpoiler: false },
+				{ name: "Secret", rank: 90, isMediaSpoiler: true },
+				{ name: "Weak", rank: 10, isMediaSpoiler: false },
+			],
+			rankings: [
+				{ rank: 12, type: "RATED", allTime: true },
+				{ rank: 45, type: "POPULAR", allTime: true },
+				{ rank: 2, type: "RATED", allTime: false },
+			],
+			popularity: 90000,
+		});
+		expect(JSON.parse(row.tags)).toEqual(["Isekai"]);
+		expect(row.ratedRank).toBe(12);
+		expect(row.popularRank).toBe(45);
+		expect(row.popularity).toBe(90000);
+	});
 });

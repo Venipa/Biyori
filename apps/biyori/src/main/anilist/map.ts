@@ -59,6 +59,30 @@ export const anilistMediaSchema = z.object({
 		.nullable()
 		.optional(),
 	genres: z.array(z.string()).nullable().optional(),
+	tags: z
+		.array(
+			z
+				.object({
+					name: z.string(),
+					rank: z.number().nullable().optional(),
+					isMediaSpoiler: z.boolean().nullable().optional(),
+				})
+				.nullable(),
+		)
+		.nullable()
+		.optional(),
+	rankings: z
+		.array(
+			z
+				.object({
+					rank: z.number().nullable().optional(),
+					type: z.string().nullable().optional(),
+					allTime: z.boolean().nullable().optional(),
+				})
+				.nullable(),
+		)
+		.nullable()
+		.optional(),
 	format: z.string().nullable().optional(),
 	meanScore: z.number().nullable().optional(),
 	averageScore: z.number().nullable().optional(),
@@ -300,6 +324,37 @@ function lastAiredEpisode(media: AnilistMedia): number {
 	return 0;
 }
 
+const TAG_RANK_MIN = 60;
+
+function mediaTagNames(media: AnilistMedia): string[] {
+	const names: string[] = [];
+	for (const tag of media.tags ?? []) {
+		if (!tag || tag.isMediaSpoiler) {
+			continue;
+		}
+		// ponytail: skip low-relevance tags (AniList UI cutoff); store all names if filters miss niche tags
+		if (tag.rank != null && tag.rank < TAG_RANK_MIN) {
+			continue;
+		}
+		if (tag.name) {
+			names.push(tag.name);
+		}
+	}
+	return names;
+}
+
+function allTimeRank(media: AnilistMedia, type: "RATED" | "POPULAR"): number | null {
+	for (const ranking of media.rankings ?? []) {
+		if (ranking?.allTime !== true || ranking.type !== type) {
+			continue;
+		}
+		if (ranking.rank != null && ranking.rank > 0) {
+			return ranking.rank;
+		}
+	}
+	return null;
+}
+
 function nextAiringAtIso(airingAt: number | null | undefined): string | null {
 	if (airingAt == null || airingAt <= 0) {
 		return null;
@@ -322,9 +377,13 @@ export function toAnimeRow(media: AnilistMedia, titleLanguage: TitleLanguage = "
 		episodes: media.episodes ?? 0,
 		durationMinutes: media.duration ?? 0,
 		averageScore: media.averageScore ?? media.meanScore ?? 0,
+		popularity: media.popularity ?? 0,
+		ratedRank: allTimeRank(media, "RATED"),
+		popularRank: allTimeRank(media, "POPULAR"),
 		season: formatSeason(media.season, media.seasonYear),
 		airingStatus: mapAiringStatus(media.status),
 		genres: JSON.stringify(media.genres ?? []),
+		tags: JSON.stringify(mediaTagNames(media)),
 		producers: JSON.stringify(studios),
 		synopsis: stripHtml(media.description),
 		folder: "",
@@ -385,6 +444,9 @@ export function toMediaCardCached(media: AnilistMedia): AnilistMediaCardCached {
 		averageScore: media.averageScore ?? media.meanScore ?? 0,
 		popularity: media.popularity ?? 0,
 		genres: media.genres ?? [],
+		tags: mediaTagNames(media),
+		ratedRank: allTimeRank(media, "RATED"),
+		popularRank: allTimeRank(media, "POPULAR"),
 		producers: pickProducers(media),
 		synopsis: stripHtml(media.description),
 		startDate: formatFuzzyDate(media.startDate),

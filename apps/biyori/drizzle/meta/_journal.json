@@ -64,6 +64,13 @@
       "when": 1789671078268,
       "tag": "0008_drop_alternative_titles",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1789726290526,
+      "tag": "0009_chief_slayback",
+      "breakpoints": true
     }
   ]
 }

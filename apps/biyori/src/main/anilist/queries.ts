@@ -57,6 +57,16 @@ nextAiringEpisode {
   episode
   airingAt
 }
+tags {
+  name
+  rank
+  isMediaSpoiler
+}
+rankings {
+  rank
+  type
+  allTime
+}
 `;
 
 const MEDIA_LIST_FIELDS = `

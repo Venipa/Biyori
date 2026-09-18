@@ -11,6 +11,7 @@ export type AnimeSeriesInfoData = {
 	airingStatus: string;
 	season: string;
 	genres: string[];
+	tags?: string[];
 	producers: string[];
 	averageScore: number;
 	synopsis?: string;
@@ -55,6 +56,7 @@ function formatTitleBadges(anime: AnimeSeriesInfoData): Array<{ language: string
 
 export function AnimeSeriesInfo({ anime, className }: AnimeSeriesInfoProps) {
 	const genres = anime.genres ?? [];
+	const tags = anime.tags ?? [];
 	const producers = anime.producers ?? [];
 	const altTitles = formatTitleBadges(anime);
 
@@ -88,6 +90,8 @@ export function AnimeSeriesInfo({ anime, className }: AnimeSeriesInfoProps) {
 					<dd className='text-primary'>{anime.season || "-"}</dd>
 					<dt className='text-muted-foreground'>Genres</dt>
 					<dd>{genres.join(", ") || "-"}</dd>
+					<dt className='text-muted-foreground'>Tags</dt>
+					<dd>{tags.join(", ") || "-"}</dd>
 					<dt className='text-muted-foreground'>Producers</dt>
 					<dd>{producers.join(", ") || "-"}</dd>
 					<dt className='text-muted-foreground'>Score</dt>

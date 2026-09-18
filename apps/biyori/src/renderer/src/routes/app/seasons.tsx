@@ -218,7 +218,9 @@ function SeasonsPage() {
 					id: item.id,
 					episodes: item.episodes,
 					score: item.averageScore,
+					popularRank: item.popularRank,
 					genres: (item.genres ?? []).join(", "),
+					tags: (item.tags ?? []).join(", "),
 				},
 				listFilter,
 			);

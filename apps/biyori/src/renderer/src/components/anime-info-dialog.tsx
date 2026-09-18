@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, FolderOpen, PlusIcon, XIcon } from "lucide-react";
+import { CircleAlertIcon, FlameIcon, FolderOpen, PlusIcon, StarIcon, TrophyIcon, XIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 import AniDBIcon from "@/assets/anidb.png";
@@ -15,6 +15,7 @@ import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeListAction, AnimeListStatusSelect } from "@/mainview/components/anime-list-action";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
 import { SaveBar } from "@/mainview/components/save-bar";
+import { Alert, AlertDescription, AlertTitle } from "@/mainview/components/ui/alert";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
@@ -25,6 +26,7 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Spinner } from "@/mainview/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
+import { type AnimeRankLine, animeAiringNotice } from "@/mainview/lib/anime-airing-notice";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 import { getNeighborAnimeId } from "@/mainview/lib/selected-anime";
@@ -52,6 +54,48 @@ function posterExternalLinks(id: number, title: string): Array<{ label: string; 
 }
 
 type AnimeDetail = NonNullable<inferRouterOutputs<AppRouter>["anime"]["byId"]>;
+
+function AnimeRankNotice({ kind, rank }: AnimeRankLine) {
+	const isRated = kind === "rated";
+	const Icon = isRated ? StarIcon : FlameIcon;
+	const rankClass = isRated ? "text-amber-300" : "text-red-400/75";
+	return (
+		<Alert role='status' className='overflow-hidden bg-muted/40'>
+			<span aria-hidden className={`pointer-events-none absolute top-2 -right-1 ${isRated ? "text-amber-300/20" : "text-red-400/20"}`}>
+				<Icon className='size-16 fill-current stroke-none' />
+			</span>
+			<AlertTitle>{isRated ? "Highest rated" : "Most popular"}</AlertTitle>
+			<AlertDescription className={rankClass}>#{rank}</AlertDescription>
+		</Alert>
+	);
+}
+
+function AnimeStatusNotice({ anime }: { anime: AnimeDetail }) {
+	const notice = animeAiringNotice({
+		airingStatus: anime.airingStatus,
+		lastAiredEpisode: anime.lastAiredEpisode,
+		nextAiringAt: anime.nextAiringAt,
+		endDate: anime.endDate,
+		ratedRank: anime.ratedRank,
+		popularRank: anime.popularRank,
+	});
+	if (!notice) {
+		return null;
+	}
+	return (
+		<div className='flex flex-col gap-2'>
+			{notice.title ? (
+				<Alert role='status' className='bg-muted/40'>
+					<AlertTitle>{notice.title}</AlertTitle>
+					{notice.description ? <AlertDescription>{notice.description}</AlertDescription> : null}
+				</Alert>
+			) : null}
+			{notice.ranks.map((line) => (
+				<AnimeRankNotice key={line.kind} {...line} />
+			))}
+		</div>
+	);
+}
 
 function toDateInput(value: string | null | undefined): string {
 	if (!value) {
@@ -227,6 +271,7 @@ function AnimeInfoBody({
 								)}
 							/>
 						)}
+						<AnimeStatusNotice anime={anime} />
 					</div>
 					<div className='flex min-h-0 min-w-0 flex-1 flex-col gap-2'>
 						<div className='flex min-h-14 shrink-0 items-end'>

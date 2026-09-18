@@ -46,8 +46,9 @@ import { coversRouter } from "./covers";
 import { desktopRouter } from "./desktop";
 import { updaterRouter } from "./updater";
 
-type AnimeDetail = Omit<Anime, "durationMinutes" | "genres" | "producers" | "titles"> & {
+type AnimeDetail = Omit<Anime, "durationMinutes" | "genres" | "tags" | "producers" | "titles"> & {
 	genres: string[];
+	tags: string[];
 	producers: string[];
 	titles: StoredAnimeTitles;
 	episodesWatched: number;
@@ -75,9 +76,13 @@ async function loadAnimeDetail(db: SelectDatabase, id: number): Promise<AnimeDet
 			type: anime.type,
 			episodes: anime.episodes,
 			averageScore: anime.averageScore,
+			popularity: anime.popularity,
+			ratedRank: anime.ratedRank,
+			popularRank: anime.popularRank,
 			season: anime.season,
 			airingStatus: anime.airingStatus,
 			genres: anime.genres,
+			tags: anime.tags,
 			producers: anime.producers,
 			synopsis: anime.synopsis,
 			folder: anime.folder,
@@ -117,6 +122,7 @@ async function loadAnimeDetail(db: SelectDatabase, id: number): Promise<AnimeDet
 		title: displayTitleFromRow(row.title, row.titles, language),
 		titles,
 		genres: parseJsonArray(row.genres),
+		tags: parseJsonArray(row.tags),
 		producers: parseJsonArray(row.producers),
 		episodesWatched: row.episodesWatched ?? 0,
 		score: row.score,
@@ -163,9 +169,12 @@ export const appRouter = t.router({
 					type: anime.type,
 					episodes: anime.episodes,
 					averageScore: anime.averageScore,
+					popularity: anime.popularity,
+					popularRank: anime.popularRank,
 					season: anime.season,
 					airingStatus: anime.airingStatus,
 					genres: anime.genres,
+					tags: anime.tags,
 					episodesWatched: listEntry.episodesWatched,
 					score: listEntry.score,
 					started: listEntry.started,
@@ -198,6 +207,19 @@ export const appRouter = t.router({
 					availableEpisode: libraryEpisodes.length > 0 ? Math.max(...libraryEpisodes) : 0,
 				};
 			});
+		}),
+		tagNames: t.procedure.query(async ({ ctx }) => {
+			const rows = await ctx.db.select({ tags: anime.tags }).from(listEntry).innerJoin(anime, eq(listEntry.animeId, anime.id));
+			const names = new Set<string>();
+			for (const row of rows) {
+				for (const tag of parseJsonArray(row.tags)) {
+					const name = tag.trim();
+					if (name) {
+						names.add(name);
+					}
+				}
+			}
+			return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 		}),
 		counts: t.procedure.query(async ({ ctx }) => {
 			const rows = await ctx.db.select({ status: listEntry.status }).from(listEntry);

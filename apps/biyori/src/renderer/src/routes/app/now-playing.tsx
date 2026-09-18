@@ -686,6 +686,7 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 								airingStatus: detail?.airingStatus ?? match.airingStatus ?? "",
 								season: detail?.season ?? match.season ?? "",
 								genres: detail?.genres ?? match.genres ?? [],
+								tags: detail?.tags ?? [],
 								producers: detail?.producers ?? match.producers ?? [],
 								averageScore: detail?.averageScore ?? match.averageScore ?? 0,
 								synopsis: detail?.synopsis ?? match.synopsis ?? "",

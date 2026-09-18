@@ -5,7 +5,7 @@ export type AnimeCacheEvent = "added" | "entrySaved" | "removed" | "watched" | "
 type TrpcUtils = ReturnType<typeof trpc.useUtils>;
 
 export function invalidateAnimeQueries(utils: TrpcUtils, event: AnimeCacheEvent, id?: number): Promise<void> {
-	const tasks: Promise<unknown>[] = [utils.anime.list.invalidate(), utils.anime.counts.invalidate()];
+	const tasks: Promise<unknown>[] = [utils.anime.list.invalidate(), utils.anime.counts.invalidate(), utils.anime.tagNames.invalidate()];
 
 	if (event === "added" || event === "entrySaved" || event === "removed") {
 		tasks.push(utils.anime.listed.invalidate());

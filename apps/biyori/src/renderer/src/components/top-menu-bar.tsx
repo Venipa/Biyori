@@ -52,7 +52,7 @@ export function TopMenuBar() {
 	const settings = settingsQuery.data;
 
 	return (
-		<div className='flex h-9 shrink-0 items-center border-b bg-card px-2'>
+		<div className='flex h-7 shrink-0 items-center border-b bg-card px-2'>
 			<Menubar className='h-auto border-none bg-transparent p-0'>
 				<MenubarMenu>
 					<MenubarTrigger>File</MenubarTrigger>

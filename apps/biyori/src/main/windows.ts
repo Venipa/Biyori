@@ -5,8 +5,8 @@ export const windowManager = new WindowManager({
 		title: "Biyori",
 		width: 1200,
 		height: 960,
-		minWidth: 680,
-		minHeight: 520,
+		minWidth: 960,
+		minHeight: 800,
 		saveState: true,
 	},
 	settings: {
