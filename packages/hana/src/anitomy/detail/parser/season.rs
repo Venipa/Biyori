@@ -179,16 +179,11 @@ pub(super) fn parse_season(tokens: &mut [Token]) -> Vec<Element> {
             let Some(value) = tokens.get(idx).map(|t| t.value) else {
                 continue;
             };
-            let Some(caps) = japanese_counter_pattern().captures(value) else {
+            let Some((group1, offset)) =
+                crate::anitomy::detail::regex_util::group1(japanese_counter_pattern(), value)
+            else {
                 continue;
             };
-            // Group 1 is mandatory in the pattern; `else continue` is
-            // unreachable in practice but keeps this panic-free without an `expect`.
-            let Some(group1) = caps.get(1) else {
-                continue;
-            };
-            let offset = byte_to_char_offset(value, group1.start());
-            let group1 = group1.as_str().to_string();
             let position = tokens.get(idx).map_or(0, |t| t.position);
 
             mark(tokens, idx, ElementKind::Season);

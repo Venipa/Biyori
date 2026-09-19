@@ -62,10 +62,19 @@ pub(crate) fn to_int(str: &str) -> i32 {
     str.parse().unwrap_or(0)
 }
 
-/// ASCII case-insensitive comparison (matches upstream `equal`, which only
-/// folds `A`-`Z`, not full Unicode case folding).
-pub(crate) fn equal_ignore_ascii_case(a: &str, b: &str) -> bool {
-    a.eq_ignore_ascii_case(b)
+pub(crate) fn is_crc32_hex_run(chars: impl IntoIterator<Item = char>) -> bool {
+    let mut count = 0;
+    for c in chars {
+        count += 1;
+        if count > 8 || !c.is_ascii_hexdigit() {
+            return false;
+        }
+    }
+    count == 8
+}
+
+pub(crate) fn is_crc32_hex(value: &str) -> bool {
+    is_crc32_hex_run(value.chars())
 }
 
 /// Converts a byte offset (as `regex::Match::start()`/`end()` return) into

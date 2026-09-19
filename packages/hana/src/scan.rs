@@ -1,14 +1,10 @@
-use crate::identify::{identify, resolve_scan_hit};
+use crate::identify::match_candidates;
 use crate::parse::parse_file_paths;
-use crate::types::{FindEpisodeInput, Parsed, ScanHit, ScanInput, ScanProgress, ScanResult};
+use crate::types::{FindEpisodeInput, Parsed, ScanHit, ScanInput, ScanProgress, ScanResult, VIDEO_EXT};
 use dua_core::{walk, Options, Order};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
-
-const VIDEO_EXT: &[&str] = &[
-	"mkv", "mp4", "avi", "webm", "mov", "wmv", "flv", "ts", "m2ts", "mpg", "mpeg",
-];
 
 struct VideoFile {
 	path: PathBuf,
@@ -149,10 +145,7 @@ pub fn scan_library(input: ScanInput, mut report: impl FnMut(ScanProgress)) -> S
 		let Some(parsed) = parsed else {
 			continue;
 		};
-		let identified = identify(&parsed, &input.candidates, Some(&display)).map(|anime_id| (anime_id, parsed.episode.unwrap_or(1)));
-		let Some((anime_id, episode)) =
-			identified.or_else(|| resolve_scan_hit(&parsed, &input.candidates, Some(&display), relations))
-		else {
+		let Some((anime_id, episode)) = match_candidates(&parsed, &input.candidates, Some(&display), relations) else {
 			continue;
 		};
 		hits.push(ScanHit {
@@ -192,13 +185,17 @@ pub fn find_episode(input: FindEpisodeInput) -> Option<String> {
 	collect_files(Path::new(&input.folder), input.threshold.max(0) as u64, &mut files, |_| {});
 	let parsed_files = parse_videos(&files);
 	let candidates = input.candidates.as_deref().unwrap_or(&[]);
+	let relations = input.relations.as_deref().unwrap_or(&[]);
 	for (file, parsed) in files.iter().zip(parsed_files) {
 		let Some(parsed) = parsed else {
 			continue;
 		};
 		if let Some(anime_id) = input.anime_id {
 			let path = file.path.to_string_lossy();
-			if identify(&parsed, candidates, Some(path.as_ref())) != Some(anime_id) {
+			let Some((id, _)) = match_candidates(&parsed, candidates, Some(path.as_ref()), relations) else {
+				continue;
+			};
+			if id != anime_id {
 				continue;
 			}
 		}
@@ -256,14 +253,12 @@ mod tests {
 						names: vec!["tensei shitara slime datta ken 4th season".into()],
 						episodes: 12,
 						folder: Some(slime_dir.to_string_lossy().to_string()),
-						status: None,
 					},
 					Candidate {
 						id: 20,
 						names: vec!["sword art online season 4".into()],
 						episodes: 12,
 						folder: Some(sao_dir.to_string_lossy().to_string()),
-						status: None,
 					},
 				],
 			},
@@ -296,7 +291,6 @@ mod tests {
 					names: vec!["frieren".into()],
 					episodes: 12,
 					folder: None,
-					status: None,
 				}],
 			},
 			 |_| {},
@@ -320,6 +314,7 @@ mod tests {
 			threshold: 1,
 			anime_id: None,
 			candidates: None,
+			relations: None,
 		});
 		assert_eq!(found.as_deref().map(Path::new), Some(wanted.as_path()));
 		let _ = fs::remove_dir_all(folder);
@@ -344,14 +339,12 @@ mod tests {
 				names: vec!["re:zero kara hajimeru isekai seikatsu 3rd season".into()],
 				episodes: 16,
 				folder: Some(folder.to_string_lossy().into_owned()),
-				status: None,
 			},
 			Candidate {
 				id: 4,
 				names: vec!["re:zero kara hajimeru isekai seikatsu 4th season".into()],
 				episodes: 16,
 				folder: Some(folder.to_string_lossy().into_owned()),
-				status: None,
 			},
 		];
 		let found_16 = find_episode(FindEpisodeInput {
@@ -360,6 +353,7 @@ mod tests {
 			threshold: 1,
 			anime_id: Some(4),
 			candidates: Some(candidates.clone()),
+			relations: None,
 		});
 		assert_eq!(found_16, None);
 		let found_15 = find_episode(FindEpisodeInput {
@@ -368,6 +362,7 @@ mod tests {
 			threshold: 1,
 			anime_id: Some(4),
 			candidates: Some(candidates),
+			relations: None,
 		});
 		assert_eq!(found_15.as_deref().map(Path::new), Some(s4.as_path()));
 		let _ = fs::remove_dir_all(folder);
@@ -387,7 +382,6 @@ mod tests {
 					names: vec!["show".into()],
 					episodes: 12,
 					folder: None,
-					status: None,
 				}],
 			},
 			 |_| {},

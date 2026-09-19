@@ -32,14 +32,12 @@ function toScanCandidates(candidates: Awaited<ReturnType<typeof loadCandidates>>
 	names: string[];
 	episodes: number;
 	folder: string;
-	status: string;
 }> {
 	return candidates.map((candidate) => ({
 		id: candidate.id,
 		names: candidate.names,
 		episodes: candidate.episodes,
 		folder: candidate.folder ?? "",
-		status: candidate.status,
 	}));
 }
 
@@ -345,6 +343,7 @@ async function findEpisodePath(database: DatabaseClient, animeId: number, episod
 			threshold: loadAppSettings().fileSizeThreshold,
 			animeId,
 			candidates: toScanCandidates(candidates),
+			relations: toScanRelations(),
 		});
 	} catch {
 		return null;

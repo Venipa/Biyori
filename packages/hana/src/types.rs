@@ -1,5 +1,9 @@
 use napi_derive::napi;
 
+pub const VIDEO_EXT: &[&str] = &[
+	"mkv", "mp4", "avi", "webm", "mov", "wmv", "flv", "ts", "m2ts", "mpg", "mpeg",
+];
+
 #[napi(object)]
 #[derive(Debug, Clone)]
 pub struct Candidate {
@@ -7,7 +11,6 @@ pub struct Candidate {
 	pub names: Vec<String>,
 	pub episodes: i32,
 	pub folder: Option<String>,
-	pub status: Option<String>,
 }
 
 #[napi(object)]
@@ -116,6 +119,7 @@ pub struct FindEpisodeInput {
 	#[napi(js_name = "animeId")]
 	pub anime_id: Option<i64>,
 	pub candidates: Option<Vec<Candidate>>,
+	pub relations: Option<Vec<RelationRule>>,
 }
 
 #[napi(object)]

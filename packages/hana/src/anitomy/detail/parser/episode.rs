@@ -13,14 +13,16 @@ use std::sync::OnceLock;
 
 use regex::Regex;
 
-use crate::anitomy::detail::container::{find_next_token, find_prev_token, mark};
+use crate::anitomy::detail::container::{
+    find_next_token, find_prev_token, isolated_free_number, mark,
+};
 use crate::anitomy::detail::delimiter::is_space;
 use crate::anitomy::detail::keyword::KeywordKind;
 use crate::anitomy::detail::token::{
     is_close_bracket_token, is_dash_token, is_delimiter_token, is_free_token,
     is_not_delimiter_token, is_numeric_token, Token, TokenKind,
 };
-use crate::anitomy::detail::util::{byte_to_char_offset, equal_ignore_ascii_case, to_int};
+use crate::anitomy::detail::util::{byte_to_char_offset, to_int};
 use crate::anitomy::element::{Element, ElementKind};
 use crate::anitomy::options::Options;
 
@@ -352,18 +354,15 @@ fn parse_fractional_episode(tokens: &mut [Token], elements: &mut Vec<Element>) -
         return false;
     }
     for i in 0..=(len - 3) {
-        let is_number = tokens
+        if !tokens
             .get(i)
-            .is_some_and(|t| is_free_token(t) && is_numeric_token(t));
-        let is_dot = tokens
-            .get(i + 1)
-            .is_some_and(|t| is_delimiter_token(t) && t.value == ".");
-        let is_fraction = tokens
-            .get(i + 2)
-            .is_some_and(|t| is_free_token(t) && t.value == "5");
-        if !(is_number && is_dot && is_fraction) {
+            .is_some_and(|t| is_free_token(t) && is_numeric_token(t))
+        {
             continue;
         }
+        let Some(_) = trailing_fraction(tokens, i) else {
+            continue;
+        };
 
         let Some((number_value, position)) = tokens.get(i).map(|t| (t.value, t.position)) else {
             continue;
@@ -392,16 +391,11 @@ fn parse_japanese_counter(tokens: &mut [Token], elements: &mut Vec<Element>) -> 
         let Some(value) = tokens.get(idx).map(|t| t.value) else {
             continue;
         };
-        let Some(caps) = japanese_episode_counter_pattern().captures(value) else {
+        let Some((group1, offset)) =
+            crate::anitomy::detail::regex_util::group1(japanese_episode_counter_pattern(), value)
+        else {
             continue;
         };
-        // Group 1 is mandatory in the pattern; `else continue` is unreachable
-        // in practice but keeps this panic-free without an `expect`.
-        let Some(group1) = caps.get(1) else {
-            continue;
-        };
-        let offset = byte_to_char_offset(value, group1.start());
-        let group1 = group1.as_str().to_string();
         let position = tokens.get(idx).map_or(0, |t| t.position);
         add_element_with_value(tokens, idx, group1, position + offset, elements);
         return true;
@@ -503,22 +497,11 @@ fn parse_isolated_number(tokens: &mut [Token], elements: &mut Vec<Element>) -> b
         return false;
     }
     for i in 0..=(len - 3) {
-        let is_isolated = tokens
-            .get(i)
-            .is_some_and(|t| t.kind == TokenKind::OpenBracket)
-            && tokens
-                .get(i + 2)
-                .is_some_and(|t| t.kind == TokenKind::CloseBracket);
-        if !is_isolated {
+        let Some(mid) = isolated_free_number(tokens, i) else {
             continue;
-        }
-        if tokens
-            .get(i + 1)
-            .is_some_and(|t| is_free_token(t) && is_numeric_token(t))
-        {
-            add_element_from_token(tokens, i + 1, elements);
-            return true;
-        }
+        };
+        add_element_from_token(tokens, mid, elements);
+        return true;
     }
     false
 }
@@ -658,10 +641,10 @@ fn parse_last_number(tokens: &mut [Token], elements: &mut Vec<Element>) -> bool 
             let Some(value) = tokens.get(p).map(|t| t.value) else {
                 continue;
             };
-            if equal_ignore_ascii_case(value, "Cour") || equal_ignore_ascii_case(value, "Part") {
+            if value.eq_ignore_ascii_case("Cour") || value.eq_ignore_ascii_case("Part") {
                 continue;
             }
-            if equal_ignore_ascii_case(value, "Movie") || equal_ignore_ascii_case(value, "No") {
+            if value.eq_ignore_ascii_case("Movie") || value.eq_ignore_ascii_case("No") {
                 continue;
             }
             if is_version_number_reversed(tokens, p) {

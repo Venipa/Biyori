@@ -4,7 +4,8 @@
 
 //! Port of `include/anitomy/detail/parser/year.hpp`.
 
-use crate::anitomy::detail::token::{is_free_token, Token, TokenKind};
+use crate::anitomy::detail::container::isolated_free_number;
+use crate::anitomy::detail::token::{is_free_token, Token};
 use crate::anitomy::detail::util::to_int;
 use crate::anitomy::element::{Element, ElementKind};
 
@@ -19,25 +20,14 @@ pub(super) fn parse_year(tokens: &mut [Token]) -> Option<Element> {
         return None;
     }
 
-    // Find the first free isolated number within the interval.
-    let index = (0..=len - 3).find(|&i| {
-        let is_isolated = tokens
-            .get(i)
-            .is_some_and(|t| t.kind == TokenKind::OpenBracket)
-            && tokens
-                .get(i + 2)
-                .is_some_and(|t| t.kind == TokenKind::CloseBracket);
-        if !is_isolated {
-            return false;
-        }
-        let Some(middle) = tokens.get(i + 1) else {
-            return false;
-        };
-        is_free_token(middle) && middle.is_number && is_year_shaped(middle.value)
+    let index = (0..=len - 3).find_map(|i| {
+        let mid = isolated_free_number(tokens, i)?;
+        let middle = tokens.get(mid)?;
+        is_year_shaped(middle.value).then_some(mid)
     });
 
     if let Some(index) = index {
-        let token = tokens.get_mut(index + 1)?;
+        let token = tokens.get_mut(index)?;
         token.element_kind = Some(ElementKind::Year);
         return Some(Element {
             kind: ElementKind::Year,

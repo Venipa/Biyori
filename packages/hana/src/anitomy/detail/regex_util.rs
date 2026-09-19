@@ -14,6 +14,8 @@
 
 use regex::Regex;
 
+use super::util::byte_to_char_offset;
+
 /// Compiles a fixed, literal regex pattern. Panics only if `pattern` is not a
 /// valid regex, which — since every caller passes a string constant — can only
 /// happen at development time and is caught immediately by `tests/no_panic.rs`
@@ -21,4 +23,10 @@ use regex::Regex;
 #[allow(clippy::expect_used)]
 pub(crate) fn compile(pattern: &str) -> Regex {
     Regex::new(pattern).expect("static regex pattern must be valid")
+}
+
+pub(crate) fn group1(re: &Regex, value: &str) -> Option<(String, usize)> {
+    let caps = re.captures(value)?;
+    let m = caps.get(1)?;
+    Some((m.as_str().to_string(), byte_to_char_offset(value, m.start())))
 }

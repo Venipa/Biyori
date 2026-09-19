@@ -19,32 +19,30 @@ fn normalize_title(value: &str) -> String {
 	out.trim().to_string()
 }
 
+fn season_phrase_re() -> &'static regex::Regex {
+	use std::sync::OnceLock;
+	static RE: OnceLock<regex::Regex> = OnceLock::new();
+	RE.get_or_init(|| {
+		#[allow(clippy::expect_used)]
+		regex::Regex::new(r"(?i-u)(?:([0-9]+)(?:st|nd|rd|th) +season|(?:season|series) +([0-9]+)|s([0-9]{1,2}))\b")
+			.expect("season phrase")
+	})
+}
+
+fn season_number_from_caps(caps: &regex::Captures) -> Option<i32> {
+	caps.get(1)
+		.or_else(|| caps.get(2))
+		.or_else(|| caps.get(3))
+		.and_then(|m| m.as_str().parse().ok())
+		.filter(|n| *n > 0)
+}
+
 fn replace_season_phrases(value: &str) -> String {
-	let mut next = value.to_string();
-	const PAIRS: &[(&str, &str)] = &[
-		("1st season", "1"),
-		("season 1", "1"),
-		("series 1", "1"),
-		("2nd season", "2"),
-		("season 2", "2"),
-		("series 2", "2"),
-		("3rd season", "3"),
-		("season 3", "3"),
-		("series 3", "3"),
-		("4th season", "4"),
-		("season 4", "4"),
-		("series 4", "4"),
-		("5th season", "5"),
-		("season 5", "5"),
-		("series 5", "5"),
-		("6th season", "6"),
-		("season 6", "6"),
-		("series 6", "6"),
-	];
-	for (from, to) in PAIRS {
-		next = next.replace(from, to);
-	}
-	next
+	season_phrase_re()
+		.replace_all(value, |caps: &regex::Captures| {
+			season_number_from_caps(caps).map(|n| n.to_string()).unwrap_or_default()
+		})
+		.into_owned()
 }
 
 pub fn normalize_for_lookup(value: &str) -> String {
@@ -122,34 +120,14 @@ fn pool_for_path<'a>(path: &str, candidates: &'a [Candidate]) -> (Vec<&'a Candid
 }
 
 fn season_from_names(names: &[String]) -> Option<i32> {
-	use std::sync::OnceLock;
-	static RE: OnceLock<regex::Regex> = OnceLock::new();
-	let re = RE.get_or_init(|| {
-		#[allow(clippy::expect_used)]
-		regex::Regex::new(r"(?i-u)(?:([0-9]+)(?:st|nd|rd|th) +season|(?:season|series) +([0-9]+)|s([0-9]{1,2}))\b")
-			.expect("season name")
-	});
 	for name in names {
-		if let Some(caps) = re.captures(name) {
-			let value = caps
-				.get(1)
-				.or_else(|| caps.get(2))
-				.or_else(|| caps.get(3))
-				.and_then(|m| m.as_str().parse().ok());
-			if let Some(season) = value.filter(|n| *n > 0) {
+		if let Some(caps) = season_phrase_re().captures(name) {
+			if let Some(season) = season_number_from_caps(&caps) {
 				return Some(season);
 			}
 		}
 	}
 	None
-}
-
-fn episode_in_range(parsed: &Parsed, total: i32) -> bool {
-	let high = parsed.episode_high.or(parsed.episode).unwrap_or(1);
-	if total < 1 {
-		return true;
-	}
-	high >= 1 && high <= total
 }
 
 fn season_compatible(parsed: &Parsed, candidate: &Candidate) -> bool {
@@ -170,13 +148,11 @@ const SIMILAR_LIMIT: usize = 10;
 const DICE_POOL_MAX: usize = 32;
 
 fn strip_season(value: &str) -> String {
-	use std::sync::OnceLock;
-	static RE: OnceLock<regex::Regex> = OnceLock::new();
-	let re = RE.get_or_init(|| {
-		#[allow(clippy::expect_used)]
-		regex::Regex::new(r"(?i-u)\b(?:[0-9]+(?:st|nd|rd|th) +season|season +[0-9]+|series +[0-9]+|s[0-9]+)\b").expect("strip season")
-	});
-	re.replace_all(value, " ").split_whitespace().collect::<Vec<_>>().join(" ")
+	season_phrase_re()
+		.replace_all(value, " ")
+		.split_whitespace()
+		.collect::<Vec<_>>()
+		.join(" ")
 }
 
 fn dice(left: &str, right: &str) -> f32 {
@@ -214,13 +190,8 @@ fn length_ratio(left: &str, right: &str) -> f32 {
 }
 
 fn extra_season(value: &str) -> bool {
-	use std::sync::OnceLock;
-	static RE: OnceLock<regex::Regex> = OnceLock::new();
-	let re = RE.get_or_init(|| {
-		#[allow(clippy::expect_used)]
-		regex::Regex::new(r"(?i-u)^(season [0-9]+|[0-9]+th season|s[0-9]+)$").expect("extra season")
-	});
-	re.is_match(value)
+	let trimmed = value.trim();
+	!trimmed.is_empty() && strip_season(trimmed).is_empty()
 }
 
 fn name_score(name: &str, needle: &str, needle_key: &str) -> f32 {
@@ -447,7 +418,7 @@ fn resolve_on_pool(parsed: &Parsed, pool: &[&Candidate], all: &[Candidate], rule
 	matched.map(|hit| with_redirect(hit, episode, all, rules))
 }
 
-pub fn resolve_scan_hit(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>, rules: &[RelationRule]) -> Option<(i64, i32)> {
+pub fn match_candidates(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>, rules: &[RelationRule]) -> Option<(i64, i32)> {
 	let all_refs: Vec<&Candidate> = candidates.iter().collect();
 	let (scoped, folder_scoped) = if let Some(path) = path {
 		pool_for_path(path, candidates)
@@ -464,39 +435,12 @@ pub fn resolve_scan_hit(parsed: &Parsed, candidates: &[Candidate], path: Option<
 	resolve_on_pool(parsed, &all_refs, candidates, rules)
 }
 
+pub fn resolve_scan_hit(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>, rules: &[RelationRule]) -> Option<(i64, i32)> {
+	match_candidates(parsed, candidates, path, rules)
+}
+
 pub fn identify(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>) -> Option<i64> {
-	let pool = if let Some(path) = path {
-		pool_for_path(path, candidates).0
-	} else {
-		candidates.iter().collect()
-	};
-	if pool.is_empty() {
-		return None;
-	}
-	let query = extend_title(parsed);
-	let keys = lookup_keys(&query);
-	let mut exact: Vec<&Candidate> = Vec::new();
-	for candidate in &pool {
-		if candidate
-			.names
-			.iter()
-			.any(|name| keys.iter().any(|key| normalize_for_lookup(name) == *key))
-		{
-			exact.push(candidate);
-		}
-	}
-	if exact.is_empty() && pool.len() > DICE_POOL_MAX {
-		return None;
-	}
-	let matched: Vec<&Candidate> = if exact.is_empty() { pool } else { exact };
-	let hits: Vec<&Candidate> = matched
-		.into_iter()
-		.filter(|candidate| episode_in_range(parsed, candidate.episodes) && season_compatible(parsed, candidate))
-		.collect();
-	if hits.len() == 1 {
-		return Some(hits[0].id);
-	}
-	None
+	match_candidates(parsed, candidates, path, &[]).map(|(id, _)| id)
 }
 
 #[cfg(test)]
@@ -511,7 +455,6 @@ mod tests {
 			names: vec![name.to_string()],
 			episodes: 12,
 			folder: Some(folder.to_string()),
-			status: None,
 		}
 	}
 
@@ -522,6 +465,12 @@ mod tests {
 		let path = r"D:\Anime\Tensei Shitara Slime Datta Ken 4th Season\05.mkv";
 		let parsed = parse_file_path(path).expect("parse");
 		assert_eq!(identify(&parsed, &[slime, sao], Some(path)), Some(10));
+	}
+
+	#[test]
+	fn lookup_keeps_season_seven() {
+		assert_eq!(normalize_for_lookup("Foo 7th Season"), normalize_for_lookup("Foo Season 7"));
+		assert_eq!(normalize_for_lookup("Foo S07"), normalize_for_lookup("Foo 7th season"));
 	}
 
 	#[test]
@@ -539,7 +488,6 @@ mod tests {
 			names: vec![name.to_string()],
 			episodes,
 			folder: Some(folder.to_string()),
-			status: None,
 		}
 	}
 
@@ -575,7 +523,6 @@ mod tests {
 			names: names.iter().map(|name| name.to_string()).collect(),
 			episodes,
 			folder: None,
-			status: None,
 		}
 	}
 

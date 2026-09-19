@@ -16,7 +16,9 @@ use crate::anitomy::element::{Element, ElementKind};
 fn pattern() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| {
-        crate::anitomy::detail::regex_util::compile(r"^[0-9]{3,4}(?:[ipP]|[xX\u{00D7}][0-9]{3,4}[ipP]?)$")
+        crate::anitomy::detail::regex_util::compile(
+            r"^[0-9]{3,4}(?:[ipP]|[xX\u{00D7}][0-9]{3,4}[ipP]?)$",
+        )
     })
 }
 

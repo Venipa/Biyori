@@ -10,7 +10,6 @@
 //! `KeywordEqual`, which only fold `A`-`Z`): keys are stored lowercased and
 //! queries are lowercased before lookup.
 
-use std::collections::HashSet;
 use std::sync::OnceLock;
 
 use super::util::{FxMap, FxSet};
@@ -410,7 +409,6 @@ fn build_map() -> FxMap<String, Keyword> {
     for (kind, entries) in base_keywords() {
         for (value, flags) in *entries {
             let keyword = make_keyword(*kind, *flags);
-            map.insert(value.to_ascii_lowercase(), keyword);
             if value.contains(' ') {
                 for delimiter in ['_', '.', '-'] {
                     map.insert(
@@ -420,6 +418,8 @@ fn build_map() -> FxMap<String, Keyword> {
                         keyword,
                     );
                 }
+            } else {
+                map.insert(value.to_ascii_lowercase(), keyword);
             }
         }
     }
@@ -447,10 +447,10 @@ pub(crate) fn has_prefix_lower(lower: &str) -> bool {
 /// truth for language codes. [`get_composite`] draws its vocabulary from here,
 /// so adding a code to the `Language` table (e.g. `FRE`) also teaches the
 /// composite recognizer `FreSub`/`FreDub`, with no second list to keep in sync.
-fn language_codes() -> &'static HashSet<String> {
-    static CODES: OnceLock<HashSet<String>> = OnceLock::new();
+fn language_codes() -> &'static FxSet<String> {
+    static CODES: OnceLock<FxSet<String>> = OnceLock::new();
     CODES.get_or_init(|| {
-        let mut set = HashSet::new();
+        let mut set = FxSet::default();
         for (kind, entries) in base_keywords() {
             if *kind != KeywordKind::Language {
                 continue;

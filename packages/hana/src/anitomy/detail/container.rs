@@ -5,7 +5,7 @@
 //! Port of `include/anitomy/detail/container.hpp`, expressed over `&[Token]`
 //! + index rather than generic iterators.
 
-use super::token::Token;
+use super::token::{is_free_token, Token, TokenKind};
 use crate::anitomy::element::ElementKind;
 
 /// Sets `tokens[idx].element_kind`, if `idx` is in bounds. Shared by the
@@ -39,6 +39,16 @@ pub(crate) fn find_next_token(
     let start = from.checked_add(1)?;
     let index_in_tail = tokens.get(start..)?.iter().position(pred)?;
     Some(start + index_in_tail)
+}
+
+pub(crate) fn isolated_free_number(tokens: &[Token], i: usize) -> Option<usize> {
+    let open = tokens.get(i)?;
+    let mid = tokens.get(i + 1)?;
+    let close = tokens.get(i + 2)?;
+    if open.kind != TokenKind::OpenBracket || close.kind != TokenKind::CloseBracket {
+        return None;
+    }
+    (is_free_token(mid) && mid.is_number).then_some(i + 1)
 }
 
 /// Index of the first token at or after `start` matching `pred`, or

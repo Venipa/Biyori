@@ -10,7 +10,9 @@ use regex::Regex;
 
 use crate::anitomy::detail::container::{find_next_token, mark};
 use crate::anitomy::detail::keyword::KeywordKind;
-use crate::anitomy::detail::token::{is_free_token, is_not_delimiter_token, is_numeric_token, Token};
+use crate::anitomy::detail::token::{
+    is_free_token, is_not_delimiter_token, is_numeric_token, Token,
+};
 use crate::anitomy::detail::util::byte_to_char_offset;
 use crate::anitomy::element::{Element, ElementKind};
 
@@ -21,8 +23,7 @@ fn is_volume_keyword(token: &Token) -> bool {
 /// Given the index of a token already matched as a single volume number
 /// (e.g. `1` in `Vol.1&2`), checks whether it's immediately followed by
 /// `&` and another numeric token, and if so returns that second token's
-/// index. `&` always tokenizes as its own delimiter token, so this can't
-/// be expressed as a single-token regex — see `multiple_volumes_pattern`.
+/// index. `&` always tokenizes as its own delimiter token.
 fn matching_ampersand_volume(tokens: &[Token], first_idx: usize) -> Option<usize> {
     let amp = tokens.get(first_idx + 1)?;
     if amp.value != "&" {
@@ -35,18 +36,9 @@ fn matching_ampersand_volume(tokens: &[Token], first_idx: usize) -> Option<usize
 /// `(\d{1,4})(?:[vV](\d))?`, full match.
 fn single_volume_pattern() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
-    RE.get_or_init(|| crate::anitomy::detail::regex_util::compile(r"^([0-9]{1,4})(?:[vV]([0-9]))?$"))
-}
-
-/// `(\d{1,4})&(\d{1,4})`, full match against a single token's value.
-/// Practically dead — like `parser::episode`'s equivalent-number pattern,
-/// `&` always tokenizes as its own delimiter token (see `tokenizer.rs`), so
-/// no single token's value can ever contain a literal `&`. Kept as a
-/// faithful translation regardless; `parse_volume` below separately handles
-/// `Vol.1&2` as a token window instead.
-fn multiple_volumes_pattern() -> &'static Regex {
-    static RE: OnceLock<Regex> = OnceLock::new();
-    RE.get_or_init(|| crate::anitomy::detail::regex_util::compile(r"^([0-9]{1,4})&([0-9]{1,4})$"))
+    RE.get_or_init(|| {
+        crate::anitomy::detail::regex_util::compile(r"^([0-9]{1,4})(?:[vV]([0-9]))?$")
+    })
 }
 
 pub(super) fn parse_volume(tokens: &mut [Token]) -> Vec<Element> {
@@ -94,25 +86,10 @@ pub(super) fn parse_volume(tokens: &mut [Token]) -> Vec<Element> {
                     elements.push(Element {
                         kind: ElementKind::Volume,
                         value: second.value.to_string(),
-                        position,
+                        position: second.position,
                     });
                     mark(tokens, second_idx, ElementKind::Volume);
                 }
-            }
-        } else if let Some(caps) = multiple_volumes_pattern().captures(value) {
-            mark(tokens, volume_idx, ElementKind::Volume);
-            mark(tokens, token_idx, ElementKind::Volume);
-            if let (Some(first), Some(second)) = (caps.get(1), caps.get(2)) {
-                elements.push(Element {
-                    kind: ElementKind::Volume,
-                    value: first.as_str().to_string(),
-                    position,
-                });
-                elements.push(Element {
-                    kind: ElementKind::Volume,
-                    value: second.as_str().to_string(),
-                    position,
-                });
             }
         }
 

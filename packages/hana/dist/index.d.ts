@@ -3,7 +3,6 @@ export type Candidate = {
 	names: string[];
 	episodes: number;
 	folder?: string;
-	status?: string;
 };
 
 export type ParseInput = {
@@ -72,6 +71,7 @@ export type FindEpisodeInput = {
 	threshold: number;
 	animeId?: number;
 	candidates?: Candidate[];
+	relations?: RelationRule[];
 };
 
 export type NowPlayingInput = {
@@ -89,6 +89,7 @@ export type NowPlaying = {
 	filePath: string | null;
 	url: string | null;
 	foreground: boolean;
+	browser?: boolean;
 };
 
 export declare class Hana {

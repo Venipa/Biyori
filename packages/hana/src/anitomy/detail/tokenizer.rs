@@ -175,15 +175,13 @@ fn take_keyword<'a>(
 
 /// Is the maximal text run at `start` shaped exactly like a CRC-32 checksum?
 fn is_checksum_run(chars: &[char], start: usize) -> bool {
-    let run = chars.iter().skip(start).take_while(|&&c| is_text_char(c));
-    let mut count = 0;
-    for c in run {
-        count += 1;
-        if count > 8 || !c.is_ascii_hexdigit() {
-            return false;
-        }
-    }
-    count == 8
+    crate::anitomy::detail::util::is_crc32_hex_run(
+        chars
+            .iter()
+            .skip(start)
+            .take_while(|&&c| is_text_char(c))
+            .copied(),
+    )
 }
 
 /// Matches a composite `<lang-code>+Sub/Dub` tag (e.g. `GerJapDub`) against the

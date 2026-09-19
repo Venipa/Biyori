@@ -10,7 +10,7 @@ use crate::anitomy::element::{Element, ElementKind};
 
 /// A CRC-32 checksum has 8 hexadecimal digits (e.g. `ABCD1234`).
 fn is_checksum(value: &str) -> bool {
-    value.chars().count() == 8 && value.chars().all(|c| c.is_ascii_hexdigit())
+    crate::anitomy::detail::util::is_crc32_hex(value)
 }
 
 pub(super) fn parse_file_checksum(tokens: &mut [Token]) -> Option<Element> {
