@@ -60,7 +60,7 @@ export function torrentRowsFromHits(feed: RssEntry[], hits: RecognizeHit[], cand
 		const batch = range.low != null && range.high != null && range.high !== range.low;
 		const hop = !batch && hit?.episode != null;
 		let match = hit?.animeId != null ? (matchById(hit.animeId, candidates) ?? null) : null;
-		if (batch && hit?.episode != null && (hit.episode < range.low || hit.episode > range.high)) {
+		if (range.low != null && range.high != null && range.high !== range.low && hit?.episode != null && (hit.episode < range.low || hit.episode > range.high)) {
 			match = null;
 		}
 		const episode = hop ? hit.episode : range.high;

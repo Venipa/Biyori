@@ -148,8 +148,8 @@ function TorrentInfoDialog({
 	const releaseFacts = row?.parse ?? [];
 	return (
 		<Dialog open={row != null} onOpenChange={onOpenChange}>
-			<DialogContent className='flex max-h-[min(90vh,40rem)] min-w-0 flex-col overflow-hidden sm:max-w-lg' showCloseButton>
-				<DialogHeader className='min-w-0 shrink-0'>
+			<DialogContent className='flex max-h-[min(90vh,40rem)] min-w-0 flex-col overflow-hidden px-0 pb-0 sm:max-w-lg' showCloseButton>
+				<DialogHeader className='min-w-0 shrink-0 px-4'>
 					<DialogTitle className='pr-8 leading-snug break-all' title={row?.title}>
 						{row?.title ?? "Torrent"}
 					</DialogTitle>
@@ -173,63 +173,65 @@ function TorrentInfoDialog({
 						) : null}
 					</DialogDescription>
 				</DialogHeader>
-				<ScrollArea className='min-h-0 flex-1 overflow-hidden' viewportClassName='flex min-h-0 flex-col gap-4 pr-2'>
-					{matched && row?.animeId != null ? (
-						<div className='flex min-w-0 flex-col gap-1.5'>
-							<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Anime</p>
-							<Button
-								type='button'
-								variant='outline'
-								className='h-auto w-full min-w-0 items-center justify-start gap-3 overflow-hidden px-2 py-2 text-left font-normal whitespace-normal'
-								onClick={() => {
-									if (row.animeId == null) {
-										return;
-									}
-									onViewAnime(row.animeId);
-								}}>
-								<AnimeCover
-									id={row.animeId}
-									coverUrl={row.coverUrl || undefined}
-									alt=''
-									lazy
-									width={40}
-									height={60}
-									className='aspect-2/3 w-10 shrink-0 overflow-hidden rounded-md bg-muted'
-								/>
-								<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
-									<span className='flex min-w-0 items-center gap-2'>
-										<AiringStatusMark status={row.airingStatus || null} shape='dot' />
-										<span className='min-w-0 truncate text-sm font-medium' title={row.animeTitle}>
-											{row.animeTitle}
+				<ScrollArea className='h-[min(calc(90vh-11rem),28rem)] max-h-[min(calc(90vh-11rem),28rem)] min-h-0 overflow-hidden' viewportClassName='h-full overflow-y-auto'>
+					<div className='flex min-w-0 flex-col gap-4 px-4 pb-4'>
+						{matched && row?.animeId != null ? (
+							<div className='flex min-w-0 flex-col gap-1.5'>
+								<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Anime</p>
+								<Button
+									type='button'
+									variant='outline'
+									className='h-auto w-full min-w-0 items-center justify-start gap-3 overflow-hidden px-2 py-2 text-left font-normal whitespace-normal'
+									onClick={() => {
+										if (row.animeId == null) {
+											return;
+										}
+										onViewAnime(row.animeId);
+									}}>
+									<AnimeCover
+										id={row.animeId}
+										coverUrl={row.coverUrl || undefined}
+										alt=''
+										lazy
+										width={40}
+										height={60}
+										className='aspect-2/3 w-10 shrink-0 overflow-hidden rounded-md bg-muted'
+									/>
+									<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
+										<span className='flex min-w-0 items-center gap-2'>
+											<AiringStatusMark status={row.airingStatus || null} shape='dot' />
+											<span className='min-w-0 truncate text-sm font-medium' title={row.animeTitle}>
+												{row.animeTitle}
+											</span>
+										</span>
+										<span className='truncate text-xs text-muted-foreground'>
+											{row.episode != null ? `Episode ${row.episode}` : "Episode unknown"}
+											{row.group ? ` · ${row.group}` : ""}
+											{row.videoFormat ? ` · ${row.videoFormat}` : ""}
 										</span>
 									</span>
-									<span className='truncate text-xs text-muted-foreground'>
-										{row.episode != null ? `Episode ${row.episode}` : "Episode unknown"}
-										{row.group ? ` · ${row.group}` : ""}
-										{row.videoFormat ? ` · ${row.videoFormat}` : ""}
-									</span>
-								</span>
-							</Button>
-						</div>
-					) : (
-						<Empty className='border border-dashed p-4'>
-							<EmptyHeader>
-								<EmptyMedia variant='icon'>
-									<CircleHelpIcon />
-								</EmptyMedia>
-								<EmptyTitle>Unknown anime detected</EmptyTitle>
-								<EmptyDescription>This release is not on your list.</EmptyDescription>
-							</EmptyHeader>
-						</Empty>
-					)}
-					{releaseFacts.length ? (
-						<div className='flex min-w-0 flex-col gap-1.5'>
-							<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Release</p>
-							<FactList facts={releaseFacts} />
-						</div>
-					) : null}
+								</Button>
+							</div>
+						) : (
+							<Empty className='border border-dashed p-4'>
+								<EmptyHeader>
+									<EmptyMedia variant='icon'>
+										<CircleHelpIcon />
+									</EmptyMedia>
+									<EmptyTitle>Unknown anime detected</EmptyTitle>
+									<EmptyDescription>This release is not on your list.</EmptyDescription>
+								</EmptyHeader>
+							</Empty>
+						)}
+						{releaseFacts.length ? (
+							<div className='flex min-w-0 flex-col gap-1.5'>
+								<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Release</p>
+								<FactList facts={releaseFacts} />
+							</div>
+						) : null}
+					</div>
 				</ScrollArea>
-				<DialogFooter className='-mx-4 -mb-4 shrink-0 sm:justify-between'>
+				<DialogFooter className='shrink-0 sm:justify-between'>
 					<Button
 						type='button'
 						disabled={!row?.link}

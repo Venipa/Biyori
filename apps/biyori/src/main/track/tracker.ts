@@ -525,20 +525,19 @@ export async function restartTracker(): Promise<void> {
 	if (!db) {
 		return;
 	}
+	const database = db;
 	const settings = loadAppSettings();
 	const interval = Math.max(1, settings.mediaDetectionInterval) * 1000;
 	startTimer = setTimeout(() => {
 		startTimer = null;
 		void (async () => {
-			await refreshRelations(db);
+			await refreshRelations(database);
 			await tick();
 			pollTimer = setInterval(() => {
 				void tick();
 			}, interval);
 			flushTimer = setInterval(() => {
-				if (db) {
-					void refreshRelations(db);
-				}
+				void refreshRelations(database);
 			}, 60_000);
 		})();
 	}, TRACKER_START_DELAY_MS);
