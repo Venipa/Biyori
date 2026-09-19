@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
-import { TORRENT_RELEASE_FEEDS, TORRENT_SEARCH_FEEDS } from "@/lib/torrent-feeds";
+import { TORRENT_RELEASE_FEEDS, TORRENT_SEARCH_FEEDS, torrentSearchUrlForFeed } from "@/lib/torrent-feeds";
 import { EditableSelect } from "@/mainview/components/editable-select";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
 import { SettingsFieldError } from "@/mainview/components/settings/settings-field-error";
@@ -54,7 +54,10 @@ export function TorrentsGeneralPanel() {
 							<EditableSelect
 								id={rssId}
 								value={typeof field.value === "string" ? field.value : ""}
-								onChange={field.onChange}
+								onChange={(next) => {
+									field.onChange(next);
+									form.setValue("rssSearchUrl", torrentSearchUrlForFeed(next), { shouldDirty: true });
+								}}
 								options={TORRENT_RELEASE_FEEDS}
 								invalid={fieldState.invalid}
 							/>

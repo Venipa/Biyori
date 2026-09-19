@@ -502,7 +502,6 @@ export async function chooseNowPlayingMatch(animeId: number): Promise<void> {
 
 export function initTracker(database: DatabaseClient): void {
 	db = database;
-	void refreshRelations(database);
 	initQueueFlush(database);
 	void restartTracker();
 	subscribeSettings(() => {
@@ -530,14 +529,17 @@ export async function restartTracker(): Promise<void> {
 	const interval = Math.max(1, settings.mediaDetectionInterval) * 1000;
 	startTimer = setTimeout(() => {
 		startTimer = null;
-		void tick();
-		pollTimer = setInterval(() => {
-			void tick();
-		}, interval);
-		flushTimer = setInterval(() => {
-			if (db) {
-				void refreshRelations(db);
-			}
-		}, 60_000);
+		void (async () => {
+			await refreshRelations(db);
+			await tick();
+			pollTimer = setInterval(() => {
+				void tick();
+			}, interval);
+			flushTimer = setInterval(() => {
+				if (db) {
+					void refreshRelations(db);
+				}
+			}, 60_000);
+		})();
 	}, TRACKER_START_DELAY_MS);
 }

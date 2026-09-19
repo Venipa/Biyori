@@ -1,5 +1,6 @@
 use crate::anitomy::{parse, parse_path, Element, ElementKind, Options};
-use crate::types::Parsed;
+use crate::identify::match_candidates;
+use crate::types::{Candidate, Parsed, RecognizeHit, RelationRule};
 
 pub fn player_markers() -> impl Iterator<Item = &'static str> {
 	include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../parser/player-markers.txt"))
@@ -207,6 +208,33 @@ pub fn parse_together_query(input: &crate::types::ParseTogetherInput) -> Vec<Opt
 		.collect()
 }
 
+pub fn recognize_filenames(
+	titles: &[String],
+	ignored: &[String],
+	candidates: &[Candidate],
+	rules: &[RelationRule],
+) -> Vec<RecognizeHit> {
+	titles
+		.iter()
+		.map(|title| {
+			let text = apply_ignored(title, ignored);
+			let Some(raw) = parse_filename(&text).or_else(|| parse_file_path(&text)) else {
+				return RecognizeHit {
+					parsed: None,
+					anime_id: None,
+					episode: None,
+				};
+			};
+			let hit = match_candidates(&raw, candidates, None, rules);
+			RecognizeHit {
+				parsed: Some(to_parse_result(raw)),
+				anime_id: hit.map(|(id, _)| id),
+				episode: hit.map(|(_, episode)| episode),
+			}
+		})
+		.collect()
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -380,5 +408,24 @@ mod tests {
 				.unwrap_or_else(|_| panic!("parse_together panicked on {input:?}"));
 		}
 		assert!(crate::anitomy::parse_together(&[], options).is_empty());
+	}
+
+	#[test]
+	fn recognize_filenames_keeps_order_and_matches() {
+		let titles = vec![
+			"[Sub] Show - 08 [1080p].mkv".into(),
+			"not-a-real-title-zzzz".into(),
+		];
+		let candidates = [crate::types::Candidate {
+			id: 9,
+			names: vec!["show".into()],
+			episodes: 12,
+			folder: None,
+		}];
+		let hits = recognize_filenames(&titles, &[], &candidates, &[]);
+		assert_eq!(hits.len(), 2);
+		assert_eq!(hits[0].parsed.as_ref().map(|item| item.episode), Some(Some(8)));
+		assert_eq!(hits[0].anime_id, Some(9));
+		assert_eq!(hits[1].anime_id, None);
 	}
 }

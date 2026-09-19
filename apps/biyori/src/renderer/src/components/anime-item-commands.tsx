@@ -143,6 +143,11 @@ export function AnimeItemCommands({
 	const playEpisode = trpc.library.playEpisode.useMutation();
 	const playNext = trpc.library.playNext.useMutation();
 	const playRandom = trpc.library.playRandom.useMutation();
+	const searchTorrents = trpc.torrents.search.useMutation({
+		onSuccess: (next) => {
+			utils.torrents.list.setData(undefined, next);
+		},
+	});
 	const addFromSearch = trpc.anilist.addFromSearch.useMutation({
 		onSuccess: (_data, variables) => {
 			void invalidateAnimeQueries(utils, "added", variables.mediaId);
@@ -162,6 +167,15 @@ export function AnimeItemCommands({
 	const matchedList = listLookup.data?.find((row) => row.id === discover?.id);
 	const matchedStatus = matchedList ? listStatusSchema.safeParse(matchedList.status) : null;
 	const discoverStatus = discover?.listStatus ?? (matchedStatus?.success ? matchedStatus.data : null);
+
+	function openTorrentSearch(): void {
+		if (!title) {
+			return;
+		}
+		void searchTorrents.mutateAsync({ title }).then(() => {
+			void navigate({ to: "/app/torrents" });
+		});
+	}
 
 	function openExternal(kind: (typeof externalItems)[number]["kind"]): void {
 		const url = externalUrl(kind, title, id, trailerId);
@@ -212,13 +226,7 @@ export function AnimeItemCommands({
 					}}>
 					Search
 				</Item>
-				<Item
-					disabled={disabled || !title}
-					onClick={() => {
-						void navigate({
-							to: "/app/torrents",
-						});
-					}}>
+				<Item disabled={disabled || !title} onClick={openTorrentSearch}>
 					Search torrents
 				</Item>
 				{onEdit ? (
@@ -486,13 +494,7 @@ export function AnimeItemCommands({
 				</>
 			) : null}
 
-			<Item
-				disabled={disabled || !title}
-				onClick={() => {
-					void navigate({
-						to: "/app/torrents",
-					});
-				}}>
+			<Item disabled={disabled || !title} onClick={openTorrentSearch}>
 				Torrents
 			</Item>
 

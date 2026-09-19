@@ -70,7 +70,7 @@ function MarkdownBodyReady({ className, Content }: { className?: string; Content
 	}, []);
 
 	return (
-		<div ref={rootRef} className={cn("flex flex-col gap-1", className)}>
+		<div ref={rootRef} className={cn("flex min-w-0 flex-col gap-1 break-words", className)}>
 			<Content components={mdxComponents} />
 		</div>
 	);

@@ -107,6 +107,19 @@ export type MatchHit = {
 	episode: number;
 };
 
+export type RecognizeInput = {
+	titles: string[];
+	ignored?: string[];
+	candidates: Candidate[];
+	relations?: RelationRule[];
+};
+
+export type RecognizeHit = {
+	parsed: ParseResult | null;
+	animeId: number | null;
+	episode: number | null;
+};
+
 export declare class Hana {
 	parse(input: ParseInput): Promise<ParseResult | null>;
 	parseTogether(input: ParseTogetherInput): Promise<(ParseResult | null)[]>;
@@ -114,6 +127,7 @@ export declare class Hana {
 	findEpisode(input: FindEpisodeInput): Promise<string | null>;
 	nowPlaying(input: NowPlayingInput): Promise<NowPlaying | null>;
 	match(input: MatchInput): Promise<MatchHit | null>;
+	recognize(input: RecognizeInput): Promise<RecognizeHit[]>;
 	dispose(): Promise<void>;
 }
 

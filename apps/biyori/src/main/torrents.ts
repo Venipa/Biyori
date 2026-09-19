@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { asc, count, inArray } from "drizzle-orm";
 import { shell } from "electron";
 import type { AppSettings } from "../lib/schemas/app-settings";
-import { fillTorrentSearchUrl } from "../lib/torrent-feeds";
+import { fillTorrentSearchUrl, torrentSearchUrlForFeed } from "../lib/torrent-feeds";
 import { pushNotice } from "./activity";
 import type { DatabaseClient } from "./db";
 import { episodeFile, torrentArchive } from "./db/schema";
@@ -21,11 +21,12 @@ import {
 	type TorrentFilterItem,
 	type TorrentFilterSubject,
 } from "./torrents/filter";
-import { getTorrentParseWorker } from "./torrents/parse-client";
-import type { ParsedTorrentRow } from "./torrents/parse-worker";
 import { parseRssItems } from "./torrents/rss";
 import { isTorrentPayload } from "./torrents/torrent-payload";
-import { loadCandidates, matchById } from "./track/match";
+import { type ParsedTorrentRow, torrentRowsFromHits } from "./torrents/torrent-rows";
+import { hana } from "./track/hana-client";
+import { loadCandidates, matchById, toHanaCandidates } from "./track/match";
+import { refreshRelations, toHanaRelations } from "./track/relations";
 import type { MatchedAnime } from "./track/types";
 
 export type TorrentItem = {
@@ -37,6 +38,7 @@ export type TorrentItem = {
 	seenAt: string;
 	animeId: number | null;
 	animeTitle: string;
+	coverUrl: string;
 	airingStatus: string;
 	episode: number | null;
 	group: string;
@@ -48,6 +50,7 @@ export type TorrentItem = {
 	description: string;
 	filename: string;
 	pubDate: string;
+	parse: ParsedTorrentRow["parse"];
 	state: TorrentFilterItem["state"];
 	newEpisode: boolean;
 };
@@ -171,6 +174,7 @@ function toTorrentItem(row: ParsedTorrentRow, seenAt: string, state: TorrentItem
 		seenAt,
 		animeId: match?.id ?? null,
 		animeTitle: match?.title || row.parsedTitle || row.entry.title,
+		coverUrl: match?.coverUrl ?? "",
 		airingStatus: match?.airingStatus ?? "",
 		episode: row.episode,
 		group: row.group,
@@ -182,6 +186,7 @@ function toTorrentItem(row: ParsedTorrentRow, seenAt: string, state: TorrentItem
 		description: row.entry.description,
 		filename: row.filename,
 		pubDate: row.entry.pubDate,
+		parse: row.parse ?? [],
 		state,
 		newEpisode,
 	};
@@ -330,10 +335,14 @@ async function ingestFeed(database: DatabaseClient, feedUrl: string, force: bool
 	const xml = await response.text();
 	const candidates = await loadCandidates(database);
 	const available = await loadAvailableEpisodes(database);
-	const rows = await getTorrentParseWorker().invoke.parseFeed({
-		xml,
-		candidates,
+	await refreshRelations(database);
+	const feed = parseRssItems(xml);
+	const hits = await hana.recognize({
+		titles: feed.map((entry) => entry.title),
+		candidates: toHanaCandidates(candidates),
+		relations: toHanaRelations(),
 	});
+	const rows = torrentRowsFromHits(feed, hits, candidates);
 	const existingArchive = await database
 		.select({
 			guid: torrentArchive.guid,
@@ -429,7 +438,7 @@ export async function checkTorrents(database: DatabaseClient = requiredDb(), for
 
 export async function searchTorrents(title: string, database: DatabaseClient = requiredDb()): Promise<TorrentItem[]> {
 	const settings = loadAppSettings();
-	const template = settings.rssSearchUrl.trim() || settings.rssFeedUrl.trim();
+	const template = settings.rssSearchUrl.trim() || torrentSearchUrlForFeed(settings.rssFeedUrl) || settings.rssFeedUrl.trim();
 	if (!template) {
 		return getTorrentItems();
 	}
@@ -481,6 +490,7 @@ export async function preferFansubFilter(animeId: number, group: string, title: 
 
 export function initTorrents(database: DatabaseClient): void {
 	db = database;
+	let lastRssFeedUrl = loadAppSettings().rssFeedUrl;
 	void restartTorrentPoll();
 	const refreshView = (): void => {
 		void applyTorrentView(database).catch(() => {
@@ -488,8 +498,15 @@ export function initTorrents(database: DatabaseClient): void {
 		});
 	};
 	subscribeSettings(() => {
+		const settings = loadAppSettings();
 		refreshView();
 		void restartTorrentPoll();
+		if (settings.rssFeedUrl !== lastRssFeedUrl) {
+			lastRssFeedUrl = settings.rssFeedUrl;
+			void checkTorrents(database, true).catch(() => {
+				/* ignore */
+			});
+		}
 	});
 	subscribeFilters(refreshView);
 }

@@ -41,8 +41,25 @@ export const TORRENT_SEARCH_FEEDS: TorrentFeedOption[] = [
 	},
 ];
 
+export function torrentSearchUrlForFeed(rssFeedUrl: string): string {
+	const release = TORRENT_RELEASE_FEEDS.find((option) => option.value === rssFeedUrl);
+	if (!release) {
+		return "";
+	}
+	return TORRENT_SEARCH_FEEDS.find((option) => option.label === release.label)?.value ?? "";
+}
+
 export function fillTorrentSearchUrl(template: string, title: string): string {
-	return template.replace(/%title%/g, encodeURIComponent(title));
+	if (template.includes("%title%")) {
+		return template.replace(/%title%/g, encodeURIComponent(title));
+	}
+	try {
+		const url = new URL(template);
+		url.searchParams.set("q", title);
+		return url.toString();
+	} catch {
+		return template;
+	}
 }
 
 function isHttpUrl(value: string): boolean {

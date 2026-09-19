@@ -1,10 +1,10 @@
 use crate::detect::now_playing;
 use crate::identify::match_candidates;
-use crate::parse::{parse_query, parse_together_query, player_markers};
+use crate::parse::{parse_query, parse_together_query, player_markers, recognize_filenames};
 use crate::scan::{find_episode, scan_library};
 use crate::types::{
 	FindEpisodeInput, MatchHit, MatchInput, NowPlaying, NowPlayingInput, ParseInput, Parsed, ParseTogetherInput,
-	ScanInput, ScanProgress, ScanResult,
+	RecognizeHit, RecognizeInput, ScanInput, ScanProgress, ScanResult,
 };
 use napi::bindgen_prelude::*;
 use napi::threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode};
@@ -192,6 +192,34 @@ impl Task for MatchTask {
 #[napi(js_name = "match")]
 pub fn match_js(input: MatchInput) -> AsyncTask<MatchTask> {
 	AsyncTask::new(MatchTask { input })
+}
+
+pub struct RecognizeTask {
+	input: RecognizeInput,
+}
+
+#[napi]
+impl Task for RecognizeTask {
+	type Output = Vec<RecognizeHit>;
+	type JsValue = Vec<RecognizeHit>;
+
+	fn compute(&mut self) -> Result<Self::Output> {
+		let input = self.input.clone();
+		panic_to_err(move || {
+			let ignored = input.ignored.as_deref().unwrap_or(&[]);
+			let relations = input.relations.as_deref().unwrap_or(&[]);
+			recognize_filenames(&input.titles, ignored, &input.candidates, relations)
+		})
+	}
+
+	fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+		Ok(output)
+	}
+}
+
+#[napi(js_name = "recognize")]
+pub fn recognize_js(input: RecognizeInput) -> AsyncTask<RecognizeTask> {
+	AsyncTask::new(RecognizeTask { input })
 }
 
 #[napi]

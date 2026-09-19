@@ -1,11 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type ColumnDef, getCoreRowModel, getSortedRowModel, type RowSelectionState, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
-import { type ReactElement, type ReactNode, useEffect, useState } from "react";
+import { CircleHelpIcon, DownloadIcon, ExternalLinkIcon } from "lucide-react";
+import { type ReactElement, type ReactNode, useEffect, useRef, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import { desktopRpc } from "@/desktop-rpc";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
+import { AnimeCover } from "@/mainview/components/anime-cover";
 import { DataTable, resizableTableOptions } from "@/mainview/components/data-table";
+import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
 import {
@@ -18,7 +21,8 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
-import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/mainview/components/ui/dialog";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/mainview/components/ui/empty";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
@@ -113,6 +117,149 @@ function TorrentToolbar({ children }: { children?: ReactNode }): ReactElement {
 	);
 }
 
+function FactList({ facts }: { facts: Array<{ label: string; value: string }> }): ReactElement | null {
+	if (facts.length === 0) {
+		return null;
+	}
+	return (
+		<div className='min-w-0 w-full text-sm'>
+			{facts.map((fact) => (
+				<div key={fact.label} className='flex min-w-0 gap-3 border-b border-border/60 py-1 last:border-0'>
+					<div className='w-24 shrink-0 font-medium text-muted-foreground'>{fact.label}</div>
+					<div className='min-w-0 flex-1 break-all'>{fact.value}</div>
+				</div>
+			))}
+		</div>
+	);
+}
+
+function TorrentInfoDialog({
+	row,
+	onOpenChange,
+	onDownload,
+	onViewAnime,
+}: {
+	row: TorrentRow | null;
+	onOpenChange: (open: boolean) => void;
+	onDownload: (row: TorrentRow) => void;
+	onViewAnime: (id: number) => void;
+}): ReactElement {
+	const matched = Boolean(row?.matched && row.animeId != null);
+	const releaseFacts = row?.parse ?? [];
+	return (
+		<Dialog open={row != null} onOpenChange={onOpenChange}>
+			<DialogContent className='flex max-h-[min(90vh,40rem)] min-w-0 flex-col overflow-hidden sm:max-w-lg' showCloseButton>
+				<DialogHeader className='min-w-0 shrink-0'>
+					<DialogTitle className='pr-8 leading-snug break-all' title={row?.title}>
+						{row?.title ?? "Torrent"}
+					</DialogTitle>
+					<DialogDescription className='flex min-w-0 flex-wrap items-center gap-1 text-xs'>
+						<Badge variant='ghost' className='h-5 px-1 py-0 text-xs tabular-nums text-muted-foreground'>
+							{row?.size || "Unknown size"}
+						</Badge>
+						<Badge variant='ghost' className='h-5 bg-emerald-500/10 px-1 py-0 text-xs tabular-nums text-emerald-700 dark:text-emerald-400'>
+							S {countLabel(row?.seeders ?? null)}
+						</Badge>
+						<Badge variant='ghost' className='h-5 bg-amber-500/10 px-1 py-0 text-xs tabular-nums text-amber-700 dark:text-amber-400'>
+							L {countLabel(row?.leechers ?? null)}
+						</Badge>
+						<Badge variant='ghost' className='h-5 bg-sky-500/10 px-1 py-0 text-xs tabular-nums text-sky-700 dark:text-sky-400'>
+							D {countLabel(row?.downloads ?? null)}
+						</Badge>
+						{row?.pubDate ? (
+							<Badge variant='ghost' className='h-5 px-1 py-0 text-xs tabular-nums text-muted-foreground'>
+								{formatLocalDateTime(row.pubDate)}
+							</Badge>
+						) : null}
+					</DialogDescription>
+				</DialogHeader>
+				<ScrollArea className='min-h-0 flex-1 overflow-hidden' viewportClassName='flex min-h-0 flex-col gap-4 pr-2'>
+					{matched && row?.animeId != null ? (
+						<div className='flex min-w-0 flex-col gap-1.5'>
+							<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Anime</p>
+							<Button
+								type='button'
+								variant='outline'
+								className='h-auto w-full min-w-0 items-center justify-start gap-3 overflow-hidden px-2 py-2 text-left font-normal whitespace-normal'
+								onClick={() => {
+									if (row.animeId == null) {
+										return;
+									}
+									onViewAnime(row.animeId);
+								}}>
+								<AnimeCover
+									id={row.animeId}
+									coverUrl={row.coverUrl || undefined}
+									alt=''
+									lazy
+									width={40}
+									height={60}
+									className='aspect-2/3 w-10 shrink-0 overflow-hidden rounded-md bg-muted'
+								/>
+								<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
+									<span className='flex min-w-0 items-center gap-2'>
+										<AiringStatusMark status={row.airingStatus || null} shape='dot' />
+										<span className='min-w-0 truncate text-sm font-medium' title={row.animeTitle}>
+											{row.animeTitle}
+										</span>
+									</span>
+									<span className='truncate text-xs text-muted-foreground'>
+										{row.episode != null ? `Episode ${row.episode}` : "Episode unknown"}
+										{row.group ? ` · ${row.group}` : ""}
+										{row.videoFormat ? ` · ${row.videoFormat}` : ""}
+									</span>
+								</span>
+							</Button>
+						</div>
+					) : (
+						<Empty className='border border-dashed p-4'>
+							<EmptyHeader>
+								<EmptyMedia variant='icon'>
+									<CircleHelpIcon />
+								</EmptyMedia>
+								<EmptyTitle>Unknown anime detected</EmptyTitle>
+								<EmptyDescription>This release is not on your list.</EmptyDescription>
+							</EmptyHeader>
+						</Empty>
+					)}
+					{releaseFacts.length ? (
+						<div className='flex min-w-0 flex-col gap-1.5'>
+							<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Release</p>
+							<FactList facts={releaseFacts} />
+						</div>
+					) : null}
+				</ScrollArea>
+				<DialogFooter className='-mx-4 -mb-4 shrink-0 sm:justify-between'>
+					<Button
+						type='button'
+						disabled={!row?.link}
+						onClick={() => {
+							if (row) {
+								onDownload(row);
+							}
+						}}>
+						<DownloadIcon data-icon='inline-start' />
+						Download
+					</Button>
+					<Button
+						type='button'
+						variant='outline'
+						disabled={!row?.infoLink}
+						onClick={() => {
+							if (!row?.infoLink) {
+								return;
+							}
+							void desktopRpc.request.openExternal({ url: row.infoLink });
+						}}>
+						Torrent Post
+						<ExternalLinkIcon data-icon='inline-end' />
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
 function TorrentsPage(): ReactElement {
 	const query = trpc.torrents.list.useQuery();
 	const utils = trpc.useUtils();
@@ -131,7 +278,7 @@ function TorrentsPage(): ReactElement {
 				</TorrentToolbar>
 			) : null}
 			{query.isPending && items.length === 0 ? (
-				<TableRowsSkeleton columnCount={12} headers={["", "Anime title", "Episode", "Group", "Size", "Video", "S", "L", "D", "Description", "Filename", "Release date"]} />
+				<TableRowsSkeleton columnCount={11} headers={["", "Anime title", "Episode", "Group", "Size", "Video", "S", "L", "D", "Filename", "Release date"]} />
 			) : null}
 			{items.length === 0 && !query.isLoading ? (
 				<Empty>
@@ -179,7 +326,17 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>(() => selectionFrom(items));
 	const [menuRow, setMenuRow] = useState<TorrentRow | null>(null);
+	const [infoRow, setInfoRow] = useState<TorrentRow | null>(null);
+	const rowClickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const { columnSizing, onColumnSizingChange } = usePersistedColumnSizing("torrents");
+
+	useEffect(() => {
+		return () => {
+			if (rowClickTimer.current != null) {
+				clearTimeout(rowClickTimer.current);
+			}
+		};
+	}, []);
 
 	const columns: ColumnDef<TorrentRow>[] = [
 		{
@@ -206,6 +363,12 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 						row.toggleSelected(Boolean(checked));
 					}}
 					onClick={(event) => {
+						event.stopPropagation();
+					}}
+					onDoubleClick={(event) => {
+						event.stopPropagation();
+					}}
+					onPointerDown={(event) => {
 						event.stopPropagation();
 					}}
 				/>
@@ -270,15 +433,6 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 			cell: ({ row }) => <span className='tabular-nums'>{countLabel(row.original.downloads)}</span>,
 		},
 		{
-			accessorKey: "description",
-			header: "Description",
-			cell: ({ row }) => (
-				<span className='block max-w-56 truncate text-muted-foreground' title={row.original.description}>
-					{row.original.description || "-"}
-				</span>
-			),
-		},
-		{
 			accessorKey: "filename",
 			header: "Filename",
 			cell: ({ row }) => (
@@ -310,6 +464,25 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 
 	const selected = table.getSelectedRowModel().rows;
 	const menuOnList = Boolean(menuRow?.matched && menuRow.animeId != null);
+
+	function clearRowClickTimer(): void {
+		if (rowClickTimer.current == null) {
+			return;
+		}
+		clearTimeout(rowClickTimer.current);
+		rowClickTimer.current = null;
+	}
+
+	function openTorrentInfo(row: TorrentRow): void {
+		setInfoRow(row);
+	}
+
+	function downloadTorrent(row: TorrentRow): void {
+		if (!row.link) {
+			return;
+		}
+		void download.mutateAsync({ guid: row.guid });
+	}
 
 	return (
 		<div className='flex h-full min-h-0 flex-col'>
@@ -356,8 +529,20 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 											!row.original.matched &&
 											"text-muted-foreground **:text-muted-foreground! [&_.text-blue-400]:text-muted-foreground! [&_.text-blue-600]:text-muted-foreground! [&_.text-primary]:text-muted-foreground!",
 									)}
-									onClick={() => {
-										row.toggleSelected();
+									onClick={(event) => {
+										if (event.detail > 1) {
+											return;
+										}
+										clearRowClickTimer();
+										const item = row.original;
+										rowClickTimer.current = setTimeout(() => {
+											rowClickTimer.current = null;
+											openTorrentInfo(item);
+										}, 250);
+									}}
+									onDoubleClick={() => {
+										clearRowClickTimer();
+										downloadTorrent(row.original);
 									}}
 									onContextMenu={() => {
 										setMenuRow(row.original);
@@ -375,7 +560,7 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 								if (!menuRow) {
 									return;
 								}
-								void download.mutateAsync({ guid: menuRow.guid });
+								downloadTorrent(menuRow);
 							}}>
 							Download torrent
 						</ContextMenuItem>
@@ -390,14 +575,12 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 							View anime information
 						</ContextMenuItem>
 						<ContextMenuItem
-							disabled={!menuRow?.infoLink}
+							disabled={!menuRow}
 							onClick={() => {
-								if (!menuRow?.infoLink) {
+								if (!menuRow) {
 									return;
 								}
-								void desktopRpc.request.openExternal({
-									url: menuRow.infoLink,
-								});
+								openTorrentInfo(menuRow);
 							}}>
 							View torrent information
 						</ContextMenuItem>
@@ -471,6 +654,18 @@ function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 					</ContextMenuContent>
 				</ContextMenu>
 			</ScrollArea>
+			<TorrentInfoDialog
+				row={infoRow}
+				onOpenChange={(open) => {
+					if (!open) {
+						setInfoRow(null);
+					}
+				}}
+				onDownload={downloadTorrent}
+				onViewAnime={(id) => {
+					animeInfo.open({ id, infoTab: "main" });
+				}}
+			/>
 		</div>
 	);
 }

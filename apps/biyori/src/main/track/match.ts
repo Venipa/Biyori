@@ -6,7 +6,7 @@ import { anime, listEntry } from "../db/schema";
 import { type Candidate, namesFrom } from "./match-core";
 
 export type { Candidate } from "./match-core";
-export { matchById, matchParsed, matchTitle, namesFrom, relationHopCandidates, similarParsed, suggestTitles } from "./match-core";
+export { matchById, namesFrom, similarParsed, suggestTitles } from "./match-core";
 
 export function toHanaCandidates(candidates: Candidate[]) {
 	return candidates.map((candidate) => ({

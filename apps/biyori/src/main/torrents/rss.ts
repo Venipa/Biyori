@@ -51,7 +51,7 @@ function decodeXml(value: string): string {
 		.replace(/&#39;/g, "'");
 }
 
-function stripHtml(value: string): string {
+function stripTags(value: string): string {
 	return value
 		.replace(/<[^>]+>/g, " ")
 		.replace(/\s+/g, " ")
@@ -134,7 +134,7 @@ export function parseRssItems(xml: string): RssEntry[] {
 				seeders: parseIntSafe(firstTag(block, ["nyaa:seeders", "seeders", "torrent:seeds"])),
 				leechers: parseIntSafe(firstTag(block, ["nyaa:leechers", "leechers", "torrent:peers"])),
 				downloads: parseIntSafe(firstTag(block, ["nyaa:downloads", "downloads"])),
-				description: stripHtml(tagValue(block, "description")),
+				description: stripTags(tagValue(block, "description")),
 				pubDate: tagValue(block, "pubDate") || tagValue(block, "pubdate"),
 			},
 		];

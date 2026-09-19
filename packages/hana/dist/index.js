@@ -97,6 +97,14 @@ class Hana {
 		}
 	}
 
+	async recognize(input) {
+		try {
+			return await binding().recognize(input);
+		} catch (error) {
+			throw toError(error);
+		}
+	}
+
 	async dispose() {}
 }
 

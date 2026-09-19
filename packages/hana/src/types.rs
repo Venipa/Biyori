@@ -163,3 +163,21 @@ pub struct MatchHit {
 	pub anime_id: i64,
 	pub episode: i32,
 }
+
+#[napi(object)]
+#[derive(Debug, Clone)]
+pub struct RecognizeInput {
+	pub titles: Vec<String>,
+	pub ignored: Option<Vec<String>>,
+	pub candidates: Vec<Candidate>,
+	pub relations: Option<Vec<RelationRule>>,
+}
+
+#[napi(object)]
+#[derive(Debug, Clone)]
+pub struct RecognizeHit {
+	pub parsed: Option<Parsed>,
+	#[napi(js_name = "animeId")]
+	pub anime_id: Option<i64>,
+	pub episode: Option<i32>,
+}

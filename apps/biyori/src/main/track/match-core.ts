@@ -1,5 +1,5 @@
 import type { TitleParts } from "@biyori/recognition";
-import { matchParsed as matchParsedFilename, normalizeTitle, rankParsed, rankTitles, matchTitle as scoreTitle } from "@biyori/recognition";
+import { normalizeTitle, rankParsed, rankTitles } from "@biyori/recognition";
 import type { StoredAnimeTitles } from "../../lib/anime-titles";
 import { splitTitleList } from "../../lib/split-title-list";
 import type { MatchedAnime, SimilarTitle } from "./types";
@@ -76,35 +76,9 @@ function toMatch(candidate: Candidate): MatchedAnime {
 	};
 }
 
-export function matchTitle(query: string, candidates: Candidate[]): MatchedAnime | null {
-	const hit = scoreTitle(query, candidates);
-	return hit ? toMatch(hit) : null;
-}
-
-export function matchParsed(parsed: TitleParts, candidates: Candidate[]): MatchedAnime | null {
-	const hit = matchParsedFilename(parsed, candidates);
-	return hit ? toMatch(hit) : null;
-}
-
 export function matchById(id: number, candidates: Candidate[]): MatchedAnime | null {
 	const hit = candidates.find((item) => item.id === id);
 	return hit ? toMatch(hit) : null;
-}
-
-export function relationHopCandidates(parsed: TitleParts, candidates: Candidate[]): Candidate[] {
-	const ranked = rankParsed(parsed, candidates).map((hit) => hit.candidate);
-	const base = normalizeTitle(parsed.title);
-	const extra = base ? candidates.filter((candidate) => candidate.names.some((name) => name === base || name.startsWith(`${base} `))) : [];
-	const seen = new Set<number>();
-	const next: Candidate[] = [];
-	for (const candidate of [...ranked, ...extra]) {
-		if (seen.has(candidate.id)) {
-			continue;
-		}
-		seen.add(candidate.id);
-		next.push(candidate);
-	}
-	return next;
 }
 
 export function similarParsed(parsed: TitleParts, candidates: Candidate[]): SimilarTitle[] {
