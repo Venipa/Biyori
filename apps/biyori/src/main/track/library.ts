@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
 import { dirname, join } from "node:path";
 import { logger as log } from "@biyori/logger";
-import { pathUnderRoot } from "@biyori/recognition";
+import { pathUnderRoot, VIDEO_EXT } from "@biyori/recognition";
 import { and, eq, sql } from "drizzle-orm";
 import { shell } from "electron";
 import { type LibrarySummary, summarizeLibraryFolders } from "../../lib/library-summary";
@@ -14,8 +14,6 @@ import { loadAppSettings } from "../settings";
 import { hana, type ScanHit, type ScanProgress } from "./hana-client";
 import { invalidateCandidateCache, loadCandidates } from "./match";
 import { refreshRelations, relationRules } from "./relations";
-
-const VIDEO_EXT = /\.(mkv|mp4|avi|webm|mov|wmv|flv|ts|m2ts|mpg|mpeg)$/i;
 
 let db: DatabaseClient | null = null;
 const watchers: FSWatcher[] = [];
@@ -436,7 +434,8 @@ function classifyWatchPath(full: string, roots: string[]): { gone?: string; scan
 		if (info.isDirectory()) {
 			return { scan: full };
 		}
-		if (!VIDEO_EXT.test(full)) {
+		const dot = full.lastIndexOf(".");
+		if (dot < 0 || !VIDEO_EXT.test(full.slice(dot + 1))) {
 			return {};
 		}
 		const parent = dirname(full);

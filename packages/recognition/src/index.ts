@@ -1,5 +1,5 @@
 export type { ParsedFilename, ParseOptions } from "@biyori/parser";
-export { parseFilename, parsePath } from "@biyori/parser";
+export { PLAYER_MARKERS, parseFilename, parsePath, VIDEO_EXT } from "@biyori/parser";
 export { extendTitle } from "./extend-title";
 export type { RankedTitle } from "./match";
 export { matchParsed, matchTitle, normalizeForLookup, normalizeTitle, rankParsed, rankTitles, seasonFromNames } from "./match";

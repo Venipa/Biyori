@@ -435,14 +435,6 @@ pub fn match_candidates(parsed: &Parsed, candidates: &[Candidate], path: Option<
 	resolve_on_pool(parsed, &all_refs, candidates, rules)
 }
 
-pub fn resolve_scan_hit(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>, rules: &[RelationRule]) -> Option<(i64, i32)> {
-	match_candidates(parsed, candidates, path, rules)
-}
-
-pub fn identify(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>) -> Option<i64> {
-	match_candidates(parsed, candidates, path, &[]).map(|(id, _)| id)
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -464,7 +456,7 @@ mod tests {
 		let sao = candidate(20, "sword art online season 4", r"D:\Anime\Sword Art Online Season 4");
 		let path = r"D:\Anime\Tensei Shitara Slime Datta Ken 4th Season\05.mkv";
 		let parsed = parse_file_path(path).expect("parse");
-		assert_eq!(identify(&parsed, &[slime, sao], Some(path)), Some(10));
+		assert_eq!(match_candidates(&parsed, &[slime, sao], Some(path), &[]).map(|(id, _)| id), Some(10));
 	}
 
 	#[test]
@@ -479,7 +471,7 @@ mod tests {
 		let sao = candidate(20, "sword art online season 4", r"D:\Anime\Sword Art Online Season 4");
 		let parsed = parse_file_path(r"D:\Anime\Tensei Shitara Slime Datta Ken 4th Season\05.mkv").expect("parse");
 		let path = r"\\?\D:\Anime\Tensei Shitara Slime Datta Ken 4th Season\05.mkv";
-		assert_eq!(identify(&parsed, &[slime, sao], Some(path)), Some(10));
+		assert_eq!(match_candidates(&parsed, &[slime, sao], Some(path), &[]).map(|(id, _)| id), Some(10));
 	}
 
 	fn rezero(id: i64, name: &str, episodes: i32, folder: &str) -> Candidate {
@@ -502,7 +494,7 @@ mod tests {
 		let parsed = parse_file_path(&path).expect("parse");
 		assert_eq!(parsed.season, Some(4));
 		assert_eq!(parsed.episode, Some(15));
-		assert_eq!(identify(&parsed, &[s3, s4], Some(&path)), Some(4));
+		assert_eq!(match_candidates(&parsed, &[s3, s4], Some(&path), &[]).map(|(id, _)| id), Some(4));
 	}
 
 	#[test]
@@ -514,7 +506,7 @@ mod tests {
 			r"{folder}\Re - ZERO, Starting Life in Another World (2016) - S03E16 - 065 - TBA [WEBDL-1080p].mkv"
 		);
 		let parsed = parse_file_path(&path).expect("parse");
-		assert_eq!(identify(&parsed, &[s3, s4], Some(&path)), Some(3));
+		assert_eq!(match_candidates(&parsed, &[s3, s4], Some(&path), &[]).map(|(id, _)| id), Some(3));
 	}
 
 	fn listed(id: i64, names: &[&str], episodes: i32) -> Candidate {
@@ -529,6 +521,7 @@ mod tests {
 	fn parts(title: &str, season: i32, year: i32, episode: i32) -> Parsed {
 		Parsed {
 			title: title.into(),
+			raw_title: title.into(),
 			season: Some(season),
 			year: Some(year),
 			episode: Some(episode),
@@ -565,7 +558,7 @@ mod tests {
 			listed(185874, &["bleach thousand year blood war the calamity"], 10),
 		];
 		assert_eq!(
-			resolve_scan_hit(&parts("Bleach", 17, 2004, 47), &list, None, &rules),
+			match_candidates(&parts("Bleach", 17, 2004, 47), &list, None, &rules),
 			Some((185874, 7))
 		);
 	}
@@ -609,7 +602,7 @@ mod tests {
 			),
 		];
 		assert_eq!(
-			resolve_scan_hit(&parts("Re - ZERO, Starting Life in Another World", 4, 2016, 16), &list, None, &rules),
+			match_candidates(&parts("Re - ZERO, Starting Life in Another World", 4, 2016, 16), &list, None, &rules),
 			Some((4, 16))
 		);
 	}

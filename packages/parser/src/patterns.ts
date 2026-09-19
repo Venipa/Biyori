@@ -1,5 +1,7 @@
 export const VIDEO_EXT = /^(mkv|mp4|avi|ogm|wmv|flv|ts|m2ts|webm|mov|mpg|mpeg)$/i;
 
+export const PLAYER_MARKERS = ["mpv.net", "mpv", "vlc media player", "vlc", "mpc-hc64", "mpc-hc", "mpc-be", "potplayer", "kmplayer", "gom player"] as const;
+
 export const RESOLUTION = /^(2160p|1440p|1080p|720p|480p|360p|4k|8k|\d{3,4}x\d{3,4})$/i;
 
 export const VIDEO_TERM = /^(x264|x265|h\.?264|h\.?265|hevc|avc|av1|vp9|10bit|8bit|hi10p|hdr10\+?|hdr|sdr|10-bit|8-bit)$/i;

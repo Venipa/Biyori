@@ -13,31 +13,9 @@ pub struct Candidate {
 	pub folder: Option<String>,
 }
 
-#[napi(object)]
+#[napi(object, js_name = "ParseResult")]
 #[derive(Debug, Clone)]
 pub struct Parsed {
-	pub title: String,
-	pub season: Option<i32>,
-	pub year: Option<i32>,
-	pub episode: Option<i32>,
-	#[napi(js_name = "episodeLow")]
-	pub episode_low: Option<i32>,
-	#[napi(js_name = "episodeHigh")]
-	pub episode_high: Option<i32>,
-	pub group: Option<String>,
-	#[napi(js_name = "videoResolution")]
-	pub video_resolution: String,
-	#[napi(js_name = "videoTerm")]
-	pub video_term: String,
-	#[napi(js_name = "releaseVersion")]
-	pub release_version: i32,
-	#[napi(js_name = "fileExtension")]
-	pub file_extension: String,
-}
-
-#[napi(object)]
-#[derive(Debug, Clone)]
-pub struct ParseResult {
 	pub title: String,
 	#[napi(js_name = "rawTitle")]
 	pub raw_title: String,

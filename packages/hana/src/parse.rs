@@ -1,24 +1,18 @@
 use crate::anitomy::{parse, parse_path, Element, ElementKind, Options};
 use crate::types::Parsed;
 
-const PLAYER_MARKERS: &[&str] = &[
-	"mpv.net",
-	"mpv",
-	"vlc media player",
-	"vlc",
-	"mpc-hc64",
-	"mpc-hc",
-	"mpc-be",
-	"potplayer",
-	"kmplayer",
-	"gom player",
-];
+pub fn player_markers() -> impl Iterator<Item = &'static str> {
+	include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../parser/player-markers.txt"))
+		.lines()
+		.map(str::trim)
+		.filter(|line| !line.is_empty() && !line.starts_with('#'))
+}
 
 pub fn strip_player_suffix(value: &str) -> &str {
 	let lower = value.to_ascii_lowercase();
 	if let Some(idx) = lower.rfind(" - ") {
 		let rest = lower[idx + 3..].trim();
-		if PLAYER_MARKERS.iter().any(|marker| rest.starts_with(marker)) {
+		if player_markers().any(|marker| rest.starts_with(marker)) {
 			return value[..idx].trim();
 		}
 	}
@@ -106,7 +100,8 @@ pub fn elements_to_parsed(elements: &[Element]) -> Option<Parsed> {
 		.and_then(|element| first_i32(&element.value));
 	let group = first_kind(elements, ElementKind::ReleaseGroup).map(str::to_string);
 	Some(Parsed {
-		title,
+		title: title.clone(),
+		raw_title: title,
 		season,
 		year,
 		episode: high,
@@ -170,8 +165,8 @@ pub fn apply_ignored(input: &str, ignored: &[String]) -> String {
 	next
 }
 
-fn to_parse_result(parsed: Parsed) -> crate::types::ParseResult {
-	crate::types::ParseResult {
+fn to_parse_result(parsed: Parsed) -> Parsed {
+	Parsed {
 		title: extend_title(&parsed),
 		raw_title: parsed.title.clone(),
 		season: parsed.season,
@@ -187,7 +182,7 @@ fn to_parse_result(parsed: Parsed) -> crate::types::ParseResult {
 	}
 }
 
-pub fn parse_query(input: &crate::types::ParseInput) -> Option<crate::types::ParseResult> {
+pub fn parse_query(input: &crate::types::ParseInput) -> Option<Parsed> {
 	let ignored = input.ignored.as_deref().unwrap_or(&[]);
 	let text = apply_ignored(&input.input, ignored);
 	let parsed = if input.path.unwrap_or(false) {
@@ -198,7 +193,7 @@ pub fn parse_query(input: &crate::types::ParseInput) -> Option<crate::types::Par
 	Some(to_parse_result(parsed))
 }
 
-pub fn parse_together_query(input: &crate::types::ParseTogetherInput) -> Vec<Option<crate::types::ParseResult>> {
+pub fn parse_together_query(input: &crate::types::ParseTogetherInput) -> Vec<Option<Parsed>> {
 	let ignored = input.ignored.as_deref().unwrap_or(&[]);
 	let texts: Vec<String> = input
 		.inputs
@@ -255,6 +250,13 @@ mod tests {
 		.expect("parse");
 		assert_eq!(parsed.title, "BLACK TORCH");
 		assert_eq!(parsed.episode, Some(9));
+	}
+
+	#[test]
+	fn player_markers_are_baked_into_the_binary() {
+		let markers: Vec<&str> = player_markers().collect();
+		assert!(markers.contains(&"mpv.net"));
+		assert!(markers.contains(&"vlc"));
 	}
 
 	#[test]

@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { parseFilename, parsePath } from "./parse";
+import { PLAYER_MARKERS } from "./patterns";
 
 describe("parseFilename", () => {
 	test("keeps season for S04E08", () => {
@@ -80,5 +83,15 @@ describe("parsePath", () => {
 			season: 4,
 			episode: 8,
 		});
+	});
+});
+
+describe("player-markers.txt", () => {
+	test("matches PLAYER_MARKERS", () => {
+		const fromFile = readFileSync(join(import.meta.dir, "../player-markers.txt"), "utf8")
+			.split(/\r?\n/)
+			.map((line) => line.trim())
+			.filter((line) => line && !line.startsWith("#"));
+		expect(fromFile).toEqual([...PLAYER_MARKERS]);
 	});
 });

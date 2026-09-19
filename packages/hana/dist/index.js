@@ -109,4 +109,17 @@ function readVersion() {
 
 const version = readVersion();
 
-module.exports = { Hana, hana, version };
+function playerMarkers() {
+	try {
+		const native = binding();
+		const value = native.playerMarkers();
+		if (Array.isArray(value) && value.length) {
+			return value;
+		}
+	} catch {
+		// addon missing in unit tests
+	}
+	return [];
+}
+
+module.exports = { Hana, hana, version, playerMarkers };

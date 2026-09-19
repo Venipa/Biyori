@@ -1,9 +1,14 @@
 import { basename } from "node:path";
-import { extendTitle, parseFilename as parseFilenameRaw, parsePath } from "@biyori/recognition";
-import { hana } from "./hana-client";
+import { extendTitle, PLAYER_MARKERS, parseFilename as parseFilenameRaw, parsePath } from "@biyori/recognition";
+import { hana, playerMarkers } from "./hana-client";
 import type { NowPlayingMedia, ParsedPlayback } from "./types";
 
-const PLAYER_SUFFIX = /\s+-\s+(mpv\.net|mpv|vlc media player|vlc|mpc-hc64|mpc-hc|mpc-be|potplayer|kmplayer|gom player).*$/i;
+function escapeRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const markers = playerMarkers();
+const PLAYER_SUFFIX = new RegExp(`\\s+-\\s+(${(markers.length ? markers : PLAYER_MARKERS).map(escapeRegExp).join("|")}).*$`, "i");
 
 const STREAM_SUFFIX = /\s+[|-]\s+(crunchyroll|hidive|netflix|plex|jellyfin|youtube|bilibili|funimation).*$/i;
 

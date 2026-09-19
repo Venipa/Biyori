@@ -2,7 +2,7 @@ use crate::detect::now_playing;
 use crate::parse::{parse_query, parse_together_query};
 use crate::scan::{find_episode, scan_library};
 use crate::types::{
-	FindEpisodeInput, NowPlaying, NowPlayingInput, ParseInput, ParseResult, ParseTogetherInput, ScanInput,
+	FindEpisodeInput, NowPlaying, NowPlayingInput, ParseInput, Parsed, ParseTogetherInput, ScanInput,
 	ScanProgress, ScanResult,
 };
 use napi::bindgen_prelude::*;
@@ -22,8 +22,8 @@ pub struct ParseTask {
 
 #[napi]
 impl Task for ParseTask {
-	type Output = Option<ParseResult>;
-	type JsValue = Option<ParseResult>;
+	type Output = Option<Parsed>;
+	type JsValue = Option<Parsed>;
 
 	fn compute(&mut self) -> Result<Self::Output> {
 		let input = self.input.clone();
@@ -46,8 +46,8 @@ pub struct ParseTogetherTask {
 
 #[napi]
 impl Task for ParseTogetherTask {
-	type Output = Vec<Option<ParseResult>>;
-	type JsValue = Vec<Option<ParseResult>>;
+	type Output = Vec<Option<Parsed>>;
+	type JsValue = Vec<Option<Parsed>>;
 
 	fn compute(&mut self) -> Result<Self::Output> {
 		let input = self.input.clone();
@@ -150,4 +150,9 @@ pub fn now_playing_js(input: NowPlayingInput) -> AsyncTask<NowPlayingTask> {
 #[napi]
 pub fn version() -> String {
 	crate::VERSION.into()
+}
+
+#[napi(js_name = "playerMarkers")]
+pub fn player_markers() -> Vec<String> {
+	crate::parse::player_markers().map(str::to_string).collect()
 }

@@ -103,3 +103,4 @@ export declare class Hana {
 
 export declare const hana: Hana;
 export declare const version: string;
+export declare function playerMarkers(): string[];
