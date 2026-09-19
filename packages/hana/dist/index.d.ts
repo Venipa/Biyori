@@ -92,12 +92,28 @@ export type NowPlaying = {
 	browser?: boolean;
 };
 
+export type MatchInput = {
+	title: string;
+	season?: number | null;
+	year?: number | null;
+	episode?: number | null;
+	path?: string | null;
+	candidates: Candidate[];
+	relations?: RelationRule[];
+};
+
+export type MatchHit = {
+	animeId: number;
+	episode: number;
+};
+
 export declare class Hana {
 	parse(input: ParseInput): Promise<ParseResult | null>;
 	parseTogether(input: ParseTogetherInput): Promise<(ParseResult | null)[]>;
 	scan(input: ScanInput, onProgress?: (progress: ScanProgress) => void): Promise<ScanResult>;
 	findEpisode(input: FindEpisodeInput): Promise<string | null>;
 	nowPlaying(input: NowPlayingInput): Promise<NowPlaying | null>;
+	match(input: MatchInput): Promise<MatchHit | null>;
 	dispose(): Promise<void>;
 }
 

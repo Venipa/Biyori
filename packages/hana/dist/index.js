@@ -89,6 +89,14 @@ class Hana {
 		}
 	}
 
+	async match(input) {
+		try {
+			return await binding().match(input);
+		} catch (error) {
+			throw toError(error);
+		}
+	}
+
 	async dispose() {}
 }
 

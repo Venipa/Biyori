@@ -12,8 +12,8 @@ import { anime, episodeFile } from "../db/schema";
 import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
 import { hana, type ScanHit, type ScanProgress } from "./hana-client";
-import { invalidateCandidateCache, loadCandidates } from "./match";
-import { refreshRelations, relationRules } from "./relations";
+import { invalidateCandidateCache, loadCandidates, toHanaCandidates } from "./match";
+import { refreshRelations, toHanaRelations } from "./relations";
 
 let db: DatabaseClient | null = null;
 const watchers: FSWatcher[] = [];
@@ -23,30 +23,6 @@ let scanTail: Promise<unknown> = Promise.resolve();
 
 export function initLibrary(database: DatabaseClient): void {
 	db = database;
-}
-
-function toScanCandidates(candidates: Awaited<ReturnType<typeof loadCandidates>>): Array<{
-	id: number;
-	names: string[];
-	episodes: number;
-	folder: string;
-}> {
-	return candidates.map((candidate) => ({
-		id: candidate.id,
-		names: candidate.names,
-		episodes: candidate.episodes,
-		folder: candidate.folder ?? "",
-	}));
-}
-
-function toScanRelations() {
-	return relationRules().map((rule) => ({
-		fromId: rule.fromId,
-		fromStart: rule.fromStart,
-		toId: rule.toId,
-		toStart: rule.toStart,
-		...(rule.fromEnd == null ? {} : { fromEnd: rule.fromEnd }),
-	}));
 }
 
 const INSERT_CHUNK = 80;
@@ -274,8 +250,8 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 			{
 				roots: existing,
 				threshold: settings.fileSizeThreshold,
-				candidates: toScanCandidates(candidates),
-				relations: toScanRelations(),
+				candidates: toHanaCandidates(candidates),
+				relations: toHanaRelations(),
 			},
 			kind === "watch" ? undefined : (progress) => onScanProgress(kind, progress),
 		);
@@ -340,8 +316,8 @@ async function findEpisodePath(database: DatabaseClient, animeId: number, episod
 			episode,
 			threshold: loadAppSettings().fileSizeThreshold,
 			animeId,
-			candidates: toScanCandidates(candidates),
-			relations: toScanRelations(),
+			candidates: toHanaCandidates(candidates),
+			relations: toHanaRelations(),
 		});
 	} catch {
 		return null;

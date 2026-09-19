@@ -1,4 +1,4 @@
-import { applyRelationRule, type RelationRule, redirectIfOutOfRange, uniqueOutOfRangeRedirect } from "@biyori/recognition";
+import { applyRelationRule, type RelationRule, redirectIfOutOfRange } from "@biyori/recognition";
 import { eq } from "drizzle-orm";
 import type { DatabaseClient } from "../db";
 import { relationsCache } from "../db/schema";
@@ -77,16 +77,22 @@ export function relationRules(): RelationRule[] {
 	return rules;
 }
 
+export function toHanaRelations() {
+	return rules.map((rule) => ({
+		fromId: rule.fromId,
+		fromStart: rule.fromStart,
+		toId: rule.toId,
+		toStart: rule.toStart,
+		...(rule.fromEnd == null ? {} : { fromEnd: rule.fromEnd }),
+	}));
+}
+
 export function applyRelation(id: number, episode: number): { id: number; episode: number } {
 	return applyRelationRule(id, episode, rules);
 }
 
 export function redirectEpisode(match: { id: number; episodes: number }, episode: number): { id: number; episode: number } {
 	return redirectIfOutOfRange(match, episode, rules);
-}
-
-export function uniqueRedirect(episode: number, candidates: Array<{ id: number; episodes: number }>): { id: number; episode: number } | null {
-	return uniqueOutOfRangeRedirect(episode, candidates, rules);
 }
 
 export function replaceRelationRules(next: RelationRule[]): void {

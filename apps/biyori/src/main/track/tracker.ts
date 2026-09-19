@@ -15,11 +15,11 @@ import { syncDiscordPresence } from "../share/discord";
 import { setNowPlayingForHttp } from "../share/http";
 import { rememberPlaybackApplied, wasPlaybackApplied } from "./applied-playback";
 import { getNowPlayingMedia } from "./detect";
-import { type Candidate, invalidateCandidateCache, loadCandidates, matchById, namesFrom, similarParsed } from "./match";
-import { resolveFileMatch } from "./match-resolve";
+import { hana } from "./hana-client";
+import { type Candidate, invalidateCandidateCache, loadCandidates, matchById, namesFrom, similarParsed, toHanaCandidates } from "./match";
 import { parsePlayback } from "./parse";
 import { enqueueUpdate, initQueueFlush } from "./queue";
-import { redirectEpisode, refreshRelations } from "./relations";
+import { redirectEpisode, refreshRelations, toHanaRelations } from "./relations";
 import { canApplyProgress, progressPayload, withAppliedProgress } from "./tracker-progress";
 import type { MatchedAnime, NowPlayingMedia, NowPlayingSnapshot, NowPlayingUser, PendingConfirm } from "./types";
 
@@ -293,10 +293,18 @@ async function runTick(): Promise<void> {
 			season: parsed.season,
 			year: parsed.year,
 		};
-		const resolved = resolveFileMatch(parts, parsed.episode, candidates);
-		match = resolved.match;
-		if (resolved.episode != null) {
-			parsed.episode = resolved.episode;
+		const hit = await hana.match({
+			title: parsed.rawTitle,
+			season: parsed.season,
+			year: parsed.year,
+			episode: parsed.episode,
+			path: media.filePath ?? undefined,
+			candidates: toHanaCandidates(candidates),
+			relations: toHanaRelations(),
+		});
+		match = hit ? matchById(hit.animeId, candidates) : null;
+		if (hit) {
+			parsed.episode = hit.episode;
 		}
 		similar = match ? [] : similarParsed(parts, candidates);
 	}

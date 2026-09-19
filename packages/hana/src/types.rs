@@ -143,3 +143,23 @@ pub struct NowPlaying {
 	pub foreground: bool,
 	pub browser: Option<bool>,
 }
+
+#[napi(object)]
+#[derive(Debug, Clone)]
+pub struct MatchInput {
+	pub title: String,
+	pub season: Option<i32>,
+	pub year: Option<i32>,
+	pub episode: Option<i32>,
+	pub path: Option<String>,
+	pub candidates: Vec<Candidate>,
+	pub relations: Option<Vec<RelationRule>>,
+}
+
+#[napi(object)]
+#[derive(Debug, Clone)]
+pub struct MatchHit {
+	#[napi(js_name = "animeId")]
+	pub anime_id: i64,
+	pub episode: i32,
+}

@@ -1,9 +1,10 @@
 use crate::detect::now_playing;
-use crate::parse::{parse_query, parse_together_query};
+use crate::identify::match_candidates;
+use crate::parse::{parse_query, parse_together_query, player_markers};
 use crate::scan::{find_episode, scan_library};
 use crate::types::{
-	FindEpisodeInput, NowPlaying, NowPlayingInput, ParseInput, Parsed, ParseTogetherInput, ScanInput,
-	ScanProgress, ScanResult,
+	FindEpisodeInput, MatchHit, MatchInput, NowPlaying, NowPlayingInput, ParseInput, Parsed, ParseTogetherInput,
+	ScanInput, ScanProgress, ScanResult,
 };
 use napi::bindgen_prelude::*;
 use napi::threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode};
@@ -147,12 +148,58 @@ pub fn now_playing_js(input: NowPlayingInput) -> AsyncTask<NowPlayingTask> {
 	AsyncTask::new(NowPlayingTask { input })
 }
 
+fn parsed_for_match(input: &MatchInput) -> Parsed {
+	Parsed {
+		title: input.title.clone(),
+		raw_title: input.title.clone(),
+		season: input.season,
+		year: input.year,
+		episode: input.episode,
+		episode_low: input.episode,
+		episode_high: input.episode,
+		group: None,
+		video_resolution: String::new(),
+		video_term: String::new(),
+		release_version: 1,
+		file_extension: String::new(),
+	}
+}
+
+pub struct MatchTask {
+	input: MatchInput,
+}
+
+#[napi]
+impl Task for MatchTask {
+	type Output = Option<MatchHit>;
+	type JsValue = Option<MatchHit>;
+
+	fn compute(&mut self) -> Result<Self::Output> {
+		let input = self.input.clone();
+		panic_to_err(move || {
+			let parsed = parsed_for_match(&input);
+			let relations = input.relations.as_deref().unwrap_or(&[]);
+			match_candidates(&parsed, &input.candidates, input.path.as_deref(), relations)
+				.map(|(anime_id, episode)| MatchHit { anime_id, episode })
+		})
+	}
+
+	fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+		Ok(output)
+	}
+}
+
+#[napi(js_name = "match")]
+pub fn match_js(input: MatchInput) -> AsyncTask<MatchTask> {
+	AsyncTask::new(MatchTask { input })
+}
+
 #[napi]
 pub fn version() -> String {
 	crate::VERSION.into()
 }
 
 #[napi(js_name = "playerMarkers")]
-pub fn player_markers() -> Vec<String> {
-	crate::parse::player_markers().map(str::to_string).collect()
+pub fn player_markers_js() -> Vec<String> {
+	player_markers().map(str::to_string).collect()
 }
