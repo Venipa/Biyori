@@ -1,3 +1,5 @@
+import { isAnimeStale } from "../../../lib/anime-stale";
+
 export function isAnimeInfoDialogOpen(id: number | undefined, armed: boolean, ready = false): boolean {
 	return id != null && (armed || ready);
 }
@@ -24,14 +26,24 @@ export function isPendingAnimeInfoOpen(id: number | undefined, dialogOpen: boole
 	return id != null && !dialogOpen;
 }
 
-export function shouldEnsureAnimeInfo(input: { id: number | undefined; matching: boolean; isFetched: boolean; isPlaceholderData: boolean; ensurePendingForId: boolean }): boolean {
-	if (input.id == null || input.matching || !input.isFetched || input.isPlaceholderData || input.ensurePendingForId) {
+export function shouldEnsureAnimeInfo(input: {
+	id: number | undefined;
+	matching: boolean;
+	stale: boolean;
+	isFetched: boolean;
+	isPlaceholderData: boolean;
+	ensurePendingForId: boolean;
+}): boolean {
+	if (input.id == null || !input.isFetched || input.isPlaceholderData || input.ensurePendingForId) {
+		return false;
+	}
+	if (input.matching && !input.stale) {
 		return false;
 	}
 	return true;
 }
 
-export type AnimeInfoDialogGateInput<T extends { id: number }> = {
+export type AnimeInfoDialogGateInput<T extends { id: number; staleAt?: string | null }> = {
 	id: number | undefined;
 	heldId: number | undefined;
 	data: T | null | undefined;
@@ -43,7 +55,7 @@ export type AnimeInfoDialogGateInput<T extends { id: number }> = {
 	lastShown: T | undefined;
 };
 
-export function selectAnimeInfoDialog<T extends { id: number }>(
+export function selectAnimeInfoDialog<T extends { id: number; staleAt?: string | null }>(
 	input: AnimeInfoDialogGateInput<T>,
 ): {
 	queryId: number | undefined;
@@ -68,6 +80,7 @@ export function selectAnimeInfoDialog<T extends { id: number }>(
 		shouldEnsure: shouldEnsureAnimeInfo({
 			id: input.id,
 			matching: Boolean(matching),
+			stale: matching ? isAnimeStale(matching.staleAt) : true,
 			isFetched: input.isFetched,
 			isPlaceholderData: input.isPlaceholderData,
 			ensurePendingForId: input.ensurePendingForId,

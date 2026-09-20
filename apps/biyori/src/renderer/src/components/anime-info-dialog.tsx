@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, FlameIcon, FolderOpen, PlusIcon, StarIcon, TrophyIcon, XIcon } from "lucide-react";
+import { CircleAlertIcon, FlameIcon, FolderOpen, PlusIcon, StarIcon, XIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 import AniDBIcon from "@/assets/anidb.png";
@@ -12,8 +12,10 @@ import { titleStrings } from "@/lib/anime-titles";
 import { type AnimeInfoFormInput, type AnimeInfoFormValues, animeInfoFormSchema } from "@/lib/schemas/anime-list-entry";
 import { joinTitleList, splitTitleList } from "@/lib/split-title-list";
 import { AnimeCover } from "@/mainview/components/anime-cover";
+import { AnimeInfoBackHistory } from "@/mainview/components/anime-info-back-history";
 import { AnimeListAction, AnimeListStatusSelect } from "@/mainview/components/anime-list-action";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
+import { RelatedMediaSection } from "@/mainview/components/related-media-card";
 import { SaveBar } from "@/mainview/components/save-bar";
 import { Alert, AlertDescription, AlertTitle } from "@/mainview/components/ui/alert";
 import { Badge } from "@/mainview/components/ui/badge";
@@ -27,6 +29,7 @@ import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Spinner } from "@/mainview/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { type AnimeRankLine, animeAiringNotice } from "@/mainview/lib/anime-airing-notice";
+import type { AnimeInfoFrame } from "@/mainview/lib/anime-info-stack";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 import { getNeighborAnimeId } from "@/mainview/lib/selected-anime";
@@ -54,6 +57,7 @@ function posterExternalLinks(id: number, title: string): Array<{ label: string; 
 }
 
 type AnimeDetail = NonNullable<inferRouterOutputs<AppRouter>["anime"]["byId"]>;
+const EMPTY_HISTORY: AnimeInfoFrame[] = [];
 
 function AnimeRankNotice({ kind, rank }: AnimeRankLine) {
 	const isRated = kind === "rated";
@@ -112,6 +116,8 @@ export function AnimeInfoDialog({
 	onOpenChange,
 	onOpenChangeComplete,
 	onNavigate,
+	onBackTo,
+	history = EMPTY_HISTORY,
 }: {
 	open: boolean;
 	anime: AnimeDetail | null;
@@ -120,6 +126,8 @@ export function AnimeInfoDialog({
 	onOpenChange: (open: boolean) => void;
 	onOpenChangeComplete?: (open: boolean) => void;
 	onNavigate?: (id: number) => void;
+	onBackTo?: (index: number) => void;
+	history?: AnimeInfoFrame[];
 }) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete} modal>
@@ -128,6 +136,12 @@ export function AnimeInfoDialog({
 				showCloseButton={false}
 				className='flex max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-b-none p-0 sm:max-w-3xl'
 				onKeyDownCapture={(event) => {
+					if (event.key === "Escape" && history.length > 0 && onBackTo) {
+						event.preventDefault();
+						event.stopPropagation();
+						onBackTo(history.length - 1);
+						return;
+					}
 					if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
 						return;
 					}
@@ -154,6 +168,8 @@ export function AnimeInfoDialog({
 						anime={anime}
 						infoTab={infoTab ?? "main"}
 						readOnly={!anime.onList}
+						history={history}
+						onBackTo={onBackTo}
 						onClose={() => {
 							onOpenChange(false);
 						}}
@@ -183,12 +199,16 @@ function AnimeInfoBody({
 	readOnly = false,
 	onClose,
 	onAdded,
+	onBackTo,
+	history,
 }: {
 	anime: AnimeDetail;
 	infoTab: "main" | "list";
 	readOnly?: boolean;
 	onClose: () => void;
 	onAdded?: (id: number) => void;
+	onBackTo?: (index: number) => void;
+	history: AnimeInfoFrame[];
 }) {
 	const progressId = useId();
 	const rewatchesId = useId();
@@ -229,9 +249,12 @@ function AnimeInfoBody({
 	return (
 		<FormProvider {...form}>
 			<div className='flex min-h-0 flex-1 flex-col'>
-				<div className='relative h-40 w-full shrink-0 overflow-hidden bg-muted'>
-					{anime.bannerUrl ? <AnimeCover id={anime.id} kind='banner' sourceUrl={anime.bannerUrl} alt='' className='size-full' /> : null}
-					<div className='pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-popover to-transparent' />
+				<div className='relative h-40 w-full shrink-0 bg-muted'>
+					<div className='absolute inset-0 overflow-hidden'>
+						{anime.bannerUrl ? <AnimeCover id={anime.id} kind='banner' sourceUrl={anime.bannerUrl} alt='' className='size-full' /> : null}
+						<div className='pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-popover to-transparent' />
+					</div>
+					{history.length > 0 && onBackTo ? <AnimeInfoBackHistory history={history} onBackTo={onBackTo} /> : null}
 				</div>
 
 				<div className='relative z-10 -mt-14 flex min-h-0 flex-1 gap-4 px-4'>
@@ -291,6 +314,7 @@ function AnimeInfoBody({
 										}}
 										className='pb-3'
 									/>
+									<RelatedMediaSection items={anime.related} from={{ title: anime.title, coverUrl: anime.coverUrl, season: anime.season }} />
 								</ScrollArea>
 							</TabsContent>
 							<TabsContent value='list' keepMounted={false} className='mt-0 flex min-h-0 flex-1 flex-col'>

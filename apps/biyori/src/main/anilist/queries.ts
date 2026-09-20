@@ -69,40 +69,10 @@ rankings {
 }
 `;
 
-const LIST_SYNC_MEDIA_FIELDS = `
-id
-episodes
-duration
-title {
-  romaji
-  english
-  native
-}
-coverImage {
-  extraLarge
-  large
-}
-bannerImage
-synonyms
-status
-season
-seasonYear
-endDate {
-  year
-  month
-  day
-}
-format
-nextAiringEpisode {
-  episode
-  airingAt
-}
-`;
-
 const MEDIA_LIST_FIELDS = `
 id
 media {
-  ${LIST_SYNC_MEDIA_FIELDS}
+  ${MEDIA_FIELDS}
 }
 status
 score
@@ -202,10 +172,62 @@ query($season: MediaSeason!, $seasonYear: Int!, $page: Int) {
 }
 `;
 
+const RELATION_FIELDS = `
+relations {
+  edges {
+    relationType
+    node {
+      id
+      type
+      format
+      title {
+        romaji
+        english
+        native
+      }
+      coverImage {
+        extraLarge
+        large
+      }
+      episodes
+      chapters
+      status
+    }
+  }
+}
+`;
+
 export const GET_MEDIA_BY_ID = `
 query($id: Int) {
   Media(id: $id, type: ANIME) {
     ${MEDIA_FIELDS}
+    ${RELATION_FIELDS}
+  }
+}
+`;
+
+export const GET_MEDIA_LIVE = `
+query($ids: [Int], $page: Int) {
+  Page(page: $page, perPage: 50) {
+    pageInfo {
+      currentPage
+      hasNextPage
+    }
+    media(id_in: $ids, type: ANIME) {
+      id
+      episodes
+      status
+      endDate {
+        year
+        month
+        day
+      }
+      nextAiringEpisode {
+        episode
+        airingAt
+      }
+      ${RELATION_FIELDS}
+    }
   }
 }
 `;

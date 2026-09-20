@@ -21,15 +21,15 @@ export function AppStatusBar() {
 	trpc.anilist.onSyncStatus.useSubscription(undefined, {
 		onData: (snapshot) => {
 			utils.anilist.syncStatus.setData(undefined, snapshot);
-			if (snapshot.listRevision !== listRevision.current) {
-				listRevision.current = snapshot.listRevision;
-				if (snapshot.listRevision > 0) {
-					void invalidateAnimeQueries(utils, "synced");
-				}
-			}
-			if (snapshot.lastSuccessAt != null && snapshot.lastSuccessAt !== lastSuccessAt.current) {
+			const listChanged = snapshot.listRevision !== listRevision.current && snapshot.listRevision > 0;
+			listRevision.current = snapshot.listRevision;
+			const successChanged = snapshot.lastSuccessAt != null && snapshot.lastSuccessAt !== lastSuccessAt.current;
+			if (successChanged) {
 				lastSuccessAt.current = snapshot.lastSuccessAt;
+				void invalidateAnimeQueries(utils, "synced");
 				void utils.anilist.status.invalidate();
+			} else if (listChanged) {
+				void invalidateAnimeQueries(utils, "list");
 			}
 		},
 	});

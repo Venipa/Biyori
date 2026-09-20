@@ -1,14 +1,17 @@
 import type { trpc } from "@/mainview/trpc";
 
-export type AnimeCacheEvent = "added" | "entrySaved" | "removed" | "watched" | "synced";
+export type AnimeCacheEvent = "added" | "entrySaved" | "removed" | "watched" | "synced" | "list";
 
 type TrpcUtils = ReturnType<typeof trpc.useUtils>;
 
 export function invalidateAnimeQueries(utils: TrpcUtils, event: AnimeCacheEvent, id?: number): Promise<void> {
 	const tasks: Promise<unknown>[] = [utils.anime.list.invalidate(), utils.anime.counts.invalidate(), utils.anime.tagNames.invalidate()];
 
-	if (event === "added" || event === "entrySaved" || event === "removed") {
+	if (event === "added" || event === "entrySaved" || event === "removed" || event === "list") {
 		tasks.push(utils.anime.listed.invalidate());
+	}
+
+	if (event === "added" || event === "entrySaved" || event === "removed") {
 		tasks.push(utils.statistics.summary.invalidate());
 	}
 

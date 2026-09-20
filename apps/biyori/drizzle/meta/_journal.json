@@ -71,6 +71,13 @@
       "when": 1789726290526,
       "tag": "0009_chief_slayback",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1789900000000,
+      "tag": "0010_anime_stale_related",
+      "breakpoints": true
     }
   ]
 }

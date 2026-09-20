@@ -1,7 +1,10 @@
+import { eq } from "drizzle-orm";
+import { ANIME_STALE_MS, isAnimeStale } from "../lib/anime-stale";
 import { clearActivity, completeActivity, upsertActivity } from "./activity";
-import { readAnilistAuth, writeAnilistAuth } from "./anilist/store";
-import { fetchViewer, syncAniListList } from "./anilist/sync";
+import { readAnilistAuth } from "./anilist/store";
+import { syncAniListList, syncAniListLive } from "./anilist/sync";
 import type { DatabaseClient } from "./db";
+import { appSetting } from "./db/schema";
 import { shouldBumpListRevision } from "./list-revision";
 import { setAppNotice } from "./notice";
 
@@ -19,6 +22,49 @@ export type SyncSnapshot = {
 type SyncListener = (snapshot: SyncSnapshot) => void;
 
 const SERVICE_NAME = "AniList";
+const LIST_SYNCED_AT_KEY = "anilist.listSyncedAt";
+
+type ListSyncStamp = {
+	at: string;
+	count: number;
+};
+
+function listSyncedAtKey(userId: number): string {
+	return `${LIST_SYNCED_AT_KEY}.${userId}`;
+}
+
+function readListSyncStamp(database: DatabaseClient, userId: number): ListSyncStamp | null {
+	const row = database
+		.select({ value: appSetting.value })
+		.from(appSetting)
+		.where(eq(appSetting.key, listSyncedAtKey(userId)))
+		.get();
+	if (!row?.value) {
+		return null;
+	}
+	try {
+		const parsed: unknown = JSON.parse(row.value);
+		if (parsed && typeof parsed === "object" && "at" in parsed && typeof parsed.at === "string") {
+			const count = "count" in parsed && typeof parsed.count === "number" ? parsed.count : 0;
+			return { at: parsed.at, count };
+		}
+	} catch {
+		return { at: row.value, count: 0 };
+	}
+	return { at: row.value, count: 0 };
+}
+
+function writeListSyncStamp(database: DatabaseClient, userId: number, stamp: ListSyncStamp): void {
+	const value = JSON.stringify(stamp);
+	database
+		.insert(appSetting)
+		.values({ key: listSyncedAtKey(userId), value })
+		.onConflictDoUpdate({
+			target: appSetting.key,
+			set: { value },
+		})
+		.run();
+}
 
 const IDLE: SyncSnapshot = {
 	phase: "idle",
@@ -34,7 +80,9 @@ let snapshot: SyncSnapshot = IDLE;
 let running = false;
 let rerunAfter = false;
 let abortController: AbortController | null = null;
+let liveTimer: ReturnType<typeof setInterval> | null = null;
 const listeners = new Set<SyncListener>();
+const LIVE_SYNC_MS = ANIME_STALE_MS;
 
 function synchronizingMessage(processed?: number): string {
 	if (processed == null || processed <= 0) {
@@ -84,6 +132,13 @@ export function subscribeSyncStatus(listener: SyncListener): () => void {
 
 export function initAniListSync(database: DatabaseClient): void {
 	db = database;
+	if (liveTimer) {
+		clearInterval(liveTimer);
+	}
+	liveTimer = setInterval(() => {
+		void requestAniListLiveSync();
+	}, LIVE_SYNC_MS);
+	void startAniListSyncIfAuthed();
 }
 
 export function abortAniListSync(): void {
@@ -115,7 +170,60 @@ export async function startAniListSyncIfAuthed(): Promise<void> {
 	if (!auth || auth.expiresAt <= Date.now()) {
 		return;
 	}
+	const stamp = readListSyncStamp(db, auth.userId);
+	if (stamp && !isAnimeStale(stamp.at)) {
+		const at = Date.parse(stamp.at);
+		emit({
+			...IDLE,
+			lastSuccessAt: Number.isFinite(at) ? at : Date.now(),
+			message: taggedMessage(`${stamp.count} titles`),
+			processed: stamp.count,
+			total: stamp.count,
+			listRevision: snapshot.listRevision,
+		});
+		return;
+	}
 	requestAniListSync();
+}
+
+function requestAniListLiveSync(): void {
+	if (running || !db) {
+		return;
+	}
+	const auth = readAnilistAuth();
+	if (!auth || auth.expiresAt <= Date.now()) {
+		return;
+	}
+	void runLiveSync(auth.accessToken);
+}
+
+async function runLiveSync(token: string): Promise<void> {
+	if (!db || running) {
+		return;
+	}
+	running = true;
+	const controller = new AbortController();
+	abortController = controller;
+	const { signal } = controller;
+	try {
+		const wrote = await syncAniListLive(db, { token, signal });
+		if (signal.aborted || wrote <= 0) {
+			return;
+		}
+		emit({
+			...snapshot,
+			listRevision: snapshot.listRevision + 1,
+		});
+	} catch {
+		if (signal.aborted) {
+			return;
+		}
+	} finally {
+		running = false;
+		if (abortController === controller) {
+			abortController = null;
+		}
+	}
 }
 
 async function runSync(): Promise<void> {
@@ -146,25 +254,14 @@ async function runSync(): Promise<void> {
 
 		emitRunning(synchronizingMessage(), null, null);
 
-		const viewer = await fetchViewer(auth.accessToken, signal);
-		if (signal.aborted) {
-			return;
-		}
-		writeAnilistAuth({
-			...auth,
-			userId: viewer.id,
-			username: viewer.name,
-			avatarUrl: viewer.avatarUrl ?? undefined,
-		});
-
 		let lastListBumpAt = 0;
 		const synced = await syncAniListList(db, {
 			token: auth.accessToken,
-			userId: viewer.id,
+			userId: auth.userId,
 			signal,
-			onProgress: (processed) => {
+			onProgress: (processed, wrote) => {
 				const now = Date.now();
-				const bumpList = processed > 0 && shouldBumpListRevision(lastListBumpAt, now);
+				const bumpList = wrote > 0 && shouldBumpListRevision(lastListBumpAt, now);
 				if (bumpList) {
 					lastListBumpAt = now;
 				}
@@ -176,6 +273,7 @@ async function runSync(): Promise<void> {
 			return;
 		}
 
+		writeListSyncStamp(db, auth.userId, { at: new Date().toISOString(), count: synced });
 		emit({
 			phase: "idle",
 			message: taggedMessage(`${synced} titles`),

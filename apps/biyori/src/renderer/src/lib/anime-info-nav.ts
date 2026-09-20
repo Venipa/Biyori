@@ -1,18 +1,17 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { type AnimeInfoFrame, jumpAnimeInfoFrame, pushAnimeInfoFrame, replaceAnimeInfoFrame } from "@/mainview/lib/anime-info-stack";
 import { trpc } from "@/mainview/trpc";
 
-type OpenAnimeInfoOptions = {
-	id: number;
-	infoTab?: "main" | "list";
+type AnimeInfoOpen = AnimeInfoFrame & {
+	history: AnimeInfoFrame[];
 };
 
-type AnimeInfoOpen = {
-	id: number;
-	infoTab: "main" | "list" | undefined;
-};
+const PREFETCH = { staleTime: 30_000 } as const;
 
-let current: AnimeInfoOpen | undefined;
+let current: AnimeInfoFrame | undefined;
+let stack: AnimeInfoFrame[] = [];
+let snapshot: AnimeInfoOpen | undefined;
 const listeners = new Set<() => void>();
 
 function emit(): void {
@@ -29,15 +28,42 @@ function subscribe(listener: () => void): () => void {
 }
 
 function getAnimeInfoOpen(): AnimeInfoOpen | undefined {
-	return current;
+	return snapshot;
 }
 
-function setAnimeInfoOpen(next: AnimeInfoOpen | undefined): void {
-	if (current?.id === next?.id && current?.infoTab === next?.infoTab) {
+function applyFrame(next: { stack: AnimeInfoFrame[]; current: AnimeInfoFrame | undefined }): void {
+	const same = current?.id === next.current?.id && current?.infoTab === next.current?.infoTab && stack.length === next.stack.length;
+	stack = next.stack;
+	current = next.current;
+	if (same) {
 		return;
 	}
-	current = next;
+	snapshot = current ? { ...current, history: stack } : undefined;
 	emit();
+}
+
+function clearAnimeInfoStore(): void {
+	stack = [];
+	current = undefined;
+	snapshot = undefined;
+	emit();
+}
+
+function clearSearch(navigate: ReturnType<typeof useNavigate>): void {
+	void navigate({
+		to: ".",
+		replace: true,
+		search: (prev) => {
+			if (prev.id == null && prev.infoTab == null) {
+				return prev;
+			}
+			return {
+				...prev,
+				id: undefined,
+				infoTab: undefined,
+			};
+		},
+	});
 }
 
 export function useAnimeInfoOpen(): AnimeInfoOpen | undefined {
@@ -49,44 +75,47 @@ export function useAnimeInfoNav() {
 	const utils = trpc.useUtils();
 
 	const open = useCallback(
-		(options: OpenAnimeInfoOptions) => {
-			void utils.anime.byId.prefetch({ id: options.id }, { staleTime: 30_000 });
-			setAnimeInfoOpen({
-				id: options.id,
-				infoTab: options.infoTab,
-			});
+		(options: AnimeInfoFrame) => {
+			void utils.anime.byId.prefetch({ id: options.id }, PREFETCH);
+			applyFrame(replaceAnimeInfoFrame(options));
 		},
 		[utils],
 	);
 
+	const push = useCallback(
+		(options: AnimeInfoFrame, from?: Pick<AnimeInfoFrame, "title" | "coverUrl" | "season">) => {
+			void utils.anime.byId.prefetch({ id: options.id }, PREFETCH);
+			applyFrame(pushAnimeInfoFrame(stack, current, options, from));
+		},
+		[utils],
+	);
+
+	const backTo = useCallback(
+		(index: number) => {
+			const next = jumpAnimeInfoFrame(stack, index);
+			if (next.current) {
+				void utils.anime.byId.prefetch({ id: next.current.id }, PREFETCH);
+				applyFrame(next);
+				return;
+			}
+			clearAnimeInfoStore();
+			clearSearch(navigate);
+		},
+		[navigate, utils],
+	);
+
 	const close = useCallback(() => {
-		setAnimeInfoOpen(undefined);
-		void navigate({
-			to: ".",
-			replace: true,
-			search: (prev) => {
-				if (prev.id == null && prev.infoTab == null) {
-					return prev;
-				}
-				return {
-					...prev,
-					id: undefined,
-					infoTab: undefined,
-				};
-			},
-		});
+		clearAnimeInfoStore();
+		clearSearch(navigate);
 	}, [navigate]);
 
 	const navigateTo = useCallback(
 		(id: number) => {
-			void utils.anime.byId.prefetch({ id }, { staleTime: 30_000 });
-			setAnimeInfoOpen({
-				id,
-				infoTab: current?.infoTab,
-			});
+			void utils.anime.byId.prefetch({ id }, PREFETCH);
+			applyFrame(replaceAnimeInfoFrame({ id, infoTab: current?.infoTab }));
 		},
 		[utils],
 	);
 
-	return useMemo(() => ({ open, close, navigateTo }), [open, close, navigateTo]);
+	return useMemo(() => ({ open, push, backTo, close, navigateTo }), [open, push, backTo, close, navigateTo]);
 }

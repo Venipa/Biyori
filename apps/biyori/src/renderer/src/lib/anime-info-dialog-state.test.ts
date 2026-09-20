@@ -30,11 +30,12 @@ describe("anime info dialog load gate", () => {
 		expect(shownAnimeInfoDetail(2, a, false)).toBe(undefined);
 	});
 
-	test("ensures only after a real empty byId", () => {
+	test("ensures empty byId and stale rows", () => {
 		expect(
 			shouldEnsureAnimeInfo({
 				id: 1,
 				matching: true,
+				stale: false,
 				isFetched: true,
 				isPlaceholderData: false,
 				ensurePendingForId: false,
@@ -43,16 +44,8 @@ describe("anime info dialog load gate", () => {
 		expect(
 			shouldEnsureAnimeInfo({
 				id: 1,
-				matching: false,
-				isFetched: true,
-				isPlaceholderData: true,
-				ensurePendingForId: false,
-			}),
-		).toBe(false);
-		expect(
-			shouldEnsureAnimeInfo({
-				id: 1,
-				matching: false,
+				matching: true,
+				stale: true,
 				isFetched: true,
 				isPlaceholderData: false,
 				ensurePendingForId: false,
@@ -62,6 +55,27 @@ describe("anime info dialog load gate", () => {
 			shouldEnsureAnimeInfo({
 				id: 1,
 				matching: false,
+				stale: true,
+				isFetched: true,
+				isPlaceholderData: true,
+				ensurePendingForId: false,
+			}),
+		).toBe(false);
+		expect(
+			shouldEnsureAnimeInfo({
+				id: 1,
+				matching: false,
+				stale: true,
+				isFetched: true,
+				isPlaceholderData: false,
+				ensurePendingForId: false,
+			}),
+		).toBe(true);
+		expect(
+			shouldEnsureAnimeInfo({
+				id: 1,
+				matching: false,
+				stale: true,
 				isFetched: true,
 				isPlaceholderData: false,
 				ensurePendingForId: true,
@@ -97,8 +111,23 @@ describe("anime info dialog sequences", () => {
 		});
 		expect(next.dialogOpen).toBe(true);
 		expect(next.painted).toBe(a);
-		expect(next.shouldEnsure).toBe(false);
+		expect(next.shouldEnsure).toBe(true);
 		expect(next.pending).toBe(false);
+	});
+
+	test("fresh staleAt skips ensure", () => {
+		const next = selectAnimeInfoDialog({
+			id: 1,
+			heldId: 1,
+			data: { id: 1, staleAt: new Date().toISOString() },
+			isFetched: true,
+			isPlaceholderData: false,
+			ensurePendingForId: false,
+			ensureError: undefined,
+			armed: false,
+			lastShown: undefined,
+		});
+		expect(next.shouldEnsure).toBe(false);
 	});
 
 	test("empty cache stays closed and does not paint a loading shell", () => {

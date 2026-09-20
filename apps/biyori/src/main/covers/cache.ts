@@ -7,13 +7,9 @@ import type { DatabaseClient } from "../db";
 import { mediaCache } from "../db/schema";
 import { trackedFetch } from "../http-stats";
 import { appCacheDir } from "../lib/app-paths";
+import { isAllowedMediaUrl } from "./allowed-url";
 
-const ALLOWED_MIME = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
-
-const HOST_PATH = {
-	cover: /^s\d\.anilist\.co\/file\/anilistcdn\/media\/anime\/(cover|poster)/,
-	banner: /^s\d\.anilist\.co\/file\/anilistcdn\/media\/anime\/banner/,
-} as const;
+export { isAllowedCoverUrl, isAllowedMediaUrl } from "./allowed-url";
 
 export class MediaCacheError extends Error {
 	constructor(message: string) {
@@ -33,6 +29,8 @@ function cacheDir(): string {
 	return appCacheDir();
 }
 
+const ALLOWED_MIME = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+
 function rowId(kind: MediaImageKind, animeId: number): string {
 	return `${kind}:${animeId}`;
 }
@@ -40,22 +38,6 @@ function rowId(kind: MediaImageKind, animeId: number): string {
 function fileNameFor(kind: MediaImageKind, animeId: number, sourceUrl: string): string {
 	const hash = createHash("sha256").update(sourceUrl).digest("hex").slice(0, 16);
 	return `${kind}-${animeId}-${hash}`;
-}
-
-export function isAllowedMediaUrl(kind: MediaImageKind, rawUrl: string): boolean {
-	try {
-		const url = new URL(rawUrl);
-		if (url.protocol !== "https:") {
-			return false;
-		}
-		return HOST_PATH[kind].test(url.hostname + url.pathname);
-	} catch {
-		return false;
-	}
-}
-
-export function isAllowedCoverUrl(rawUrl: string): boolean {
-	return isAllowedMediaUrl("cover", rawUrl);
 }
 
 async function downloadImage(kind: MediaImageKind, url: string): Promise<{ mime: string; bytes: Buffer }> {

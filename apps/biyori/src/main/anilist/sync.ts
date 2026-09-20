@@ -1,5 +1,8 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, isNotNull, or, sql } from "drizzle-orm";
+import { isAnimeStale } from "../../lib/anime-stale";
+import { stringifyMediaTitles } from "../../lib/anime-titles";
 import type { TitleLanguage } from "../../lib/schemas/app-settings";
+import type { RelatedMedia } from "../../lib/schemas/related-media";
 import type { AnilistSeasonName, SeasonItem } from "../../lib/schemas/seasons";
 import type { DatabaseClient } from "../db";
 import { anime, listEntry } from "../db/schema";
@@ -19,10 +22,11 @@ import {
 	toListEntryRow,
 	toMediaCard,
 	toMediaCardCached,
+	toRelatedMedia,
 	viewerSchema,
 	withMediaCardTitle,
 } from "./map";
-import { GET_ALL_ANIMES_FROM_UID, GET_CURRENT_USER, GET_MEDIA_BY_ID, SAVE_MEDIA_LIST_ENTRY, SEARCH_MEDIA, SEASON_MEDIA } from "./queries";
+import { GET_ALL_ANIMES_FROM_UID, GET_CURRENT_USER, GET_MEDIA_BY_ID, GET_MEDIA_LIVE, SAVE_MEDIA_LIST_ENTRY, SEARCH_MEDIA, SEASON_MEDIA } from "./queries";
 import { readSeasonCache, writeSeasonCache } from "./season-cache";
 
 const INSERT_CHUNK = 40;
@@ -51,14 +55,6 @@ export async function fetchViewer(
 	const viewer = viewerSchema.parse(data.Viewer);
 	const avatarUrl = viewer.avatar?.large?.trim() || null;
 	return { id: viewer.id, name: viewer.name, avatarUrl };
-}
-
-export async function fetchMediaListCollection(options: { token: string; userId: number; signal?: AbortSignal }): Promise<AnilistMediaList[]> {
-	const entries: AnilistMediaList[] = [];
-	await forEachMediaListChunk(options, (chunk) => {
-		entries.push(...chunk);
-	});
-	return entries;
 }
 
 async function forEachMediaListChunk(
@@ -213,9 +209,16 @@ export async function upsertAnimeFromMedia(
 	db: Pick<DatabaseClient, "select" | "insert" | "update">,
 	media: AnilistMedia,
 	titleLanguage: "Romaji" | "English" | "Native" = "Romaji",
+	fresh?: { related: RelatedMedia[]; staleAt: string },
 ): Promise<Pick<Anime, "id" | "coverUrl" | "bannerUrl">> {
 	const animeRow = toAnimeRow(media, titleLanguage);
 	const existing = await db.select({ id: anime.id }).from(anime).where(eq(anime.id, media.id)).limit(1);
+	const freshPatch = fresh
+		? {
+				related: JSON.stringify(fresh.related),
+				staleAt: fresh.staleAt,
+			}
+		: {};
 
 	if (existing[0]) {
 		await db
@@ -241,10 +244,11 @@ export async function upsertAnimeFromMedia(
 				endDate: animeRow.endDate,
 				coverUrl: animeRow.coverUrl,
 				bannerUrl: animeRow.bannerUrl,
+				...freshPatch,
 			})
 			.where(eq(anime.id, media.id));
 	} else {
-		await db.insert(anime).values(animeRow);
+		await db.insert(anime).values({ ...animeRow, ...freshPatch });
 	}
 
 	return {
@@ -254,7 +258,7 @@ export async function upsertAnimeFromMedia(
 	} satisfies Pick<Anime, "id" | "coverUrl" | "bannerUrl">;
 }
 
-/** Cache-only: anime row, no listEntry. Fetch AniList if missing. */
+/** Fetch AniList when missing or stale. Writes related media. */
 export async function ensureAnimeCached(options: {
 	db: Pick<DatabaseClient, "select" | "insert" | "update">;
 	id: number;
@@ -262,8 +266,8 @@ export async function ensureAnimeCached(options: {
 	titleLanguage: "Romaji" | "English" | "Native";
 	signal?: AbortSignal;
 }): Promise<{ id: number }> {
-	const existing = await options.db.select({ id: anime.id, titles: anime.titles }).from(anime).where(eq(anime.id, options.id)).limit(1);
-	if (existing[0] && parseStoredTitles(existing[0].titles)) {
+	const existing = await options.db.select({ id: anime.id, titles: anime.titles, staleAt: anime.staleAt }).from(anime).where(eq(anime.id, options.id)).limit(1);
+	if (existing[0] && parseStoredTitles(existing[0].titles) && !isAnimeStale(existing[0].staleAt)) {
 		return { id: existing[0].id };
 	}
 
@@ -277,8 +281,46 @@ export async function ensureAnimeCached(options: {
 		throw new Error(`AniList media ${options.id} not found`);
 	}
 	const media = anilistMediaSchema.parse(data.Media);
-	const upserted = await upsertAnimeFromMedia(options.db, media, options.titleLanguage);
+	const related = toRelatedMedia(media, options.titleLanguage);
+	const upserted = await upsertAnimeFromMedia(options.db, media, options.titleLanguage, {
+		related,
+		staleAt: new Date().toISOString(),
+	});
+	await upsertRelatedCatalog(options.db, related);
 	return { id: upserted.id };
+}
+
+async function upsertRelatedCatalog(db: Pick<DatabaseClient, "insert">, items: RelatedMedia[]): Promise<void> {
+	for (const item of items) {
+		if (item.mediaType !== "ANIME") {
+			continue;
+		}
+		await db
+			.insert(anime)
+			.values({
+				id: item.id,
+				title: item.title,
+				titles: stringifyMediaTitles({ romaji: item.title }),
+				type: item.format,
+				episodes: item.episodes,
+				durationMinutes: 0,
+				averageScore: 0,
+				popularity: 0,
+				season: "",
+				airingStatus: "Finished airing",
+				coverUrl: item.coverUrl,
+				bannerUrl: "",
+			})
+			.onConflictDoUpdate({
+				target: anime.id,
+				set: {
+					title: item.title,
+					type: item.format,
+					episodes: item.episodes,
+					coverUrl: item.coverUrl,
+				},
+			});
+	}
 }
 
 export async function upsertMediaList(
@@ -286,7 +328,7 @@ export async function upsertMediaList(
 	entry: AnilistMediaList,
 	titleLanguage: "Romaji" | "English" | "Native" = "Romaji",
 ): Promise<Pick<Anime, "id" | "coverUrl" | "bannerUrl"> | null> {
-	const media = entry.media ? anilistMediaSchema.parse(entry.media) : null;
+	const media = entry.media;
 	if (!media) {
 		return null;
 	}
@@ -346,8 +388,16 @@ function writeListChunk(db: DatabaseClient, entries: AnilistMediaList[], titleLa
 						type: sql`excluded.type`,
 						episodes: sql`excluded.episodes`,
 						durationMinutes: sql`excluded.duration_minutes`,
+						averageScore: sql`excluded.average_score`,
+						popularity: sql`excluded.popularity`,
+						ratedRank: sql`excluded.rated_rank`,
+						popularRank: sql`excluded.popular_rank`,
 						season: sql`excluded.season`,
 						airingStatus: sql`excluded.airing_status`,
+						genres: sql`excluded.genres`,
+						tags: sql`excluded.tags`,
+						producers: sql`excluded.producers`,
+						synopsis: sql`excluded.synopsis`,
 						lastAiredEpisode: sql`excluded.last_aired_episode`,
 						nextAiringAt: sql`excluded.next_airing_at`,
 						endDate: sql`excluded.end_date`,
@@ -409,7 +459,7 @@ export async function syncAniListList(
 		token: string;
 		userId: number;
 		signal?: AbortSignal;
-		onProgress?: (processed: number) => void;
+		onProgress?: (processed: number, wrote: number) => void;
 	},
 ): Promise<number> {
 	const { titleLanguage } = loadAppSettings();
@@ -430,7 +480,7 @@ export async function syncAniListList(
 				syncedIds.add(id);
 			}
 			processed += entries.length;
-			options.onProgress?.(processed);
+			options.onProgress?.(processed, written.ids.length);
 		},
 	);
 	if (options.signal?.aborted) {
@@ -438,4 +488,81 @@ export async function syncAniListList(
 	}
 	deleteStaleListEntries(db, [...syncedIds]);
 	return syncedIds.size;
+}
+
+const LIVE_AIRING_STATUS = ["Currently airing", "Not yet released", "Hiatus"];
+const LIVE_PAGE = 25;
+
+export async function syncAniListLive(
+	db: DatabaseClient,
+	options: {
+		token: string;
+		signal?: AbortSignal;
+	},
+): Promise<number> {
+	const { titleLanguage } = loadAppSettings();
+	const listed = await db
+		.select({ id: anime.id })
+		.from(anime)
+		.innerJoin(listEntry, eq(listEntry.animeId, anime.id))
+		.where(or(inArray(anime.airingStatus, LIVE_AIRING_STATUS), isNotNull(anime.nextAiringAt)));
+	const ids = [...new Set(listed.map((row) => row.id))];
+	if (ids.length === 0) {
+		return 0;
+	}
+	const staleAt = new Date().toISOString();
+	let wrote = 0;
+	for (const part of chunkRows(ids, LIVE_PAGE)) {
+		if (options.signal?.aborted) {
+			throw new DOMException("Aborted", "AbortError");
+		}
+		const data = await anilistGraphql<{ Page: unknown }>({
+			query: GET_MEDIA_LIVE,
+			variables: { ids: part, page: 1 },
+			token: options.token,
+			signal: options.signal,
+		});
+		const page = searchPageSchema.parse(data.Page);
+		const patches: Array<{
+			id: number;
+			episodes: number;
+			airingStatus: string;
+			lastAiredEpisode: number;
+			nextAiringAt: string | null;
+			endDate: string | null;
+			related: string;
+			staleAt: string;
+		}> = [];
+		const relatedItems: RelatedMedia[] = [];
+		for (const media of page.media ?? []) {
+			if (!media) {
+				continue;
+			}
+			const row = toAnimeRow(media, titleLanguage);
+			const related = toRelatedMedia(media, titleLanguage);
+			relatedItems.push(...related);
+			patches.push({
+				id: row.id,
+				episodes: row.episodes,
+				airingStatus: row.airingStatus,
+				lastAiredEpisode: row.lastAiredEpisode,
+				nextAiringAt: row.nextAiringAt,
+				endDate: row.endDate,
+				related: JSON.stringify(related),
+				staleAt,
+			});
+		}
+		if (patches.length === 0) {
+			continue;
+		}
+		db.transaction((tx) => {
+			for (const patch of patches) {
+				const { id, ...set } = patch;
+				tx.update(anime).set(set).where(eq(anime.id, id)).run();
+			}
+		});
+		await upsertRelatedCatalog(db, relatedItems);
+		wrote += patches.length;
+	}
+	return wrote;
 }

@@ -7,6 +7,7 @@ import { folderPathExists, normalizeFolderPath } from "../../lib/folder-path";
 import { parseJsonArray } from "../../lib/parse-json-array";
 import { settingsFormPatchSchema } from "../../lib/schemas/app-settings";
 import { cacheKindsSchema } from "../../lib/schemas/cache-kind";
+import { parseRelatedMedia, type RelatedMedia } from "../../lib/schemas/related-media";
 import { listStatusSchema } from "../../shared/list";
 import { getActivitySnapshot, subscribeActivity } from "../activity";
 import { displayTitleFromRow } from "../anilist/map";
@@ -46,11 +47,12 @@ import { coversRouter } from "./covers";
 import { desktopRouter } from "./desktop";
 import { updaterRouter } from "./updater";
 
-type AnimeDetail = Omit<Anime, "durationMinutes" | "genres" | "tags" | "producers" | "titles"> & {
+type AnimeDetail = Omit<Anime, "durationMinutes" | "genres" | "tags" | "producers" | "titles" | "related"> & {
 	genres: string[];
 	tags: string[];
 	producers: string[];
 	titles: StoredAnimeTitles;
+	related: RelatedMedia[];
 	episodesWatched: number;
 	score: number | null;
 	status: string | null;
@@ -92,6 +94,8 @@ async function loadAnimeDetail(db: SelectDatabase, id: number): Promise<AnimeDet
 			endDate: anime.endDate,
 			coverUrl: anime.coverUrl,
 			bannerUrl: anime.bannerUrl,
+			staleAt: anime.staleAt,
+			related: anime.related,
 			episodesWatched: listEntry.episodesWatched,
 			score: listEntry.score,
 			status: listEntry.status,
@@ -124,6 +128,7 @@ async function loadAnimeDetail(db: SelectDatabase, id: number): Promise<AnimeDet
 		genres: parseJsonArray(row.genres),
 		tags: parseJsonArray(row.tags),
 		producers: parseJsonArray(row.producers),
+		related: parseRelatedMedia(row.related),
 		episodesWatched: row.episodesWatched ?? 0,
 		score: row.score,
 		status: row.status,

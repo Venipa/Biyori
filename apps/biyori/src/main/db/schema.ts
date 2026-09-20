@@ -27,6 +27,8 @@ export const anime = sqliteTable("anime", {
 	endDate: text("end_date"),
 	coverUrl: text("cover_url").notNull().default(""),
 	bannerUrl: text("banner_url").notNull().default(""),
+	staleAt: text("stale_at"),
+	related: text("related").notNull().default("[]"),
 });
 
 export const listEntry = sqliteTable("list_entry", {

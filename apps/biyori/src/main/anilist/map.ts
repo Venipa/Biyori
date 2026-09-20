@@ -2,6 +2,7 @@ import { z } from "zod";
 import { parseStoredTitles, stringifyMediaTitles } from "../../lib/anime-titles";
 import type { AnilistMediaCard, AnilistMediaCardCached } from "../../lib/schemas/anilist-media-card";
 import type { TitleLanguage } from "../../lib/schemas/app-settings";
+import type { RelatedMedia } from "../../lib/schemas/related-media";
 import type { ListStatus } from "../../shared/list";
 import type { AnimeInsert, ListEntryInsert } from "../db/types";
 
@@ -101,6 +102,40 @@ export const anilistMediaSchema = z.object({
 		.object({
 			episode: z.number().nullable().optional(),
 			airingAt: z.number().nullable().optional(),
+		})
+		.nullable()
+		.optional(),
+	relations: z
+		.object({
+			edges: z
+				.array(
+					z
+						.object({
+							relationType: z.string().nullable().optional(),
+							node: z
+								.object({
+									id: z.number(),
+									type: z.string().nullable().optional(),
+									format: z.string().nullable().optional(),
+									title: titleSchema,
+									coverImage: z
+										.object({
+											extraLarge: z.string().nullable().optional(),
+											large: z.string().nullable().optional(),
+										})
+										.nullable()
+										.optional(),
+									episodes: z.number().nullable().optional(),
+									chapters: z.number().nullable().optional(),
+									status: z.string().nullable().optional(),
+								})
+								.nullable()
+								.optional(),
+						})
+						.nullable(),
+				)
+				.nullable()
+				.optional(),
 		})
 		.nullable()
 		.optional(),
@@ -230,6 +265,16 @@ export function mapFormat(format: string | null | undefined): string {
 			return "OVA";
 		case "ONA":
 			return "ONA";
+		case "SPECIAL":
+			return "Special";
+		case "TV_SHORT":
+			return "TV short";
+		case "MANGA":
+			return "Manga";
+		case "NOVEL":
+			return "Novel";
+		case "ONE_SHOT":
+			return "One shot";
 		default:
 			return "TV";
 	}
@@ -394,6 +439,29 @@ export function toAnimeRow(media: AnilistMedia, titleLanguage: TitleLanguage = "
 		coverUrl: pickCoverUrl(media),
 		bannerUrl: pickBannerUrl(media),
 	};
+}
+
+export function toRelatedMedia(media: AnilistMedia, titleLanguage: TitleLanguage = "Romaji"): RelatedMedia[] {
+	const items: RelatedMedia[] = [];
+	for (const edge of media.relations?.edges ?? []) {
+		const node = edge?.node;
+		const relationType = edge?.relationType?.trim() ?? "";
+		if (!node || relationType === "CHARACTER") {
+			continue;
+		}
+		const mediaType = node.type === "MANGA" ? "MANGA" : "ANIME";
+		items.push({
+			id: node.id,
+			mediaType,
+			relationType: relationType || "OTHER",
+			title: pickTitle(node.title, titleLanguage),
+			coverUrl: node.coverImage?.extraLarge || node.coverImage?.large || "",
+			format: mapFormat(node.format),
+			episodes: node.episodes ?? 0,
+			chapters: node.chapters ?? null,
+		});
+	}
+	return items;
 }
 
 export function toListEntryRow(animeId: number, entry: AnilistMediaList): ListEntryInsert {
