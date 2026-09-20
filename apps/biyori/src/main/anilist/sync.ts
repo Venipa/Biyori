@@ -6,7 +6,7 @@ import type { RelatedMedia } from "../../lib/schemas/related-media";
 import type { AnilistSeasonName, SeasonItem } from "../../lib/schemas/seasons";
 import type { DatabaseClient } from "../db";
 import { anime, listEntry } from "../db/schema";
-import type { Anime } from "../db/types";
+import type { Anime, AnimeInsert, ListEntryInsert } from "../db/types";
 import { loadAppSettings } from "../settings";
 import { anilistGraphql } from "./client";
 import {
@@ -356,8 +356,8 @@ export async function upsertMediaList(
 }
 
 function writeListChunk(db: DatabaseClient, entries: AnilistMediaList[], titleLanguage: TitleLanguage): { ids: number[] } {
-	const animeRows = [];
-	const listRows = [];
+	const animeRows: AnimeInsert[] = [];
+	const listRows: ListEntryInsert[] = [];
 	const ids: number[] = [];
 	const seen = new Set<number>();
 	for (const entry of entries) {

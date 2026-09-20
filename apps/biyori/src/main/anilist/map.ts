@@ -407,7 +407,14 @@ function nextAiringAtIso(airingAt: number | null | undefined): string | null {
 	return new Date(airingAt * 1000).toISOString();
 }
 
-export function toAnimeRow(media: AnilistMedia, titleLanguage: TitleLanguage = "Romaji"): AnimeInsert {
+export type AnimeMappedRow = AnimeInsert & {
+	id: number;
+	lastAiredEpisode: number;
+	nextAiringAt: string | null;
+	endDate: string | null;
+};
+
+export function toAnimeRow(media: AnilistMedia, titleLanguage: TitleLanguage = "Romaji"): AnimeMappedRow {
 	const preferred = pickTitle(media.title, titleLanguage);
 	const studios = (media.studios?.nodes ?? [])
 		.filter((node): node is NonNullable<typeof node> => Boolean(node))

@@ -26,8 +26,6 @@ export function AnimeInfoSheetPeek({ frame, depth }: AnimeInfoSheetPeekProps) {
 			aria-hidden
 			className='pointer-events-none absolute inset-0 origin-bottom-left overflow-hidden rounded-xl rounded-b-none bg-popover ring-1 ring-foreground/10'
 			style={{ zIndex: depth + 1 }}
-			originX={0}
-			originY={1}
 			initial={off}
 			animate={pose}
 			exit={{ ...off, transition: { duration: reduce ? 0 : 0.15, ease: EASE } }}

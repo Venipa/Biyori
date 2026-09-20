@@ -160,7 +160,7 @@ function SeasonsPage() {
 	});
 
 	function openSeasonInfo(item: SeasonItem) {
-		animeInfo.open({ id: item.id });
+		animeInfo.open({ id: item.id, infoTab: "main" });
 	}
 
 	async function refreshSeason() {
