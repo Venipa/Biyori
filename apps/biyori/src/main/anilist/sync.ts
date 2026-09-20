@@ -1,8 +1,10 @@
-import { eq, notInArray } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import type { TitleLanguage } from "../../lib/schemas/app-settings";
 import type { AnilistSeasonName, SeasonItem } from "../../lib/schemas/seasons";
 import type { DatabaseClient } from "../db";
 import { anime, listEntry } from "../db/schema";
 import type { Anime } from "../db/types";
+import { loadAppSettings } from "../settings";
 import { anilistGraphql } from "./client";
 import {
 	type AnilistMedia,
@@ -23,12 +25,14 @@ import {
 import { GET_ALL_ANIMES_FROM_UID, GET_CURRENT_USER, GET_MEDIA_BY_ID, SAVE_MEDIA_LIST_ENTRY, SEARCH_MEDIA, SEASON_MEDIA } from "./queries";
 import { readSeasonCache, writeSeasonCache } from "./season-cache";
 
-const UPSERT_YIELD_EVERY = 4;
+const INSERT_CHUNK = 40;
 
-function yieldToEventLoop(): Promise<void> {
-	return new Promise((resolve) => {
-		setTimeout(resolve, 0);
-	});
+function chunkRows<T>(rows: T[], size: number): T[][] {
+	const out: T[][] = [];
+	for (let i = 0; i < rows.length; i += size) {
+		out.push(rows.slice(i, i + size));
+	}
+	return out;
 }
 
 export async function fetchViewer(
@@ -51,6 +55,16 @@ export async function fetchViewer(
 
 export async function fetchMediaListCollection(options: { token: string; userId: number; signal?: AbortSignal }): Promise<AnilistMediaList[]> {
 	const entries: AnilistMediaList[] = [];
+	await forEachMediaListChunk(options, (chunk) => {
+		entries.push(...chunk);
+	});
+	return entries;
+}
+
+async function forEachMediaListChunk(
+	options: { token: string; userId: number; signal?: AbortSignal },
+	onChunk: (entries: AnilistMediaList[]) => Promise<void> | void,
+): Promise<void> {
 	let chunk = 1;
 	for (;;) {
 		if (options.signal?.aborted) {
@@ -63,6 +77,7 @@ export async function fetchMediaListCollection(options: { token: string; userId:
 			signal: options.signal,
 		});
 		const collection = mediaListCollectionSchema.parse(data.MediaListCollection);
+		const entries: AnilistMediaList[] = [];
 		for (const list of collection.lists ?? []) {
 			for (const entry of list?.entries ?? []) {
 				if (!entry) {
@@ -71,12 +86,12 @@ export async function fetchMediaListCollection(options: { token: string; userId:
 				entries.push(entry);
 			}
 		}
+		await onChunk(entries);
 		if (!collection.hasNextChunk) {
 			break;
 		}
 		chunk += 1;
 	}
-	return entries;
 }
 
 export async function searchAniListMedia(options: {
@@ -298,52 +313,129 @@ export async function upsertMediaList(
 	return upserted;
 }
 
+function writeListChunk(db: DatabaseClient, entries: AnilistMediaList[], titleLanguage: TitleLanguage): { ids: number[] } {
+	const animeRows = [];
+	const listRows = [];
+	const ids: number[] = [];
+	const seen = new Set<number>();
+	for (const entry of entries) {
+		if (!entry.media) {
+			continue;
+		}
+		if (seen.has(entry.media.id)) {
+			continue;
+		}
+		seen.add(entry.media.id);
+		const row = toAnimeRow(entry.media, titleLanguage);
+		animeRows.push(row);
+		listRows.push(toListEntryRow(row.id, entry));
+		ids.push(row.id);
+	}
+	if (animeRows.length === 0) {
+		return { ids };
+	}
+	db.transaction((tx) => {
+		for (const part of chunkRows(animeRows, INSERT_CHUNK)) {
+			tx.insert(anime)
+				.values(part)
+				.onConflictDoUpdate({
+					target: anime.id,
+					set: {
+						title: sql`excluded.title`,
+						titles: sql`excluded.titles`,
+						type: sql`excluded.type`,
+						episodes: sql`excluded.episodes`,
+						durationMinutes: sql`excluded.duration_minutes`,
+						season: sql`excluded.season`,
+						airingStatus: sql`excluded.airing_status`,
+						lastAiredEpisode: sql`excluded.last_aired_episode`,
+						nextAiringAt: sql`excluded.next_airing_at`,
+						endDate: sql`excluded.end_date`,
+						coverUrl: sql`excluded.cover_url`,
+						bannerUrl: sql`excluded.banner_url`,
+					},
+				})
+				.run();
+		}
+		for (const part of chunkRows(listRows, INSERT_CHUNK)) {
+			tx.insert(listEntry)
+				.values(part)
+				.onConflictDoUpdate({
+					target: listEntry.animeId,
+					set: {
+						status: sql`excluded.status`,
+						episodesWatched: sql`excluded.episodes_watched`,
+						score: sql`excluded.score`,
+						started: sql`excluded.started`,
+						completed: sql`excluded.completed`,
+						lastUpdated: sql`excluded.last_updated`,
+						timesRewatched: sql`excluded.times_rewatched`,
+						rewatching: sql`excluded.rewatching`,
+						notes: sql`excluded.notes`,
+						dateStarted: sql`excluded.date_started`,
+						dateCompleted: sql`excluded.date_completed`,
+						anilistListId: sql`excluded.anilist_list_id`,
+					},
+				})
+				.run();
+		}
+	});
+	return { ids };
+}
+
+function deleteStaleListEntries(db: DatabaseClient, keepIds: number[]): void {
+	db.transaction((tx) => {
+		if (keepIds.length === 0) {
+			tx.delete(listEntry).run();
+			return;
+		}
+		tx.run(sql`create temp table if not exists anilist_list_keep (id integer primary key)`);
+		tx.run(sql`delete from anilist_list_keep`);
+		for (const part of chunkRows(keepIds, INSERT_CHUNK)) {
+			tx.run(
+				sql`insert into anilist_list_keep (id) values ${sql.join(
+					part.map((id) => sql`(${id})`),
+					sql`, `,
+				)}`,
+			);
+		}
+		tx.delete(listEntry).where(sql`${listEntry.animeId} not in (select id from anilist_list_keep)`).run();
+	});
+}
+
 export async function syncAniListList(
 	db: DatabaseClient,
 	options: {
 		token: string;
 		userId: number;
 		signal?: AbortSignal;
-		onProgress?: (processed: number, total: number) => void;
+		onProgress?: (processed: number) => void;
 	},
-): Promise<Array<Pick<Anime, "id" | "coverUrl" | "bannerUrl">>> {
-	const entries = await fetchMediaListCollection({
-		token: options.token,
-		userId: options.userId,
-		signal: options.signal,
-	});
-	const total = entries.length;
-	options.onProgress?.(0, total);
-	const covers: Array<Pick<Anime, "id" | "coverUrl" | "bannerUrl">> = [];
-	const syncedIds: number[] = [];
+): Promise<number> {
+	const { titleLanguage } = loadAppSettings();
+	const syncedIds = new Set<number>();
 	let processed = 0;
-	for (const entry of entries) {
-		if (options.signal?.aborted) {
-			throw new DOMException("Aborted", "AbortError");
-		}
-		const upserted = await upsertMediaList(db, entry);
-		if (upserted) {
-			syncedIds.push(upserted.id);
-			if (upserted.coverUrl || upserted.bannerUrl) {
-				covers.push({
-					id: upserted.id,
-					coverUrl: upserted.coverUrl,
-					bannerUrl: upserted.bannerUrl,
-				});
+	await forEachMediaListChunk(
+		{
+			token: options.token,
+			userId: options.userId,
+			signal: options.signal,
+		},
+		(entries) => {
+			if (options.signal?.aborted) {
+				throw new DOMException("Aborted", "AbortError");
 			}
-		}
-		processed += 1;
-		options.onProgress?.(processed, total);
-		if (processed % UPSERT_YIELD_EVERY === 0) {
-			await yieldToEventLoop();
-		}
+			const written = writeListChunk(db, entries, titleLanguage);
+			for (const id of written.ids) {
+				syncedIds.add(id);
+			}
+			processed += entries.length;
+			options.onProgress?.(processed);
+		},
+	);
+	if (options.signal?.aborted) {
+		throw new DOMException("Aborted", "AbortError");
 	}
-	const staleListed = syncedIds.length === 0 ? [] : await db.select({ animeId: listEntry.animeId }).from(listEntry).where(notInArray(listEntry.animeId, syncedIds));
-	for (let i = 0; i < staleListed.length; i += 1) {
-		await db.delete(listEntry).where(eq(listEntry.animeId, staleListed[i].animeId));
-		if (i % UPSERT_YIELD_EVERY === 0) {
-			await yieldToEventLoop();
-		}
-	}
-	return covers;
+	deleteStaleListEntries(db, [...syncedIds]);
+	return syncedIds.size;
 }

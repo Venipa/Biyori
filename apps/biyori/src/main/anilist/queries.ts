@@ -69,15 +69,46 @@ rankings {
 }
 `;
 
+const LIST_SYNC_MEDIA_FIELDS = `
+id
+episodes
+duration
+title {
+  romaji
+  english
+  native
+}
+coverImage {
+  extraLarge
+  large
+}
+bannerImage
+synonyms
+status
+season
+seasonYear
+endDate {
+  year
+  month
+  day
+}
+format
+nextAiringEpisode {
+  episode
+  airingAt
+}
+`;
+
 const MEDIA_LIST_FIELDS = `
 id
 media {
-  ${MEDIA_FIELDS}
+  ${LIST_SYNC_MEDIA_FIELDS}
 }
 status
 score
 progress
 repeat
+notes
 startedAt {
   year
   month

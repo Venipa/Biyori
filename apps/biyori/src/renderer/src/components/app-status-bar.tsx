@@ -12,6 +12,7 @@ import { trpc } from "@/mainview/trpc";
 export function AppStatusBar() {
 	const utils = trpc.useUtils();
 	const lastSuccessAt = useRef<number | null>(null);
+	const listRevision = useRef(0);
 	const { open, watchConfirmPromoted } = useActivityPanelState();
 	const { pending, confirm, skip } = useWatchConfirm();
 	const statusQuery = trpc.anilist.syncStatus.useQuery();
@@ -20,9 +21,14 @@ export function AppStatusBar() {
 	trpc.anilist.onSyncStatus.useSubscription(undefined, {
 		onData: (snapshot) => {
 			utils.anilist.syncStatus.setData(undefined, snapshot);
+			if (snapshot.listRevision !== listRevision.current) {
+				listRevision.current = snapshot.listRevision;
+				if (snapshot.listRevision > 0) {
+					void invalidateAnimeQueries(utils, "synced");
+				}
+			}
 			if (snapshot.lastSuccessAt != null && snapshot.lastSuccessAt !== lastSuccessAt.current) {
 				lastSuccessAt.current = snapshot.lastSuccessAt;
-				void invalidateAnimeQueries(utils, "synced");
 				void utils.anilist.status.invalidate();
 			}
 		},

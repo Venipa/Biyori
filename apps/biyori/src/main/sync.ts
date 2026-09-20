@@ -2,6 +2,8 @@ import { clearActivity, completeActivity, upsertActivity } from "./activity";
 import { readAnilistAuth, writeAnilistAuth } from "./anilist/store";
 import { fetchViewer, syncAniListList } from "./anilist/sync";
 import type { DatabaseClient } from "./db";
+import { shouldBumpListRevision } from "./list-revision";
+import { setAppNotice } from "./notice";
 
 export type SyncPhase = "idle" | "running" | "error";
 
@@ -11,6 +13,7 @@ export type SyncSnapshot = {
 	processed: number | null;
 	total: number | null;
 	lastSuccessAt: number | null;
+	listRevision: number;
 };
 
 type SyncListener = (snapshot: SyncSnapshot) => void;
@@ -23,6 +26,7 @@ const IDLE: SyncSnapshot = {
 	processed: null,
 	total: null,
 	lastSuccessAt: null,
+	listRevision: 0,
 };
 
 let db: DatabaseClient | null = null;
@@ -32,11 +36,11 @@ let rerunAfter = false;
 let abortController: AbortController | null = null;
 const listeners = new Set<SyncListener>();
 
-function synchronizingMessage(percent?: number): string {
-	if (percent == null) {
+function synchronizingMessage(processed?: number): string {
+	if (processed == null || processed <= 0) {
 		return `Synchronizing with ${SERVICE_NAME}...`;
 	}
-	return `Synchronizing with ${SERVICE_NAME}... (${percent}%)`;
+	return `Synchronizing with ${SERVICE_NAME}... (${processed})`;
 }
 
 function taggedMessage(message: string): string {
@@ -50,19 +54,21 @@ function emit(next: SyncSnapshot): void {
 	}
 }
 
-function emitRunning(message: string, processed: number | null, total: number | null): void {
+function emitRunning(message: string, processed: number | null, total: number | null, bumpList = false): void {
 	emit({
 		phase: "running",
 		message,
 		processed,
 		total,
 		lastSuccessAt: snapshot.lastSuccessAt,
+		listRevision: bumpList ? snapshot.listRevision + 1 : snapshot.listRevision,
 	});
 	upsertActivity({
 		source: "anilist-sync",
 		title: "AniList",
-		body: processed != null && total != null && total > 0 ? `Synchronizing (${Math.round((processed / total) * 100)}%)` : "Synchronizing",
+		body: processed != null && processed > 0 ? `Synchronizing (${processed})` : "Synchronizing",
 	});
+	setAppNotice(message, { toast: false, busy: true });
 }
 
 export function getSyncSnapshot(): SyncSnapshot {
@@ -87,6 +93,7 @@ export function abortAniListSync(): void {
 	emit({
 		...IDLE,
 		lastSuccessAt: snapshot.lastSuccessAt,
+		listRevision: snapshot.listRevision,
 	});
 	clearActivity("anilist-sync");
 }
@@ -128,10 +135,12 @@ async function runSync(): Promise<void> {
 			emit({
 				...IDLE,
 				lastSuccessAt: snapshot.lastSuccessAt,
+				listRevision: snapshot.listRevision,
 				phase: "error",
 				message: title,
 			});
 			completeActivity({ source: "anilist-sync", title: "AniList", body: "Not connected", status: "error" });
+			setAppNotice(title);
 			return;
 		}
 
@@ -148,13 +157,18 @@ async function runSync(): Promise<void> {
 			avatarUrl: viewer.avatarUrl ?? undefined,
 		});
 
-		const covers = await syncAniListList(db, {
+		let lastListBumpAt = 0;
+		const synced = await syncAniListList(db, {
 			token: auth.accessToken,
 			userId: viewer.id,
 			signal,
-			onProgress: (processed, total) => {
-				const percent = total > 0 ? Math.round((processed / total) * 100) : undefined;
-				emitRunning(synchronizingMessage(percent), processed, total);
+			onProgress: (processed) => {
+				const now = Date.now();
+				const bumpList = processed > 0 && shouldBumpListRevision(lastListBumpAt, now);
+				if (bumpList) {
+					lastListBumpAt = now;
+				}
+				emitRunning(synchronizingMessage(processed), processed, null, bumpList);
 			},
 		});
 
@@ -164,15 +178,17 @@ async function runSync(): Promise<void> {
 
 		emit({
 			phase: "idle",
-			message: "",
-			processed: covers.length,
-			total: covers.length,
+			message: taggedMessage(`${synced} titles`),
+			processed: synced,
+			total: synced,
 			lastSuccessAt: Date.now(),
+			listRevision: snapshot.listRevision + 1,
 		});
+		setAppNotice(taggedMessage(`${synced} titles`));
 		completeActivity({
 			source: "anilist-sync",
 			title: "AniList",
-			body: `Finished · ${covers.length} titles`,
+			body: `Finished · ${synced} titles`,
 			status: "ok",
 		});
 	} catch (error) {
@@ -187,8 +203,10 @@ async function runSync(): Promise<void> {
 			processed: snapshot.processed,
 			total: snapshot.total,
 			lastSuccessAt: snapshot.lastSuccessAt,
+			listRevision: snapshot.listRevision,
 		});
 		completeActivity({ source: "anilist-sync", title: "AniList", body: message, status: "error" });
+		setAppNotice(title);
 	} finally {
 		running = false;
 		if (abortController === controller) {
