@@ -61,12 +61,13 @@ pub fn normalize_for_lookup(value: &str) -> String {
 fn lookup_keys(query: &str) -> Vec<String> {
 	let key = normalize_for_lookup(query);
 	let mut keys = vec![key.clone()];
-	if key.len() > 4 {
-		let tail = &key[key.len() - 4..];
-		if tail.chars().all(|ch| ch.is_ascii_digit()) {
-			let year: i32 = tail.parse().unwrap_or(0);
+	let bytes = key.as_bytes();
+	if bytes.len() > 4 {
+		let tail = &bytes[bytes.len() - 4..];
+		if tail.iter().all(u8::is_ascii_digit) {
+			let year: i32 = std::str::from_utf8(tail).ok().and_then(|s| s.parse().ok()).unwrap_or(0);
 			if (1900..2100).contains(&year) {
-				keys.push(key[..key.len() - 4].to_string());
+				keys.push(key[..bytes.len() - 4].to_string());
 			}
 		}
 	}
@@ -463,6 +464,19 @@ mod tests {
 	fn lookup_keeps_season_seven() {
 		assert_eq!(normalize_for_lookup("Foo 7th Season"), normalize_for_lookup("Foo Season 7"));
 		assert_eq!(normalize_for_lookup("Foo S07"), normalize_for_lookup("Foo 7th season"));
+	}
+
+	#[test]
+	fn lookup_keys_cjk_does_not_panic() {
+		assert_eq!(lookup_keys("占領区域特別行政区"), vec![normalize_for_lookup("占領区域特別行政区")]);
+	}
+
+	#[test]
+	fn lookup_keys_strips_trailing_year() {
+		assert_eq!(
+			lookup_keys("Foo 2016"),
+			vec![normalize_for_lookup("Foo 2016"), normalize_for_lookup("Foo")]
+		);
 	}
 
 	#[test]

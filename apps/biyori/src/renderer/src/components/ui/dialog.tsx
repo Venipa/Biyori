@@ -35,14 +35,17 @@ function DialogContent({
 	children,
 	showCloseButton = true,
 	from = "center",
+	underlay,
 	...props
 }: DialogPrimitive.Popup.Props & {
 	showCloseButton?: boolean;
 	from?: "center" | "bottom";
+	underlay?: React.ReactNode;
 }) {
 	return (
 		<DialogPortal>
 			<DialogOverlay className={from === "bottom" ? "duration-200" : undefined} />
+			{underlay}
 			<DialogPrimitive.Popup
 				data-slot='dialog-content'
 				className={cn(

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { jumpAnimeInfoFrame, pushAnimeInfoFrame, replaceAnimeInfoFrame } from "./anime-info-stack";
+import { jumpAnimeInfoFrame, pushAnimeInfoFrame, replaceAnimeInfoFrame, visibleAnimeInfoSheets } from "./anime-info-stack";
 
 describe("anime info stack", () => {
 	test("related push then jump restores previous", () => {
@@ -21,5 +21,32 @@ describe("anime info stack", () => {
 		const root = replaceAnimeInfoFrame({ id: 1, infoTab: "main" });
 		const again = pushAnimeInfoFrame(root.stack, root.current, { id: 1, infoTab: "main" });
 		expect(again.stack).toEqual([]);
+	});
+
+	test("visible sheets cap at 3 including current", () => {
+		const current = { id: 9, infoTab: "main" as const };
+		expect(visibleAnimeInfoSheets([], undefined)).toEqual([]);
+		expect(visibleAnimeInfoSheets([], current)).toEqual([current]);
+		expect(visibleAnimeInfoSheets([{ id: 1, infoTab: "main" }], current).map((frame) => frame.id)).toEqual([1, 9]);
+		expect(
+			visibleAnimeInfoSheets(
+				[
+					{ id: 1, infoTab: "main" },
+					{ id: 2, infoTab: "main" },
+				],
+				current,
+			).map((frame) => frame.id),
+		).toEqual([1, 2, 9]);
+		expect(
+			visibleAnimeInfoSheets(
+				[
+					{ id: 1, infoTab: "main" },
+					{ id: 2, infoTab: "main" },
+					{ id: 3, infoTab: "main" },
+					{ id: 4, infoTab: "main" },
+				],
+				current,
+			).map((frame) => frame.id),
+		).toEqual([3, 4, 9]);
 	});
 });

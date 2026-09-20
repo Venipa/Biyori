@@ -42,3 +42,10 @@ export function jumpAnimeInfoFrame(stack: AnimeInfoFrame[], index: number): { st
 	}
 	return { stack: stack.slice(0, index), current: frame };
 }
+
+export function visibleAnimeInfoSheets(history: AnimeInfoFrame[], current: AnimeInfoFrame | undefined): AnimeInfoFrame[] {
+	if (!current) {
+		return [];
+	}
+	return [...history, current].slice(-3);
+}

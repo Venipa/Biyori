@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, FlameIcon, FolderOpen, PlusIcon, StarIcon, XIcon } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { useId, useState } from "react";
 import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 import AniDBIcon from "@/assets/anidb.png";
@@ -13,6 +14,7 @@ import { type AnimeInfoFormInput, type AnimeInfoFormValues, animeInfoFormSchema 
 import { joinTitleList, splitTitleList } from "@/lib/split-title-list";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeInfoBackHistory } from "@/mainview/components/anime-info-back-history";
+import { AnimeInfoSheetPeek } from "@/mainview/components/anime-info-sheet-peek";
 import { AnimeListAction, AnimeListStatusSelect } from "@/mainview/components/anime-list-action";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
 import { RelatedMediaSection } from "@/mainview/components/related-media-card";
@@ -29,7 +31,7 @@ import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Spinner } from "@/mainview/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { type AnimeRankLine, animeAiringNotice } from "@/mainview/lib/anime-airing-notice";
-import type { AnimeInfoFrame } from "@/mainview/lib/anime-info-stack";
+import { type AnimeInfoFrame, visibleAnimeInfoSheets } from "@/mainview/lib/anime-info-stack";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 import { getNeighborAnimeId } from "@/mainview/lib/selected-anime";
@@ -129,12 +131,31 @@ export function AnimeInfoDialog({
 	onBackTo?: (index: number) => void;
 	history?: AnimeInfoFrame[];
 }) {
+	const currentFrame: AnimeInfoFrame | undefined = anime
+		? {
+				id: anime.id,
+				infoTab: infoTab ?? "main",
+				title: anime.title,
+				coverUrl: anime.coverUrl,
+				season: anime.season,
+			}
+		: undefined;
+	const peeks = visibleAnimeInfoSheets(history, currentFrame).slice(0, -1);
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete} modal>
 			<DialogContent
 				from='bottom'
 				showCloseButton={false}
 				className='flex max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-b-none p-0 sm:max-w-3xl'
+				underlay={
+					<div className='pointer-events-none fixed top-8 right-0 bottom-0 left-0 z-50 mx-auto w-full max-w-3xl'>
+						<AnimatePresence>
+							{peeks.map((frame, index) => (
+								<AnimeInfoSheetPeek key={frame.id} frame={frame} depth={(2 - peeks.length + index) as 0 | 1} />
+							))}
+						</AnimatePresence>
+					</div>
+				}
 				onKeyDownCapture={(event) => {
 					if (event.key === "Escape" && history.length > 0 && onBackTo) {
 						event.preventDefault();
@@ -161,7 +182,6 @@ export function AnimeInfoDialog({
 					onNavigate(nextId);
 				}}>
 				<DialogTitle className='sr-only'>{anime?.title ?? "Anime Information"}</DialogTitle>
-
 				{anime ? (
 					<AnimeInfoBody
 						key={anime.id}
