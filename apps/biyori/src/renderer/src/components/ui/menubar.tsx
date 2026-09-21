@@ -47,7 +47,7 @@ function MenubarTrigger({ className, ...props }: React.ComponentProps<typeof Dro
 	);
 }
 
-function MenubarContent({ className, align = "start", alignOffset = -4, sideOffset = 8, ...props }: React.ComponentProps<typeof DropdownMenuContent>) {
+function MenubarContent({ className, align = "start", alignOffset = -4, sideOffset = 6, ...props }: React.ComponentProps<typeof DropdownMenuContent>) {
 	return (
 		<DropdownMenuContent
 			data-slot='menubar-content'
