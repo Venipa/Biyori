@@ -172,28 +172,37 @@ function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: bool
 			render={<Link to='/app/now-playing' aria-current={active ? "page" : undefined} />}
 			nativeButton={false}
 			className={cn(
-				"relative rounded-xl h-auto min-h-8 w-full items-center justify-start gap-2 overflow-hidden py-1.5 pr-2 pl-4 has-data-[icon=inline-start]:pl-4",
+				"relative h-auto w-full flex-col items-stretch gap-0 overflow-hidden rounded-lg border border-border p-0 hover:bg-transparent",
 				hasSubtitle && "whitespace-normal",
-				showCover && "hover:bg-transparent",
 				active ? "text-foreground" : "text-foreground/80",
 			)}>
 			{showCover ? (
 				<span aria-hidden className='pointer-events-none absolute inset-0'>
-					<AnimeCover id={coverId} coverUrl={coverUrl || undefined} alt='' className={cn("size-full scale-120 opacity-40", !playing && "grayscale")} />
-					<span className='absolute inset-0 bg-sidebar/60 backdrop-blur-xs' />
+					<AnimeCover
+						id={coverId}
+						coverUrl={coverUrl || undefined}
+						alt=''
+						className={cn("size-full scale-125 opacity-50 blur-xs [mask-image:radial-gradient(8rem_6rem_at_22%_62%,#000,transparent)]", !playing && "grayscale")}
+					/>
+					<span className='absolute inset-0 bg-sidebar/40' />
 				</span>
 			) : null}
-			<ActiveNavPill active={active} isEnter={isEnter} />
-			{!hasSubtitle && <HomeIcon data-icon='inline-start' className='relative z-10 size-4 shrink-0 self-center' />}
-			<span className='relative z-10 flex min-w-0 flex-1 flex-col items-start gap-0.5'>
+			<span className={cn("relative z-10 flex min-h-8 items-center gap-2 px-3 py-1.5", playing && "bg-list-playing/80 text-list-playing-foreground")}>
+				<ActiveNavPill active={active} isEnter={isEnter} />
+				{playing ? <PlayIcon className='size-4 shrink-0 fill-current' /> : <HomeIcon data-icon='inline-start' className='size-4 shrink-0' />}
 				<span className='truncate'>{playing ? "Now playing" : "Home"}</span>
-				{hasSubtitle ? (
-					<span className='flex w-full min-w-0 items-start gap-1 text-xs font-normal text-muted-foreground'>
-						{playing ? <PlayIcon className='mt-0.5 size-3 shrink-0 fill-current text-success' /> : null}
-						<span className='line-clamp-2'>{subLines.join(" ")}</span>
-					</span>
-				) : null}
 			</span>
+			{hasSubtitle ? (
+				<>
+					<span className='relative z-10 h-px bg-border' />
+					<span className='relative z-10 flex items-center gap-2 px-2.5 py-1.5'>
+						{showCover ? (
+							<AnimeCover id={coverId} coverUrl={coverUrl || undefined} alt='' className={cn("aspect-2/3 w-7 shrink-0 overflow-hidden rounded-sm", !playing && "grayscale")} />
+						) : null}
+						<span className='line-clamp-2 text-left text-xs font-normal text-muted-foreground'>{subLines.join(" ")}</span>
+					</span>
+				</>
+			) : null}
 		</Button>
 	);
 }
