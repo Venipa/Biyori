@@ -56,20 +56,21 @@ function NavGroup({ label, children }: { label: string; children: ReactNode }) {
 	);
 }
 
-function ActiveNavPill({ active, isEnter }: { active: boolean; isEnter: boolean }) {
-	if (!active) {
-		return null;
-	}
+function NavIconSlot({ active, isEnter, children }: { active: boolean; isEnter: boolean; children: ReactNode }) {
 	return (
-		<motion.span
-			layoutId='app-nav-pill'
-			layout='position'
-			aria-hidden
-			className='pointer-events-none absolute top-1/2 left-1.5 z-20 mt-[-7px] h-3.5 w-1 rounded-full bg-primary'
-			initial={isEnter ? { opacity: 0 } : false}
-			animate={{ opacity: 1 }}
-			transition={navPillSpring}
-		/>
+		<span className='relative grid size-6 shrink-0 place-items-center'>
+			{active ? (
+				<motion.span
+					layoutId='app-nav-pill'
+					aria-hidden
+					className='pointer-events-none absolute inset-0 rounded-md bg-primary/15'
+					initial={isEnter ? { opacity: 0 } : false}
+					animate={{ opacity: 1 }}
+					transition={navPillSpring}
+				/>
+			) : null}
+			<span className='relative'>{children}</span>
+		</span>
 	);
 }
 
@@ -188,8 +189,9 @@ function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: bool
 				</span>
 			) : null}
 			<span className={cn("relative z-10 flex min-h-8 items-center gap-2 px-3 py-1.5", playing && "bg-list-playing/80 text-list-playing-foreground")}>
-				<ActiveNavPill active={active} isEnter={isEnter} />
-				{playing ? <PlayIcon className='size-4 shrink-0 fill-current' /> : <HomeIcon className='size-4 shrink-0' />}
+				<NavIconSlot active={active} isEnter={isEnter}>
+					{playing ? <PlayIcon className='size-4 shrink-0 fill-current' /> : <HomeIcon className='size-4 shrink-0' />}
+				</NavIconSlot>
 				<span className='truncate'>{playing ? "Now playing" : "Home"}</span>
 			</span>
 			{hasSubtitle ? (
@@ -253,8 +255,9 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 					"relative flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm hover:bg-list-playing hover:text-list-playing-foreground",
 					watchingActive ? "bg-list-playing text-list-playing-foreground" : "text-foreground/80",
 				)}>
-				<ActiveNavPill active={watchingActive} isEnter={isEnter} />
-				<PlayIcon className='size-4 shrink-0' />
+				<NavIconSlot active={watchingActive} isEnter={isEnter}>
+					<PlayIcon className='size-4 shrink-0' />
+				</NavIconSlot>
 				<span className='flex-1 truncate'>Watching</span>
 				<span className='text-xs tabular-nums opacity-70'>{countsQuery.data?.["Currently watching"] ?? 0}</span>
 			</Link>
@@ -287,8 +290,9 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 function NavLink({ to, label, icon: Icon, badge, active, isEnter }: { to: string; label: string; icon: typeof PlayIcon; badge?: number; active: boolean; isEnter: boolean }) {
 	return (
 		<Link to={to} aria-current={active ? "page" : undefined} className={navItemClass(active)}>
-			<ActiveNavPill active={active} isEnter={isEnter} />
-			<Icon className='size-4 shrink-0 text-current' />
+			<NavIconSlot active={active} isEnter={isEnter}>
+				<Icon className='size-4 shrink-0 text-current' />
+			</NavIconSlot>
 			<span className='flex-1 truncate'>{label}</span>
 			{typeof badge === "number" && badge > 0 ? <span className='text-xs text-muted-foreground'>({badge})</span> : null}
 		</Link>

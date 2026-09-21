@@ -8,7 +8,9 @@ import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
 import type { NowPlayingView } from "@/lib/schemas/app-settings";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
+import { AnimeScoreControl } from "@/mainview/components/anime-score-control";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
+import { AnimeStatusNotice } from "@/mainview/components/anime-status-notice";
 import { PlaceholderView } from "@/mainview/components/placeholder-view";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/mainview/components/ui/alert";
 import { Badge } from "@/mainview/components/ui/badge";
@@ -592,15 +594,30 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 			</div>
 
 			<div className='relative z-10 -mt-16 grid grid-cols-[14rem_1fr] items-start gap-x-4 gap-y-3 px-4'>
-				<div className='row-span-2 aspect-2/3 w-56 shrink-0 overflow-hidden rounded-md border bg-muted shadow-md ring-1 ring-foreground/10'>
-					<AnimeCover
-						id={match.id}
-						coverUrl={detail?.coverUrl || match.coverUrl || undefined}
-						alt={`Key art for ${title}`}
-						width={224}
-						height={336}
-						className='size-full object-cover'
-					/>
+				<div className='row-span-2 flex min-w-0 flex-col gap-2'>
+					<div className='aspect-2/3 w-full overflow-hidden rounded-md border bg-muted shadow-md ring-1 ring-foreground/10'>
+						<AnimeCover
+							id={match.id}
+							coverUrl={detail?.coverUrl || match.coverUrl || undefined}
+							alt={`Key art for ${title}`}
+							width={224}
+							height={336}
+							className='size-full object-cover'
+						/>
+					</div>
+					{detail ? (
+						<AnimeStatusNotice
+							surface='nowPlaying'
+							anime={{
+								airingStatus: detail.airingStatus,
+								lastAiredEpisode: detail.lastAiredEpisode,
+								nextAiringAt: detail.nextAiringAt,
+								endDate: detail.endDate,
+								ratedRank: detail.ratedRank,
+								popularRank: detail.popularRank,
+							}}
+						/>
+					) : null}
 				</div>
 
 				<div className='flex min-h-16 min-w-0 flex-col justify-end gap-1 py-2'>
@@ -655,6 +672,17 @@ function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 								Watch next episode
 							</Button>
 						) : null}
+						<AnimeScoreControl
+							animeId={match.id}
+							score={detail?.score ?? match.score}
+							status={status ?? ""}
+							progress={watched}
+							notes={match.notes}
+							rewatching={rewatching}
+							timesRewatched={match.timesRewatched}
+							dateStarted={match.dateStarted}
+							dateCompleted={match.dateCompleted}
+						/>
 						<Button
 							type='button'
 							variant='ghost'
