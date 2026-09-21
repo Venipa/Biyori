@@ -54,8 +54,8 @@ export function TopMenuBar() {
 	const { checking, checkForUpdates } = useCheckForUpdates();
 
 	return (
-		<div className='flex h-7 shrink-0 items-center border-b bg-card px-2'>
-			<Menubar className='h-auto border-none bg-transparent p-0'>
+		<div className='app-region-no-drag ml-3 flex h-full shrink-0 items-stretch'>
+			<Menubar className='h-full gap-0 rounded-none border-none bg-transparent p-0'>
 				<MenubarMenu>
 					<MenubarTrigger>File</MenubarTrigger>
 					<MenubarContent>

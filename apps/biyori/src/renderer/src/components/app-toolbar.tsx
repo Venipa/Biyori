@@ -13,9 +13,11 @@ import {
 	DropdownMenuTrigger,
 } from "@/mainview/components/ui/dropdown-menu";
 import { Image } from "@/mainview/components/ui/image";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/mainview/components/ui/tooltip";
 import { useCheckForUpdates } from "@/mainview/lib/update-status";
 import { trpc } from "@/mainview/trpc";
+
+const titleButtonClass = "h-full rounded-none border-0 px-2 active:translate-y-0 [&_svg]:transition-transform [&_svg]:duration-150 [&_svg]:ease-out active:[&_svg]:scale-90";
 
 function AccountButton() {
 	const navigate = useNavigate();
@@ -57,8 +59,8 @@ function AccountButton() {
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger render={<Button variant='ghost' size='icon' aria-label={label} aria-haspopup='menu' className='overflow-hidden rounded-full' disabled={signingOut} />}>
-				<span className='relative flex size-7 items-center justify-center overflow-hidden rounded-full bg-muted text-[11px] font-medium text-muted-foreground'>
+			<DropdownMenuTrigger render={<Button variant='ghost' aria-label={label} aria-haspopup='menu' className={titleButtonClass} disabled={signingOut} />}>
+				<span className='relative flex size-5 items-center justify-center overflow-hidden rounded-full bg-muted text-[11px] font-medium text-muted-foreground transition-transform duration-150 ease-out group-active/button:scale-90'>
 					{initials}
 					{avatarUrl ? <Image src={avatarUrl} alt='' className='absolute inset-0 size-full rounded-full' skeletonClassName='rounded-full' /> : null}
 				</span>
@@ -135,33 +137,33 @@ export function AppToolbar() {
 	const syncRunning = syncStatus.data?.phase === "running";
 
 	return (
-		<div className='z-40 flex h-11 shrink-0 items-center gap-1.5 border-b bg-card pr-2 pl-2'>
-			<Tooltip>
-				<TooltipTrigger
-					render={
-						<Button
-							variant='ghost'
-							size='icon'
-							aria-label='Synchronize'
-							disabled={syncRunning || sync.isPending}
-							onClick={() => {
-								void sync.mutateAsync();
-							}}
-						/>
-					}>
-					<RefreshCwIcon />
-				</TooltipTrigger>
-				<TooltipContent>Synchronize</TooltipContent>
-			</Tooltip>
-			<div className='ml-auto flex shrink-0 items-center gap-1.5'>
+		<TooltipProvider delay={400}>
+			<div className='app-region-no-drag flex h-full shrink-0 items-stretch'>
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								variant='ghost'
+								aria-label='Synchronize'
+								className={titleButtonClass}
+								disabled={syncRunning || sync.isPending}
+								onClick={() => {
+									void sync.mutateAsync();
+								}}
+							/>
+						}>
+						<RefreshCwIcon />
+					</TooltipTrigger>
+					<TooltipContent>Synchronize</TooltipContent>
+				</Tooltip>
 				<AccountButton />
 				<Tooltip>
 					<TooltipTrigger
 						render={
 							<Button
 								variant='ghost'
-								size='icon'
 								aria-label='Settings'
+								className={titleButtonClass}
 								onClick={() => {
 									void desktopRpc.request.openSettings({});
 								}}
@@ -172,6 +174,6 @@ export function AppToolbar() {
 					<TooltipContent>Settings</TooltipContent>
 				</Tooltip>
 			</div>
-		</div>
+		</TooltipProvider>
 	);
 }

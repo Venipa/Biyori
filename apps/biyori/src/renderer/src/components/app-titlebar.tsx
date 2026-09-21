@@ -1,8 +1,10 @@
 import { cn } from "@renderer/lib/utils";
 import { useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
+import { AppToolbar } from "@/mainview/components/app-toolbar";
 import { requestWindowClose } from "@/mainview/components/confirm-escape";
 import Logo from "@/mainview/components/logo";
+import { TopMenuBar } from "@/mainview/components/top-menu-bar";
 import { ControlButton } from "@/mainview/components/ui/control-button";
 import { trpc } from "@/mainview/trpc";
 
@@ -28,6 +30,7 @@ export function AppTitleBar() {
 	const [chrome, setChrome] = useState(INITIAL_CHROME);
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const isOnboarding = pathname === "/onboarding";
+	const isApp = pathname === "/app" || pathname.startsWith("/app/");
 	const title = chromeTitle(pathname);
 	const minimizeWindow = trpc.desktop.minimizeWindow.useMutation();
 	const toggleMaximizeWindow = trpc.desktop.toggleMaximizeWindow.useMutation();
@@ -38,18 +41,29 @@ export function AppTitleBar() {
 
 	const inactive = !chrome.focused;
 
+	function maximizeFromDrag(): void {
+		if (!chrome.maximizable) {
+			return;
+		}
+		toggleMaximizeWindow.mutate();
+	}
+
 	return (
-		// biome-ignore lint/a11y/noStaticElementInteractions: frameless drag region, double-click maximizes
-		<header
-			className={cn("app-region-drag flex h-8 shrink-0 select-none items-center border-b bg-card", isOnboarding && "border-transparent bg-transparent")}
-			onDoubleClick={() => {
-				if (!chrome.maximizable) {
-					return;
-				}
-				toggleMaximizeWindow.mutate();
-			}}>
-			<Logo className='size-4 ml-3' />
-			<p className='min-w-0 flex-1 truncate px-2 text-xs font-medium text-foreground'>{title}</p>
+		<header className={cn("flex h-8 shrink-0 select-none items-stretch border-b bg-card", isOnboarding && "border-transparent bg-transparent")}>
+			<div className='app-region-drag flex h-full items-center' onDoubleClick={maximizeFromDrag}>
+				<Logo className='ml-3 size-4 shrink-0' />
+			</div>
+			{isApp ? (
+				<>
+					<TopMenuBar />
+					<div className='app-region-drag min-w-0 flex-1 self-stretch' onDoubleClick={maximizeFromDrag} />
+					<AppToolbar />
+				</>
+			) : (
+				<p className='app-region-drag min-w-0 flex-1 self-center truncate px-2 text-xs font-medium text-foreground' onDoubleClick={maximizeFromDrag}>
+					{title}
+				</p>
+			)}
 			<div className='app-region-no-drag flex h-full shrink-0'>
 				<ControlButton
 					control='minimize'

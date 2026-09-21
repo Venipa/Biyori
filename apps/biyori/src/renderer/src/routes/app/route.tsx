@@ -4,9 +4,7 @@ import { AnimeDeleteDialog } from "@/mainview/components/anime-delete-dialog";
 import { AppAnimeInfoDialog } from "@/mainview/components/app-anime-info-dialog";
 import { AppSidebar } from "@/mainview/components/app-sidebar";
 import { AppStatusBar } from "@/mainview/components/app-status-bar";
-import { AppToolbar } from "@/mainview/components/app-toolbar";
 import { PageLoad } from "@/mainview/components/page-load";
-import { TopMenuBar } from "@/mainview/components/top-menu-bar";
 import { TooltipProvider } from "@/mainview/components/ui/tooltip";
 import { WatchConfirmDialog } from "@/mainview/components/watch-confirm-dialog";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
@@ -77,8 +75,6 @@ function MainLayout(): ReactElement {
 		<PageLoad loading={!sawSettings.current && settingsQuery.data === undefined}>
 			<TooltipProvider delay={400}>
 				<div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'>
-					<TopMenuBar />
-					<AppToolbar />
 					<div className='flex min-h-0 flex-1 overflow-hidden'>
 						<AppSidebar />
 						<main className='min-h-0 min-w-0 flex-1 overflow-hidden'>
