@@ -1,4 +1,4 @@
-use crate::identify::match_candidates;
+use crate::identify::{match_candidates, match_candidates_with, NameIndex};
 use crate::parse::parse_file_paths;
 use crate::types::{FindEpisodeInput, Parsed, ScanHit, ScanInput, ScanProgress, ScanResult, VIDEO_EXT};
 use dua_core::{walk, Options, Order};
@@ -106,6 +106,7 @@ pub fn scan_library(input: ScanInput, mut report: impl FnMut(ScanProgress)) -> S
 		phase: "walk".into(),
 		files: 0,
 		hits: 0,
+		total: 0,
 	});
 	for root in &input.roots {
 		let path = Path::new(root);
@@ -116,6 +117,7 @@ pub fn scan_library(input: ScanInput, mut report: impl FnMut(ScanProgress)) -> S
 					phase: "walk".into(),
 					files: count,
 					hits: 0,
+					total: 0,
 				},
 				false,
 			);
@@ -123,51 +125,70 @@ pub fn scan_library(input: ScanInput, mut report: impl FnMut(ScanProgress)) -> S
 			scanned_roots.push(root.clone());
 		}
 	}
+	let total = files.len() as u32;
 	gate.emit(
 		&mut report,
 		ScanProgress {
 			phase: "walk".into(),
-			files: files.len() as u32,
+			files: total,
 			hits: 0,
+			total: 0,
 		},
 		true,
 	);
+	let parsed_files = parse_videos(&files);
+	let index = NameIndex::build(&input.candidates);
 	let mut hits: Vec<ScanHit> = Vec::new();
-	let total = files.len() as u32;
-	report(ScanProgress {
-		phase: "match".into(),
-		files: total,
-		hits: 0,
-	});
 	let relations = input.relations.as_deref().unwrap_or(&[]);
-	for (file, parsed) in files.iter().zip(parse_videos(&files)) {
-		let display = file.path.to_string_lossy().to_string();
-		let Some(parsed) = parsed else {
-			continue;
-		};
-		let Some((anime_id, episode)) = match_candidates(&parsed, &input.candidates, Some(&display), relations) else {
-			continue;
-		};
-		hits.push(ScanHit {
-			path: display,
-			anime_id,
-			episode,
-			size: file.size.min(i64::MAX as u64) as i64,
+	if total > 0 {
+		report(ScanProgress {
+			phase: "match".into(),
+			files: 0,
+			hits: 0,
+			total,
 		});
+	}
+	for (index_i, (file, parsed)) in files.iter().zip(parsed_files).enumerate() {
+		let examined = (index_i as u32).saturating_add(1);
+		if index_i == 0 {
+			gate.emit(
+				&mut report,
+				ScanProgress {
+					phase: "match".into(),
+					files: examined,
+					hits: 0,
+					total,
+				},
+				true,
+			);
+		}
+		let display = file.path.to_string_lossy().to_string();
+		if let Some(parsed) = parsed {
+			if let Some((anime_id, episode)) = match_candidates_with(&parsed, &input.candidates, Some(&display), relations, Some(&index)) {
+				hits.push(ScanHit {
+					path: display,
+					anime_id,
+					episode,
+					size: file.size.min(i64::MAX as u64) as i64,
+				});
+			}
+		}
 		gate.emit(
 			&mut report,
 			ScanProgress {
 				phase: "match".into(),
-				files: total,
+				files: examined,
 				hits: hits.len() as u32,
+				total,
 			},
-			false,
+			examined == total,
 		);
 	}
 	let done = ScanProgress {
 		phase: "done".into(),
 		files: total,
 		hits: hits.len() as u32,
+		total,
 	};
 	report(done);
 	ScanResult {
@@ -389,6 +410,38 @@ mod tests {
 		assert_eq!(result.files, 1);
 		assert_eq!(result.hits.len(), 1);
 		assert_eq!(result.hits[0].episode, 3);
+		let _ = fs::remove_dir_all(folder);
+	}
+
+	#[test]
+	fn match_progress_counts_files_that_do_not_match() {
+		let folder = temp_root("miss");
+		write_video(&folder, "Nope - 01.mkv", 32);
+		write_video(&folder, "Nope - 02.mkv", 32);
+		let mut examined = Vec::new();
+		let result = scan_library(
+			ScanInput {
+				roots: vec![folder.to_string_lossy().to_string()],
+				threshold: 1,
+				relations: None,
+				candidates: vec![Candidate {
+					id: 1,
+					names: vec!["other show".into()],
+					episodes: 12,
+					folder: None,
+				}],
+			},
+			|progress| {
+				if progress.phase == "match" {
+					examined.push((progress.files, progress.total, progress.hits));
+				}
+			},
+		);
+		assert_eq!(result.files, 2);
+		assert_eq!(result.hits.len(), 0);
+		assert_eq!(examined.first().copied(), Some((0, 2, 0)));
+		assert_eq!(examined.last().copied(), Some((2, 2, 0)));
+		assert!(examined.iter().any(|item| item.0 > 0 && item.2 == 0));
 		let _ = fs::remove_dir_all(folder);
 	}
 }

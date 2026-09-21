@@ -240,18 +240,69 @@ fn score_candidate(candidate: &Candidate, needle: &str, needle_key: &str, season
 	}
 }
 
-fn match_title<'a>(query: &str, pool: &[&'a Candidate], season: Option<i32>) -> Option<&'a Candidate> {
+pub(crate) struct NameIndex {
+	by_key: HashMap<String, Vec<u32>>,
+}
+
+impl NameIndex {
+	pub(crate) fn build(candidates: &[Candidate]) -> Self {
+		let mut by_key: HashMap<String, Vec<u32>> = HashMap::new();
+		for (index, candidate) in candidates.iter().enumerate() {
+			let mut seen = HashSet::new();
+			for name in &candidate.names {
+				for key in lookup_keys(name) {
+					if !seen.insert(key.clone()) {
+						continue;
+					}
+					by_key.entry(key).or_default().push(index as u32);
+				}
+			}
+		}
+		Self { by_key }
+	}
+
+	fn exact<'a>(&self, query: &str, candidates: &'a [Candidate]) -> Vec<&'a Candidate> {
+		let mut out = Vec::new();
+		let mut seen = HashSet::new();
+		for key in lookup_keys(query) {
+			let Some(indexes) = self.by_key.get(&key) else {
+				continue;
+			};
+			for &index in indexes {
+				let Some(candidate) = candidates.get(index as usize) else {
+					continue;
+				};
+				if seen.insert(candidate.id) {
+					out.push(candidate);
+				}
+			}
+		}
+		out
+	}
+}
+
+fn exact_hits<'a>(query: &str, pool: &[&'a Candidate], all: &'a [Candidate], index: Option<&NameIndex>) -> Vec<&'a Candidate> {
+	if let Some(index) = index {
+		let mut hits = index.exact(query, all);
+		if pool.len() != all.len() {
+			hits.retain(|hit| pool.iter().any(|item| std::ptr::eq(*item, *hit)));
+		}
+		return hits;
+	}
+	let keys = lookup_keys(query);
+	pool.iter()
+		.copied()
+		.filter(|candidate| candidate.names.iter().any(|name| keys.iter().any(|key| normalize_for_lookup(name) == *key)))
+		.collect()
+}
+
+fn match_title<'a>(query: &str, pool: &[&'a Candidate], season: Option<i32>, all: &'a [Candidate], index: Option<&NameIndex>) -> Option<&'a Candidate> {
 	let needle = normalize_title(query);
 	if needle.is_empty() {
 		return None;
 	}
 	let lookup_key = normalize_for_lookup(query);
-	let keys = lookup_keys(query);
-	let exact: Vec<&Candidate> = pool
-		.iter()
-		.copied()
-		.filter(|candidate| candidate.names.iter().any(|name| keys.iter().any(|key| normalize_for_lookup(name) == *key)))
-		.collect();
+	let exact = exact_hits(query, pool, all, index);
 	if exact.len() == 1 {
 		return Some(exact[0]);
 	}
@@ -391,12 +442,12 @@ fn with_redirect(hit: &Candidate, episode: i32, all: &[Candidate], rules: &[Rela
 	}
 }
 
-fn resolve_on_pool(parsed: &Parsed, pool: &[&Candidate], all: &[Candidate], rules: &[RelationRule]) -> Option<(i64, i32)> {
+fn resolve_on_pool(parsed: &Parsed, pool: &[&Candidate], all: &[Candidate], rules: &[RelationRule], index: Option<&NameIndex>) -> Option<(i64, i32)> {
 	if pool.is_empty() {
 		return None;
 	}
 	let query = extend_title(parsed);
-	let matched = match_title(&query, pool, parsed.season);
+	let matched = match_title(&query, pool, parsed.season, all, index);
 	let Some(episode) = parsed.episode else {
 		return matched.map(|hit| (hit.id, 1));
 	};
@@ -420,20 +471,30 @@ fn resolve_on_pool(parsed: &Parsed, pool: &[&Candidate], all: &[Candidate], rule
 }
 
 pub fn match_candidates(parsed: &Parsed, candidates: &[Candidate], path: Option<&str>, rules: &[RelationRule]) -> Option<(i64, i32)> {
+	match_candidates_with(parsed, candidates, path, rules, None)
+}
+
+pub(crate) fn match_candidates_with(
+	parsed: &Parsed,
+	candidates: &[Candidate],
+	path: Option<&str>,
+	rules: &[RelationRule],
+	index: Option<&NameIndex>,
+) -> Option<(i64, i32)> {
 	let all_refs: Vec<&Candidate> = candidates.iter().collect();
 	let (scoped, folder_scoped) = if let Some(path) = path {
 		pool_for_path(path, candidates)
 	} else {
 		(all_refs.clone(), false)
 	};
-	let hit = resolve_on_pool(parsed, &scoped, candidates, rules);
+	let hit = resolve_on_pool(parsed, &scoped, candidates, rules, index);
 	if hit.is_some() || folder_scoped {
 		return hit;
 	}
 	if scoped.len() == all_refs.len() {
 		return hit;
 	}
-	resolve_on_pool(parsed, &all_refs, candidates, rules)
+	resolve_on_pool(parsed, &all_refs, candidates, rules, index)
 }
 
 #[cfg(test)]

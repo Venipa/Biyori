@@ -226,9 +226,11 @@ function onScanProgress(kind: "full" | "quick", progress: ScanProgress): void {
 		return;
 	}
 	if (progress.phase === "match") {
-		const title = `Matching titles... (${progress.hits}/${progress.files})`;
+		const total = progress.total > 0 ? progress.total : progress.files;
+		const seen = progress.total > 0 ? progress.files : progress.hits;
+		const title = `Matching titles... (${seen}/${total})`;
 		setAppNotice(title, { toast: false, busy: true });
-		upsertActivity({ source: "library-scan", title: "Matching titles", body: `${progress.hits}/${progress.files} matched` });
+		upsertActivity({ source: "library-scan", title: "Matching titles", body: `${seen}/${total}, ${progress.hits} matched` });
 	}
 }
 

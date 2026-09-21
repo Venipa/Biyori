@@ -61,8 +61,11 @@ export type ScanResult = {
 
 export type ScanProgress = {
 	phase: "walk" | "match" | "done" | string;
+	/** Walk: files found. Match: files examined so far. */
 	files: number;
 	hits: number;
+	/** Match denominator. `0` during the walk. */
+	total: number;
 };
 
 export type FindEpisodeInput = {

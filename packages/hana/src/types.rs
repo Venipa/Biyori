@@ -84,8 +84,11 @@ pub struct ScanResult {
 #[derive(Debug, Clone)]
 pub struct ScanProgress {
 	pub phase: String,
+	/// Walk: files found. Match: files examined so far.
 	pub files: u32,
 	pub hits: u32,
+	/// Match denominator. `0` during the walk.
+	pub total: u32,
 }
 
 #[napi(object)]
