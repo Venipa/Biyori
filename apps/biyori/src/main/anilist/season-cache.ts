@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { SeasonCacheFile, SeasonItemCached } from "../../lib/schemas/seasons";
 import { type AnilistSeasonName, seasonCacheFileSchema } from "../../lib/schemas/seasons";
 import { appCacheDir } from "../lib/app-paths";
-import { decryptWithSafeStorage, encryptWithSafeStorage, isSafeStorageAvailable } from "../lib/safe-storage";
+import { decryptWithSafeStorage, encryptWithSafeStorage } from "../lib/safe-storage";
 
 function seasonsDir(): string {
 	const dir = join(appCacheDir(), "seasons");
@@ -12,7 +12,7 @@ function seasonsDir(): string {
 }
 
 export function seasonCachePath(season: AnilistSeasonName, seasonYear: number): string {
-	return join(seasonsDir(), `${season}-${seasonYear}.json`);
+	return join(seasonsDir(), `${season}-${seasonYear}.data`);
 }
 
 function parseSeasonCache(raw: unknown): SeasonCacheFile | null {
@@ -27,32 +27,13 @@ function encryptSeasonCache(payload: SeasonCacheFile): Buffer {
 	return encryptWithSafeStorage(JSON.stringify(payload));
 }
 
-function protectLegacyPlaintext(path: string, payload: SeasonCacheFile): void {
-	if (!isSafeStorageAvailable()) {
-		return;
-	}
-	writeFileSync(path, encryptSeasonCache(payload));
-}
-
 export function readSeasonCache(season: AnilistSeasonName, seasonYear: number): SeasonCacheFile | null {
 	const path = seasonCachePath(season, seasonYear);
 	if (!existsSync(path)) {
 		return null;
 	}
 	try {
-		const bytes = readFileSync(path);
-		if (bytes[0] === 0x7b) {
-			const parsed = parseSeasonCache(JSON.parse(bytes.toString("utf8")) as unknown);
-			if (parsed) {
-				try {
-					protectLegacyPlaintext(path, parsed);
-				} catch {
-					// leave the plaintext file until a later write can encrypt it
-				}
-			}
-			return parsed;
-		}
-		return parseSeasonCache(JSON.parse(decryptWithSafeStorage(bytes)) as unknown);
+		return parseSeasonCache(JSON.parse(decryptWithSafeStorage(readFileSync(path))) as unknown);
 	} catch {
 		return null;
 	}
