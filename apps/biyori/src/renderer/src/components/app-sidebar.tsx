@@ -44,7 +44,7 @@ const navDestinations: string[] = ["/app/now-playing", "/app/anime-list", "/app/
 const navPillSpring = { type: "spring", stiffness: 500, damping: 40 } as const;
 
 function navItemClass(active: boolean): string {
-	return cn("relative flex w-full items-center gap-2 rounded-md py-1.5 pr-2 pl-4 text-left text-sm hover:bg-muted", active ? "text-foreground" : "text-foreground/80");
+	return cn("relative flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm hover:bg-muted", active ? "text-foreground" : "text-foreground/80");
 }
 
 function NavGroup({ label, children }: { label: string; children: ReactNode }) {
@@ -189,17 +189,20 @@ function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: bool
 			) : null}
 			<span className={cn("relative z-10 flex min-h-8 items-center gap-2 px-3 py-1.5", playing && "bg-list-playing/80 text-list-playing-foreground")}>
 				<ActiveNavPill active={active} isEnter={isEnter} />
-				{playing ? <PlayIcon className='size-4 shrink-0 fill-current' /> : <HomeIcon data-icon='inline-start' className='size-4 shrink-0' />}
+				{playing ? <PlayIcon className='size-4 shrink-0 fill-current' /> : <HomeIcon className='size-4 shrink-0' />}
 				<span className='truncate'>{playing ? "Now playing" : "Home"}</span>
 			</span>
 			{hasSubtitle ? (
 				<>
 					<span className='relative z-10 h-px bg-border' />
-					<span className='relative z-10 flex items-center gap-2 px-2.5 py-1.5'>
+					<span className='relative z-10 flex items-center gap-2 px-3 py-1.5'>
 						{showCover ? (
 							<AnimeCover id={coverId} coverUrl={coverUrl || undefined} alt='' className={cn("aspect-2/3 w-7 shrink-0 overflow-hidden rounded-sm", !playing && "grayscale")} />
 						) : null}
-						<span className='line-clamp-2 text-left text-xs font-normal text-muted-foreground'>{subLines.join(" ")}</span>
+						<span className='flex min-w-0 flex-1 flex-col items-start gap-0.5'>
+							{playing ? null : <span className='text-xs text-muted-foreground'>Last played</span>}
+							<span className='line-clamp-2 text-left text-xs font-normal text-foreground/80'>{subLines.join(" ")}</span>
+						</span>
 					</span>
 				</>
 			) : null}
@@ -247,7 +250,7 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 				aria-label='Currently watching'
 				onClick={goToStatus}
 				className={cn(
-					"relative flex w-full items-center gap-2 rounded-md py-1.5 pr-2 pl-4 text-left text-sm hover:bg-list-playing hover:text-list-playing-foreground",
+					"relative flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm hover:bg-list-playing hover:text-list-playing-foreground",
 					watchingActive ? "bg-list-playing text-list-playing-foreground" : "text-foreground/80",
 				)}>
 				<ActiveNavPill active={watchingActive} isEnter={isEnter} />
