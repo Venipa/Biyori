@@ -1,4 +1,4 @@
-import { ToggleGroup, ToggleGroupItem } from "@/mainview/components/ui/toggle-group";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { parseUpdateChannel, UPDATE_CHANNEL_LABELS, UPDATE_CHANNELS, type UpdateChannel } from "@/shared/updater";
 
 type UpdateChannelToggleProps = {
@@ -10,23 +10,27 @@ type UpdateChannelToggleProps = {
 
 export function UpdateChannelToggle({ value, onValueChange, disabled, id }: UpdateChannelToggleProps) {
 	return (
-		<ToggleGroup
-			id={id}
-			variant='outline'
-			size='sm'
+		<Select
+			value={value}
+			items={UPDATE_CHANNEL_LABELS}
 			disabled={disabled}
-			value={[value]}
 			onValueChange={(next) => {
-				const channel = next[0];
-				if (channel) {
-					onValueChange(parseUpdateChannel(channel));
+				if (typeof next === "string") {
+					onValueChange(parseUpdateChannel(next));
 				}
 			}}>
-			{UPDATE_CHANNELS.map((channel) => (
-				<ToggleGroupItem key={channel} value={channel} aria-label={UPDATE_CHANNEL_LABELS[channel]}>
-					{UPDATE_CHANNEL_LABELS[channel]}
-				</ToggleGroupItem>
-			))}
-		</ToggleGroup>
+			<SelectTrigger id={id} size='sm'>
+				<SelectValue />
+			</SelectTrigger>
+			<SelectContent alignItemWithTrigger={false} align='start'>
+				<SelectGroup>
+					{UPDATE_CHANNELS.map((channel) => (
+						<SelectItem key={channel} value={channel}>
+							{UPDATE_CHANNEL_LABELS[channel]}
+						</SelectItem>
+					))}
+				</SelectGroup>
+			</SelectContent>
+		</Select>
 	);
 }

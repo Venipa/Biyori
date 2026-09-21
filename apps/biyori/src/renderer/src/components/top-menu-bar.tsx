@@ -19,6 +19,7 @@ import { useTheme } from "@/mainview/lib/hooks/use-theme";
 import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
 import { useSelectedAnime } from "@/mainview/lib/selected-anime";
 import { setThemeMode } from "@/mainview/lib/theme";
+import { useCheckForUpdates } from "@/mainview/lib/update-status";
 import { trpc } from "@/mainview/trpc";
 
 export function TopMenuBar() {
@@ -50,6 +51,7 @@ export function TopMenuBar() {
 	const sync = trpc.anilist.sync.useMutation();
 	const syncRunning = syncStatus.data?.phase === "running";
 	const settings = settingsQuery.data;
+	const { checking, checkForUpdates } = useCheckForUpdates();
 
 	return (
 		<div className='flex h-7 shrink-0 items-center border-b bg-card px-2'>
@@ -210,6 +212,9 @@ export function TopMenuBar() {
 				<MenubarMenu>
 					<MenubarTrigger>Help</MenubarTrigger>
 					<MenubarContent>
+						<MenubarItem disabled={checking} onClick={checkForUpdates}>
+							Check for updates
+						</MenubarItem>
 						<MenubarItem
 							onClick={() => {
 								void navigate({ to: "/app/about" });

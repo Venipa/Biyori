@@ -31,3 +31,15 @@ export function useUpdateStatus(): UpdateState {
 	});
 	return query.data ?? idle;
 }
+
+export function useCheckForUpdates() {
+	const status = useUpdateStatus();
+	const check = trpc.updater.check.useMutation();
+	const checking = check.isPending || status.phase === "checking";
+	return {
+		checking,
+		checkForUpdates: () => {
+			void check.mutateAsync();
+		},
+	};
+}

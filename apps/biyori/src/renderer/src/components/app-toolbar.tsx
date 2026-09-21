@@ -25,6 +25,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/u
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { appendFilterClauses, parseFilterQuery, serializeFilterQuery } from "@/mainview/lib/anime-list-filter";
 import { getListFilterText, setListFilterText, useListFilterResetToken, useListFilterText } from "@/mainview/lib/list-filter";
+import { useCheckForUpdates } from "@/mainview/lib/update-status";
 import { trpc } from "@/mainview/trpc";
 
 const LIST_FILTER_DEBOUNCE_MS = 250;
@@ -46,6 +47,7 @@ function AccountButton() {
 	const initials = profileInitials(username);
 	const label = connected && username ? username : "Account";
 	const signingOut = disconnect.isPending || setSettings.isPending;
+	const { checking, checkForUpdates } = useCheckForUpdates();
 
 	function openProfile(): void {
 		if (!username) {
@@ -106,6 +108,10 @@ function AccountButton() {
 						}}>
 						<SettingsIcon />
 						Account settings
+					</DropdownMenuItem>
+					<DropdownMenuItem disabled={checking} onClick={checkForUpdates}>
+						<RefreshCwIcon />
+						Check for updates
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						onClick={() => {
