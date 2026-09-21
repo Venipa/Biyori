@@ -1,14 +1,7 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { ExternalLinkIcon, InfoIcon, LogOutIcon, RefreshCwIcon, SearchIcon, SettingsIcon } from "lucide-react";
-import { AnimatePresence } from "motion/react";
-import { useEffect, useId, useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useNavigate } from "@tanstack/react-router";
+import { ExternalLinkIcon, InfoIcon, LogOutIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
 import { desktopRpc } from "@/desktop-rpc";
 import { profileInitials } from "@/lib/profile-initials";
-import { type AnilistSearchForm, type AnilistSearchFormInput, anilistSearchFormSchema } from "@/lib/schemas/anilist-search";
-import { ListFilterBar } from "@/mainview/components/list-filter-bar";
-import { handleSuggestKeyDown, SearchOverlayCard, SearchSuggestPanel, suggestionOptionCount } from "@/mainview/components/search-suggest";
 import { Button } from "@/mainview/components/ui/button";
 import {
 	DropdownMenu,
@@ -20,15 +13,9 @@ import {
 	DropdownMenuTrigger,
 } from "@/mainview/components/ui/dropdown-menu";
 import { Image } from "@/mainview/components/ui/image";
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/ui/tooltip";
-import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
-import { appendFilterClauses, parseFilterQuery, serializeFilterQuery } from "@/mainview/lib/anime-list-filter";
-import { getListFilterText, setListFilterText, useListFilterResetToken, useListFilterText } from "@/mainview/lib/list-filter";
 import { useCheckForUpdates } from "@/mainview/lib/update-status";
 import { trpc } from "@/mainview/trpc";
-
-const LIST_FILTER_DEBOUNCE_MS = 250;
 
 function AccountButton() {
 	const navigate = useNavigate();
@@ -143,290 +130,47 @@ function AccountButton() {
 }
 
 export function AppToolbar() {
-	const navigate = useNavigate();
-	const animeInfo = useAnimeInfoNav();
-	const pathname = useRouterState({
-		select: (state) => state.location.pathname,
-	});
-	const isAnimeListPage = pathname === "/app/anime-list";
-	const isSeasonsPage = pathname === "/app/seasons";
-	const isLiveFilterPage = isAnimeListPage || isSeasonsPage;
-	const form = useForm<AnilistSearchFormInput, unknown, AnilistSearchForm>({
-		resolver: zodResolver(anilistSearchFormSchema),
-		defaultValues: { q: "" },
-	});
 	const syncStatus = trpc.anilist.syncStatus.useQuery();
 	const sync = trpc.anilist.sync.useMutation();
 	const syncRunning = syncStatus.data?.phase === "running";
-	const searchId = useId();
-	const listId = `${searchId}-suggest`;
-	const filterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const filterResetToken = useListFilterResetToken();
-	const listFilter = useListFilterText();
-	const parsedFilter = parseFilterQuery(listFilter);
-	const [searchHover, setSearchHover] = useState(false);
-	const [searchFocus, setSearchFocus] = useState(false);
-	const [filterMenuOpen, setFilterMenuOpen] = useState(false);
-	const hasListFilter = parsedFilter.clauses.length > 0;
-	const showFilterCard = isLiveFilterPage && (searchFocus || filterMenuOpen || (hasListFilter && searchHover));
-	const qValue = form.watch("q");
-	const trimmedQ = (typeof qValue === "string" ? qValue : "").trim();
-	const canSubmit = trimmedQ.length > 0;
-	const suggestReady = !isLiveFilterPage && trimmedQ.length >= 2;
-	const [debouncedQ, setDebouncedQ] = useState("");
-	const [panelOpen, setPanelOpen] = useState(true);
-	const [active, setActive] = useState({ q: "", index: 0 });
-	const suggestQuery = trpc.anime.suggest.useQuery({ q: debouncedQ }, { enabled: !isLiveFilterPage && debouncedQ.length >= 2 });
-	const tagNamesQuery = trpc.anime.tagNames.useQuery(undefined, { enabled: isLiveFilterPage, staleTime: Number.POSITIVE_INFINITY });
-	const tagNames = tagNamesQuery.data ?? [];
-	const items = !isLiveFilterPage && debouncedQ === trimmedQ ? (suggestQuery.data ?? []) : [];
-	const optionCount = suggestionOptionCount(items);
-	const showPanel = suggestReady && panelOpen;
-	if (active.q !== debouncedQ) {
-		setActive({ q: debouncedQ, index: 0 });
-	}
-	const activeIndex = active.q === debouncedQ ? active.index : 0;
-
-	function goToAnilistSearch(q: string): void {
-		if (!q) {
-			return;
-		}
-		setPanelOpen(false);
-		void navigate({
-			to: "/app/search",
-			search: { q },
-		});
-	}
-
-	function chooseSuggestion(index: number): void {
-		const hit = items[index];
-		if (hit) {
-			setPanelOpen(false);
-			animeInfo.open({ id: hit.id, infoTab: "main" });
-			return;
-		}
-		goToAnilistSearch(trimmedQ);
-	}
-
-	useEffect(() => {
-		if (filterResetToken === 0) {
-			return;
-		}
-		form.reset({ q: "" });
-	}, [filterResetToken, form]);
-
-	useEffect(() => {
-		if (filterTimer.current) {
-			clearTimeout(filterTimer.current);
-			filterTimer.current = null;
-		}
-		if (!isLiveFilterPage) {
-			return;
-		}
-		const trimmed = (typeof qValue === "string" ? qValue : "").trim();
-		const fromBox = parseFilterQuery(trimmed);
-		if (trimmed.length === 0) {
-			const current = parseFilterQuery(getListFilterText());
-			setListFilterText(serializeFilterQuery({ freeText: "", clauses: current.clauses }));
-			return;
-		}
-		if (trimmed.length === 1 && fromBox.clauses.length === 0) {
-			return;
-		}
-		filterTimer.current = setTimeout(() => {
-			const current = parseFilterQuery(getListFilterText());
-			setListFilterText(
-				serializeFilterQuery({
-					freeText: fromBox.freeText,
-					clauses: appendFilterClauses(current.clauses, fromBox.clauses),
-				}),
-			);
-			if (fromBox.clauses.length > 0) {
-				form.setValue("q", fromBox.freeText);
-			}
-		}, LIST_FILTER_DEBOUNCE_MS);
-		return () => {
-			if (filterTimer.current) {
-				clearTimeout(filterTimer.current);
-			}
-		};
-	}, [qValue, isLiveFilterPage, form]);
-
-	useEffect(() => {
-		if (isLiveFilterPage || trimmedQ.length < 2) {
-			setDebouncedQ("");
-			return;
-		}
-		const timer = setTimeout(() => {
-			setDebouncedQ(trimmedQ);
-		}, LIST_FILTER_DEBOUNCE_MS);
-		return () => {
-			clearTimeout(timer);
-		};
-	}, [trimmedQ, isLiveFilterPage]);
 
 	return (
-		<div className='z-40 flex h-11 shrink-0 flex-col border-b bg-card'>
-			<div className='flex h-11 items-center gap-1.5 pr-2 pl-2'>
+		<div className='z-40 flex h-11 shrink-0 items-center gap-1.5 border-b bg-card pr-2 pl-2'>
+			<Tooltip>
+				<TooltipTrigger
+					render={
+						<Button
+							variant='ghost'
+							size='icon'
+							aria-label='Synchronize'
+							disabled={syncRunning || sync.isPending}
+							onClick={() => {
+								void sync.mutateAsync();
+							}}
+						/>
+					}>
+					<RefreshCwIcon />
+				</TooltipTrigger>
+				<TooltipContent>Synchronize</TooltipContent>
+			</Tooltip>
+			<div className='ml-auto flex shrink-0 items-center gap-1.5'>
+				<AccountButton />
 				<Tooltip>
 					<TooltipTrigger
 						render={
 							<Button
 								variant='ghost'
 								size='icon'
-								aria-label='Synchronize'
-								disabled={syncRunning || sync.isPending}
+								aria-label='Settings'
 								onClick={() => {
-									void sync.mutateAsync();
+									void desktopRpc.request.openSettings({});
 								}}
 							/>
 						}>
-						<RefreshCwIcon />
+						<SettingsIcon />
 					</TooltipTrigger>
-					<TooltipContent>Synchronize</TooltipContent>
+					<TooltipContent>Settings</TooltipContent>
 				</Tooltip>
-
-				<form
-					className='relative z-20 flex h-full min-w-0 flex-1 items-stretch'
-					onPointerEnter={() => {
-						setSearchHover(true);
-					}}
-					onPointerLeave={() => {
-						setSearchHover(false);
-					}}
-					onFocusCapture={() => {
-						setSearchFocus(true);
-					}}
-					onBlurCapture={(event) => {
-						if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-							setSearchFocus(false);
-						}
-					}}
-					onSubmit={form.handleSubmit((data) => {
-						goToAnilistSearch(data.q.trim());
-					})}>
-					<label className='sr-only' htmlFor={searchId}>
-						Search AniList
-					</label>
-					<Controller
-						control={form.control}
-						name='q'
-						render={({ field }) => (
-							<InputGroup
-								variant='ghost'
-								className='h-full rounded-none border-0 shadow-none hover:bg-transparent has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:bg-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0'>
-								<InputGroupInput
-									id={searchId}
-									placeholder={isLiveFilterPage ? "Filter list or search AniList" : "Search AniList for anime"}
-									name={field.name}
-									ref={field.ref}
-									role='combobox'
-									aria-autocomplete='list'
-									aria-expanded={showPanel}
-									aria-controls={listId}
-									aria-activedescendant={showPanel ? `${listId}-${activeIndex}` : undefined}
-									className='shadow-none focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0'
-									onFocus={() => {
-										setPanelOpen(true);
-									}}
-									onClick={() => {
-										setPanelOpen(true);
-									}}
-									onBlur={() => {
-										field.onBlur();
-										setPanelOpen(false);
-									}}
-									value={typeof field.value === "string" ? field.value : ""}
-									onChange={(event) => {
-										setPanelOpen(true);
-										field.onChange(event);
-									}}
-									onKeyDown={(event) => {
-										handleSuggestKeyDown({
-											event,
-											open: showPanel,
-											optionCount,
-											activeIndex,
-											onActiveIndex: (index) => {
-												setActive({ q: debouncedQ, index });
-											},
-											onDismiss: () => {
-												setPanelOpen(false);
-											},
-											onChoose: chooseSuggestion,
-										});
-									}}
-								/>
-								<InputGroupAddon align='inline-end'>
-									<Tooltip>
-										<TooltipTrigger render={<InputGroupButton type='submit' size='icon-xs' aria-label='Search AniList' disabled={!canSubmit} />}>
-											<SearchIcon />
-										</TooltipTrigger>
-										<TooltipContent>Search AniList</TooltipContent>
-									</Tooltip>
-								</InputGroupAddon>
-							</InputGroup>
-						)}
-					/>
-					<AnimatePresence>
-						{showFilterCard ? (
-							<SearchOverlayCard key='list-filter' className='p-2'>
-								<ListFilterBar
-									clauses={parsedFilter.clauses}
-									tagNames={tagNames}
-									onMenuOpenChange={setFilterMenuOpen}
-									onClausesChange={(clauses) => {
-										setListFilterText(
-											serializeFilterQuery({
-												freeText: parsedFilter.freeText,
-												clauses,
-											}),
-										);
-									}}
-								/>
-							</SearchOverlayCard>
-						) : null}
-						{showPanel ? (
-							<SearchSuggestPanel
-								key='anilist-suggest'
-								listId={listId}
-								q={trimmedQ}
-								items={items}
-								activeIndex={Math.min(activeIndex, optionCount - 1)}
-								onActiveIndex={(index) => {
-									setActive({ q: debouncedQ, index });
-								}}
-								onOpen={(id) => {
-									setPanelOpen(false);
-									animeInfo.open({ id, infoTab: "main" });
-								}}
-								onSearchAnilist={() => {
-									goToAnilistSearch(trimmedQ);
-								}}
-							/>
-						) : null}
-					</AnimatePresence>
-				</form>
-
-				<div className='ml-2 flex shrink-0 items-center gap-1.5'>
-					<AccountButton />
-					<Tooltip>
-						<TooltipTrigger
-							render={
-								<Button
-									variant='ghost'
-									size='icon'
-									aria-label='Settings'
-									onClick={() => {
-										void desktopRpc.request.openSettings({});
-									}}
-								/>
-							}>
-							<SettingsIcon />
-						</TooltipTrigger>
-						<TooltipContent>Settings</TooltipContent>
-					</Tooltip>
-				</div>
 			</div>
 		</div>
 	);

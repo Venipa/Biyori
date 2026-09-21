@@ -355,6 +355,29 @@ export const appRouter = t.router({
 		queuedCount: t.procedure.query(async ({ ctx }) => {
 			return countQueued(ctx.db);
 		}),
+		latest: t.procedure.query(async ({ ctx }) => {
+			const rows = await ctx.db
+				.select({
+					title: history.title,
+					episode: history.episode,
+					animeId: history.animeId,
+					coverUrl: anime.coverUrl,
+				})
+				.from(history)
+				.leftJoin(anime, eq(anime.id, history.animeId))
+				.orderBy(desc(history.lastModified))
+				.limit(1);
+			const row = rows[0];
+			if (!row) {
+				return null;
+			}
+			return {
+				title: row.title,
+				episode: row.episode,
+				animeId: row.animeId > 0 ? row.animeId : null,
+				coverUrl: row.coverUrl || null,
+			};
+		}),
 		remove: t.procedure.input(z.object({ id: z.string().min(1) })).mutation(async ({ ctx, input }) => {
 			const rows = await ctx.db.select().from(history).where(eq(history.id, input.id)).limit(1);
 			const row = rows[0];

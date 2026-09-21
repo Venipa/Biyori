@@ -1,6 +1,6 @@
 import type { inferRouterOutputs } from "@trpc/server";
 import { motion } from "motion/react";
-import type { KeyboardEvent, ReactNode } from "react";
+import { type KeyboardEvent, type ReactNode, useLayoutEffect } from "react";
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { Badge } from "@/mainview/components/ui/badge";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
@@ -29,12 +29,14 @@ export function handleSuggestKeyDown(input: {
 	const { event } = input;
 	if (event.key === "ArrowDown") {
 		event.preventDefault();
-		input.onActiveIndex(Math.min(input.activeIndex + 1, input.optionCount - 1));
+		const next = input.activeIndex >= input.optionCount - 1 ? 0 : input.activeIndex + 1;
+		input.onActiveIndex(next);
 		return;
 	}
 	if (event.key === "ArrowUp") {
 		event.preventDefault();
-		input.onActiveIndex(Math.max(input.activeIndex - 1, 0));
+		const next = input.activeIndex <= 0 ? input.optionCount - 1 : input.activeIndex - 1;
+		input.onActiveIndex(next);
 		return;
 	}
 	if (event.key === "Escape") {
@@ -49,12 +51,12 @@ export function handleSuggestKeyDown(input: {
 }
 
 const searchOverlayCardClass =
-	"absolute top-full right-0 left-0 z-50 mt-1 origin-top overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10";
+	"absolute z-30 overflow-hidden rounded-br-lg border-r border-b border-border bg-popover text-popover-foreground shadow-[4px_8px_24px_-12px_oklch(0_0_0/0.35)]";
 
 const overlayMotion = {
-	initial: { opacity: 0, y: -6, scale: 0.98 },
-	animate: { opacity: 1, y: 0, scale: 1 },
-	exit: { opacity: 0, y: -6, scale: 0.98 },
+	initial: { opacity: 0, x: -8 },
+	animate: { opacity: 1, x: 0 },
+	exit: { opacity: 0, x: -8 },
 } as const;
 
 const overlayTransition = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const;
@@ -80,6 +82,7 @@ export function SearchSuggestPanel({
 	onActiveIndex,
 	onOpen,
 	onSearchAnilist,
+	className,
 }: {
 	listId: string;
 	q: string;
@@ -88,10 +91,14 @@ export function SearchSuggestPanel({
 	onActiveIndex: (index: number) => void;
 	onOpen: (id: number) => void;
 	onSearchAnilist: () => void;
+	className?: string;
 }) {
 	const footerIndex = items.length;
+	useLayoutEffect(() => {
+		document.getElementById(`${listId}-${activeIndex}`)?.scrollIntoView({ block: "nearest" });
+	}, [activeIndex, listId]);
 	return (
-		<SearchOverlayCard>
+		<SearchOverlayCard className={className}>
 			<ScrollArea className='h-auto max-h-80 overflow-hidden' viewportClassName='h-auto max-h-80 w-full outline-none focus-visible:ring-0'>
 				<div id={listId} role='listbox' aria-label='Title suggestions' className='py-1'>
 					{items.map((item, index) => {

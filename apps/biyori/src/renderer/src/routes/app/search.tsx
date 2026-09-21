@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { type ColumnDef, getCoreRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, SearchIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AiringStatusMark } from "@/components/airing-status";
 import { anilistSearchRouteSchema } from "@/lib/schemas/anilist-search";
 import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
@@ -23,9 +23,11 @@ import {
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
+import { rememberAnilistSearch, useAnilistSearches } from "@/mainview/lib/anilist-search-history";
 import { useAnimeInfoNav, useAnimeInfoOpen } from "@/mainview/lib/anime-info-nav";
 import { formatSeasonLabel } from "@/mainview/lib/season-view";
 import { usePersistedColumnSizing } from "@/mainview/lib/table-column-sizing";
+import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
@@ -123,74 +125,106 @@ function SearchPage() {
 	});
 	const hasQuery = (q ?? "").trim().length > 0;
 	const menuStatus = menuRow ? parseListStatus(listedById.get(menuRow.id)) : null;
+	const recent = useAnilistSearches();
+	const currentQuery = (q ?? "").trim();
+	const searchTabs = currentQuery && !recent.some((item) => item.toLowerCase() === currentQuery.toLowerCase()) ? [currentQuery, ...recent] : recent;
+
+	useEffect(() => {
+		if (currentQuery) {
+			rememberAnilistSearch(currentQuery);
+		}
+	}, [currentQuery]);
 
 	return (
 		<div className='flex h-full min-h-0 flex-col'>
-			<ContextMenu>
-				<ContextMenuTrigger className='block h-full min-h-0'>
-					<ScrollArea className='h-full'>
-						{!hasQuery ? <PlaceholderView icon={SearchIcon} title='Search AniList' description='Type a title in the toolbar and submit.' /> : null}
-						{hasQuery && query.isPending && items.length === 0 ? (
-							<TableRowsSkeleton columnCount={columns.length} headers={["Anime title", "Type", "Episodes", "Score", "Season"]} />
-						) : null}
-						{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Search failed' description={query.error.message} /> : null}
-						{hasQuery && !query.isPending && !query.error && items.length === 0 ? (
-							<PlaceholderView icon={SearchIcon} title='No results' description={`Nothing matched "${q}".`} />
-						) : null}
-						{items.length > 0 ? (
-							<DataTable
-								table={table}
-								compact
-								groupBy={(row) => {
-									if (!row.original.inList) {
-										return "Not in list";
-									}
-									const parsed = listStatusSchema.safeParse(listedById.get(row.original.id));
-									return parsed.success ? parsed.data : "In list";
+			{searchTabs.length > 0 ? (
+				<div className='flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-1' role='tablist' aria-label='Recent AniList searches'>
+					{searchTabs.map((query) => {
+						const selected = currentQuery.toLowerCase() === query.toLowerCase();
+						return (
+							<Link
+								key={query}
+								to='/app/search'
+								search={{ q: query }}
+								role='tab'
+								aria-selected={selected}
+								className={cn(
+									"max-w-40 shrink-0 truncate rounded-md px-2 py-1 text-sm",
+									selected ? "bg-accent font-medium text-accent-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+								)}>
+								{query}
+							</Link>
+						);
+					})}
+				</div>
+			) : null}
+			<div className='min-h-0 flex-1'>
+				<ContextMenu>
+					<ContextMenuTrigger className='block h-full min-h-0'>
+						<ScrollArea className='h-full'>
+							{!hasQuery ? <PlaceholderView icon={SearchIcon} title='Search AniList' description='Type a title in the sidebar and submit.' /> : null}
+							{hasQuery && query.isPending && items.length === 0 ? (
+								<TableRowsSkeleton columnCount={columns.length} headers={["Anime title", "Type", "Episodes", "Score", "Season"]} />
+							) : null}
+							{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Search failed' description={query.error.message} /> : null}
+							{hasQuery && !query.isPending && !query.error && items.length === 0 ? (
+								<PlaceholderView icon={SearchIcon} title='No results' description={`Nothing matched "${q}".`} />
+							) : null}
+							{items.length > 0 ? (
+								<DataTable
+									table={table}
+									compact
+									groupBy={(row) => {
+										if (!row.original.inList) {
+											return "Not in list";
+										}
+										const parsed = listStatusSchema.safeParse(listedById.get(row.original.id));
+										return parsed.success ? parsed.data : "In list";
+									}}
+									groupOrder={SEARCH_GROUP_ORDER}
+									renderRow={(row, cells) => (
+										<TableRow
+											data-state={openId === row.original.id ? "selected" : undefined}
+											className='cursor-pointer'
+											onClick={() => {
+												animeInfo.open({
+													id: row.original.id,
+													infoTab: "main",
+												});
+											}}
+											onPointerEnter={() => {
+												void utils.anime.byId.prefetch({ id: row.original.id }, { staleTime: 30_000 });
+											}}
+											onContextMenu={() => {
+												setMenuRow(row.original);
+											}}>
+											{cells}
+										</TableRow>
+									)}
+								/>
+							) : null}
+						</ScrollArea>
+					</ContextMenuTrigger>
+					<ContextMenuContent className='min-w-56'>
+						{menuRow ? (
+							<AnimeItemCommands
+								parts={commandParts}
+								mode='discover'
+								discover={{
+									id: menuRow.id,
+									title: menuRow.title,
+									episodes: menuRow.episodes,
+									trailerId: menuRow.trailerId,
+									listStatus: menuStatus,
 								}}
-								groupOrder={SEARCH_GROUP_ORDER}
-								renderRow={(row, cells) => (
-									<TableRow
-										data-state={openId === row.original.id ? "selected" : undefined}
-										className='cursor-pointer'
-										onClick={() => {
-											animeInfo.open({
-												id: row.original.id,
-												infoTab: "main",
-											});
-										}}
-										onPointerEnter={() => {
-											void utils.anime.byId.prefetch({ id: row.original.id }, { staleTime: 30_000 });
-										}}
-										onContextMenu={() => {
-											setMenuRow(row.original);
-										}}>
-										{cells}
-									</TableRow>
-								)}
+								onInformation={() => {
+									animeInfo.open({ id: menuRow.id, infoTab: "main" });
+								}}
 							/>
 						) : null}
-					</ScrollArea>
-				</ContextMenuTrigger>
-				<ContextMenuContent className='min-w-56'>
-					{menuRow ? (
-						<AnimeItemCommands
-							parts={commandParts}
-							mode='discover'
-							discover={{
-								id: menuRow.id,
-								title: menuRow.title,
-								episodes: menuRow.episodes,
-								trailerId: menuRow.trailerId,
-								listStatus: menuStatus,
-							}}
-							onInformation={() => {
-								animeInfo.open({ id: menuRow.id, infoTab: "main" });
-							}}
-						/>
-					) : null}
-				</ContextMenuContent>
-			</ContextMenu>
+					</ContextMenuContent>
+				</ContextMenu>
+			</div>
 		</div>
 	);
 }
