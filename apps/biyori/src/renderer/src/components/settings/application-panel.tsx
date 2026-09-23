@@ -4,6 +4,7 @@ import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
 import { SettingsFieldError } from "@/mainview/components/settings/settings-field-error";
 import { SettingsSectionCard } from "@/mainview/components/settings/settings-section-card";
+import { SettingsSelect } from "@/mainview/components/settings/settings-select";
 import { SettingsToggleGroup } from "@/mainview/components/settings/settings-toggle-group";
 import { Field, FieldError, FieldLabel } from "@/mainview/components/ui/field";
 import { Textarea } from "@/mainview/components/ui/textarea";
@@ -70,7 +71,7 @@ export function ApplicationPanel() {
 					render={({ field, fieldState }) => (
 						<Field data-invalid={fieldState.invalid || undefined}>
 							<FieldLabel htmlFor={uiZoomId}>Zoom</FieldLabel>
-							<SettingsToggleGroup
+							<SettingsSelect
 								id={uiZoomId}
 								value={String(typeof field.value === "number" ? field.value : 100)}
 								onValueChange={(value) => field.onChange(Number(value))}
@@ -89,7 +90,7 @@ export function ApplicationPanel() {
 					render={({ field, fieldState }) => (
 						<Field data-invalid={fieldState.invalid || undefined}>
 							<FieldLabel htmlFor={defaultAddToListStatusId}>Default status</FieldLabel>
-							<SettingsToggleGroup
+							<SettingsSelect
 								id={defaultAddToListStatusId}
 								value={typeof field.value === "string" ? field.value : "Plan to watch"}
 								onValueChange={field.onChange}

@@ -424,7 +424,7 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 						<p className='text-sm text-muted-foreground'>Currently limited to: {selectedTitles.length > 0 ? selectedTitles.join(", ") : "(nothing)"}</p>
 					</div>
 				) : null}
-				<DialogFooter>
+				<DialogFooter className='-mx-4 -mb-4'>
 					<Button
 						type='button'
 						variant='outline'
@@ -616,7 +616,7 @@ function ConditionDialog({
 						)}
 					</Field>
 				</FieldGroup>
-				<DialogFooter>
+				<DialogFooter className='-mx-4 -mb-4'>
 					<Button type='button' variant='outline' onClick={onClose}>
 						Cancel
 					</Button>

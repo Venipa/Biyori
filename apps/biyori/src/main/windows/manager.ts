@@ -5,6 +5,7 @@ import iconWin from "../../../resources/icon.ico?asset";
 import icon from "../../../resources/logo.png?asset";
 import { attachTrpcWindow } from "../trpc-handler";
 import { attachRendererNavigationGuard } from "./navigation";
+import { ownerFollowDelta } from "./owner-follow";
 import { attachWindowState } from "./state";
 import { attachWindowZoom, startWindowZoomSync } from "./zoom";
 
@@ -61,6 +62,70 @@ function centerOnParent(win: BrowserWindow, parent: BrowserWindow): void {
 	const parentBounds = parent.getBounds();
 	const { width, height } = win.getBounds();
 	win.setPosition(Math.round(parentBounds.x + (parentBounds.width - width) / 2), Math.round(parentBounds.y + (parentBounds.height - height) / 2));
+}
+
+function parentIsFixed(parent: BrowserWindow): boolean {
+	return parent.isDestroyed() || parent.isMaximized() || parent.isFullScreen() || parent.isMinimized();
+}
+
+/**
+ * Dragging settings moves the main window by the same amount.
+ * An owned window already follows its owner, so an owner drag is ignored.
+ * Resizing settings from the top or left changes position and must not drag the owner.
+ * Moving the owner can shift the child again; that echo is put back so the offset stays put.
+ */
+function attachOwnerFollow(child: BrowserWindow, parent: BrowserWindow): void {
+	let lastChild = child.getBounds();
+	let lastParent = parent.getBounds();
+	let applying = false;
+	let echo: { dx: number; dy: number } | null = null;
+
+	child.on("move", () => {
+		if (applying || child.isDestroyed() || parent.isDestroyed()) {
+			return;
+		}
+		const next = child.getBounds();
+		const parentNow = parent.getBounds();
+		const childDx = next.x - lastChild.x;
+		const childDy = next.y - lastChild.y;
+		const parentDx = parentNow.x - lastParent.x;
+		const parentDy = parentNow.y - lastParent.y;
+		const resized = next.width !== lastChild.width || next.height !== lastChild.height;
+		const pending = echo;
+		echo = null;
+		if (pending && childDx === pending.dx && childDy === pending.dy && parentDx === 0 && parentDy === 0) {
+			applying = true;
+			child.setPosition(lastChild.x, lastChild.y);
+			applying = false;
+			lastChild = child.getBounds();
+			lastParent = parent.getBounds();
+			return;
+		}
+		const delta = ownerFollowDelta({
+			childDx,
+			childDy,
+			parentDx,
+			parentDy,
+			resized,
+			parentFixed: parentIsFixed(parent),
+		});
+		lastChild = next;
+		lastParent = parentNow;
+		if (!delta) {
+			return;
+		}
+		applying = true;
+		parent.setPosition(Math.round(parentNow.x + delta.dx), Math.round(parentNow.y + delta.dy));
+		const shifted = child.getBounds();
+		if (shifted.x !== next.x || shifted.y !== next.y) {
+			child.setPosition(next.x, next.y);
+		} else {
+			echo = delta;
+		}
+		lastChild = child.getBounds();
+		lastParent = parent.getBounds();
+		applying = false;
+	});
 }
 
 function stealWindowFocus(win: BrowserWindow): void {
@@ -185,6 +250,9 @@ export class WindowManager<TId extends string> {
 			});
 		} else if (parent) {
 			centerOnParent(win, parent);
+		}
+		if (id === "settings" && parent) {
+			attachOwnerFollow(win, parent);
 		}
 
 		loadAppUrl(win, options.to ?? definition.to);
