@@ -24,16 +24,19 @@ import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTitle } from "@/mainview/components/ui/dialog";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/mainview/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/mainview/components/ui/field";
 import { Input } from "@/mainview/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
+import { Separator } from "@/mainview/components/ui/separator";
 import { Spinner } from "@/mainview/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
+import { Textarea } from "@/mainview/components/ui/textarea";
 import { type AnimeInfoFrame, visibleAnimeInfoSheets } from "@/mainview/lib/anime-info-stack";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 import { getNeighborAnimeId } from "@/mainview/lib/selected-anime";
+import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
@@ -103,9 +106,9 @@ export function AnimeInfoDialog({
 			<DialogContent
 				from='bottom'
 				showCloseButton={false}
-				className='flex max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-b-none p-0 sm:max-w-3xl'
+				className='flex max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-b-none p-0 sm:max-w-4xl'
 				underlay={
-					<div className='pointer-events-none fixed top-8 right-0 bottom-0 left-0 z-50 mx-auto w-full max-w-3xl'>
+					<div className='pointer-events-none fixed top-8 right-0 bottom-0 left-0 z-50 mx-auto w-full max-w-3xl sm:max-w-4xl'>
 						<AnimatePresence>
 							{peeks.map((frame, index) => (
 								<AnimeInfoSheetPeek key={frame.id} frame={frame} depth={(2 - peeks.length + index) as 0 | 1} />
@@ -167,6 +170,35 @@ export function AnimeInfoDialog({
 				) : null}
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+function ListEditRow({
+	label,
+	htmlFor,
+	align = "center",
+	invalid,
+	errors,
+	children,
+}: {
+	label: string;
+	htmlFor?: string;
+	align?: "center" | "start";
+	invalid?: boolean;
+	errors?: Array<{ message?: string } | undefined>;
+	children: React.ReactNode;
+}) {
+	return (
+		<Field
+			orientation='horizontal'
+			data-invalid={invalid || undefined}
+			className={cn("grid grid-cols-[8.25rem_minmax(0,1fr)] gap-x-3 gap-y-1", align === "start" ? "items-start" : "items-center")}>
+			<FieldLabel htmlFor={htmlFor} className={cn("font-normal text-muted-foreground", align === "start" && "pt-2")}>
+				{label}
+			</FieldLabel>
+			<div className='min-w-0'>{children}</div>
+			<FieldError className='col-start-2' errors={errors} />
+		</Field>
 	);
 }
 
@@ -310,180 +342,170 @@ function AnimeInfoBody({
 											<p className='text-sm text-muted-foreground'>Not in your list yet.</p>
 										</div>
 									) : (
-										<div className='flex flex-col gap-6 pr-3 pb-3'>
-											<FieldSet>
-												<FieldLegend variant='label'>Anime list</FieldLegend>
-												<FieldGroup className='grid grid-cols-2 gap-x-6 gap-y-3'>
-													<Field>
-														<FieldLabel htmlFor={progressId}>Episodes watched:</FieldLabel>
-														<Input
-															id={progressId}
-															type='number'
-															min={0}
-															max={episodeMax}
-															{...form.register("progress", {
-																valueAsNumber: true,
-															})}
+										<div className='flex flex-col gap-3 pr-3 pb-3'>
+											<Controller
+												control={form.control}
+												name='status'
+												render={({ field, fieldState }) => (
+													<ListEditRow label='Status' htmlFor={statusId} invalid={fieldState.invalid} errors={[fieldState.error]}>
+														<AnimeListStatusSelect
+															id={statusId}
+															value={field.value}
+															onValueChange={(value) => {
+																setListStatus(field.onChange, value);
+															}}
 														/>
-														<FieldError errors={[form.formState.errors.progress]} />
-													</Field>
-													<Controller
-														control={form.control}
-														name='status'
-														render={({ field, fieldState }) => (
-															<Field data-invalid={fieldState.invalid || undefined}>
-																<FieldLabel htmlFor={statusId}>Status:</FieldLabel>
-																<AnimeListStatusSelect
-																	id={statusId}
-																	value={field.value}
-																	onValueChange={(value) => {
-																		setListStatus(field.onChange, value);
-																	}}
-																/>
-																<FieldError errors={[fieldState.error]} />
-															</Field>
-														)}
+													</ListEditRow>
+												)}
+											/>
+											<ListEditRow label='Episodes watched' htmlFor={progressId} errors={[form.formState.errors.progress]}>
+												<div className='flex items-center gap-2'>
+													<Input
+														id={progressId}
+														className='w-20'
+														type='number'
+														min={0}
+														max={episodeMax}
+														{...form.register("progress", {
+															valueAsNumber: true,
+														})}
 													/>
-													<Field>
-														<FieldLabel htmlFor={rewatchesId}>Times rewatched:</FieldLabel>
-														<Input
-															id={rewatchesId}
-															type='number'
-															min={0}
-															{...form.register("timesRewatched", {
-																valueAsNumber: true,
-															})}
-														/>
-														<FieldError errors={[form.formState.errors.timesRewatched]} />
-													</Field>
-													<Controller
-														control={form.control}
-														name='score'
-														render={({ field, fieldState }) => (
-															<Field data-invalid={fieldState.invalid || undefined}>
-																<FieldLabel htmlFor={scoreId}>Score:</FieldLabel>
-																<Input
-																	id={scoreId}
-																	type='number'
-																	min={0}
-																	max={100}
-																	value={typeof field.value === "number" ? field.value : ""}
-																	onChange={(event) => {
-																		const raw = event.target.value;
-																		if (raw === "") {
-																			field.onChange(null);
-																			return;
-																		}
-																		field.onChange(Number(raw));
-																	}}
-																/>
-																<FieldError errors={[fieldState.error]} />
-															</Field>
-														)}
-													/>
-													<Controller
-														control={form.control}
-														name='rewatching'
-														render={({ field }) => (
-															<Field orientation='horizontal'>
-																<Checkbox
-																	id={rewatchingId}
-																	checked={Boolean(field.value)}
-																	onCheckedChange={(checked) => {
-																		const on = checked === true;
-																		field.onChange(on);
-																		if (on) {
-																			form.setValue("status", "Currently watching", { shouldDirty: true });
-																			if (parsedStatus.success && parsedStatus.data === "Completed" && anime.episodes > 0 && form.getValues("progress") === anime.episodes) {
-																				form.setValue("progress", 0, {
-																					shouldDirty: true,
-																				});
-																			}
-																			return;
-																		}
-																		if (parsedStatus.success) {
-																			form.setValue("status", parsedStatus.data, {
-																				shouldDirty: true,
-																			});
-																		}
-																		if (form.getValues("progress") === 0) {
-																			form.setValue("progress", anime.episodesWatched ?? 0, { shouldDirty: true });
-																		}
-																	}}
-																/>
-																<FieldLabel htmlFor={rewatchingId} className='font-normal'>
-																	Rewatching
-																</FieldLabel>
-															</Field>
-														)}
-													/>
-													<Field>
-														<FieldLabel htmlFor={notesId}>Notes:</FieldLabel>
-														<Input id={notesId} {...form.register("notes")} />
-														<FieldError errors={[form.formState.errors.notes]} />
-													</Field>
-													<Field>
-														<FieldLabel htmlFor={startedId}>Started:</FieldLabel>
-														<Input id={startedId} type='date' {...form.register("dateStarted")} />
-														<FieldError errors={[form.formState.errors.dateStarted]} />
-													</Field>
-													<Field>
-														<FieldLabel htmlFor={completedId}>Finished:</FieldLabel>
-														<Input id={completedId} type='date' {...form.register("dateCompleted")} />
-														<FieldError errors={[form.formState.errors.dateCompleted]} />
-													</Field>
-												</FieldGroup>
-											</FieldSet>
-											<FieldSet>
-												<FieldLegend variant='label'>Settings</FieldLegend>
-												<FieldGroup className='gap-3'>
-													<Field>
-														<FieldLabel htmlFor={altTitlesId}>Alternative titles:</FieldLabel>
-														<Controller
-															name='userSynonyms'
-															control={form.control}
-															render={({ field, fieldState }) => (
-																<UserSynonymsField
-																	id={altTitlesId}
-																	defaultTitles={titleStrings(anime.titles).filter((title) => title.toLowerCase() !== anime.title.toLowerCase())}
-																	value={field.value}
-																	onChange={field.onChange}
-																	error={fieldState.error}
-																/>
-															)}
-														/>
-													</Field>
-													<Field>
-														<FieldLabel htmlFor={folderId}>Folder:</FieldLabel>
-														<InputGroup>
-															<InputGroupInput id={folderId} {...form.register("folder")} />
-															<InputGroupAddon align='inline-end'>
-																<InputGroupButton
-																	size='icon-xs'
-																	aria-label='Browse folder'
-																	onClick={() => {
-																		void pickLibraryFolderPath().then((path) => {
-																			if (!path) {
-																				return;
-																			}
-																			form.setValue("folder", path, {
-																				shouldDirty: true,
-																			});
+													{anime.episodes > 0 ? <span className='text-xs whitespace-nowrap text-muted-foreground'>of {anime.episodes}</span> : null}
+												</div>
+											</ListEditRow>
+											<Controller
+												control={form.control}
+												name='score'
+												render={({ field, fieldState }) => (
+													<ListEditRow label='Score' htmlFor={scoreId} invalid={fieldState.invalid} errors={[fieldState.error]}>
+														<div className='flex items-center gap-2'>
+															<input
+																type='range'
+																min={0}
+																max={100}
+																step={1}
+																value={typeof field.value === "number" ? field.value : 0}
+																aria-label='Score'
+																className='min-w-0 flex-1 accent-primary'
+																onChange={(event) => {
+																	const next = Number(event.target.value);
+																	field.onChange(next > 0 ? next : null);
+																}}
+															/>
+															<Input
+																id={scoreId}
+																className='w-20'
+																type='number'
+																min={0}
+																max={100}
+																value={typeof field.value === "number" ? field.value : ""}
+																onChange={(event) => {
+																	const raw = event.target.value;
+																	if (raw === "") {
+																		field.onChange(null);
+																		return;
+																	}
+																	field.onChange(Number(raw));
+																}}
+															/>
+														</div>
+													</ListEditRow>
+												)}
+											/>
+											<Controller
+												control={form.control}
+												name='rewatching'
+												render={({ field }) => (
+													<ListEditRow label='Rewatching' htmlFor={rewatchingId}>
+														<Checkbox
+															id={rewatchingId}
+															checked={Boolean(field.value)}
+															onCheckedChange={(checked) => {
+																const on = checked === true;
+																field.onChange(on);
+																if (on) {
+																	form.setValue("status", "Currently watching", { shouldDirty: true });
+																	if (parsedStatus.success && parsedStatus.data === "Completed" && anime.episodes > 0 && form.getValues("progress") === anime.episodes) {
+																		form.setValue("progress", 0, {
+																			shouldDirty: true,
 																		});
-																	}}>
-																	<FolderOpen />
-																</InputGroupButton>
-															</InputGroupAddon>
-														</InputGroup>
-														<FieldError errors={[form.formState.errors.folder]} />
-													</Field>
-													<Field>
-														<FieldLabel htmlFor={fansubId}>Fansub group preference:</FieldLabel>
-														<Input id={fansubId} {...form.register("fansub")} />
-														<FieldError errors={[form.formState.errors.fansub]} />
-													</Field>
-												</FieldGroup>
-											</FieldSet>
+																	}
+																	return;
+																}
+																if (parsedStatus.success) {
+																	form.setValue("status", parsedStatus.data, {
+																		shouldDirty: true,
+																	});
+																}
+																if (form.getValues("progress") === 0) {
+																	form.setValue("progress", anime.episodesWatched ?? 0, { shouldDirty: true });
+																}
+															}}
+														/>
+													</ListEditRow>
+												)}
+											/>
+											<ListEditRow label='Times rewatched' htmlFor={rewatchesId} errors={[form.formState.errors.timesRewatched]}>
+												<Input
+													id={rewatchesId}
+													className='w-20'
+													type='number'
+													min={0}
+													{...form.register("timesRewatched", {
+														valueAsNumber: true,
+													})}
+												/>
+											</ListEditRow>
+											<ListEditRow label='Started' htmlFor={startedId} errors={[form.formState.errors.dateStarted]}>
+												<Input id={startedId} type='date' {...form.register("dateStarted")} />
+											</ListEditRow>
+											<ListEditRow label='Finished' htmlFor={completedId} errors={[form.formState.errors.dateCompleted]}>
+												<Input id={completedId} type='date' {...form.register("dateCompleted")} />
+											</ListEditRow>
+											<ListEditRow label='Notes' htmlFor={notesId} align='start' errors={[form.formState.errors.notes]}>
+												<Textarea id={notesId} {...form.register("notes")} />
+											</ListEditRow>
+											<Separator className='my-1' />
+											<Controller
+												name='userSynonyms'
+												control={form.control}
+												render={({ field, fieldState }) => (
+													<ListEditRow label='Alternative titles' htmlFor={altTitlesId} align='start' invalid={fieldState.invalid}>
+														<UserSynonymsField
+															id={altTitlesId}
+															defaultTitles={titleStrings(anime.titles).filter((title) => title.toLowerCase() !== anime.title.toLowerCase())}
+															value={field.value}
+															onChange={field.onChange}
+															error={fieldState.error}
+														/>
+													</ListEditRow>
+												)}
+											/>
+											<ListEditRow label='Folder' htmlFor={folderId} errors={[form.formState.errors.folder]}>
+												<InputGroup>
+													<InputGroupInput id={folderId} {...form.register("folder")} />
+													<InputGroupAddon align='inline-end'>
+														<InputGroupButton
+															size='icon-xs'
+															aria-label='Browse folder'
+															onClick={() => {
+																void pickLibraryFolderPath().then((path) => {
+																	if (!path) {
+																		return;
+																	}
+																	form.setValue("folder", path, {
+																		shouldDirty: true,
+																	});
+																});
+															}}>
+															<FolderOpen />
+														</InputGroupButton>
+													</InputGroupAddon>
+												</InputGroup>
+											</ListEditRow>
+											<ListEditRow label='Fansub group' htmlFor={fansubId} errors={[form.formState.errors.fansub]}>
+												<Input id={fansubId} {...form.register("fansub")} />
+											</ListEditRow>
 										</div>
 									)}
 								</ScrollArea>
