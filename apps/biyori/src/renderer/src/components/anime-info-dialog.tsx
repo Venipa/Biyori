@@ -29,6 +29,7 @@ import { Input } from "@/mainview/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
+import { Slider } from "@/mainview/components/ui/slider";
 import { Spinner } from "@/mainview/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { Textarea } from "@/mainview/components/ui/textarea";
@@ -106,7 +107,7 @@ export function AnimeInfoDialog({
 			<DialogContent
 				from='bottom'
 				showCloseButton={false}
-				className='flex max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-b-none p-0 sm:max-w-4xl'
+				className='flex max-w-3xl flex-col items-stretch justify-start gap-0 overflow-hidden rounded-none p-0 sm:max-w-4xl'
 				underlay={
 					<div className='pointer-events-none fixed top-8 right-0 bottom-0 left-0 z-50 mx-auto w-full max-w-3xl sm:max-w-4xl'>
 						<AnimatePresence>
@@ -221,7 +222,6 @@ function AnimeInfoBody({
 }) {
 	const progressId = useId();
 	const rewatchesId = useId();
-	const statusId = useId();
 	const scoreId = useId();
 	const notesId = useId();
 	const rewatchingId = useId();
@@ -343,21 +343,6 @@ function AnimeInfoBody({
 										</div>
 									) : (
 										<div className='flex flex-col gap-3 pr-3 pb-3'>
-											<Controller
-												control={form.control}
-												name='status'
-												render={({ field, fieldState }) => (
-													<ListEditRow label='Status' htmlFor={statusId} invalid={fieldState.invalid} errors={[fieldState.error]}>
-														<AnimeListStatusSelect
-															id={statusId}
-															value={field.value}
-															onValueChange={(value) => {
-																setListStatus(field.onChange, value);
-															}}
-														/>
-													</ListEditRow>
-												)}
-											/>
 											<ListEditRow label='Episodes watched' htmlFor={progressId} errors={[form.formState.errors.progress]}>
 												<div className='flex items-center gap-2'>
 													<Input
@@ -379,26 +364,26 @@ function AnimeInfoBody({
 												render={({ field, fieldState }) => (
 													<ListEditRow label='Score' htmlFor={scoreId} invalid={fieldState.invalid} errors={[fieldState.error]}>
 														<div className='flex items-center gap-2'>
-															<input
-																type='range'
+															<Slider
+																className='min-w-0 flex-1'
 																min={0}
 																max={100}
 																step={1}
-																value={typeof field.value === "number" ? field.value : 0}
+																value={typeof field.value === "number" && field.value > 0 ? field.value : 0}
 																aria-label='Score'
-																className='min-w-0 flex-1 accent-primary'
-																onChange={(event) => {
-																	const next = Number(event.target.value);
+																onValueChange={(next) => {
 																	field.onChange(next > 0 ? next : null);
 																}}
 															/>
 															<Input
 																id={scoreId}
-																className='w-20'
+																className='w-20 tabular-nums'
 																type='number'
 																min={0}
 																max={100}
-																value={typeof field.value === "number" ? field.value : ""}
+																inputMode='numeric'
+																placeholder='0-100'
+																value={typeof field.value === "number" && field.value > 0 ? field.value : ""}
 																onChange={(event) => {
 																	const raw = event.target.value;
 																	if (raw === "") {
@@ -408,6 +393,16 @@ function AnimeInfoBody({
 																	field.onChange(Number(raw));
 																}}
 															/>
+															<Button
+																type='button'
+																variant='ghost'
+																size='icon'
+																disabled={!(typeof field.value === "number" && field.value > 0)}
+																onClick={() => {
+																	field.onChange(null);
+																}}>
+																<XIcon />
+															</Button>
 														</div>
 													</ListEditRow>
 												)}
