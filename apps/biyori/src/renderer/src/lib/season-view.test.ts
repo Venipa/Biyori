@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { airStamp, flattenSeasonVirtualItems, formatPopularityCompact, seasonGridColumns, skylinePosterHeight } from "./season-view";
+import type { SeasonItem } from "@/lib/schemas/seasons";
+import { airStamp, flattenSeasonVirtualItems, formatPopularityCompact, groupSeasonItems, seasonGridColumns, skylinePosterHeight } from "./season-view";
 
 describe("seasonGridColumns", () => {
 	test("matches image and tile breakpoints", () => {
@@ -38,6 +39,22 @@ describe("formatPopularityCompact", () => {
 		expect(formatPopularityCompact(840)).toBe("840");
 		expect(formatPopularityCompact(1500)).toBe("1.5k");
 		expect(formatPopularityCompact(12345)).toBe("12k");
+	});
+});
+
+describe("groupSeasonItems", () => {
+	test("groups release dates in calendar order", () => {
+		const item = (id: number, startDate: string | null): SeasonItem => ({ id, startDate }) as SeasonItem;
+		const groups = groupSeasonItems({
+			items: [item(2, "2026-10-02"), item(1, "2026-09-05"), item(3, null), item(4, "2026-09-05")],
+			groupBy: "date",
+			inListIds: new Set(),
+		});
+		expect(groups.map((group) => ({ key: group.key, label: group.label, ids: group.items.map((entry) => entry.id) }))).toEqual([
+			{ key: "2026-09-05", label: "Sep 5, 2026", ids: [1, 4] },
+			{ key: "2026-10-02", label: "Oct 2, 2026", ids: [2] },
+			{ key: "unknown", label: "Unknown", ids: [3] },
+		]);
 	});
 });
 

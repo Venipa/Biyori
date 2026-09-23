@@ -52,11 +52,36 @@ function typeGroupKey(format: string): { key: string; label: string; order: numb
 	return { key: format || "TV", label: format || "TV", order: 0 };
 }
 
+const RELEASE_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+function releaseDateGroupKey(startDate: string | null): { key: string; label: string; order: number } {
+	const match = startDate ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(startDate) : null;
+	const month = match ? RELEASE_MONTHS[Number(match[2]) - 1] : undefined;
+	const day = match ? Number(match[3]) : Number.NaN;
+	if (!match || !month || day < 1 || day > 31) {
+		return { key: "unknown", label: "Unknown", order: Number.MAX_SAFE_INTEGER };
+	}
+	return { key: startDate ?? "unknown", label: `${month} ${day}, ${match[1]}`, order: dateKey(startDate) };
+}
+
+function seasonGroupMeta(item: SeasonItem, groupBy: SeasonGroupBy, inListIds: ReadonlySet<number>): { key: string; label: string; order: number } {
+	switch (groupBy) {
+		case "list":
+			return listGroupKey(inListIds.has(item.id));
+		case "type":
+			return typeGroupKey(item.format);
+		case "date":
+			return releaseDateGroupKey(item.startDate);
+		default:
+			return airingGroupKey(item.status);
+	}
+}
+
 export function groupSeasonItems(options: { items: SeasonItem[]; groupBy: SeasonGroupBy; inListIds: ReadonlySet<number> }): SeasonGroup[] {
 	const buckets = new Map<string, { label: string; order: number; items: SeasonItem[] }>();
 
 	for (const item of options.items) {
-		const meta = options.groupBy === "list" ? listGroupKey(options.inListIds.has(item.id)) : options.groupBy === "type" ? typeGroupKey(item.format) : airingGroupKey(item.status);
+		const meta = seasonGroupMeta(item, options.groupBy, options.inListIds);
 		const bucket = buckets.get(meta.key) ?? {
 			label: meta.label,
 			order: meta.order,

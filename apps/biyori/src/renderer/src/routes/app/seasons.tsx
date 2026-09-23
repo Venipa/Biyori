@@ -61,6 +61,7 @@ const groupByItems = {
 	airing: "Airing status",
 	list: "List status",
 	type: "Type",
+	date: "Release date",
 } as const;
 
 const sortByItems = {
@@ -407,27 +408,29 @@ function SeasonsPage() {
 					{query.data?.fromCache ? " · cached" : ""}
 				</p>
 			</div>
-			<ScrollArea className='h-full flex-1'>
-				{!ready || (query.isPending && !query.data) ? <SeasonGridSkeleton viewAs={viewAs} /> : null}
-				{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Could not load season' description={query.error.message} /> : null}
-				{query.data && (query.data.items?.length ?? 0) === 0 ? <PlaceholderView icon={CalendarDaysIcon} title='No titles' description='Nothing listed for this season.' /> : null}
-				{query.data && (query.data.items?.length ?? 0) > 0 && filtered.length === 0 ? (
-					<PlaceholderView icon={FilterIcon} title='No matches' description='Nothing matched the list filter.' />
-				) : null}
-				{groups.length > 0 ? (
-					<SeasonVirtualGrid
-						groups={groups}
-						viewAs={viewAs}
-						sortBy={sortBy}
-						localById={localById}
-						onOpen={openSeasonInfo}
-						onAdd={(item) => {
-							void addFromSearch.mutateAsync({ mediaId: item.id });
-						}}
-						adding={addFromSearch.isPending}
-					/>
-				) : null}
-			</ScrollArea>
+			<div className='min-h-0 flex-1'>
+				<ScrollArea className='h-full'>
+					{!ready || (query.isPending && !query.data) ? <SeasonGridSkeleton viewAs={viewAs} /> : null}
+					{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Could not load season' description={query.error.message} /> : null}
+					{query.data && (query.data.items?.length ?? 0) === 0 ? <PlaceholderView icon={CalendarDaysIcon} title='No titles' description='Nothing listed for this season.' /> : null}
+					{query.data && (query.data.items?.length ?? 0) > 0 && filtered.length === 0 ? (
+						<PlaceholderView icon={FilterIcon} title='No matches' description='Nothing matched the list filter.' />
+					) : null}
+					{groups.length > 0 ? (
+						<SeasonVirtualGrid
+							groups={groups}
+							viewAs={viewAs}
+							sortBy={sortBy}
+							localById={localById}
+							onOpen={openSeasonInfo}
+							onAdd={(item) => {
+								void addFromSearch.mutateAsync({ mediaId: item.id });
+							}}
+							adding={addFromSearch.isPending}
+						/>
+					) : null}
+				</ScrollArea>
+			</div>
 		</div>
 	);
 }
