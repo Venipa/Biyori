@@ -503,7 +503,7 @@ function SeasonVirtualGrid({
 			return 220;
 		},
 		overscan: 4,
-		measureElement: (element) => element.getBoundingClientRect().height,
+		getItemKey: (index) => items[index]?.key ?? index,
 	});
 	return (
 		<div ref={rootRef} className='relative w-full' style={{ height: virtualizer.getTotalSize() }}>
