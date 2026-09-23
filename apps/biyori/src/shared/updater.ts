@@ -43,7 +43,10 @@ export const UPDATE_CHANNEL_LABELS: Record<UpdateChannel, string> = {
 
 const allowedChannels = Object.keys(UPDATE_CHANNEL_LABELS) as UpdateChannel[];
 
-export function cleanSemver(version: string): string | null {
+export function cleanSemver(version: unknown): string | null {
+	if (typeof version !== "string" || version.length === 0) {
+		return null;
+	}
 	return semver.clean(version.replace(/^v/i, ""), { loose: true });
 }
 
@@ -53,7 +56,7 @@ export function cleanSemver(version: string): string | null {
  * - beta: `-rc.<n>`
  * - alpha: `-a.<n>` or `-alpha.<n>`
  */
-export function getVersionChannel(version: string): UpdateChannel | null {
+export function getVersionChannel(version: unknown): UpdateChannel | null {
 	const cleaned = cleanSemver(version);
 	if (!cleaned) {
 		return null;

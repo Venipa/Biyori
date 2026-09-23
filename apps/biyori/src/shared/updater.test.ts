@@ -3,6 +3,8 @@ import { formatTransferRate, getVersionChannel, isVersionAllowedOnChannel, parse
 
 describe("update channels", () => {
 	test("classifies semver prerelease ids", () => {
+		expect(getVersionChannel("")).toBe(null);
+		expect(getVersionChannel(undefined)).toBe(null);
 		expect(getVersionChannel("1.0.0")).toBe("stable");
 		expect(getVersionChannel("v1.0.0-rc.1")).toBe("beta");
 		expect(getVersionChannel("1.0.0-a.1")).toBe("alpha");

@@ -86,7 +86,7 @@ export const appSettingsSchema = z.object({
 	mediaDetectionInterval: z.coerce.number().int().min(0, "Required"),
 	seasonsGroupBy: seasonGroupBySchema.default("airing"),
 	seasonsSortBy: seasonSortBySchema.default("date"),
-	seasonsViewAs: seasonViewAsSchema.default("tiles"),
+	seasonsViewAs: z.preprocess((value) => (value === "billboard" ? "tiles" : value), seasonViewAsSchema).default("tiles"),
 	nowPlayingView: nowPlayingViewSchema.default("cards"),
 	animeListViewAs: animeListViewAsSchema.default("compact"),
 	seasonsLastSeason: anilistSeasonNameSchema.nullish(),

@@ -2,7 +2,7 @@ import { t } from "../trpc";
 import { applyAppUpdate, checkForAppUpdate, downloadAppUpdate, getUpdateState, loadChangelog, refreshLocalUpdateInfo, updateStateObservable } from "../updater";
 
 export const updaterRouter = t.router({
-	status: t.procedure.query(() => getUpdateState()),
+	status: t.procedure.query(() => refreshLocalUpdateInfo()),
 	local: t.procedure.query(async () => {
 		return refreshLocalUpdateInfo();
 	}),

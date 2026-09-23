@@ -13,7 +13,7 @@ export const anilistSeasonNameSchema = z.enum(["WINTER", "SPRING", "SUMMER", "FA
 
 export const seasonGroupBySchema = z.enum(["airing", "list", "type"]);
 export const seasonSortBySchema = z.enum(["date", "episodes", "popularity", "score", "title"]);
-export const seasonViewAsSchema = z.enum(["tiles", "images"]);
+export const seasonViewAsSchema = z.enum(["tiles", "images", "guide", "skyline"]);
 
 export const seasonCacheFileSchema = z.object({
 	season: anilistSeasonNameSchema,

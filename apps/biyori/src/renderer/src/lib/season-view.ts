@@ -142,7 +142,69 @@ export function airingBarClass(status: string): string {
 	}
 }
 
+const AIR_STAMP_MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"] as const;
+
+/** Printed-guide date stub. `startDate` is `YYYY-MM-DD` from Anilist. */
+export function airStamp(startDate: string | null): { month: string; day: string } | null {
+	if (!startDate) {
+		return null;
+	}
+	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(startDate);
+	if (!match) {
+		return null;
+	}
+	const month = AIR_STAMP_MONTHS[Number(match[2]) - 1];
+	const day = Number(match[3]);
+	if (!month || !Number.isFinite(day) || day < 1 || day > 31) {
+		return null;
+	}
+	return { month, day: String(day) };
+}
+
+/** Poster height for the skyline view. Unrated titles stay short so rated ones tower. */
+export function skylinePosterHeight(score: number): number {
+	if (score <= 0) {
+		return 72;
+	}
+	const clamped = Math.min(100, score);
+	return 88 + Math.round((clamped / 100) * 96);
+}
+
+export function formatPopularityCompact(popularity: number): string {
+	if (popularity <= 0) {
+		return "?";
+	}
+	if (popularity >= 1_000_000) {
+		return `${(popularity / 1_000_000).toFixed(1)}m`;
+	}
+	if (popularity >= 10_000) {
+		return `${Math.round(popularity / 1000)}k`;
+	}
+	if (popularity >= 1000) {
+		return `${(popularity / 1000).toFixed(1)}k`;
+	}
+	return String(popularity);
+}
+
 export function seasonGridColumns(viewAs: SeasonViewAs, width: number): number {
+	if (viewAs === "guide") {
+		return 1;
+	}
+	if (viewAs === "skyline") {
+		if (width >= 1280) {
+			return 10;
+		}
+		if (width >= 1024) {
+			return 8;
+		}
+		if (width >= 768) {
+			return 6;
+		}
+		if (width >= 640) {
+			return 5;
+		}
+		return 4;
+	}
 	if (viewAs === "images") {
 		if (width >= 1280) {
 			return 6;

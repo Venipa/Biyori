@@ -20,6 +20,14 @@ import hanaRender from "../../../../../resources/biyori-render.png";
 
 type ChangelogData = inferRouterOutputs<AppRouter>["updater"]["changelog"];
 
+const AUTHOR = "Venipa";
+const CONTRIBUTORS = [AUTHOR];
+
+function contributorsWithAuthorFirst(logins: readonly string[]): string[] {
+	const rest = logins.filter((login) => login !== AUTHOR);
+	return [AUTHOR, ...rest.toSorted((left, right) => left.localeCompare(right))];
+}
+
 export const Route = createFileRoute("/app/about")({
 	component: AboutPage,
 });
@@ -35,6 +43,7 @@ function AboutPage() {
 	const changelog = trpc.updater.changelog.useQuery();
 	const channel = parseUpdateChannel(settingsQuery.data?.updateChannel ?? status.localChannel);
 	const buildChannel = getVersionChannel(status.localVersion) ?? parseUpdateChannel(status.buildChannel);
+	const contributors = contributorsWithAuthorFirst(CONTRIBUTORS);
 
 	async function selectChannel(next: UpdateChannel) {
 		await patchSettings({ updateChannel: next });
@@ -59,8 +68,24 @@ function AboutPage() {
 							<dd className='truncate font-mono text-xs'>{status.localHash ? status.localHash.slice(0, 12) : "..."}</dd>
 							<dt className='text-muted-foreground'>Hana</dt>
 							<dd>{about.data?.hanaVersion || "..."}</dd>
+							<dt className='self-center text-muted-foreground'>Contributors</dt>
+							<dd className='flex flex-wrap items-center gap-1.5 self-center'>
+								{contributors.map((login) => (
+									<button
+										key={login}
+										type='button'
+										className='inline-flex items-center gap-1.5 rounded-full py-0.5 pr-2 pl-0.5 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50'
+										onClick={() => {
+											void desktopRpc.request.openExternal({ url: `https://github.com/${login}` });
+										}}>
+										<img src={`https://github.com/${login}.png?size=64`} alt='' className='size-6 rounded-full ring-1 ring-foreground/10' />
+										{login}
+									</button>
+								))}
+							</dd>
 							<dt className='text-muted-foreground'>Updates</dt>
 							<dd className={cn("min-w-0 break-words", status.error ? "text-destructive" : "")}>{status.message || "Not checked yet"}</dd>
+							<div className='pb-6'></div>
 						</dl>
 					</div>
 					<img src={hanaRender} alt='' className='h-52 w-auto max-w-[13rem] shrink-0 object-contain object-bottom select-none' draggable={false} />
@@ -132,12 +157,12 @@ function Changelog({ changelog, isLoading, queryError }: { changelog: ChangelogD
 					<AlertTitle>Could not load changelog</AlertTitle>
 					<AlertDescription>{changelog && !changelog.ok ? changelog.error : "Try again later."}</AlertDescription>
 				</Alert>
-			) : changelog?.ok && changelog.items.length === 0 ? (
+			) : changelog?.ok && (changelog.items?.length ?? 0) === 0 ? (
 				<div className='rounded-xl px-4 py-3 text-sm text-muted-foreground ring-1 ring-foreground/10'>
 					<p>No releases for this channel.</p>
 					<p>Switch channel or publish a matching GitHub release.</p>
 				</div>
-			) : changelog?.ok ? (
+			) : changelog?.ok && changelog.items ? (
 				<div className='divide-y rounded-xl ring-1 ring-foreground/10'>
 					{changelog.items.map((item) => {
 						const kind = getVersionChannel(item.version);

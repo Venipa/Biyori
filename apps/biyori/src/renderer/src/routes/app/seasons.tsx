@@ -7,6 +7,7 @@ import type { AnilistSeasonName, SeasonGroupBy, SeasonItem, SeasonSortBy, Season
 import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
 import { PlaceholderView } from "@/mainview/components/placeholder-view";
+import { SeasonAltSkeleton, type SeasonAltView, SeasonDisplay, seasonGridClass } from "@/mainview/components/season-display";
 import { Button } from "@/mainview/components/ui/button";
 import { ButtonToggle } from "@/mainview/components/ui/button-toggle";
 import {
@@ -72,6 +73,8 @@ const sortByItems = {
 const viewAsItems = {
 	tiles: "Tiles",
 	images: "Images",
+	guide: "Guide",
+	skyline: "Skyline",
 } as const;
 
 const commandParts = {
@@ -262,7 +265,7 @@ function SeasonsPage() {
 					<SelectTrigger id='season' size='sm' aria-label='Season'>
 						<SelectValue />
 					</SelectTrigger>
-					<SelectContent>
+					<SelectContent side='bottom' alignItemWithTrigger={false} collisionAvoidance={{ side: "none", fallbackAxisSide: "none" }}>
 						<SelectGroup>
 							{seasons.map((item) => (
 								<SelectItem key={item} value={item}>
@@ -321,7 +324,7 @@ function SeasonsPage() {
 					<SelectTrigger id='season-group' size='sm'>
 						<SelectValue />
 					</SelectTrigger>
-					<SelectContent>
+					<SelectContent side='bottom' alignItemWithTrigger={false} collisionAvoidance={{ side: "none", fallbackAxisSide: "none" }}>
 						<SelectGroup>
 							{(Object.keys(groupByItems) as SeasonGroupBy[]).map((value) => (
 								<SelectItem key={value} value={value}>
@@ -345,7 +348,7 @@ function SeasonsPage() {
 					<SelectTrigger id='season-sort' size='sm'>
 						<SelectValue />
 					</SelectTrigger>
-					<SelectContent>
+					<SelectContent side='bottom' alignItemWithTrigger={false} collisionAvoidance={{ side: "none", fallbackAxisSide: "none" }}>
 						<SelectGroup>
 							{(Object.keys(sortByItems) as SeasonSortBy[]).map((value) => (
 								<SelectItem key={value} value={value}>
@@ -369,7 +372,7 @@ function SeasonsPage() {
 					<SelectTrigger id='season-view' size='sm'>
 						<SelectValue />
 					</SelectTrigger>
-					<SelectContent>
+					<SelectContent side='bottom' alignItemWithTrigger={false} collisionAvoidance={{ side: "none", fallbackAxisSide: "none" }}>
 						<SelectGroup>
 							{(Object.keys(viewAsItems) as SeasonViewAs[]).map((value) => (
 								<SelectItem key={value} value={value}>
@@ -412,7 +415,14 @@ function SeasonsPage() {
 	);
 }
 
+function isAltView(viewAs: SeasonViewAs): viewAs is SeasonAltView {
+	return viewAs === "guide" || viewAs === "skyline";
+}
+
 function SeasonGridSkeleton({ viewAs }: { viewAs: SeasonViewAs }) {
+	if (isAltView(viewAs)) {
+		return <SeasonAltSkeleton viewAs={viewAs} />;
+	}
 	if (viewAs === "images") {
 		return (
 			<ul className='grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'>
@@ -484,6 +494,12 @@ function SeasonVirtualGrid({
 				const colWidth = Math.max(80, ((width || 640) - rowPad * 2 - gap * (columns - 1)) / columns);
 				return colWidth * 1.5 + gap;
 			}
+			if (viewAs === "guide") {
+				return 68;
+			}
+			if (viewAs === "skyline") {
+				return 248;
+			}
 			return 220;
 		},
 		overscan: 4,
@@ -509,18 +525,29 @@ function SeasonVirtualGrid({
 								<span className='ml-2 text-muted-foreground'>({item.count})</span>
 							</h2>
 						) : (
-							<ul className={viewAs === "images" ? "grid gap-3 p-4" : "grid gap-3 p-3"} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+							<ul className={seasonGridClass(viewAs)} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
 								{item.items.map((card) => (
 									<li key={card.id}>
-										<SeasonCard
-											item={card}
-											viewAs={viewAs}
-											sortBy={sortBy}
-											listStatus={localById.get(card.id) ?? null}
-											onOpen={() => onOpen(card)}
-											onAdd={() => onAdd(card)}
-											adding={adding}
-										/>
+										{isAltView(viewAs) ? (
+											<SeasonDisplay
+												item={card}
+												viewAs={viewAs}
+												listStatus={localById.get(card.id) ?? null}
+												onOpen={() => onOpen(card)}
+												onAdd={() => onAdd(card)}
+												adding={adding}
+											/>
+										) : (
+											<SeasonCard
+												item={card}
+												viewAs={viewAs}
+												sortBy={sortBy}
+												listStatus={localById.get(card.id) ?? null}
+												onOpen={() => onOpen(card)}
+												onAdd={() => onAdd(card)}
+												adding={adding}
+											/>
+										)}
 									</li>
 								))}
 							</ul>
@@ -544,6 +571,7 @@ function SeasonCard(props: {
 	const { item, viewAs, sortBy, listStatus, onOpen, onAdd, adding } = props;
 	const bar = airingBarClass(item.status);
 	const inList = listStatus != null;
+	const quietText = item.bannerUrl ? "text-foreground/60 group-hover:text-foreground/80" : "text-muted-foreground";
 
 	return (
 		<ContextMenu>
@@ -555,7 +583,10 @@ function SeasonCard(props: {
 								"transition-shadow duration-150",
 								"hover:ring-foreground/25 active:scale-[0.99]",
 							)
-						: cn("group flex w-full cursor-pointer gap-3 rounded-md border bg-card p-2 ring-1 ring-transparent", "transition-shadow duration-150 hover:ring-foreground/15")
+						: cn(
+								"group relative flex w-full cursor-pointer gap-3 overflow-hidden rounded-md border bg-card p-2 ring-1 ring-transparent",
+								"transition-shadow duration-150 hover:ring-foreground/15",
+							)
 				}
 				onClick={onOpen}>
 				{viewAs === "images" ? (
@@ -574,12 +605,21 @@ function SeasonCard(props: {
 					</>
 				) : (
 					<>
-						<div className='flex w-28 shrink-0 flex-col gap-1.5'>
+						{item.bannerUrl ? (
+							<>
+								<AnimeCover id={item.id} kind='banner' sourceUrl={item.bannerUrl} alt='' className='pointer-events-none absolute inset-0 size-full' lazy />
+								<div
+									aria-hidden
+									className='pointer-events-none absolute inset-0 bg-linear-to-r from-card/45 via-card/78 to-card transition-opacity duration-150 group-hover:opacity-85 motion-reduce:transition-none'
+								/>
+							</>
+						) : null}
+						<div className='relative z-10 flex w-28 shrink-0 flex-col gap-1.5'>
 							<div className='relative aspect-2/3 w-full overflow-hidden rounded-sm bg-muted'>
 								<AnimeCover id={item.id} coverUrl={item.coverUrl || undefined} alt='' className='size-full' lazy />
 							</div>
 							{inList ? (
-								<span className='block truncate rounded-md border px-2 py-1 text-center text-xs text-muted-foreground'>{listStatus}</span>
+								<span className={cn("block truncate rounded-md border bg-card/90 px-2 py-1 text-center text-xs", quietText)}>{listStatus}</span>
 							) : (
 								<Button
 									type='button'
@@ -595,25 +635,25 @@ function SeasonCard(props: {
 								</Button>
 							)}
 						</div>
-						<div className='min-w-0 flex-1 text-left'>
+						<div className='relative z-10 min-w-0 flex-1 text-left'>
 							<div className={cn("mb-2 flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-semibold", bar)}>
 								<span className='min-w-0 flex-1 truncate'>{item.title}</span>
 							</div>
 							<div className='grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs'>
-								<span className='text-muted-foreground'>Aired:</span>
+								<span className={quietText}>Aired:</span>
 								<span className='truncate'>{formatAiredRange(item)}</span>
-								<span className='text-muted-foreground'>Episodes:</span>
+								<span className={quietText}>Episodes:</span>
 								<span>{item.episodes > 0 ? item.episodes : "Unknown"}</span>
-								<span className='text-muted-foreground'>Genres:</span>
+								<span className={quietText}>Genres:</span>
 								<span className='truncate'>{item.genres.length > 0 ? item.genres.join(", ") : "?"}</span>
-								<span className='text-muted-foreground'>Producers:</span>
+								<span className={quietText}>Producers:</span>
 								<span className='truncate'>{item.producers.length > 0 ? item.producers.join(", ") : "?"}</span>
-								<span className='text-muted-foreground'>Score:</span>
+								<span className={quietText}>Score:</span>
 								<span>{formatScore(item.averageScore)}</span>
-								<span className='text-muted-foreground'>Popularity:</span>
+								<span className={quietText}>Popularity:</span>
 								<span>{formatPopularity(item.popularity)}</span>
 							</div>
-							{item.synopsis ? <p className='mt-2 line-clamp-3 text-xs text-muted-foreground'>{item.synopsis}</p> : null}
+							{item.synopsis ? <p className={cn("mt-2 line-clamp-3 text-xs", quietText)}>{item.synopsis}</p> : null}
 						</div>
 					</>
 				)}
