@@ -1,13 +1,6 @@
 import { z } from "zod";
 import { listStatusSchema } from "../../shared/list";
 
-function emptyToNull(value: unknown): unknown {
-	if (value === "" || value === undefined) {
-		return null;
-	}
-	return value;
-}
-
 function scoreValue(value: unknown): unknown {
 	if (value === undefined) {
 		return undefined;
@@ -35,8 +28,8 @@ export const animeListEntrySchema = z.object({
 
 export const animeInfoFormSchema = animeListEntrySchema.extend({
 	timesRewatched: z.coerce.number().int().min(0),
-	dateStarted: z.preprocess(emptyToNull, z.string().nullable()),
-	dateCompleted: z.preprocess(emptyToNull, z.string().nullable()),
+	dateStarted: z.string().transform((value) => (value.length === 0 ? null : value)),
+	dateCompleted: z.string().transform((value) => (value.length === 0 ? null : value)),
 	folder: z.string(),
 	fansub: z.string(),
 	userSynonyms: z.string(),

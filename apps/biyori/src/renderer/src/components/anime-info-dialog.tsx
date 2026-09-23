@@ -718,7 +718,11 @@ function AnimeInfoSaveBar({ animeId }: { animeId: number }) {
 									fansub: data.fansub,
 									userSynonyms: data.userSynonyms,
 								});
-								form.reset(data);
+								form.reset({
+									...data,
+									dateStarted: data.dateStarted ?? "",
+									dateCompleted: data.dateCompleted ?? "",
+								});
 								void invalidateAnimeQueries(utils, "entrySaved", animeId);
 							} catch (error) {
 								form.setError("root.serverError", {
