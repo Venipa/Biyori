@@ -61,6 +61,7 @@
 		"encryption.js": "^2.0.4",
 		"lucide-react": "^1.31.0",
 		"motion": "^13.1.0",
+		"react-day-picker": "^10.0.1",
 		"react-hook-form": "^7.85.0",
 		"remark-gfm": "^4.0.1",
 		"semver": "^7.8.5",

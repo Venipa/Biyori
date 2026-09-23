@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, FolderOpen, PlusIcon, XIcon } from "lucide-react";
+import { CircleAlertIcon, FolderOpen, PlusIcon, RefreshCwIcon, XIcon } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { useId, useState } from "react";
-import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
+import { Controller, FormProvider, useForm, useFormContext, useFormState, useWatch } from "react-hook-form";
 import AniDBIcon from "@/assets/anidb.png";
 import AnilistIcon from "@/assets/anilist.svg?react";
 import MyAnimeListIcon from "@/assets/mal.svg?react";
@@ -18,13 +18,16 @@ import { AnimeInfoSheetPeek } from "@/mainview/components/anime-info-sheet-peek"
 import { AnimeListAction, AnimeListStatusSelect } from "@/mainview/components/anime-list-action";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
 import { AnimeStatusNotice } from "@/mainview/components/anime-status-notice";
+import { EpisodeCountInput } from "@/mainview/components/episode-count-input";
 import { RelatedMediaSection } from "@/mainview/components/related-media-card";
 import { SaveBar } from "@/mainview/components/save-bar";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
+import { DateField } from "@/mainview/components/ui/date-field";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTitle } from "@/mainview/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/mainview/components/ui/field";
+import { Hint } from "@/mainview/components/ui/hint";
 import { Input } from "@/mainview/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
@@ -203,6 +206,62 @@ function ListEditRow({
 	);
 }
 
+function AnimeFolderField({ id }: { id: string }) {
+	const form = useFormContext<AnimeInfoFormInput, unknown, AnimeInfoFormValues>();
+	const utils = trpc.useUtils();
+	const scanFolder = trpc.library.scanFolder.useMutation({
+		onSuccess: () => {
+			void utils.library.summary.invalidate();
+			void utils.library.episodes.invalidate();
+		},
+	});
+	const folder = useWatch({ control: form.control, name: "folder" });
+	const path = folder.trim();
+
+	const scanIfPresent = (next: string) => {
+		const normalized = next.trim();
+		if (normalized.length === 0) {
+			return;
+		}
+		void scanFolder.mutateAsync({ path: normalized });
+	};
+
+	return (
+		<ListEditRow label='Folder' htmlFor={id} errors={[form.formState.errors.folder]}>
+			<InputGroup>
+				<InputGroupInput id={id} {...form.register("folder")} />
+				<InputGroupAddon align='inline-end' className='gap-1'>
+					<Hint content='Scan this folder for episode files'>
+						<InputGroupButton
+							size='icon-xs'
+							aria-label='Scan folder'
+							disabled={path.length === 0 || scanFolder.isPending}
+							onClick={() => {
+								scanIfPresent(path);
+							}}>
+							{scanFolder.isPending ? <Spinner size='xs' /> : <RefreshCwIcon />}
+						</InputGroupButton>
+					</Hint>
+					<InputGroupButton
+						size='icon-xs'
+						aria-label='Browse folder'
+						onClick={() => {
+							void pickLibraryFolderPath().then((picked) => {
+								if (!picked) {
+									return;
+								}
+								form.setValue("folder", picked, { shouldDirty: true });
+								scanIfPresent(picked);
+							});
+						}}>
+						<FolderOpen />
+					</InputGroupButton>
+				</InputGroupAddon>
+			</InputGroup>
+		</ListEditRow>
+	);
+}
+
 function AnimeInfoBody({
 	anime,
 	infoTab,
@@ -343,21 +402,23 @@ function AnimeInfoBody({
 										</div>
 									) : (
 										<div className='flex flex-col gap-3 pr-3 pb-3'>
-											<ListEditRow label='Episodes watched' htmlFor={progressId} errors={[form.formState.errors.progress]}>
-												<div className='flex items-center gap-2'>
-													<Input
-														id={progressId}
-														className='w-20'
-														type='number'
-														min={0}
-														max={episodeMax}
-														{...form.register("progress", {
-															valueAsNumber: true,
-														})}
-													/>
-													{anime.episodes > 0 ? <span className='text-xs whitespace-nowrap text-muted-foreground'>of {anime.episodes}</span> : null}
-												</div>
-											</ListEditRow>
+											<Controller
+												control={form.control}
+												name='progress'
+												render={({ field, fieldState }) => (
+													<ListEditRow label='Episodes watched' htmlFor={progressId} align='start' invalid={fieldState.invalid} errors={[fieldState.error]}>
+														<EpisodeCountInput
+															id={progressId}
+															value={typeof field.value === "number" ? field.value : 0}
+															max={episodeMax}
+															total={anime.episodes}
+															invalid={fieldState.invalid}
+															onBlur={field.onBlur}
+															onChange={field.onChange}
+														/>
+													</ListEditRow>
+												)}
+											/>
 											<Controller
 												control={form.control}
 												name='score'
@@ -451,12 +512,24 @@ function AnimeInfoBody({
 													})}
 												/>
 											</ListEditRow>
-											<ListEditRow label='Started' htmlFor={startedId} errors={[form.formState.errors.dateStarted]}>
-												<Input id={startedId} type='date' {...form.register("dateStarted")} />
-											</ListEditRow>
-											<ListEditRow label='Finished' htmlFor={completedId} errors={[form.formState.errors.dateCompleted]}>
-												<Input id={completedId} type='date' {...form.register("dateCompleted")} />
-											</ListEditRow>
+											<Controller
+												control={form.control}
+												name='dateStarted'
+												render={({ field, fieldState }) => (
+													<ListEditRow label='Started' htmlFor={startedId} invalid={fieldState.invalid} errors={[fieldState.error]}>
+														<DateField id={startedId} value={field.value ?? ""} invalid={fieldState.invalid} onBlur={field.onBlur} onChange={field.onChange} />
+													</ListEditRow>
+												)}
+											/>
+											<Controller
+												control={form.control}
+												name='dateCompleted'
+												render={({ field, fieldState }) => (
+													<ListEditRow label='Finished' htmlFor={completedId} invalid={fieldState.invalid} errors={[fieldState.error]}>
+														<DateField id={completedId} value={field.value ?? ""} invalid={fieldState.invalid} onBlur={field.onBlur} onChange={field.onChange} />
+													</ListEditRow>
+												)}
+											/>
 											<ListEditRow label='Notes' htmlFor={notesId} align='start' errors={[form.formState.errors.notes]}>
 												<Textarea id={notesId} {...form.register("notes")} />
 											</ListEditRow>
@@ -476,28 +549,7 @@ function AnimeInfoBody({
 													</ListEditRow>
 												)}
 											/>
-											<ListEditRow label='Folder' htmlFor={folderId} errors={[form.formState.errors.folder]}>
-												<InputGroup>
-													<InputGroupInput id={folderId} {...form.register("folder")} />
-													<InputGroupAddon align='inline-end'>
-														<InputGroupButton
-															size='icon-xs'
-															aria-label='Browse folder'
-															onClick={() => {
-																void pickLibraryFolderPath().then((path) => {
-																	if (!path) {
-																		return;
-																	}
-																	form.setValue("folder", path, {
-																		shouldDirty: true,
-																	});
-																});
-															}}>
-															<FolderOpen />
-														</InputGroupButton>
-													</InputGroupAddon>
-												</InputGroup>
-											</ListEditRow>
+											<AnimeFolderField id={folderId} />
 											<ListEditRow label='Fansub group' htmlFor={fansubId} errors={[form.formState.errors.fansub]}>
 												<Input id={fansubId} {...form.register("fansub")} />
 											</ListEditRow>
