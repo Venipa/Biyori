@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon, CircleAlertIcon, FilterIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
@@ -8,8 +8,8 @@ import { AnimeCover } from "@/mainview/components/anime-cover";
 import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
 import { PlaceholderView } from "@/mainview/components/placeholder-view";
 import { SeasonAltSkeleton, type SeasonAltView, SeasonDisplay, seasonGridClass } from "@/mainview/components/season-display";
+import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
-import { ButtonToggle } from "@/mainview/components/ui/button-toggle";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -21,6 +21,7 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
@@ -210,7 +211,7 @@ function SeasonsPage() {
 	const filtered = useMemo(() => {
 		const raw = query.data?.items ?? [];
 		return raw.filter((item) => {
-			if (!showAdult && item.isAdult) {
+			if (item.isAdult !== showAdult) {
 				return false;
 			}
 			return animeMatchesListFilter(
@@ -240,6 +241,7 @@ function SeasonsPage() {
 	}, [filtered, sortBy, groupBy, inListIds]);
 
 	const busy = query.isFetching || refreshing;
+	const activeFilterCount = showAdult ? 1 : 0;
 
 	return (
 		<div className='flex h-full min-h-0 flex-col'>
@@ -382,9 +384,24 @@ function SeasonsPage() {
 						</SelectGroup>
 					</SelectContent>
 				</Select>
-				<ButtonToggle size='sm' pressed={showAdult} onPressedChange={setShowAdult} aria-label='Show adult content'>
-					Adult
-				</ButtonToggle>
+				<DropdownMenu>
+					<DropdownMenuTrigger
+						render={
+							<Button type='button' size='icon-sm' variant='outline' className='relative' aria-label={activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : "Filters"} />
+						}>
+						<FilterIcon />
+						{activeFilterCount > 0 ? (
+							<Badge size='xs' className='absolute -top-1.5 -right-1.5 min-w-4 px-1 tabular-nums'>
+								{activeFilterCount}
+							</Badge>
+						) : null}
+					</DropdownMenuTrigger>
+					<DropdownMenuContent side='bottom' align='start' collisionAvoidance={{ side: "none", fallbackAxisSide: "none" }} className='min-w-40'>
+						<DropdownMenuCheckboxItem checked={showAdult} onCheckedChange={(checked) => setShowAdult(checked === true)}>
+							Adult
+						</DropdownMenuCheckboxItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
 				<p className='ml-auto text-xs text-muted-foreground'>
 					{filtered.length} title{filtered.length === 1 ? "" : "s"}
 					{query.data?.fromCache ? " · cached" : ""}
@@ -445,6 +462,16 @@ function SeasonGridSkeleton({ viewAs }: { viewAs: SeasonViewAs }) {
 	);
 }
 
+function stickyHeaderIndex(indexes: number[], startIndex: number): number {
+	let active = indexes[0] ?? 0;
+	for (const index of indexes) {
+		if (index <= startIndex) {
+			active = index;
+		}
+	}
+	return active;
+}
+
 function SeasonVirtualGrid({
 	groups,
 	viewAs,
@@ -463,6 +490,7 @@ function SeasonVirtualGrid({
 	adding: boolean;
 }) {
 	const rootRef = useRef<HTMLDivElement>(null);
+	const activeStickyRef = useRef(0);
 	const [width, setWidth] = useState(0);
 	useEffect(() => {
 		const node = rootRef.current;
@@ -480,6 +508,7 @@ function SeasonVirtualGrid({
 	}, []);
 	const columns = seasonGridColumns(viewAs, width || 640);
 	const items = flattenSeasonVirtualItems(groups, columns);
+	const stickyIndexes = items.flatMap((item, index) => (item.type === "header" ? [index] : []));
 	const gap = 12;
 	const rowPad = viewAs === "images" ? 16 : 12;
 	const virtualizer = useVirtualizer({
@@ -504,23 +533,32 @@ function SeasonVirtualGrid({
 		},
 		overscan: 4,
 		getItemKey: (index) => items[index]?.key ?? index,
+		rangeExtractor: (range) => {
+			const active = stickyHeaderIndex(stickyIndexes, range.startIndex);
+			activeStickyRef.current = active;
+			const next = new Set([active, ...defaultRangeExtractor(range)]);
+			return [...next].sort((a, b) => a - b);
+		},
 	});
+	const virtualItems = virtualizer.getVirtualItems();
+	const activeSticky = activeStickyRef.current;
 	return (
 		<div ref={rootRef} className='relative w-full' style={{ height: virtualizer.getTotalSize() }}>
-			{virtualizer.getVirtualItems().map((virtualRow) => {
+			{virtualItems.map((virtualRow) => {
 				const item = items[virtualRow.index];
 				if (!item) {
 					return null;
 				}
+				const isStuck = item.type === "header" && virtualRow.index === activeSticky;
 				return (
 					<div
 						key={item.key}
 						data-index={virtualRow.index}
 						ref={virtualizer.measureElement}
-						className='absolute top-0 left-0 w-full'
-						style={{ transform: `translateY(${virtualRow.start}px)` }}>
+						className={isStuck ? "sticky top-0 z-10 w-full" : "absolute top-0 left-0 w-full"}
+						style={isStuck ? undefined : { transform: `translateY(${virtualRow.start}px)` }}>
 						{item.type === "header" ? (
-							<h2 className='border-b bg-muted/90 px-4 py-2 text-sm font-medium'>
+							<h2 className='border-b bg-muted px-4 py-2 text-sm font-medium'>
 								{item.label}
 								<span className='ml-2 text-muted-foreground'>({item.count})</span>
 							</h2>
