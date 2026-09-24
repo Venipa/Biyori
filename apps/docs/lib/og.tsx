@@ -25,7 +25,7 @@ async function getLogoDataUrl(): Promise<string> {
 }
 
 async function getScreenshotDataUrl(): Promise<string> {
-	const data = await readFile(join(process.cwd(), "public/app-screenshot-1.png"));
+	const data = await readFile(join(process.cwd(), "public/app-nowplaying-2.png"));
 	return `data:image/png;base64,${data.toString("base64")}`;
 }
 
