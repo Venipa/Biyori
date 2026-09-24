@@ -1,51 +1,66 @@
 import { buttonVariants } from "fumadocs-ui/components/ui/button";
-import { BookOpenIcon, ClapperboardIcon, DownloadIcon, FolderSearchIcon, ListIcon, RadioIcon, ScrollTextIcon, SearchIcon, StarIcon } from "lucide-react";
+import { BookOpenIcon, DownloadIcon, ScrollTextIcon, StarIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { AppShotBackdrop, AppShotCarousel } from "@/components/app-preview";
+import { RevealBlock, RevealFrame, RevealList, Settle } from "@/components/landing-motion";
 import { ReleaseDownloadPanel } from "@/components/release-download-panel";
+import { bentoPlacementCss, loadBentoTiles } from "@/lib/bento";
 import { cn } from "@/lib/cn";
 import { getLatestReleasesByChannel, getLatestReleaseUrl, getRepositoryUrl, groupDownloadsByPlatform, pickPrimaryDownload } from "@/lib/github";
 import { assetPath } from "@/lib/paths";
 import { appDescription, appName, appTagline, changelogRoute, docsRoute, formatStarCount, repoStars } from "@/lib/shared";
 
-const appScreenshot = "/app-1.png";
+const surfaces = [
+	{
+		title: "Watching",
+		description: "The list you are on, as a table. Progress sits against the episode count, then the next air date, your score, the average, and the format.",
+	},
+	{
+		title: "Now playing",
+		description:
+			"With no player, Home is the schedule: today, tomorrow, and later in the week, then titles still ahead. When playback matches, that view becomes the episode, with list status, progress, alternate titles, and the synopsis.",
+	},
+	{
+		title: "Seasons",
+		description: "One season at a time. Filter by airing status, sort by popularity, and plan a title or add it before the first episode.",
+	},
+	{
+		title: "About",
+		description: "The build you are running: app version, the Hana core, the update channel, and the changelog for that channel.",
+	},
+] as const;
 
 const features = [
 	{
 		title: "AniList",
 		description: "Connect your account and keep watching status in sync.",
 		href: `${docsRoute}/anilist/`,
-		icon: ListIcon,
 	},
 	{
 		title: "Library",
 		description: "Scan folders and match local files to series.",
 		href: `${docsRoute}/library/`,
-		icon: FolderSearchIcon,
 	},
 	{
 		title: "Now playing",
 		description: "Detect playback and confirm the episode match.",
 		href: `${docsRoute}/now-playing/`,
-		icon: ClapperboardIcon,
 	},
 	{
 		title: "Torrents",
 		description: "RSS and search feeds for new episode releases.",
 		href: `${docsRoute}/torrents/`,
-		icon: SearchIcon,
 	},
 	{
 		title: "Sharing",
 		description: "Discord rich presence and a local now-playing HTTP endpoint.",
 		href: `${docsRoute}/sharing/`,
-		icon: RadioIcon,
 	},
 	{
 		title: "Changelog",
 		description: "Published GitHub releases and notes.",
 		href: changelogRoute,
-		icon: ScrollTextIcon,
 	},
 ] as const;
 
@@ -55,30 +70,21 @@ export default async function HomePage() {
 	const groups = release ? groupDownloadsByPlatform(release.assets) : null;
 	const anyAsset = (groups && (groups.windows[0] ?? groups.macos[0] ?? groups.linux[0])) || (release ? pickPrimaryDownload(release.assets) : undefined);
 	const downloadUrl = anyAsset?.browser_download_url ?? getLatestReleaseUrl();
+	const bento = loadBentoTiles();
+	const featureByFile = new Map<string, (typeof features)[number]>();
+	for (const tile of bento) {
+		if (featureByFile.size >= features.length) continue;
+		const feature = features[featureByFile.size];
+		if (feature) featureByFile.set(tile.src, feature);
+	}
 
 	return (
 		<main className='mx-auto flex w-full max-w-6xl flex-1 flex-col gap-16 px-4 py-12 md:gap-20 md:py-16'>
-			<section className='relative overflow-hidden rounded-2xl border bg-fd-card'>
-				<div aria-hidden className='pointer-events-none absolute inset-0 z-0 overflow-hidden'>
-					<div className='absolute -bottom-[8%] -left-[10%] w-[85%] max-w-3xl [perspective:1600px] md:-bottom-[6%] md:-left-[4%] md:w-[72%]'>
-						<div className='origin-center opacity-10 shadow-2xl shadow-black/30 [transform:rotateX(14deg)_rotateY(22deg)_rotateZ(-3deg)_scale(1.08)] [transform-style:preserve-3d] dark:opacity-50'>
-							<Image
-								src={assetPath(appScreenshot)}
-								alt=''
-								width={1552}
-								height={832}
-								className='h-auto w-full rounded-xl border border-white/10'
-								sizes='(max-width: 768px) 90vw, 720px'
-								priority
-							/>
-						</div>
-					</div>
-					<div className='absolute inset-0 bg-gradient-to-r from-transparent via-fd-card/40 to-fd-card' />
-					<div className='absolute inset-0 bg-gradient-to-t from-fd-card/85 via-transparent to-fd-card/55' />
-				</div>
+			<section className='relative overflow-hidden'>
+				<AppShotBackdrop />
 
-				<div className='relative z-10 grid items-start gap-10 px-6 py-12 md:px-12 md:py-16 lg:grid-cols-[1.15fr_0.85fr]'>
-					<div className='flex flex-col items-start text-left'>
+				<div className='relative z-10 grid items-start gap-10 py-2 lg:grid-cols-[1.15fr_0.85fr]'>
+					<Settle className='flex flex-col items-start text-left'>
 						<div className='mb-6 inline-flex items-center gap-3.5'>
 							<Image src={assetPath("/logo.svg")} alt='' width={48} height={48} className='size-12 shrink-0 rounded-xl' unoptimized priority />
 							<span className='text-2xl font-semibold tracking-tight md:text-3xl'>{appName}</span>
@@ -118,34 +124,96 @@ export default async function HomePage() {
 								</Link>
 							</div>
 						</div>
-					</div>
+					</Settle>
 
-					<ReleaseDownloadPanel releases={releases} />
+					<Settle from='x' delay={0.08}>
+						<ReleaseDownloadPanel releases={releases} />
+					</Settle>
 				</div>
 			</section>
 
-			<section className='overflow-hidden rounded-2xl border bg-fd-card'>
-				<Image src={assetPath(appScreenshot)} alt='Biyori anime list' width={1552} height={832} className='h-auto w-full' sizes='(max-width: 1152px) 100vw, 1152px' />
-			</section>
+			<RevealFrame>
+				<AppShotCarousel />
+			</RevealFrame>
 
-			<section>
-				<div className='mb-8 max-w-2xl'>
-					<h2 className='text-2xl font-semibold tracking-tight md:text-3xl'>What it does</h2>
-					<p className='mt-2 text-pretty text-fd-muted-foreground'>List tracking, local files, playback matching, and torrent feeds in one Electron app.</p>
-				</div>
-				<div className='grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'>
-					{features.map((item) => (
-						<Link
-							key={item.title}
-							href={item.href}
-							className='group flex h-full flex-col gap-2 rounded-2xl border bg-fd-card p-5 transition-[border-color,transform] duration-300 hover:-translate-y-0.5 hover:border-fd-primary/40'>
-							<item.icon className='size-5 text-fd-primary' />
-							<h3 className='font-medium tracking-tight text-balance'>{item.title}</h3>
-							<p className='text-sm leading-snug text-pretty text-fd-muted-foreground'>{item.description}</p>
-						</Link>
+			<section className='grid items-start gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16'>
+				<RevealBlock className='max-w-md'>
+					<h2 className='text-2xl font-semibold tracking-tight text-balance md:text-3xl'>The list, the player, the season</h2>
+					<p className='mt-3 text-pretty leading-relaxed text-fd-muted-foreground'>
+						AniList is the list. The sidebar is the library you already keep: Watching, Done, Hold, Drop, and Plan, plus History and Statistics. Seasons and Torrents sit under
+						Discover.
+					</p>
+				</RevealBlock>
+				<RevealList as='dl' className='grid gap-8 sm:grid-cols-2'>
+					{surfaces.map((item) => (
+						<div key={item.title} className='max-w-prose'>
+							<dt className='font-medium tracking-tight'>{item.title}</dt>
+							<dd className='mt-1.5 text-sm leading-relaxed text-pretty text-fd-muted-foreground'>{item.description}</dd>
+						</div>
 					))}
-				</div>
+				</RevealList>
 			</section>
+
+			<div className='[container-type:inline-size]'>
+				<div className='mb-6 max-w-md'>
+					<h2 className='text-2xl font-semibold tracking-tight text-balance md:text-3xl'>What it does</h2>
+					<p className='mt-2 text-pretty text-fd-muted-foreground'>List tracking, local files, playback matching, and torrent feeds in one desktop app.</p>
+				</div>
+				<style href='bento-placement' precedence='bento-placement'>
+					{bentoPlacementCss(bento)}
+				</style>
+				<RevealBlock className='grid grid-cols-2 gap-3 auto-rows-[calc((100cqi-2.25rem)/4)] sm:grid-cols-3 sm:auto-rows-[calc((100cqi-3.75rem)/6)] lg:grid-cols-4 lg:auto-rows-[calc((100cqi-5.25rem)/8)]'>
+					{bento.map((tile) => {
+						const feature = featureByFile.get(tile.src);
+						const className = "group relative block overflow-hidden rounded-2xl";
+						const wide = tile.ratio === "2:1";
+						const media = (
+							<>
+								<span className='absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100'>
+									<Image
+										src={assetPath(tile.src)}
+										alt=''
+										fill
+										sizes={wide ? "(min-width: 1024px) 560px, (min-width: 640px) 66vw, 100vw" : "(min-width: 1024px) 280px, (min-width: 640px) 33vw, 50vw"}
+										className='object-cover'
+										style={{ objectPosition: tile.objectPosition }}
+									/>
+									{tile.shot != null ? (
+										<Image
+											src={assetPath(tile.shot)}
+											alt=''
+											fill
+											sizes='(min-width: 1024px) 560px, (min-width: 640px) 66vw, 100vw'
+											className='object-cover object-left [mask-image:linear-gradient(to_right,transparent,black_36%,black)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_36%,black)]'
+										/>
+									) : null}
+								</span>
+								<span className='pointer-events-none absolute inset-0 bg-black/30' aria-hidden='true' />
+								{feature != null ? (
+									<span className='pointer-events-none absolute inset-x-0 bottom-0 flex h-[72%] flex-col justify-end bg-[linear-gradient(to_top,rgb(0_0_0/0.92)_0%,rgb(0_0_0/0.72)_18%,rgb(0_0_0/0.38)_46%,rgb(0_0_0/0.12)_72%,transparent_100%)] px-4 pb-4'>
+										<span className='block font-medium tracking-tight text-white'>{feature.title}</span>
+										<span className='mt-1 block text-sm leading-snug text-pretty text-white/80'>{feature.description}</span>
+									</span>
+								) : null}
+							</>
+						);
+
+						if (!feature) {
+							return (
+								<div key={tile.src} data-bento-cell={tile.src.slice(1)} className={className}>
+									{media}
+								</div>
+							);
+						}
+
+						return (
+							<Link key={tile.src} href={feature.href} data-bento-cell={tile.src.slice(1)} className={className}>
+								{media}
+							</Link>
+						);
+					})}
+				</RevealBlock>
+			</div>
 		</main>
 	);
 }

@@ -134,7 +134,7 @@ export function ReleaseDownloadPanel({ releases }: ReleaseDownloadPanelProps) {
 
 	if (!release || !groups) {
 		return (
-			<aside className='relative rounded-2xl border bg-fd-background/85 p-6 backdrop-blur-md'>
+			<aside className='relative rounded-2xl border bg-fd-card p-6'>
 				<p className='text-sm font-medium text-fd-muted-foreground'>Latest release</p>
 				<h2 className='mt-4 text-xl font-semibold tracking-tight'>Release feed unavailable</h2>
 				<p className='mt-2 text-sm text-fd-muted-foreground'>Open GitHub Releases for Windows, macOS, and Linux builds.</p>
@@ -152,7 +152,7 @@ export function ReleaseDownloadPanel({ releases }: ReleaseDownloadPanelProps) {
 	const platformLabel = DOWNLOAD_PLATFORMS.find((item) => item.id === platform)?.label;
 
 	return (
-		<aside className='relative rounded-2xl border bg-fd-background/85 p-6 backdrop-blur-md'>
+		<aside className='relative rounded-2xl border bg-fd-card p-6'>
 			<div className='mb-4 flex items-center justify-between gap-3'>
 				<div className='relative' ref={channelMenuRef}>
 					<button

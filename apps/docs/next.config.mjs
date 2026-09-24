@@ -62,13 +62,18 @@ if (isGithubPages && !readEnv("NEXT_PUBLIC_URL")) {
 const siteUrl = process.env.NEXT_PUBLIC_URL ?? "";
 const basePath = basePathFromSiteUrl(siteUrl);
 
+// `next dev` can resize through the Image Optimization API. `output: "export"`
+// cannot: GitHub Pages has no image server, so production stays unoptimized.
+const isDevServer = process.env.NODE_ENV !== "production";
+
 /** @type {import('next').NextConfig} */
 const config = {
-	output: "export",
+	...(isDevServer ? {} : { output: "export" }),
 	reactStrictMode: true,
 	trailingSlash: true,
 	images: {
-		unoptimized: true,
+		formats: ["image/avif", "image/webp"],
+		unoptimized: !isDevServer,
 	},
 	...(basePath
 		? {
