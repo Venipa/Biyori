@@ -8,7 +8,7 @@ import { getLatestReleasesByChannel, getLatestReleaseUrl, getRepositoryUrl, grou
 import { assetPath } from "@/lib/paths";
 import { appDescription, appName, appTagline, changelogRoute, docsRoute, formatStarCount, repoStars } from "@/lib/shared";
 
-const appScreenshot = "/app-screenshot-1.png";
+const appScreenshot = "/app-1.png";
 
 const features = [
 	{
@@ -65,8 +65,8 @@ export default async function HomePage() {
 							<Image
 								src={assetPath(appScreenshot)}
 								alt=''
-								width={1277}
-								height={721}
+								width={1552}
+								height={832}
 								className='h-auto w-full rounded-xl border border-white/10'
 								sizes='(max-width: 768px) 90vw, 720px'
 								priority
@@ -125,7 +125,7 @@ export default async function HomePage() {
 			</section>
 
 			<section className='overflow-hidden rounded-2xl border bg-fd-card'>
-				<Image src={assetPath(appScreenshot)} alt='Biyori anime list' width={1277} height={721} className='h-auto w-full' sizes='(max-width: 1152px) 100vw, 1152px' />
+				<Image src={assetPath(appScreenshot)} alt='Biyori anime list' width={1552} height={832} className='h-auto w-full' sizes='(max-width: 1152px) 100vw, 1152px' />
 			</section>
 
 			<section>
