@@ -555,18 +555,7 @@ function AnimeInfoBody({
 					</div>
 				</div>
 			</div>
-			{readOnly ? (
-				<DialogFooter className='h-16 shrink-0 rounded-b-none'>
-					<DialogClose render={<Button variant='ghost' type='button' />} className='no-drag'>
-						Cancel
-					</DialogClose>
-					<Button type='button' onClick={onClose}>
-						OK
-					</Button>
-				</DialogFooter>
-			) : (
-				<AnimeInfoSaveBar animeId={anime.id} />
-			)}
+			{!readOnly && <AnimeInfoSaveBar animeId={anime.id} />}
 		</FormProvider>
 	);
 }

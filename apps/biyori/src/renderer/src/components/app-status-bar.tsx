@@ -6,6 +6,34 @@ import { setActivityPanelOpen, toggleActivityPanel, useActivityPanelState } from
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { trpc } from "@/mainview/trpc";
 
+const EMPTY_LIVE: Array<{ source: string; title: string; body?: string }> = [];
+const EMPTY_ITEMS: Array<{ id: string; source: string; title: string; body?: string; status: "ok" | "error" }> = [];
+
+function ActivityFeed({
+	open,
+	pending,
+	showPending,
+	confirmPending,
+	onSkip,
+	onUpdate,
+}: {
+	open: boolean;
+	pending: { title: string; episode: number } | null;
+	showPending: boolean;
+	confirmPending: boolean;
+	onSkip: () => void;
+	onUpdate: () => void;
+}) {
+	const activityQuery = trpc.activity.snapshot.useQuery(undefined, {
+		select: (snapshot) => (open ? snapshot : null),
+	});
+	const live = activityQuery.data?.live ?? EMPTY_LIVE;
+	const items = activityQuery.data?.items ?? EMPTY_ITEMS;
+	return (
+		<ActivityCenterPanel open={open} live={live} items={items} pending={pending} showPending={showPending} confirmPending={confirmPending} onSkip={onSkip} onUpdate={onUpdate} />
+	);
+}
+
 export function AppStatusBar() {
 	const utils = trpc.useUtils();
 	const lastSuccessAt = useRef<number | null>(null);
@@ -14,7 +42,10 @@ export function AppStatusBar() {
 	const { pending, confirm, skip } = useWatchConfirm();
 	const statusQuery = trpc.anilist.syncStatus.useQuery();
 	const noticeQuery = trpc.notice.current.useQuery();
-	const activityQuery = trpc.activity.snapshot.useQuery();
+	const hasLive =
+		trpc.activity.snapshot.useQuery(undefined, {
+			select: (snapshot) => snapshot.live.length > 0,
+		}).data ?? false;
 	trpc.anilist.onSyncStatus.useSubscription(undefined, {
 		onData: (snapshot) => {
 			utils.anilist.syncStatus.setData(undefined, snapshot);
@@ -42,9 +73,7 @@ export function AppStatusBar() {
 	});
 	const snapshot = statusQuery.data;
 	const notice = noticeQuery.data;
-	const live = activityQuery.data?.live ?? [];
-	const items = activityQuery.data?.items ?? [];
-	const running = snapshot?.phase === "running" || Boolean(notice?.busy) || live.length > 0;
+	const running = snapshot?.phase === "running" || Boolean(notice?.busy) || hasLive;
 	const failed = snapshot?.phase === "error";
 	const message = snapshot?.message || notice?.message || "";
 	const showPending = Boolean(pending) && watchConfirmPromoted;
@@ -79,10 +108,8 @@ export function AppStatusBar() {
 
 	return (
 		<div className='relative z-40'>
-			<ActivityCenterPanel
+			<ActivityFeed
 				open={open}
-				live={live}
-				items={items}
 				pending={pending}
 				showPending={showPending}
 				confirmPending={confirm.isPending}

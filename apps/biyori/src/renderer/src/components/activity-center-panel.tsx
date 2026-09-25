@@ -13,6 +13,7 @@ const SOURCE_ICONS: Record<string, ComponentType<{ className?: string }>> = {
 	playback: PlayIcon,
 	torrent: DownloadIcon,
 	"play-next": TvIcon,
+	"episode-ready": PlayIcon,
 	"watch-confirm": TvIcon,
 };
 

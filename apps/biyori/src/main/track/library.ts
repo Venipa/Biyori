@@ -3,14 +3,15 @@ import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
 import { dirname, join } from "node:path";
 import { logger as log } from "@biyori/logger";
 import { pathUnderRoot, VIDEO_EXT } from "@biyori/recognition";
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { shell } from "electron";
 import { type LibrarySummary, summarizeLibraryFolders } from "../../lib/library-summary";
 import { completeActivity, pushNotice, upsertActivity } from "../activity";
 import type { DatabaseClient } from "../db";
-import { anime, episodeFile } from "../db/schema";
+import { anime, episodeFile, history, listEntry } from "../db/schema";
 import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
+import { continueReadyEpisodes } from "./continue-ready";
 import { hana, type ScanHit, type ScanProgress } from "./hana-client";
 import { invalidateCandidateCache, loadCandidates, toHanaCandidates } from "./match";
 import { refreshRelations, toHanaRelations } from "./relations";
@@ -265,6 +266,52 @@ function onScanProgress(kind: "full" | "quick", progress: ScanProgress): void {
 	}
 }
 
+function announceContinueEpisodes(database: DatabaseClient, hits: ScanHit[]): void {
+	const ids = [...new Set(hits.map((hit) => hit.animeId).filter((id) => id > 0))];
+	if (ids.length === 0) {
+		return;
+	}
+	const files = database.select({ animeId: episodeFile.animeId, episode: episodeFile.episode }).from(episodeFile).where(inArray(episodeFile.animeId, ids)).all();
+	const onDisk = new Map<number, Set<number>>();
+	for (const file of files) {
+		const episodes = onDisk.get(file.animeId);
+		if (episodes) {
+			episodes.add(file.episode);
+			continue;
+		}
+		onDisk.set(file.animeId, new Set([file.episode]));
+	}
+	const rows = database
+		.select({
+			animeId: history.animeId,
+			episode: history.episode,
+			title: anime.title,
+			status: listEntry.status,
+		})
+		.from(history)
+		.innerJoin(anime, eq(anime.id, history.animeId))
+		.innerJoin(listEntry, eq(listEntry.animeId, history.animeId))
+		.where(inArray(history.animeId, ids))
+		.orderBy(desc(history.lastModified))
+		.all();
+	const nextByAnime = new Map<number, number>();
+	const titles = new Map<number, string>();
+	for (const row of rows) {
+		if (nextByAnime.has(row.animeId) || row.status === "Completed" || row.status === "Dropped" || row.episode <= 0) {
+			continue;
+		}
+		nextByAnime.set(row.animeId, row.episode + 1);
+		titles.set(row.animeId, row.title);
+	}
+	for (const hit of continueReadyEpisodes(hits, onDisk, nextByAnime)) {
+		pushNotice({
+			source: "episode-ready",
+			title: titles.get(hit.animeId) ?? "New episode",
+			body: `Episode ${hit.episode}`,
+		});
+	}
+}
+
 async function runScan(database: DatabaseClient, roots: string[], kind: "full" | "quick" | "watch"): Promise<{ files: number; matched: number }> {
 	const existing = roots.filter((root) => existsSync(root));
 	if (existing.length === 0) {
@@ -288,6 +335,9 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 			},
 			kind === "watch" ? undefined : (progress) => onScanProgress(kind, progress),
 		);
+		if (kind === "watch") {
+			announceContinueEpisodes(database, result.hits);
+		}
 		applyScanHits(database, result.scannedRoots, result.hits);
 		if (kind !== "watch") {
 			const title = `Library scan: ${result.files} files, ${result.hits.length} matched`;

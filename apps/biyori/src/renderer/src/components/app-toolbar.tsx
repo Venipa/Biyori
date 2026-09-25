@@ -21,12 +21,15 @@ import { trpc } from "@/mainview/trpc";
 
 const titleButtonClass = "h-full rounded-none border-0 px-2 active:translate-y-0 [&_svg]:transition-transform [&_svg]:duration-150 [&_svg]:ease-out active:[&_svg]:scale-90";
 
+function activityBellSignature(snapshot: { live: Array<{ source: string }>; items: Array<{ id: string }> }): string {
+	return `${snapshot.live.map((row) => row.source).join("\0")}\n${snapshot.items.map((row) => row.id).join("\0")}`;
+}
+
+const ACTIVITY_TOKEN = /[\0\n]/;
+
 function gainedToken(next: string, prev: string): boolean {
-	if (!next) {
-		return false;
-	}
-	const previous = new Set(prev.split("\0").filter(Boolean));
-	return next.split("\0").some((token) => token.length > 0 && !previous.has(token));
+	const previous = new Set(prev.split(ACTIVITY_TOKEN).filter((token) => token.length > 0));
+	return next.split(ACTIVITY_TOKEN).some((token) => token.length > 0 && !previous.has(token));
 }
 
 function ActivityBell({ swing, unread }: { swing: boolean; unread: boolean }) {
@@ -54,20 +57,16 @@ function ActivityBell({ swing, unread }: { swing: boolean; unread: boolean }) {
 
 function ActivityTitleButton() {
 	const { open } = useActivityPanelState();
-	const activityQuery = trpc.activity.snapshot.useQuery();
-	const live = activityQuery.data?.live ?? [];
-	const items = activityQuery.data?.items ?? [];
-	const liveSig = live.map((row) => row.source).join("\0");
-	const itemSig = items.map((row) => row.id).join("\0");
-	const [seen, setSeen] = useState<{ live: string; items: string } | null>(null);
+	const signature = trpc.activity.snapshot.useQuery(undefined, { select: activityBellSignature }).data;
+	const [seen, setSeen] = useState<string | null>(null);
 	const [swingId, setSwingId] = useState(0);
 	const [unread, setUnread] = useState(false);
 	if (open && unread) {
 		setUnread(false);
 	}
-	if (activityQuery.data && (seen?.live !== liveSig || seen?.items !== itemSig)) {
-		const gained = seen != null && (gainedToken(liveSig, seen.live) || gainedToken(itemSig, seen.items));
-		setSeen({ live: liveSig, items: itemSig });
+	if (signature != null && signature !== seen) {
+		const gained = seen != null && gainedToken(signature, seen);
+		setSeen(signature);
 		if (gained && !open) {
 			setUnread(true);
 			setSwingId((value) => value + 1);
