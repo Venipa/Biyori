@@ -1,9 +1,6 @@
-import { BellIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { ActivityCenterPanel } from "@/mainview/components/activity-center-panel";
-import { Button } from "@/mainview/components/ui/button";
 import { Spinner } from "@/mainview/components/ui/spinner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/ui/tooltip";
 import { useWatchConfirm } from "@/mainview/components/watch-confirm-actions";
 import { setActivityPanelOpen, toggleActivityPanel, useActivityPanelState } from "@/mainview/lib/activity-panel";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
@@ -62,9 +59,21 @@ export function AppStatusBar() {
 			}
 			setActivityPanelOpen(false);
 		};
+		const onPointerDown = (event: PointerEvent) => {
+			const target = event.target;
+			if (!(target instanceof Element)) {
+				return;
+			}
+			if (target.closest("[data-activity-root], [data-activity-toggle]")) {
+				return;
+			}
+			setActivityPanelOpen(false);
+		};
 		window.addEventListener("keydown", onKeyDown);
+		window.addEventListener("pointerdown", onPointerDown);
 		return () => {
 			window.removeEventListener("keydown", onKeyDown);
+			window.removeEventListener("pointerdown", onPointerDown);
 		};
 	}, [open]);
 
@@ -77,9 +86,6 @@ export function AppStatusBar() {
 				pending={pending}
 				showPending={showPending}
 				confirmPending={confirm.isPending}
-				onClose={() => {
-					setActivityPanelOpen(false);
-				}}
 				onSkip={() => {
 					void skip.mutateAsync();
 				}}
@@ -88,11 +94,13 @@ export function AppStatusBar() {
 				}}
 			/>
 			<div className='flex h-6 shrink-0 items-stretch border-t bg-muted/40 text-[11px] leading-none'>
+				<div className='flex w-7 shrink-0 cursor-default items-center justify-center border-r'>{running ? <Spinner size='xs' color='foreground' aria-hidden /> : null}</div>
 				<button
 					type='button'
+					data-activity-toggle
 					aria-label={open ? "Close activity center" : "Open activity center"}
 					aria-expanded={open}
-					className='flex min-w-0 flex-1 cursor-pointer items-center border-r px-1.5 text-left'
+					className='flex min-w-0 flex-1 cursor-pointer items-center px-1.5 text-left'
 					onClick={() => {
 						toggleActivityPanel();
 					}}>
@@ -100,26 +108,6 @@ export function AppStatusBar() {
 						{message}
 					</p>
 				</button>
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<Button
-								type='button'
-								variant='ghost'
-								size='icon-xs'
-								aria-label={open ? "Close activity center" : "Open activity center"}
-								aria-expanded={open}
-								className='size-6 cursor-pointer rounded-none'
-								onClick={() => {
-									toggleActivityPanel();
-								}}
-							/>
-						}>
-						<BellIcon />
-					</TooltipTrigger>
-					<TooltipContent>{open ? "Close activity" : "Activity"}</TooltipContent>
-				</Tooltip>
-				<div className='flex w-7 shrink-0 cursor-default items-center justify-center'>{running ? <Spinner size='xs' color={"foreground"} aria-hidden /> : null}</div>
 			</div>
 		</div>
 	);

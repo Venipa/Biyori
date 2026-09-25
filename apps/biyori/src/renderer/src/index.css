@@ -318,3 +318,25 @@
 		translate: 280% 0;
 	}
 }
+
+@keyframes bell-clapper {
+	0%,
+	100% {
+		transform: rotate(0deg);
+	}
+	20% {
+		transform: rotate(16deg);
+	}
+	45% {
+		transform: rotate(-14deg);
+	}
+	70% {
+		transform: rotate(7deg);
+	}
+}
+
+.bell-clapper {
+	transform-box: view-box;
+	transform-origin: 12px 17px;
+	animation: bell-clapper 0.45s ease-out;
+}

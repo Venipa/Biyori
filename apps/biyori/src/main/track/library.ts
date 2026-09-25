@@ -20,6 +20,25 @@ const watchers: FSWatcher[] = [];
 const dirtyPaths = new Set<string>();
 let watchTimer: ReturnType<typeof setTimeout> | null = null;
 let scanTail: Promise<unknown> = Promise.resolve();
+const libraryIndexListeners = new Set<() => void>();
+
+export function subscribeLibraryIndex(listener: () => void): () => void {
+	libraryIndexListeners.add(listener);
+	return () => {
+		libraryIndexListeners.delete(listener);
+	};
+}
+
+function notifyLibraryIndex(): void {
+	for (const listener of libraryIndexListeners) {
+		listener();
+	}
+}
+
+function totalChanges(database: DatabaseClient): number {
+	const row = database.$client.prepare("select total_changes() as n").get() as { n: number } | undefined;
+	return row?.n ?? 0;
+}
 
 export function initLibrary(database: DatabaseClient): void {
 	db = database;
@@ -42,6 +61,8 @@ function filesUnderAnyRootSql(roots: string[]) {
 
 function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: ScanHit[]): void {
 	const matched = hits.filter((hit) => hit.animeId > 0);
+	const before = totalChanges(database);
+	let scratch = 0;
 	database.transaction((tx) => {
 		for (let index = 0; index < matched.length; index += INSERT_CHUNK) {
 			const chunk = matched.slice(index, index + INSERT_CHUNK);
@@ -62,10 +83,12 @@ function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: S
 						episode: sql`excluded.episode`,
 						size: sql`excluded.size`,
 					},
+					setWhere: sql`${episodeFile.animeId} is not excluded.anime_id or ${episodeFile.episode} is not excluded.episode or ${episodeFile.size} is not excluded.size`,
 				})
 				.run();
 		}
 		if (scannedRoots.length > 0) {
+			const scratchBefore = totalChanges(database);
 			tx.run(sql`create temp table if not exists scan_keep (path text primary key not null)`);
 			tx.run(sql`delete from scan_keep`);
 			for (let index = 0; index < matched.length; index += KEEP_CHUNK) {
@@ -77,6 +100,7 @@ function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: S
 					)}`,
 				);
 			}
+			scratch += totalChanges(database) - scratchBefore;
 			tx.delete(episodeFile)
 				.where(sql`(${filesUnderAnyRootSql(scannedRoots)}) and ${episodeFile.path} not in (select path from scan_keep)`)
 				.run();
@@ -99,6 +123,9 @@ function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: S
 		}
 	});
 	invalidateCandidateCache();
+	if (totalChanges(database) - before - scratch > 0) {
+		notifyLibraryIndex();
+	}
 }
 
 function enqueueScan(work: () => Promise<{ files: number; matched: number }>): Promise<{ files: number; matched: number }> {
@@ -149,6 +176,7 @@ function pruneGone(database: DatabaseClient, gone: string[]): void {
 	if (gone.length === 0) {
 		return;
 	}
+	const before = totalChanges(database);
 	database.transaction((tx) => {
 		for (const root of gone) {
 			tx.delete(episodeFile).where(filesUnderRootSql(root)).run();
@@ -161,6 +189,9 @@ function pruneGone(database: DatabaseClient, gone: string[]): void {
 			tx.update(anime).set({ folder: "" }).where(eq(anime.id, row.id)).run();
 		}
 	});
+	if (totalChanges(database) !== before) {
+		notifyLibraryIndex();
+	}
 }
 
 export async function scanLibrary(database: DatabaseClient = requiredDb()): Promise<{ files: number; matched: number }> {

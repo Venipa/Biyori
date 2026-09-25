@@ -1,10 +1,8 @@
-import { BellIcon, CheckIcon, CircleAlertIcon, DownloadIcon, FolderSearchIcon, ListIcon, PlayIcon, RefreshCwIcon, TvIcon, XIcon } from "lucide-react";
+import { BellIcon, CheckIcon, CircleAlertIcon, DownloadIcon, FolderSearchIcon, ListIcon, PlayIcon, RefreshCwIcon, TvIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import type { ComponentType, ReactNode } from "react";
-import { Button } from "@/mainview/components/ui/button";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Spinner } from "@/mainview/components/ui/spinner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/ui/tooltip";
 import { WatchConfirmActions } from "@/mainview/components/watch-confirm-actions";
 import { cn } from "@/mainview/lib/utils";
 
@@ -19,9 +17,9 @@ const SOURCE_ICONS: Record<string, ComponentType<{ className?: string }>> = {
 };
 
 const panelMotion = {
-	initial: { opacity: 0, y: 16 },
+	initial: { opacity: 0, y: -8 },
 	animate: { opacity: 1, y: 0 },
-	exit: { opacity: 0, y: 16 },
+	exit: { opacity: 0, y: -8 },
 	transition: { duration: 0.18, ease: [0.16, 1, 0.3, 1] },
 } as const;
 
@@ -68,7 +66,6 @@ export function ActivityCenterPanel({
 	pending,
 	showPending,
 	confirmPending,
-	onClose,
 	onSkip,
 	onUpdate,
 }: {
@@ -78,7 +75,6 @@ export function ActivityCenterPanel({
 	pending: { title: string; episode: number } | null;
 	showPending: boolean;
 	confirmPending: boolean;
-	onClose: () => void;
 	onSkip: () => void;
 	onUpdate: () => void;
 }) {
@@ -87,45 +83,24 @@ export function ActivityCenterPanel({
 	const subtitle = inProgress > 0 ? (inProgress === 1 ? "1 in progress" : `${inProgress} in progress`) : "7-day history";
 
 	return (
-		<div className='pointer-events-none absolute right-0 bottom-6 z-40 overflow-hidden'>
+		<div className='pointer-events-none fixed top-8 right-0 z-50 overflow-hidden'>
 			<AnimatePresence>
 				{open ? (
 					<motion.div
 						key='activity-center'
+						data-activity-root
 						role='dialog'
 						aria-label='Activity'
-						className='pointer-events-auto flex max-h-[min(24rem,calc(100dvh-5.5rem))] w-[min(22rem,100vw)] cursor-default flex-col overflow-hidden rounded-t-xl rounded-b-none border border-b-0 bg-card/80 shadow-lg backdrop-blur-md'
+						className='pointer-events-auto flex max-h-[min(32rem,calc(100dvh-7rem))] w-[min(26rem,100vw)] cursor-default flex-col overflow-hidden rounded-t-none rounded-b-xl border border-t-0 bg-card/80 shadow-lg backdrop-blur-md'
 						initial={panelMotion.initial}
 						animate={panelMotion.animate}
 						exit={panelMotion.exit}
 						transition={panelMotion.transition}>
-						<div className='flex shrink-0 items-center gap-2 border-b px-3 py-2'>
-							<div className='flex min-w-0 flex-1 flex-col gap-0.5'>
-								<p className='truncate text-xs font-medium'>Activity</p>
-								<p className='truncate text-[11px] text-muted-foreground'>{subtitle}</p>
-							</div>
-							<Tooltip>
-								<TooltipTrigger
-									render={
-										<Button
-											type='button'
-											variant='ghost'
-											size='icon-xs'
-											className='cursor-pointer'
-											aria-label='Close activity center'
-											onPointerDown={(event) => {
-												event.preventDefault();
-												event.stopPropagation();
-												onClose();
-											}}
-										/>
-									}>
-									<XIcon />
-								</TooltipTrigger>
-								<TooltipContent>Close</TooltipContent>
-							</Tooltip>
+						<div className='flex shrink-0 flex-col gap-0.5 border-b px-3 py-2'>
+							<p className='truncate text-xs font-medium'>Activity</p>
+							<p className='truncate text-[11px] text-muted-foreground'>{subtitle}</p>
 						</div>
-						<ScrollArea className='min-h-0 max-h-72 overflow-hidden' viewportClassName='max-h-72 overflow-y-auto'>
+						<ScrollArea className='min-h-0 max-h-96 overflow-hidden' viewportClassName='max-h-96 overflow-y-auto'>
 							{empty ? (
 								<p className='px-3 py-2 text-xs text-muted-foreground'>Nothing yet.</p>
 							) : (

@@ -44,7 +44,7 @@ export function ConfirmDialog({
 				</AlertDialogHeader>
 				<AlertDialogFooter>
 					<AlertDialogCancel disabled={pending}>{cancelLabel}</AlertDialogCancel>
-					<AlertDialogAction variant='destructive' disabled={pending} onClick={onConfirm}>
+					<AlertDialogAction variant='destructive' loading={pending} onClick={onConfirm}>
 						{confirmLabel}
 					</AlertDialogAction>
 				</AlertDialogFooter>

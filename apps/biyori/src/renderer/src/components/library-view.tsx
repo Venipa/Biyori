@@ -1,13 +1,11 @@
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { FolderIcon, FolderPlusIcon, FolderSearchIcon, HardDriveIcon } from "lucide-react";
-import { useRef } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import type { LibraryFolderRow } from "@/lib/library-summary";
 import { Button } from "@/mainview/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/mainview/components/ui/empty";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
-import { Spinner } from "@/mainview/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/ui/tooltip";
 import { useAddLibraryFolder } from "@/mainview/lib/library-folder";
@@ -34,12 +32,7 @@ function formatBytes(bytes: number): string {
 }
 
 function LibraryFolderActions({ row }: { row: LibraryFolderRow }) {
-	const utils = trpc.useUtils();
-	const scanFolder = trpc.library.scanFolder.useMutation({
-		onSuccess: () => {
-			void utils.library.summary.invalidate();
-		},
-	});
+	const scanFolder = trpc.library.scanFolder.useMutation();
 	const busy = scanFolder.isPending;
 	const missing = row.missing;
 	const scanLabel = missing ? "Folder is missing" : `Scan ${row.name}`;
@@ -55,13 +48,14 @@ function LibraryFolderActions({ row }: { row: LibraryFolderRow }) {
 							variant='ghost'
 							size='icon-xs'
 							aria-label={scanLabel}
-							disabled={missing || busy}
+							loading={busy}
+							disabled={missing}
 							onClick={() => {
 								void scanFolder.mutateAsync({ path: row.path });
 							}}
 						/>
 					}>
-					{busy ? <Spinner size='xs' /> : <FolderSearchIcon />}
+					<FolderSearchIcon />
 				</TooltipTrigger>
 				<TooltipContent>{scanLabel}</TooltipContent>
 			</Tooltip>
@@ -165,32 +159,11 @@ function lastScanBody(items: Array<{ source: string; body?: string }>): string |
 }
 
 export function LibraryView() {
-	const utils = trpc.useUtils();
 	const addLibraryFolder = useAddLibraryFolder();
 	const summaryQuery = trpc.library.summary.useQuery();
 	const activityQuery = trpc.activity.snapshot.useQuery();
-	const wasScanning = useRef(false);
-	const scan = trpc.library.scan.useMutation({
-		onSuccess: () => {
-			void utils.library.summary.invalidate();
-		},
-	});
-	const scanAll = trpc.library.scanAll.useMutation({
-		onSuccess: () => {
-			void utils.library.summary.invalidate();
-		},
-	});
-
-	trpc.activity.onChange.useSubscription(undefined, {
-		onData: (snapshot) => {
-			utils.activity.snapshot.setData(undefined, snapshot);
-			const scanning = snapshot.live.some((entry) => entry.source === "library-scan");
-			if (wasScanning.current && !scanning) {
-				void utils.library.summary.invalidate();
-			}
-			wasScanning.current = scanning;
-		},
-	});
+	const scan = trpc.library.scan.useMutation();
+	const scanAll = trpc.library.scanAll.useMutation();
 
 	const folders = summaryQuery.data?.folders ?? EMPTY_FOLDERS;
 	const totals = summaryQuery.data?.totals;
@@ -218,21 +191,23 @@ export function LibraryView() {
 					<Button
 						type='button'
 						variant='outline'
+						loading={scan.isPending}
 						disabled={scanning || folders.length === 0}
 						onClick={() => {
 							void scan.mutateAsync();
 						}}>
-						{scan.isPending ? <Spinner data-icon='inline-start' size='xs' /> : <FolderSearchIcon data-icon='inline-start' />}
+						<FolderSearchIcon data-icon='inline-start' />
 						Scan available
 					</Button>
 					<Button
 						type='button'
 						variant='outline'
+						loading={scanAll.isPending}
 						disabled={scanning || folders.length === 0}
 						onClick={() => {
 							void scanAll.mutateAsync();
 						}}>
-						{scanAll.isPending ? <Spinner data-icon='inline-start' size='xs' /> : <FolderSearchIcon data-icon='inline-start' />}
+						<FolderSearchIcon data-icon='inline-start' />
 						Scan folders
 					</Button>
 					<Button

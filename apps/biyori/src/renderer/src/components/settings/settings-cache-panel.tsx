@@ -6,7 +6,6 @@ import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
 import { Field, FieldLabel, FieldLegend, FieldSet } from "@/mainview/components/ui/field";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
-import { Spinner } from "@/mainview/components/ui/spinner";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 
@@ -105,11 +104,10 @@ export function SettingsCachePanel() {
 				<Button
 					type='button'
 					variant='destructive'
-					disabled={clearCache.isPending}
+					loading={clearCache.isPending}
 					onClick={() => {
 						setConfirmOpen(true);
 					}}>
-					{clearCache.isPending ? <Spinner data-icon='inline-start' /> : null}
 					Clear selected
 				</Button>
 			) : null}

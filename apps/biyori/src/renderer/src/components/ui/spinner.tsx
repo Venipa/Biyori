@@ -2,7 +2,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps } from "react";
 import { cn } from "@/mainview/lib/utils";
 
-const getSpans = () => [...new Array(12)].map((_, index) => <span key={`spinner-${index}`} />);
+const spinnerBars = Array.from({ length: 12 }, (_, index) => <span key={index} />);
 
 const spinnerVariants = cva("spinner relative m-0 box-border block p-0", {
 	variants: {
@@ -30,8 +30,8 @@ export type SpinnerProps = Omit<ComponentProps<"div">, "color"> & VariantProps<t
 
 function Spinner({ className, size, color, ...props }: SpinnerProps) {
 	return (
-		<div className={cn(spinnerVariants({ size, color, className }))} {...props}>
-			<div className='relative top-1/2 left-1/2 size-full'>{getSpans()}</div>
+		<div data-slot='spinner' className={cn(spinnerVariants({ size, color }), className)} {...props}>
+			<div className='relative top-1/2 left-1/2 size-full'>{spinnerBars}</div>
 		</div>
 	);
 }

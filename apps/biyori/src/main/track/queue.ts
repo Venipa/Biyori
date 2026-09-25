@@ -24,6 +24,20 @@ export const queuePayloadSchema = z.object({
 export type QueuePayload = z.infer<typeof queuePayloadSchema>;
 
 const QUEUE_RETRY_MS = 5 * 60 * 1000;
+const historyFlushListeners = new Set<() => void>();
+
+export function subscribeHistoryFlush(listener: () => void): () => void {
+	historyFlushListeners.add(listener);
+	return () => {
+		historyFlushListeners.delete(listener);
+	};
+}
+
+function notifyHistoryFlush(): void {
+	for (const listener of historyFlushListeners) {
+		listener();
+	}
+}
 
 function todayIsoDate(): string {
 	return new Date().toISOString().slice(0, 10);
@@ -165,26 +179,30 @@ export async function flushQueue(db: DatabaseClient): Promise<void> {
 		return;
 	}
 	flushing = true;
+	let saved = false;
 	try {
 		do {
 			flushAgain = false;
-			await flushNext(db);
+			saved = (await flushNext(db)) || saved;
 		} while (flushAgain);
 	} finally {
 		flushing = false;
 	}
+	if (saved) {
+		notifyHistoryFlush();
+	}
 }
 
-async function flushNext(db: DatabaseClient): Promise<void> {
+async function flushNext(db: DatabaseClient): Promise<boolean> {
 	const auth = readAnilistAuth();
 	if (!auth || auth.expiresAt <= Date.now()) {
-		return;
+		return false;
 	}
 
 	const items = await db.select().from(syncQueue).orderBy(asc(syncQueue.createdAt)).limit(1);
 	const item = items[0];
 	if (!item) {
-		return;
+		return false;
 	}
 
 	const rows = await db
@@ -208,7 +226,7 @@ async function flushNext(db: DatabaseClient): Promise<void> {
 	if (!row) {
 		await db.delete(syncQueue).where(eq(syncQueue.animeId, item.animeId));
 		flushAgain = true;
-		return;
+		return false;
 	}
 
 	const payload = parsePayload(item.payload);
@@ -268,6 +286,7 @@ async function flushNext(db: DatabaseClient): Promise<void> {
 			flushAgain = true;
 			await yieldToEventLoop();
 		}
+		return true;
 	} catch {
 		const title = "List update failed; will retry";
 		setAppNotice(title);
@@ -278,5 +297,6 @@ async function flushNext(db: DatabaseClient): Promise<void> {
 			status: "error",
 		});
 		/* stay queued; retry timer will try again */
+		return false;
 	}
 }

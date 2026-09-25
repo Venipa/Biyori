@@ -37,9 +37,9 @@ import {
 	subscribeTorrentPollStatus,
 } from "../torrents";
 import { hanaVersion } from "../track/hana-client";
-import { listEpisodes, loadLibrarySummary, playEpisode, playNext, playRandom, scanAvailableEpisodes, scanLibrary, scanLibraryPaths } from "../track/library";
+import { listEpisodes, loadLibrarySummary, playEpisode, playNext, playRandom, scanAvailableEpisodes, scanLibrary, scanLibraryPaths, subscribeLibraryIndex } from "../track/library";
 import { loadCandidates, suggestTitles } from "../track/match";
-import { countQueued } from "../track/queue";
+import { countQueued, subscribeHistoryFlush } from "../track/queue";
 import { chooseNowPlayingMatch, confirmPendingUpdate, getNowPlayingSnapshot, nowPlayingObservable, skipPendingUpdate } from "../track/tracker";
 import { t } from "../trpc";
 import { anilistRouter } from "./anilist";
@@ -355,6 +355,13 @@ export const appRouter = t.router({
 		queuedCount: t.procedure.query(async ({ ctx }) => {
 			return countQueued(ctx.db);
 		}),
+		onFlush: t.procedure.subscription(() => {
+			return observable<null>((emit) => {
+				return subscribeHistoryFlush(() => {
+					emit.next(null);
+				});
+			});
+		}),
 		latest: t.procedure.query(async ({ ctx }) => {
 			const rows = await ctx.db
 				.select({
@@ -466,6 +473,13 @@ export const appRouter = t.router({
 		}),
 	}),
 	library: t.router({
+		onIndex: t.procedure.subscription(() => {
+			return observable<null>((emit) => {
+				return subscribeLibraryIndex(() => {
+					emit.next(null);
+				});
+			});
+		}),
 		summary: t.procedure.query(async ({ ctx }) => loadLibrarySummary(ctx.db)),
 		scan: t.procedure.mutation(async ({ ctx }) => {
 			return scanAvailableEpisodes(ctx.db);

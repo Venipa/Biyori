@@ -6,7 +6,6 @@ import Logo from "@/mainview/components/logo";
 import { Alert, AlertDescription, AlertTitle } from "@/mainview/components/ui/alert";
 import { Button } from "@/mainview/components/ui/button";
 import { Progress, ProgressLabel, ProgressValue } from "@/mainview/components/ui/progress";
-import { Spinner } from "@/mainview/components/ui/spinner";
 import { usePreventNavigation } from "@/mainview/lib/prevent-navigation";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { trpc } from "@/mainview/trpc";
@@ -110,22 +109,21 @@ function UpdatePage() {
 				{action === "check" ? (
 					<Button
 						type='button'
-						disabled={primaryBusy}
+						loading={primaryBusy}
 						onClick={() => {
 							void check.mutateAsync();
 						}}>
-						{primaryBusy ? <Spinner data-icon='inline-start' /> : <RefreshCwIcon data-icon='inline-start' />}
+						<RefreshCwIcon data-icon='inline-start' />
 						Check again
 					</Button>
 				) : null}
 				{action === "restart" ? (
 					<Button
 						type='button'
-						disabled={primaryBusy}
+						loading={primaryBusy}
 						onClick={() => {
 							void apply.mutateAsync();
 						}}>
-						{primaryBusy ? <Spinner data-icon='inline-start' /> : null}
 						Restart to update
 					</Button>
 				) : null}

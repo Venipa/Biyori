@@ -7,7 +7,6 @@ import { SaveBar } from "@/mainview/components/save-bar";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { FieldError } from "@/mainview/components/ui/field";
-import { Spinner } from "@/mainview/components/ui/spinner";
 import { settingsFieldHref, settingsFieldNav } from "@/mainview/lib/settings-nav";
 import { trpc } from "@/mainview/trpc";
 
@@ -68,7 +67,8 @@ export function SettingsSaveBar() {
 				<Button
 					size='sm'
 					type='button'
-					disabled={isSubmitting || !dirty}
+					loading={isSubmitting}
+					disabled={!dirty}
 					onClick={() => {
 						void form.handleSubmit(
 							async (data) => {
@@ -100,7 +100,6 @@ export function SettingsSaveBar() {
 							},
 						)();
 					}}>
-					{isSubmitting ? <Spinner data-icon='inline-start' /> : null}
 					Save
 				</Button>
 			</div>

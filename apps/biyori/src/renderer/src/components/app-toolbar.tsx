@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ExternalLinkIcon, InfoIcon, LogOutIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
+import { useState } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import { profileInitials } from "@/lib/profile-initials";
 import { Button } from "@/mainview/components/ui/button";
@@ -14,10 +15,87 @@ import {
 } from "@/mainview/components/ui/dropdown-menu";
 import { Image } from "@/mainview/components/ui/image";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/mainview/components/ui/tooltip";
+import { toggleActivityPanel, useActivityPanelState } from "@/mainview/lib/activity-panel";
 import { useCheckForUpdates } from "@/mainview/lib/update-status";
 import { trpc } from "@/mainview/trpc";
 
 const titleButtonClass = "h-full rounded-none border-0 px-2 active:translate-y-0 [&_svg]:transition-transform [&_svg]:duration-150 [&_svg]:ease-out active:[&_svg]:scale-90";
+
+function gainedToken(next: string, prev: string): boolean {
+	if (!next) {
+		return false;
+	}
+	const previous = new Set(prev.split("\0").filter(Boolean));
+	return next.split("\0").some((token) => token.length > 0 && !previous.has(token));
+}
+
+function ActivityBell({ swing, unread }: { swing: boolean; unread: boolean }) {
+	if (!unread) {
+		return (
+			<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' aria-hidden className='size-4'>
+				<path d='M10.268 21a2 2 0 0 0 3.464 0' />
+				<path d='M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326' />
+			</svg>
+		);
+	}
+	return (
+		<svg viewBox='0 0 24 24' aria-hidden className='size-4'>
+			<path
+				d='M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326'
+				strokeWidth='1.75'
+				strokeLinecap='round'
+				strokeLinejoin='round'
+				className='fill-destructive stroke-destructive/55'
+			/>
+			<circle cx='12' cy='21' r='2.35' className={swing ? "bell-clapper fill-destructive" : "fill-destructive"} />
+		</svg>
+	);
+}
+
+function ActivityTitleButton() {
+	const { open } = useActivityPanelState();
+	const activityQuery = trpc.activity.snapshot.useQuery();
+	const live = activityQuery.data?.live ?? [];
+	const items = activityQuery.data?.items ?? [];
+	const liveSig = live.map((row) => row.source).join("\0");
+	const itemSig = items.map((row) => row.id).join("\0");
+	const [seen, setSeen] = useState<{ live: string; items: string } | null>(null);
+	const [swingId, setSwingId] = useState(0);
+	const [unread, setUnread] = useState(false);
+	if (open && unread) {
+		setUnread(false);
+	}
+	if (activityQuery.data && (seen?.live !== liveSig || seen?.items !== itemSig)) {
+		const gained = seen != null && (gainedToken(liveSig, seen.live) || gainedToken(itemSig, seen.items));
+		setSeen({ live: liveSig, items: itemSig });
+		if (gained && !open) {
+			setUnread(true);
+			setSwingId((value) => value + 1);
+		}
+	}
+	const label = open ? "Close activity center" : "Open activity center";
+
+	return (
+		<Tooltip>
+			<TooltipTrigger
+				render={
+					<Button
+						variant='ghost'
+						data-activity-toggle
+						aria-label={label}
+						aria-expanded={open}
+						className={titleButtonClass}
+						onClick={() => {
+							toggleActivityPanel();
+						}}
+					/>
+				}>
+				<ActivityBell key={swingId} swing={swingId > 0} unread={unread} />
+			</TooltipTrigger>
+			<TooltipContent>{open ? "Close activity" : "Activity"}</TooltipContent>
+		</Tooltip>
+	);
+}
 
 function AccountButton() {
 	const navigate = useNavigate();
@@ -146,7 +224,7 @@ export function AppToolbar() {
 								variant='ghost'
 								aria-label='Synchronize'
 								className={titleButtonClass}
-								disabled={syncRunning || sync.isPending}
+								loading={syncRunning || sync.isPending}
 								onClick={() => {
 									void sync.mutateAsync();
 								}}
@@ -156,6 +234,7 @@ export function AppToolbar() {
 					</TooltipTrigger>
 					<TooltipContent>Synchronize</TooltipContent>
 				</Tooltip>
+				<ActivityTitleButton />
 				<AccountButton />
 				<Tooltip>
 					<TooltipTrigger

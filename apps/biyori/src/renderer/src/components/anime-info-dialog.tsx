@@ -33,7 +33,6 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
 import { Slider } from "@/mainview/components/ui/slider";
-import { Spinner } from "@/mainview/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { Textarea } from "@/mainview/components/ui/textarea";
 import { type AnimeInfoFrame, visibleAnimeInfoSheets } from "@/mainview/lib/anime-info-stack";
@@ -208,13 +207,7 @@ function ListEditRow({
 
 function AnimeFolderField({ id }: { id: string }) {
 	const form = useFormContext<AnimeInfoFormInput, unknown, AnimeInfoFormValues>();
-	const utils = trpc.useUtils();
-	const scanFolder = trpc.library.scanFolder.useMutation({
-		onSuccess: () => {
-			void utils.library.summary.invalidate();
-			void utils.library.episodes.invalidate();
-		},
-	});
+	const scanFolder = trpc.library.scanFolder.useMutation();
 	const folder = useWatch({ control: form.control, name: "folder" });
 	const path = folder.trim();
 
@@ -235,11 +228,12 @@ function AnimeFolderField({ id }: { id: string }) {
 						<InputGroupButton
 							size='icon-xs'
 							aria-label='Scan folder'
-							disabled={path.length === 0 || scanFolder.isPending}
+							loading={scanFolder.isPending}
+							disabled={path.length === 0}
 							onClick={() => {
 								scanIfPresent(path);
 							}}>
-							{scanFolder.isPending ? <Spinner size='xs' /> : <RefreshCwIcon />}
+							<RefreshCwIcon />
 						</InputGroupButton>
 					</Hint>
 					<InputGroupButton
@@ -697,7 +691,8 @@ function AnimeInfoSaveBar({ animeId }: { animeId: number }) {
 				</Button>
 				<Button
 					type='button'
-					disabled={pending || !isDirty}
+					loading={pending}
+					disabled={!isDirty}
 					onClick={() => {
 						void form.handleSubmit(async (data) => {
 							try {
@@ -731,7 +726,6 @@ function AnimeInfoSaveBar({ animeId }: { animeId: number }) {
 							}
 						})();
 					}}>
-					{pending ? <Spinner data-icon='inline-start' /> : null}
 					Save
 				</Button>
 			</div>

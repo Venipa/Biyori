@@ -66,6 +66,16 @@ function MainLayout(): ReactElement {
 			}
 		},
 	});
+	trpc.library.onIndex.useSubscription(undefined, {
+		onData: () => {
+			void Promise.all([utils.anime.listed.invalidate(), utils.anime.list.invalidate(), utils.library.summary.invalidate(), utils.library.episodes.invalidate()]);
+		},
+	});
+	trpc.history.onFlush.useSubscription(undefined, {
+		onData: () => {
+			void Promise.all([invalidateAnimeQueries(utils, "watched"), utils.anime.byId.invalidate()]);
+		},
+	});
 
 	if (settingsQuery.data?.onboardingComplete === false) {
 		return <Navigate to='/onboarding' />;
