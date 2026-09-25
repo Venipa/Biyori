@@ -2,9 +2,10 @@ import { DocsBody, DocsDescription, DocsPage, DocsTitle, MarkdownCopyButton, Vie
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/json-ld";
 import { getMDXComponents } from "@/components/mdx";
 import { getBlobUrl } from "@/lib/github";
-import { siteUrl } from "@/lib/shared";
+import { absoluteFileUrl, absolutePageUrl, docPageJsonLd, docSeoTitle } from "@/lib/seo";
 import { getPageImageUrl, getPageMarkdownUrl, source } from "@/lib/source";
 
 export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
@@ -17,6 +18,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
 
 	return (
 		<DocsPage toc={page.data.toc} full={page.data.full}>
+			<JsonLd data={docPageJsonLd(page)} />
 			<DocsTitle>{page.data.title}</DocsTitle>
 			<DocsDescription className='mb-0'>{page.data.description}</DocsDescription>
 			<div className='flex flex-row items-center gap-2 border-b pb-6'>
@@ -43,12 +45,19 @@ export async function generateMetadata(props: PageProps<"/docs/[[...slug]]">): P
 	const page = source.getPage(params.slug);
 	if (!page) notFound();
 
-	const ogImage = `${siteUrl}${getPageImageUrl(page).url}`;
+	const title = docSeoTitle(page.slugs, page.data.title);
+	const canonical = absolutePageUrl(page.url);
+	const ogImage = absoluteFileUrl(getPageImageUrl(page).url);
 
 	return {
-		title: page.data.title,
+		title: { absolute: title },
 		description: page.data.description,
+		alternates: { canonical },
 		openGraph: {
+			type: "article",
+			url: canonical,
+			title,
+			description: page.data.description,
 			images: [
 				{
 					url: ogImage,
@@ -60,6 +69,8 @@ export async function generateMetadata(props: PageProps<"/docs/[[...slug]]">): P
 		},
 		twitter: {
 			card: "summary_large_image",
+			title,
+			description: page.data.description,
 			images: [ogImage],
 		},
 	};

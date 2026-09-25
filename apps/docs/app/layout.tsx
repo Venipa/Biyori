@@ -34,6 +34,17 @@ export const metadata: Metadata = {
 		title: `${appName} - ${appTagline}`,
 		description: appDescription,
 	},
+	robots: {
+		index: true,
+		follow: true,
+		googleBot: {
+			index: true,
+			follow: true,
+			"max-image-preview": "large",
+			"max-snippet": -1,
+			"max-video-preview": -1,
+		},
+	},
 };
 const isProduction = process.env.NODE_ENV === "production";
 export default function Layout({ children }: LayoutProps<"/">) {

@@ -67,9 +67,9 @@ export const brandColor = "#3d5aa3";
 export const brandColorRgb = "61, 90, 163";
 
 export const appTagline = "Anime list tracker for your desktop";
-export const appDescription = "Track your AniList, scan a local library, match playback, and pick up torrent releases without leaving the desktop.";
+export const appDescription = "Free desktop anime list tracker. Sync AniList, scan a local library, match playback, and follow torrent releases on Windows, macOS, and Linux.";
 
-export const docsDescription = `Documentation for ${appName}: install, library, AniList, torrents, and settings.`;
+export const docsDescription = "Guides for installing Biyori, AniList sync, the local library, playback matching, and torrent feeds.";
 
 export const discordUrl = readEnv("DISCORD_URL") ?? readEnv("NEXT_PUBLIC_DISCORD_URL");
 

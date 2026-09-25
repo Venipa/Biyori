@@ -1,13 +1,29 @@
 import { buttonVariants } from "fumadocs-ui/components/ui/button";
 import { ArrowUpRightIcon } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
+import { JsonLd } from "@/components/json-ld";
 import { cn } from "@/lib/cn";
 import { formatReleaseDate, getReleaseNotes, getReleasesUrl, listReleases } from "@/lib/github";
+import { absolutePageUrl, changelogJsonLd } from "@/lib/seo";
 import { appName } from "@/lib/shared";
 
-export const metadata = {
-	title: "Changelog",
-	description: `Release history for ${appName}`,
+const changelogTitle = `Changelog | ${appName}`;
+const changelogDescription = `Release notes for ${appName}, the desktop anime list tracker.`;
+
+export const metadata: Metadata = {
+	title: { absolute: changelogTitle },
+	description: changelogDescription,
+	alternates: { canonical: absolutePageUrl("/changelog") },
+	openGraph: {
+		url: absolutePageUrl("/changelog"),
+		title: changelogTitle,
+		description: changelogDescription,
+	},
+	twitter: {
+		title: changelogTitle,
+		description: changelogDescription,
+	},
 };
 
 export default async function ChangelogPage() {
@@ -15,6 +31,7 @@ export default async function ChangelogPage() {
 
 	return (
 		<main className='mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-4 py-12 md:py-16'>
+			<JsonLd data={changelogJsonLd()} />
 			<header className='flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between'>
 				<div>
 					<h1 className='text-3xl font-semibold tracking-tight md:text-4xl'>Changelog</h1>

@@ -1,15 +1,35 @@
 import { buttonVariants } from "fumadocs-ui/components/ui/button";
 import { BookOpenIcon, DownloadIcon, ScrollTextIcon, StarIcon } from "lucide-react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { AppShotBackdrop, AppShotCarousel } from "@/components/app-preview";
+import { JsonLd } from "@/components/json-ld";
 import { RevealBlock, RevealFrame, RevealList, Settle } from "@/components/landing-motion";
 import { ReleaseDownloadPanel } from "@/components/release-download-panel";
 import { bentoPlacementCss, loadBentoTiles } from "@/lib/bento";
 import { cn } from "@/lib/cn";
 import { getLatestReleasesByChannel, getLatestReleaseUrl, getRepositoryUrl, groupDownloadsByPlatform, pickPrimaryDownload } from "@/lib/github";
 import { assetPath } from "@/lib/paths";
+import { absolutePageUrl, homeJsonLd } from "@/lib/seo";
 import { appDescription, appName, appTagline, changelogRoute, docsRoute, formatStarCount, repoStars } from "@/lib/shared";
+
+const homeTitle = `${appName} - desktop anime list tracker`;
+
+export const metadata: Metadata = {
+	title: { absolute: homeTitle },
+	description: appDescription,
+	alternates: { canonical: absolutePageUrl("/") },
+	openGraph: {
+		url: absolutePageUrl("/"),
+		title: homeTitle,
+		description: appDescription,
+	},
+	twitter: {
+		title: homeTitle,
+		description: appDescription,
+	},
+};
 
 const surfaces = [
 	{
@@ -80,6 +100,7 @@ export default async function HomePage() {
 
 	return (
 		<main className='mx-auto flex w-full max-w-6xl flex-1 flex-col gap-16 px-4 py-12 md:gap-20 md:py-16'>
+			<JsonLd data={homeJsonLd()} />
 			<section className='relative overflow-hidden'>
 				<AppShotBackdrop />
 
@@ -181,7 +202,7 @@ export default async function HomePage() {
 									{tile.shot != null ? (
 										<Image
 											src={assetPath(tile.shot)}
-											alt=''
+											alt='Biyori now playing on a matched episode, with list progress and synopsis'
 											fill
 											sizes='(min-width: 1024px) 560px, (min-width: 640px) 66vw, 100vw'
 											className='object-cover object-left [mask-image:linear-gradient(to_right,transparent,black_36%,black)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_36%,black)]'
