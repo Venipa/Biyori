@@ -1,3 +1,4 @@
+import { ListTreeIcon, PackageCheckIcon, PackageSearchIcon, WorkflowIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { ActivityCenterPanel } from "@/mainview/components/activity-center-panel";
 import { Spinner } from "@/mainview/components/ui/spinner";
@@ -121,7 +122,9 @@ export function AppStatusBar() {
 				}}
 			/>
 			<div className='flex h-6 shrink-0 items-stretch border-t bg-muted/40 text-[11px] leading-none'>
-				<div className='flex w-7 shrink-0 cursor-default items-center justify-center border-r'>{running ? <Spinner size='xs' color='foreground' aria-hidden /> : null}</div>
+				<div className='flex w-7 shrink-0 cursor-default items-center justify-center border-r'>
+					{running ? <Spinner size='xs' color='foreground' aria-hidden /> : <ListTreeIcon className='size-3.5 text-muted-foreground' />}
+				</div>
 				<button
 					type='button'
 					data-activity-toggle
