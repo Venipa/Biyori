@@ -43,6 +43,42 @@ const navDestinations: string[] = ["/app/now-playing", "/app/anime-list", "/app/
 
 const navPillSpring = { type: "spring", stiffness: 500, damping: 40 } as const;
 
+function sidebarArt(snapshot: { media: unknown; match: { id: number; bannerUrl: string; coverUrl: string } | null }): { id: number; bannerUrl: string; coverUrl: string } | null {
+	const match = snapshot.match;
+	if (snapshot.media == null || match == null || match.id <= 0 || (!match.bannerUrl && !match.coverUrl)) {
+		return null;
+	}
+	return { id: match.id, bannerUrl: match.bannerUrl, coverUrl: match.coverUrl };
+}
+
+function SidebarAmbient() {
+	const playingQuery = trpc.media.nowPlaying.useQuery(undefined, { select: sidebarArt });
+	const playing = playingQuery.data;
+	const latest = trpc.history.latest.useQuery(undefined, { enabled: playingQuery.isSuccess && playing == null });
+	const art =
+		playing ??
+		(latest.data?.animeId != null && (latest.data.bannerUrl || latest.data.coverUrl)
+			? { id: latest.data.animeId, bannerUrl: latest.data.bannerUrl ?? "", coverUrl: latest.data.coverUrl ?? "" }
+			: null);
+	if (art == null) {
+		return null;
+	}
+	const banner = art.bannerUrl.length > 0;
+	return (
+		<div aria-hidden className='pointer-events-none absolute inset-x-0 top-0 z-0 h-72 overflow-hidden'>
+			<AnimeCover
+				id={art.id}
+				kind={banner ? "banner" : "cover"}
+				sourceUrl={banner ? art.bannerUrl : art.coverUrl}
+				coverUrl={art.coverUrl || undefined}
+				alt=''
+				className='absolute top-0 left-1/2 h-32 w-lg max-w-none -translate-x-1/2 scale-150 opacity-60 blur-2xl'
+			/>
+			<div className='absolute inset-0 bg-[radial-gradient(ellipse_at_top,transparent_0%,var(--sidebar)_72%)]' />
+		</div>
+	);
+}
+
 function navItemClass(active: boolean): string {
 	return cn("relative flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm hover:bg-muted", active ? "text-foreground" : "text-foreground/80");
 }
@@ -95,8 +131,11 @@ export function AppSidebar() {
 
 	return (
 		<nav aria-label='Main navigation' className='relative z-30 flex h-full min-h-0 w-56 shrink-0 flex-col gap-2 overflow-visible border-r bg-sidebar p-2'>
-			<SidebarSearch />
-			<div className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto'>
+			<SidebarAmbient />
+			<div className='relative z-10'>
+				<SidebarSearch />
+			</div>
+			<div className='relative z-10 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto'>
 				<LayoutGroup id='app-sidebar-nav'>
 					<NowPlayingNavLink active={pathname === "/app/now-playing"} isEnter={isEnter} />
 					<NavGroup label='Library'>

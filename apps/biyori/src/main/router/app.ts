@@ -369,6 +369,7 @@ export const appRouter = t.router({
 					episode: history.episode,
 					animeId: history.animeId,
 					coverUrl: anime.coverUrl,
+					bannerUrl: anime.bannerUrl,
 				})
 				.from(history)
 				.leftJoin(anime, eq(anime.id, history.animeId))
@@ -383,6 +384,7 @@ export const appRouter = t.router({
 				episode: row.episode,
 				animeId: row.animeId > 0 ? row.animeId : null,
 				coverUrl: row.coverUrl || null,
+				bannerUrl: row.bannerUrl || null,
 			};
 		}),
 		remove: t.procedure.input(z.object({ id: z.string().min(1) })).mutation(async ({ ctx, input }) => {
