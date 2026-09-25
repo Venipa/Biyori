@@ -3,12 +3,13 @@ import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
 import { dirname, join } from "node:path";
 import { logger as log } from "@biyori/logger";
 import { pathUnderRoot, VIDEO_EXT } from "@biyori/recognition";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { shell } from "electron";
 import { type LibrarySummary, summarizeLibraryFolders } from "../../lib/library-summary";
+import { EPISODE_SCAN_STATUSES, episodeInAirWindow, isMissingAiredEpisode, nextListEpisode } from "../../shared/episode-window";
 import { completeActivity, pushNotice, upsertActivity } from "../activity";
 import type { DatabaseClient } from "../db";
-import { anime, episodeFile, history, listEntry } from "../db/schema";
+import { anime, episodeFile, listEntry } from "../db/schema";
 import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
 import { continueReadyEpisodes } from "./continue-ready";
@@ -20,6 +21,8 @@ let db: DatabaseClient | null = null;
 const watchers: FSWatcher[] = [];
 const dirtyPaths = new Set<string>();
 let watchTimer: ReturnType<typeof setTimeout> | null = null;
+let episodeScanTimer: ReturnType<typeof setInterval> | null = null;
+const episodeScanStatus = new Set<string>(EPISODE_SCAN_STATUSES);
 let scanTail: Promise<unknown> = Promise.resolve();
 const libraryIndexListeners = new Set<() => void>();
 
@@ -281,26 +284,27 @@ function announceContinueEpisodes(database: DatabaseClient, hits: ScanHit[]): vo
 		}
 		onDisk.set(file.animeId, new Set([file.episode]));
 	}
+	const now = Date.now();
 	const rows = database
 		.select({
-			animeId: history.animeId,
-			episode: history.episode,
-			title: anime.title,
+			animeId: listEntry.animeId,
+			episodesWatched: listEntry.episodesWatched,
 			status: listEntry.status,
+			title: anime.title,
+			lastAiredEpisode: anime.lastAiredEpisode,
+			nextAiringAt: anime.nextAiringAt,
 		})
-		.from(history)
-		.innerJoin(anime, eq(anime.id, history.animeId))
-		.innerJoin(listEntry, eq(listEntry.animeId, history.animeId))
-		.where(inArray(history.animeId, ids))
-		.orderBy(desc(history.lastModified))
+		.from(listEntry)
+		.innerJoin(anime, eq(anime.id, listEntry.animeId))
+		.where(inArray(listEntry.animeId, ids))
 		.all();
 	const nextByAnime = new Map<number, number>();
 	const titles = new Map<number, string>();
 	for (const row of rows) {
-		if (nextByAnime.has(row.animeId) || row.status === "Completed" || row.status === "Dropped" || row.episode <= 0) {
+		if (!episodeScanStatus.has(row.status) || !episodeInAirWindow(row, now)) {
 			continue;
 		}
-		nextByAnime.set(row.animeId, row.episode + 1);
+		nextByAnime.set(row.animeId, nextListEpisode(row.episodesWatched));
 		titles.set(row.animeId, row.title);
 	}
 	for (const hit of continueReadyEpisodes(hits, onDisk, nextByAnime)) {
@@ -454,6 +458,7 @@ export async function restartLibraryWatch(): Promise<void> {
 	if (!db) {
 		return;
 	}
+	restartEpisodeScan();
 	const settings = loadAppSettings();
 	if (!settings.realtimeMonitor) {
 		return;
@@ -535,6 +540,85 @@ async function flushWatch(): Promise<void> {
 		return;
 	}
 	await enqueueScan(() => runScan(database, folders, "watch")).catch(() => undefined);
+}
+
+function dueEpisodeFolders(database: DatabaseClient, now: number): string[] {
+	const rows = database
+		.select({
+			animeId: anime.id,
+			folder: anime.folder,
+			episodesWatched: listEntry.episodesWatched,
+			lastAiredEpisode: anime.lastAiredEpisode,
+			nextAiringAt: anime.nextAiringAt,
+		})
+		.from(listEntry)
+		.innerJoin(anime, eq(anime.id, listEntry.animeId))
+		.where(inArray(listEntry.status, [...EPISODE_SCAN_STATUSES]))
+		.all();
+	if (rows.length === 0) {
+		return [];
+	}
+	const files = database
+		.select({ animeId: episodeFile.animeId, episode: episodeFile.episode })
+		.from(episodeFile)
+		.where(
+			inArray(
+				episodeFile.animeId,
+				rows.map((row) => row.animeId),
+			),
+		)
+		.all();
+	const onDisk = new Map<number, number[]>();
+	for (const file of files) {
+		const episodes = onDisk.get(file.animeId);
+		if (episodes) {
+			episodes.push(file.episode);
+			continue;
+		}
+		onDisk.set(file.animeId, [file.episode]);
+	}
+	const roots = libraryRoots();
+	const folders: string[] = [];
+	for (const row of rows) {
+		if (!row.folder || !existsSync(row.folder) || isLibraryRoot(row.folder, roots)) {
+			continue;
+		}
+		if (!isMissingAiredEpisode({ ...row, indexedEpisodes: onDisk.get(row.animeId) ?? [] }, now)) {
+			continue;
+		}
+		folders.push(row.folder);
+	}
+	return collapseRoots(folders);
+}
+
+async function scanDueEpisodes(): Promise<void> {
+	const database = db;
+	if (!database) {
+		return;
+	}
+	const folders = dueEpisodeFolders(database, Date.now());
+	if (folders.length === 0) {
+		return;
+	}
+	await enqueueScan(() => runScan(database, folders, "watch")).catch(() => undefined);
+}
+
+function restartEpisodeScan(): void {
+	if (episodeScanTimer) {
+		clearInterval(episodeScanTimer);
+		episodeScanTimer = null;
+	}
+	if (!db) {
+		return;
+	}
+	const settings = loadAppSettings();
+	if (!settings.episodeScanEnabled) {
+		return;
+	}
+	const intervalMs = settings.episodeScanIntervalMinutes * 60 * 1000;
+	episodeScanTimer = setInterval(() => {
+		void scanDueEpisodes();
+	}, intervalMs);
 }
 
 export function stopLibraryWatch(): void {

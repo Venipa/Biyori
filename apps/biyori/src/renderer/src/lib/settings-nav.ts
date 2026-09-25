@@ -89,6 +89,8 @@ export const settingsFieldNav: Record<string, { section: SettingsSectionId; chil
 	externalLinks: { section: "application" },
 	libraryFolders: { section: "library" },
 	realtimeMonitor: { section: "library" },
+	episodeScanEnabled: { section: "library" },
+	episodeScanIntervalMinutes: { section: "library" },
 	ignoreOutsideLibrary: { section: "recognition", child: "general" },
 	ignoreOutOfRangeEpisode: { section: "recognition", child: "general" },
 	recognitionDelaySeconds: { section: "recognition", child: "general" },

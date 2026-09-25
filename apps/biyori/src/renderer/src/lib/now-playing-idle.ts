@@ -1,3 +1,4 @@
+import { episodeInAirWindow, nextListEpisode } from "../../../shared/episode-window";
 import { formatAiringDayLabel } from "./format-date";
 
 export const CONTINUE_WATCHING_LIMIT = 20;
@@ -5,13 +6,13 @@ export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type IdleHistoryRow = {
 	animeId: number;
-	title: string;
 	episode: number;
 };
 
 export type IdleListedRow = {
 	id: number;
 	title: string;
+	status?: string;
 	episodes: number;
 	episodesWatched: number;
 	lastAiredEpisode: number;
@@ -45,32 +46,37 @@ export function nextUnwatchedEpisode(listed: IdleListedRow): number {
 	return listed.lastAiredEpisode + 1;
 }
 
-export function buildContinueWatching(rows: IdleHistoryRow[], listedById: ReadonlyMap<number, IdleListedRow>, skipAnimeIds: ReadonlySet<number>): ContinueWatchingItem[] {
-	const seen = new Set<number>();
-	const items: ContinueWatchingItem[] = [];
-	for (const row of rows) {
-		if (row.animeId <= 0 || row.episode <= 0 || seen.has(row.animeId) || skipAnimeIds.has(row.animeId)) {
+const CONTINUE_STATUSES = new Set(["Currently watching", "Completed", "Plan to watch"]);
+
+export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], listed: readonly IdleListedRow[], now: number): ContinueWatchingItem[] {
+	const historyRank = new Map<number, number>();
+	for (const row of historyRows) {
+		if (row.animeId <= 0 || row.episode <= 0 || historyRank.has(row.animeId)) {
 			continue;
 		}
-		seen.add(row.animeId);
-		const listed = listedById.get(row.animeId);
-		const nextEpisode = row.episode + 1;
-		if (!listed?.libraryEpisodes?.includes(nextEpisode)) {
-			continue;
-		}
-		items.push({
-			animeId: row.animeId,
-			title: listed.title ?? row.title,
-			nextEpisode,
-			coverUrl: listed.coverUrl ?? undefined,
-			type: listed.type ?? undefined,
-			episodes: listed.episodes,
-		});
-		if (items.length >= CONTINUE_WATCHING_LIMIT) {
-			break;
-		}
+		historyRank.set(row.animeId, historyRank.size);
 	}
-	return items;
+	const ranked: Array<ContinueWatchingItem & { rank: number }> = [];
+	for (const row of listed) {
+		if (!row.status || !CONTINUE_STATUSES.has(row.status)) {
+			continue;
+		}
+		const nextEpisode = nextListEpisode(row.episodesWatched);
+		if (!row.libraryEpisodes?.includes(nextEpisode) || !episodeInAirWindow(row, now)) {
+			continue;
+		}
+		ranked.push({
+			animeId: row.id,
+			title: row.title,
+			nextEpisode,
+			coverUrl: row.coverUrl ?? undefined,
+			type: row.type ?? undefined,
+			episodes: row.episodes,
+			rank: historyRank.get(row.id) ?? Number.POSITIVE_INFINITY,
+		});
+	}
+	ranked.sort((left, right) => left.rank - right.rank || left.title.localeCompare(right.title));
+	return ranked.slice(0, CONTINUE_WATCHING_LIMIT).map(({ rank: _rank, ...item }) => item);
 }
 
 function airingMs(value: string | null | undefined): number | null {

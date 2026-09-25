@@ -2,9 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { addDays, startOfDay } from "date-fns";
 import { buildAiringSoon, buildContinueWatching, buildUpcoming, SEVEN_DAYS_MS } from "./now-playing-idle";
 
+const now = Date.parse("2026-09-25T12:00:00.000Z");
+
 const listed = {
 	id: 1,
 	title: "Show",
+	status: "Currently watching",
 	episodes: 12,
 	episodesWatched: 3,
 	lastAiredEpisode: 4,
@@ -15,14 +18,37 @@ const listed = {
 
 describe("buildContinueWatching", () => {
 	test("keeps the next episode only when the file is on disk", () => {
-		const listedById = new Map([[1, listed]]);
-		expect(buildContinueWatching([{ animeId: 1, title: "Show", episode: 3 }], listedById, new Set()).map((item) => item.nextEpisode)).toEqual([4]);
-		expect(buildContinueWatching([{ animeId: 1, title: "Show", episode: 4 }], listedById, new Set())).toEqual([]);
+		expect(buildContinueWatching([{ animeId: 1, episode: 3 }], [listed], now).map((item) => item.nextEpisode)).toEqual([4]);
+		expect(buildContinueWatching([{ animeId: 1, episode: 3 }], [{ ...listed, episodesWatched: 4 }], now)).toEqual([]);
 	});
 
-	test("skips completed and dropped ids", () => {
-		const listedById = new Map([[1, listed]]);
-		expect(buildContinueWatching([{ animeId: 1, title: "Show", episode: 3 }], listedById, new Set([1]))).toEqual([]);
+	test("includes plan and completed titles, and puts history first", () => {
+		const plan = {
+			...listed,
+			id: 2,
+			title: "Planned",
+			status: "Plan to watch",
+			episodesWatched: 0,
+			lastAiredEpisode: 0,
+			nextAiringAt: new Date(now + 2 * 24 * 60 * 60 * 1000).toISOString(),
+			libraryEpisodes: [1],
+		};
+		const done = { ...listed, id: 3, title: "Finished", status: "Completed" };
+		const dropped = { ...listed, id: 4, title: "Dropped", status: "Dropped" };
+		const items = buildContinueWatching([{ animeId: 3, episode: 3 }], [plan, listed, done, dropped], now);
+		expect(items.map((item) => item.animeId)).toEqual([3, 2, 1]);
+	});
+
+	test("skips a file whose episode airs after the 7 day gap", () => {
+		const early = {
+			...listed,
+			status: "Plan to watch",
+			episodesWatched: 0,
+			lastAiredEpisode: 0,
+			nextAiringAt: new Date(now + 8 * 24 * 60 * 60 * 1000).toISOString(),
+			libraryEpisodes: [1],
+		};
+		expect(buildContinueWatching([], [early], now)).toEqual([]);
 	});
 });
 

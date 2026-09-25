@@ -1,14 +1,16 @@
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { FolderIcon, FolderPlusIcon, Trash2Icon } from "lucide-react";
 import { useId } from "react";
-import { useFieldArray, useFormContext, useFormState } from "react-hook-form";
+import { useFieldArray, useFormContext, useFormState, useWatch } from "react-hook-form";
 import { folderDisplayName } from "@/lib/folder-path";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
+import { SettingsFieldError } from "@/mainview/components/settings/settings-field-error";
 import { SettingsSectionCard } from "@/mainview/components/settings/settings-section-card";
 import { Button } from "@/mainview/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/mainview/components/ui/empty";
-import { Field, FieldError } from "@/mainview/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/mainview/components/ui/field";
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/mainview/components/ui/input-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 import { folderPathExists, pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 
@@ -163,15 +165,42 @@ function LibraryFoldersField() {
 
 export function LibraryPanel() {
 	const realtimeId = useId();
+	const scanId = useId();
+	const intervalId = useId();
 	const form = useFormContext<AppSettingsInput>();
+	const episodeScanEnabled = useWatch({ control: form.control, name: "episodeScanEnabled" });
 
 	return (
 		<>
 			<SettingsSectionCard title='Library folders' description='These folders are scanned and monitored for new episodes.'>
 				<LibraryFoldersField />
 			</SettingsSectionCard>
-			<SettingsSectionCard title='Real-time monitor' description='Watch library folders for new files without waiting for a full scan.'>
+			<SettingsSectionCard title='Real-time monitor' description='Watch library folders for new files without waiting for a scan.'>
 				<FormCheckbox control={form.control} name='realtimeMonitor' id={realtimeId} label='Detect new files and folders under library folders' />
+			</SettingsSectionCard>
+			<SettingsSectionCard
+				title='Episode scan'
+				description='On a timer, check series that are missing the next episode. Watching, completed, and plan to watch titles qualify when that episode has aired or airs within 7 days.'>
+				<FormCheckbox control={form.control} name='episodeScanEnabled' id={scanId} label='Scan for missing episodes' />
+				<Field>
+					<FieldLabel htmlFor={intervalId}>Interval</FieldLabel>
+					<InputGroup className='w-40'>
+						<InputGroupInput
+							id={intervalId}
+							type='number'
+							min={5}
+							max={1440}
+							disabled={!episodeScanEnabled}
+							{...form.register("episodeScanIntervalMinutes", {
+								valueAsNumber: true,
+							})}
+						/>
+						<InputGroupAddon align='inline-end'>
+							<InputGroupText>(minutes)</InputGroupText>
+						</InputGroupAddon>
+					</InputGroup>
+					<SettingsFieldError<AppSettingsInput> name='episodeScanIntervalMinutes' />
+				</Field>
 			</SettingsSectionCard>
 		</>
 	);

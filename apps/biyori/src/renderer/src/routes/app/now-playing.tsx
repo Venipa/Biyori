@@ -145,9 +145,8 @@ function IdleNowPlaying() {
 	const queued = historyQuery.data?.queued ?? [];
 	const history = historyQuery.data?.history ?? [];
 	const listed = listedQuery.data ?? [];
-	const listedById = new Map(listed.map((row) => [row.id, row]));
 	const skipStatus = new Set(listed.filter((row) => row.status === "Completed" || row.status === "Dropped").map((row) => row.id));
-	const continueWatching = buildContinueWatching([...queued, ...history], listedById, skipStatus);
+	const continueWatching = buildContinueWatching([...queued, ...history], listed, Date.now());
 	const airingSkip = new Set([...skipStatus, ...continueWatching.map((item) => item.animeId)]);
 	const airing = buildAiringSoon(listed, airingSkip, Date.now());
 	const airingIds = airing.flatMap((group) => group.items.map((item) => item.animeId));
