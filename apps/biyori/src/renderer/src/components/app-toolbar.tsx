@@ -21,11 +21,16 @@ import { trpc } from "@/mainview/trpc";
 
 const titleButtonClass = "h-full rounded-none border-0 px-2 active:translate-y-0 [&_svg]:transition-transform [&_svg]:duration-150 [&_svg]:ease-out active:[&_svg]:scale-90";
 
-function activityBellSignature(snapshot: { live: Array<{ source: string }>; items: Array<{ id: string }> }): string {
-	return `${snapshot.live.map((row) => row.source).join("\0")}\n${snapshot.items.map((row) => row.id).join("\0")}`;
+const BELL_SOURCES = new Set(["episode-ready", "torrent"]);
+
+function activityBellSignature(snapshot: { items: Array<{ id: string; source: string }> }): string {
+	return snapshot.items
+		.filter((row) => BELL_SOURCES.has(row.source))
+		.map((row) => row.id)
+		.join("\0");
 }
 
-const ACTIVITY_TOKEN = /[\0\n]/;
+const ACTIVITY_TOKEN = /\0/;
 
 function gainedToken(next: string, prev: string): boolean {
 	const previous = new Set(prev.split(ACTIVITY_TOKEN).filter((token) => token.length > 0));
