@@ -3,6 +3,8 @@ import { absolutePageUrl } from "@/lib/seo";
 import { changelogRoute } from "@/lib/shared";
 import { source } from "@/lib/source";
 
+export const revalidate = false;
+
 export default function sitemap(): MetadataRoute.Sitemap {
 	const lastModified = new Date();
 	const docs = source.getPages().map((page) => ({
