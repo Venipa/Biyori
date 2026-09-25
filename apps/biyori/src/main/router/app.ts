@@ -257,6 +257,8 @@ export const appRouter = t.router({
 					bannerUrl: anime.bannerUrl,
 					lastAiredEpisode: anime.lastAiredEpisode,
 					nextAiringAt: anime.nextAiringAt,
+					endDate: anime.endDate,
+					lastUpdated: listEntry.lastUpdated,
 				})
 				.from(anime)
 				.innerJoin(listEntry, eq(listEntry.animeId, anime.id));

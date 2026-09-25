@@ -17,6 +17,8 @@ export type IdleListedRow = {
 	episodesWatched: number;
 	lastAiredEpisode: number;
 	nextAiringAt?: string | null;
+	endDate?: string | null;
+	lastUpdated?: string | null;
 	coverUrl?: string | null;
 	type?: string | null;
 	libraryEpisodes?: number[];
@@ -48,6 +50,36 @@ export function nextUnwatchedEpisode(listed: IdleListedRow): number {
 
 const CONTINUE_STATUSES = new Set(["Currently watching", "Completed", "Plan to watch"]);
 
+function timeMs(value: string | null | undefined): number | null {
+	if (!value) {
+		return null;
+	}
+	const time = Date.parse(value);
+	return Number.isNaN(time) ? null : time;
+}
+
+function recentAirMs(row: IdleListedRow, now: number): number | null {
+	const nextAt = timeMs(row.nextAiringAt);
+	const next = nextListEpisode(row.episodesWatched);
+	if (nextAt != null && nextAt <= now) {
+		return nextAt;
+	}
+	// ponytail: weekly slot. A show on another cadence is off by that gap until per-episode air times are stored.
+	if (nextAt != null && nextAt > now && row.lastAiredEpisode === next) {
+		return nextAt - SEVEN_DAYS_MS;
+	}
+	const end = timeMs(row.endDate);
+	if (end != null && end <= now && row.lastAiredEpisode >= next) {
+		return end;
+	}
+	return null;
+}
+
+function isUpcoming(row: IdleListedRow, now: number): boolean {
+	const nextAt = timeMs(row.nextAiringAt);
+	return nextAt != null && nextAt > now && row.lastAiredEpisode < nextListEpisode(row.episodesWatched);
+}
+
 export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], listed: readonly IdleListedRow[], now: number): ContinueWatchingItem[] {
 	const historyRank = new Map<number, number>();
 	for (const row of historyRows) {
@@ -56,7 +88,7 @@ export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], li
 		}
 		historyRank.set(row.animeId, historyRank.size);
 	}
-	const ranked: Array<ContinueWatchingItem & { rank: number }> = [];
+	const ranked: Array<ContinueWatchingItem & { historyRank: number; upcoming: boolean; airMs: number | null; nextAt: number | null; updated: number }> = [];
 	for (const row of listed) {
 		if (!row.status || !CONTINUE_STATUSES.has(row.status)) {
 			continue;
@@ -72,11 +104,34 @@ export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], li
 			coverUrl: row.coverUrl ?? undefined,
 			type: row.type ?? undefined,
 			episodes: row.episodes,
-			rank: historyRank.get(row.id) ?? Number.POSITIVE_INFINITY,
+			historyRank: historyRank.get(row.id) ?? Number.POSITIVE_INFINITY,
+			upcoming: isUpcoming(row, now),
+			airMs: recentAirMs(row, now),
+			nextAt: timeMs(row.nextAiringAt),
+			updated: timeMs(row.lastUpdated) ?? 0,
 		});
 	}
-	ranked.sort((left, right) => left.rank - right.rank || left.title.localeCompare(right.title));
-	return ranked.slice(0, CONTINUE_WATCHING_LIMIT).map(({ rank: _rank, ...item }) => item);
+	ranked.sort((left, right) => {
+		if (left.historyRank !== right.historyRank) {
+			return left.historyRank - right.historyRank;
+		}
+		if (left.upcoming !== right.upcoming) {
+			return left.upcoming ? 1 : -1;
+		}
+		if (left.upcoming) {
+			const soon = (left.nextAt ?? Number.POSITIVE_INFINITY) - (right.nextAt ?? Number.POSITIVE_INFINITY);
+			if (soon !== 0) {
+				return soon;
+			}
+		} else {
+			const aired = (right.airMs ?? -1) - (left.airMs ?? -1);
+			if (aired !== 0) {
+				return aired;
+			}
+		}
+		return right.updated - left.updated || left.title.localeCompare(right.title);
+	});
+	return ranked.slice(0, CONTINUE_WATCHING_LIMIT).map(({ historyRank: _historyRank, upcoming: _upcoming, airMs: _airMs, nextAt: _nextAt, updated: _updated, ...item }) => item);
 }
 
 function airingMs(value: string | null | undefined): number | null {

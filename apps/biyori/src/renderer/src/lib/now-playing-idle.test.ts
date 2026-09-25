@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { addDays, startOfDay } from "date-fns";
-import { buildAiringSoon, buildContinueWatching, buildUpcoming, SEVEN_DAYS_MS } from "./now-playing-idle";
+import { buildAiringSoon, buildContinueWatching, buildUpcoming, CONTINUE_WATCHING_LIMIT, SEVEN_DAYS_MS } from "./now-playing-idle";
 
 const now = Date.parse("2026-09-25T12:00:00.000Z");
 
@@ -22,21 +22,32 @@ describe("buildContinueWatching", () => {
 		expect(buildContinueWatching([{ animeId: 1, episode: 3 }], [{ ...listed, episodesWatched: 4 }], now)).toEqual([]);
 	});
 
-	test("includes plan and completed titles, and puts history first", () => {
-		const plan = {
+	test("sorts history, then newest aired, then soonest upcoming", () => {
+		const older = { ...listed, id: 2, title: "Older", endDate: "2020-01-01" };
+		const newer = { ...listed, id: 3, title: "Newer", endDate: "2026-09-20" };
+		const upcoming = {
 			...listed,
-			id: 2,
-			title: "Planned",
-			status: "Plan to watch",
+			id: 4,
+			title: "Soon",
 			episodesWatched: 0,
 			lastAiredEpisode: 0,
 			nextAiringAt: new Date(now + 2 * 24 * 60 * 60 * 1000).toISOString(),
 			libraryEpisodes: [1],
 		};
-		const done = { ...listed, id: 3, title: "Finished", status: "Completed" };
-		const dropped = { ...listed, id: 4, title: "Dropped", status: "Dropped" };
-		const items = buildContinueWatching([{ animeId: 3, episode: 3 }], [plan, listed, done, dropped], now);
-		expect(items.map((item) => item.animeId)).toEqual([3, 2, 1]);
+		const dropped = { ...listed, id: 5, title: "Dropped", status: "Dropped" };
+		const items = buildContinueWatching([{ animeId: 2, episode: 3 }], [upcoming, newer, older, dropped], now);
+		expect(items.map((item) => item.animeId)).toEqual([2, 3, 4]);
+	});
+
+	test("keeps the newest aired title when the rail is full", () => {
+		const older = Array.from({ length: CONTINUE_WATCHING_LIMIT }, (_, index) => ({
+			...listed,
+			id: 100 + index,
+			title: `Old ${index}`,
+			endDate: "2010-01-01",
+		}));
+		const items = buildContinueWatching([], [...older, { ...listed, endDate: "2026-09-20" }], now);
+		expect(items[0]?.animeId).toBe(listed.id);
 	});
 
 	test("skips a file whose episode airs after the 7 day gap", () => {
