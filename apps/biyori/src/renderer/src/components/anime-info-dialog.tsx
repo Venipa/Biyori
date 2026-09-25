@@ -153,9 +153,6 @@ export function AnimeInfoDialog({
 						readOnly={!anime.onList}
 						history={history}
 						onBackTo={onBackTo}
-						onClose={() => {
-							onOpenChange(false);
-						}}
 						onAdded={(id) => {
 							onNavigate?.(id);
 						}}
@@ -260,7 +257,6 @@ function AnimeInfoBody({
 	anime,
 	infoTab,
 	readOnly = false,
-	onClose,
 	onAdded,
 	onBackTo,
 	history,
@@ -268,7 +264,6 @@ function AnimeInfoBody({
 	anime: AnimeDetail;
 	infoTab: "main" | "list";
 	readOnly?: boolean;
-	onClose: () => void;
 	onAdded?: (id: number) => void;
 	onBackTo?: (index: number) => void;
 	history: AnimeInfoFrame[];

@@ -1,4 +1,4 @@
-import { ListTreeIcon, PackageCheckIcon, PackageSearchIcon, WorkflowIcon } from "lucide-react";
+import { ListTreeIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { ActivityCenterPanel } from "@/mainview/components/activity-center-panel";
 import { Spinner } from "@/mainview/components/ui/spinner";

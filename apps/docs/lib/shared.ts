@@ -20,12 +20,7 @@ const parsedFromUrl = (() => {
 })();
 
 const githubRepository = readEnv("GITHUB_REPOSITORY");
-const githubParts = githubRepository?.includes("/")
-	? {
-			owner: githubRepository.split("/")[0]!,
-			name: githubRepository.split("/")[1]!,
-		}
-	: null;
+const githubParts = githubRepository ? parseRepoUrl(`https://github.com/${githubRepository}`) : null;
 
 export const repoOwner = readEnv("REPO_OWNER") ?? readEnv("NEXT_PUBLIC_REPO_OWNER") ?? parsedFromUrl?.owner ?? githubParts?.owner ?? "local";
 
