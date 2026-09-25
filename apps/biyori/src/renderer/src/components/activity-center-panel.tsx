@@ -27,7 +27,7 @@ const panelMotion = {
 function SourceGlyph({ source }: { source: string }) {
 	const Icon = SOURCE_ICONS[source] ?? BellIcon;
 	return (
-		<span className='flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground'>
+		<span className='flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-muted-foreground'>
 			<Icon className='size-3.5' />
 		</span>
 	);
@@ -47,7 +47,7 @@ function ActivityRow({ source, title, body, status, trailing }: { source: string
 	const hover = status !== "live" || Boolean(trailing);
 	const subtitle = body?.trim() ? body : null;
 	return (
-		<div className={cn("mx-1 flex cursor-default items-start gap-2 rounded-md px-2 py-1.5", hover ? "hover:bg-muted/60" : null)}>
+		<div className={cn("mx-1 flex cursor-default items-start gap-2 rounded-md px-2 py-1.5", hover ? "hover:bg-primary/10" : null)}>
 			<SourceGlyph source={source} />
 			<div className='flex min-w-0 flex-1 flex-col gap-0.5'>
 				<div className='flex min-w-0 items-center gap-2'>

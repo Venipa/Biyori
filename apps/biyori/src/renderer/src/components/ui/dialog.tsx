@@ -1,6 +1,7 @@
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { XIcon } from "lucide-react";
 import type * as React from "react";
+import { APP_TOOLBAR_HEIGHT } from "@/components/app-toolbar";
 import { Button } from "@/mainview/components/ui/button";
 import { cn } from "@/mainview/lib/utils";
 
@@ -19,12 +20,12 @@ function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
 function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
 	return <DialogPrimitive.Close data-slot='dialog-close' {...props} />;
 }
-
 function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) {
 	return (
 		<DialogPrimitive.Backdrop
 			data-slot='dialog-overlay'
-			className={cn("fixed inset-0 isolate z-50 bg-black/10 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0", className)}
+			className={cn("fixed inset-0 isolate z-50 bg-black/60 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0", className)}
+			style={{ top: `${APP_TOOLBAR_HEIGHT}px` }}
 			{...props}
 		/>
 	);

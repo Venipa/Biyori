@@ -207,7 +207,7 @@ function AccountButton() {
 		</DropdownMenu>
 	);
 }
-
+export const APP_TOOLBAR_HEIGHT = 32;
 export function AppToolbar() {
 	const syncStatus = trpc.anilist.syncStatus.useQuery();
 	const sync = trpc.anilist.sync.useMutation();
@@ -215,7 +215,7 @@ export function AppToolbar() {
 
 	return (
 		<TooltipProvider delay={400}>
-			<div className='app-region-no-drag flex h-full shrink-0 items-stretch'>
+			<div className='app-region-no-drag flex h-full shrink-0 items-stretch' style={{ height: `${APP_TOOLBAR_HEIGHT}px` }}>
 				<Tooltip>
 					<TooltipTrigger
 						render={
