@@ -484,13 +484,7 @@ async function rememberUserSynonym(animeId: number, rawTitle: string): Promise<v
 		.where(eq(anime.id, animeId));
 }
 
-export async function chooseNowPlayingMatch(animeId: number): Promise<void> {
-	if (!db || !lastMediaIdentity) {
-		return;
-	}
-	const playingTitle = snapshot.parsed?.rawTitle ?? snapshot.parsed?.title ?? "";
-	boundMatch = { identity: lastMediaIdentity, animeId };
-	await rememberUserSynonym(animeId, playingTitle);
+async function flushRematch(): Promise<void> {
 	forceRematch = true;
 	while (tickInFlight) {
 		await new Promise((resolve) => {
@@ -498,6 +492,24 @@ export async function chooseNowPlayingMatch(animeId: number): Promise<void> {
 		});
 	}
 	await tick();
+}
+
+export async function rematchIfUnrecognized(): Promise<void> {
+	if (!db || !snapshot.media || snapshot.match) {
+		return;
+	}
+	invalidateCandidateCache();
+	await flushRematch();
+}
+
+export async function chooseNowPlayingMatch(animeId: number): Promise<void> {
+	if (!db || !lastMediaIdentity) {
+		return;
+	}
+	const playingTitle = snapshot.parsed?.rawTitle ?? snapshot.parsed?.title ?? "";
+	boundMatch = { identity: lastMediaIdentity, animeId };
+	await rememberUserSynonym(animeId, playingTitle);
+	await flushRematch();
 }
 
 export function initTracker(database: DatabaseClient): void {

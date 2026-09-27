@@ -16,7 +16,7 @@ import { anime, listEntry } from "../db/schema";
 import { loadAppSettings } from "../settings";
 import { abortAniListSync, getSyncSnapshot, requestAniListSync, subscribeSyncStatus } from "../sync";
 import { enqueueUpdate } from "../track/queue";
-import { noteManualListUpdate } from "../track/tracker";
+import { noteManualListUpdate, rematchIfUnrecognized } from "../track/tracker";
 import { t } from "../trpc";
 
 function mapAnilistError(error: unknown): never {
@@ -190,6 +190,7 @@ export const anilistRouter = t.router({
 						message: "Could not save anime to local list",
 					});
 				}
+				await rematchIfUnrecognized();
 				return { id: upserted.id };
 			} catch (error) {
 				mapAnilistError(error);
