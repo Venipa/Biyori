@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { canApplyProgress, withAppliedProgress } from "./tracker-progress";
+import { canApplyProgress, marksEpisodeAdvanced, withAppliedProgress } from "./tracker-progress";
 
 const completedRewatch = {
 	episodes: 12,
@@ -10,6 +10,21 @@ const completedRewatch = {
 	dateStarted: "2026-01-01",
 	dateCompleted: "2026-01-15",
 };
+
+describe("marksEpisodeAdvanced", () => {
+	test("counts a higher episode that is not a rewatch", () => {
+		expect(marksEpisodeAdvanced({ episodesWatched: 3, rewatching: false }, { progress: 4 })).toBe(true);
+	});
+
+	test("ignores a save that keeps the same episode", () => {
+		expect(marksEpisodeAdvanced({ episodesWatched: 3, rewatching: false }, { progress: 3 })).toBe(false);
+	});
+
+	test("ignores a rewatch", () => {
+		expect(marksEpisodeAdvanced({ episodesWatched: 1, rewatching: true }, { progress: 2 })).toBe(false);
+		expect(marksEpisodeAdvanced({ episodesWatched: 3, rewatching: false }, { progress: 4, rewatching: true })).toBe(false);
+	});
+});
 
 describe("tracker progress", () => {
 	test("uses zero as the baseline when a completed series is rewatched", () => {

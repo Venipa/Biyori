@@ -4,6 +4,16 @@ import type { MatchedAnime } from "./types";
 
 type ProgressMatch = Pick<MatchedAnime, "episodes" | "episodesWatched" | "status" | "rewatching" | "timesRewatched" | "dateStarted" | "dateCompleted">;
 
+export function marksEpisodeAdvanced(current: { episodesWatched: number; rewatching: boolean } | undefined, payload: { progress?: number; rewatching?: boolean }): boolean {
+	if (!current || payload.progress == null) {
+		return false;
+	}
+	if (current.rewatching || payload.rewatching === true) {
+		return false;
+	}
+	return payload.progress > current.episodesWatched;
+}
+
 export function canApplyProgress(match: ProgressMatch, episode: number, settings: Pick<AppSettings, "ignoreOutOfRangeEpisode">): boolean {
 	const progress = match.rewatching && match.episodes > 0 && match.episodesWatched >= match.episodes ? 0 : match.episodesWatched;
 	if (episode <= progress) {

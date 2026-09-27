@@ -56,6 +56,7 @@ export const history = sqliteTable("history", {
 	episode: integer("episode").notNull(),
 	lastModified: text("last_modified").notNull(),
 	kind: text("kind").notNull(),
+	advanced: integer("advanced").notNull().default(0),
 });
 
 export const appSetting = sqliteTable("app_setting", {

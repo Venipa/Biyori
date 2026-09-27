@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { parseStoredTitles, type StoredAnimeTitles, titlesFromFallback } from "../../lib/anime-titles";
 import { folderPathExists, normalizeFolderPath } from "../../lib/folder-path";
@@ -391,6 +391,7 @@ export const appRouter = t.router({
 				})
 				.from(history)
 				.leftJoin(anime, eq(anime.id, history.animeId))
+				.where(and(eq(history.kind, "history"), eq(history.advanced, 1)))
 				.orderBy(desc(history.lastModified))
 				.limit(1);
 			const row = rows[0];

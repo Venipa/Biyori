@@ -71,19 +71,23 @@ function IdleNowPlaying() {
 		}
 		void setSettings.mutateAsync({ nowPlayingView: next });
 	}
-	const queued = historyQuery.data?.queued ?? [];
-	const history = historyQuery.data?.history ?? [];
+	const played = (historyQuery.data?.history ?? []).filter((row) => row.advanced === 1);
 	const listed = listedQuery.data ?? [];
 	const skipStatus = new Set(listed.filter((row) => row.status === "Completed" || row.status === "Dropped").map((row) => row.id));
 	const staleDays = settingsQuery.data?.continueWatchingStaleDays ?? 30;
-	const continueWatching = buildContinueWatching([...queued, ...history], listed, Date.now(), staleDays * 24 * 60 * 60 * 1000);
+	const continueWatching = buildContinueWatching(
+		played.map((row) => ({ animeId: row.animeId, episode: row.episode, playedAt: row.lastModified })),
+		listed,
+		Date.now(),
+		staleDays * 24 * 60 * 60 * 1000,
+	);
 	const continueItems = [...continueWatching.recent, ...continueWatching.older];
 	const airingSkip = new Set([...skipStatus, ...continueItems.map((item) => item.animeId)]);
 	const airing = buildAiringSoon(listed, airingSkip, Date.now());
 	const airingIds = airing.flatMap((group) => group.items.map((item) => item.animeId));
 	const upcomingSkip = new Set([...skipStatus, ...airingIds]);
 	const upcoming = buildUpcoming(listed, upcomingSkip);
-	const watchedLastWeek = countWatchedLastWeek([...queued, ...history]);
+	const watchedLastWeek = countWatchedLastWeek(played);
 	const historyPending = historyQuery.isPending && !historyQuery.data;
 	const listedPending = listedQuery.isPending && !listedQuery.data;
 	const hasAiring = airing.length > 0;
@@ -107,7 +111,7 @@ function IdleNowPlaying() {
 					<div className='flex flex-col gap-1'>
 						<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Now playing</p>
 						<h1 className='text-xl font-semibold tracking-tight'>Nothing is playing</h1>
-						<p className='text-sm text-muted-foreground'>Continue from recent list updates.</p>
+						<p className='text-sm text-muted-foreground'>Continue from the last episode update.</p>
 					</div>
 					{continueItems.length > 0 || hasAiring ? <IdleLayoutToggle value={layout} onValueChange={setLayout} /> : null}
 				</header>

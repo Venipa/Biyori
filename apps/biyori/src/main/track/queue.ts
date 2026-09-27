@@ -9,6 +9,7 @@ import { saveMediaListEntry } from "../anilist/sync";
 import type { DatabaseClient } from "../db";
 import { anime, history, listEntry, syncQueue } from "../db/schema";
 import { setAppNotice } from "../notice";
+import { marksEpisodeAdvanced } from "./tracker-progress";
 
 export const queuePayloadSchema = z.object({
 	status: listStatusSchema.optional(),
@@ -105,6 +106,14 @@ export async function enqueueUpdate(
 		payload: QueuePayload;
 	},
 ): Promise<void> {
+	const currentRows = await db
+		.select({ episodesWatched: listEntry.episodesWatched, rewatching: listEntry.rewatching })
+		.from(listEntry)
+		.where(eq(listEntry.animeId, options.animeId))
+		.limit(1);
+	const current = currentRows[0];
+	const advancedNow = marksEpisodeAdvanced(current ? { episodesWatched: current.episodesWatched, rewatching: current.rewatching === 1 } : undefined, options.payload);
+	const replay = current?.rewatching === 1 || options.payload.rewatching === true;
 	await applyLocalUpdate(db, options.animeId, options.payload);
 	const existing = await db.select().from(syncQueue).where(eq(syncQueue.animeId, options.animeId)).limit(1);
 	const merged: QueuePayload = {
@@ -138,6 +147,7 @@ export async function enqueueUpdate(
 				title: options.title,
 				episode: options.episode,
 				lastModified: nowStamp(),
+				advanced: replay ? 0 : advancedNow || queued[0].advanced === 1 ? 1 : 0,
 			})
 			.where(eq(history.id, queued[0].id));
 	} else {
@@ -148,6 +158,7 @@ export async function enqueueUpdate(
 			episode: options.episode,
 			lastModified: nowStamp(),
 			kind: "queued",
+			advanced: replay || !advancedNow ? 0 : 1,
 		});
 	}
 	scheduleFlush(db);

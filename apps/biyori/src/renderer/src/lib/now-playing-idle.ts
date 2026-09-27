@@ -8,6 +8,7 @@ export const CONTINUE_STALE_MS = 30 * 24 * 60 * 60 * 1000;
 export type IdleHistoryRow = {
 	animeId: number;
 	episode: number;
+	playedAt?: string | null;
 };
 
 export type IdleListedRow = {
@@ -89,11 +90,16 @@ function isUpcoming(row: IdleListedRow, now: number): boolean {
 
 export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], listed: readonly IdleListedRow[], now: number, staleMs = CONTINUE_STALE_MS): ContinueWatchingGroups {
 	const historyRank = new Map<number, number>();
+	const playedAt = new Map<number, number>();
 	for (const row of historyRows) {
 		if (row.animeId <= 0 || row.episode <= 0 || historyRank.has(row.animeId)) {
 			continue;
 		}
 		historyRank.set(row.animeId, historyRank.size);
+		const at = timeMs(row.playedAt);
+		if (at != null) {
+			playedAt.set(row.animeId, at);
+		}
 	}
 	const ranked: Array<ContinueWatchingItem & { historyRank: number; upcoming: boolean; airMs: number | null; nextAt: number | null; updated: number; fileStale: boolean }> = [];
 	for (const row of listed) {
@@ -116,7 +122,7 @@ export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], li
 			upcoming: isUpcoming(row, now),
 			airMs: recentAirMs(row, now),
 			nextAt: timeMs(row.nextAiringAt),
-			updated: timeMs(row.lastUpdated) ?? 0,
+			updated: playedAt.get(row.id) ?? 0,
 			fileStale: now - seenAt >= staleMs,
 		});
 	}
