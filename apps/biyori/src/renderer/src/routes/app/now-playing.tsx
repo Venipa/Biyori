@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, CircleHelpIcon, ExternalLinkIcon, LayoutGridIcon, PlayCircleIcon, SearchIcon, Table2Icon } from "lucide-react";
+import { CircleAlertIcon, CircleHelpIcon, ExternalLinkIcon, LayoutGridIcon, PlayCircleIcon, PlayIcon, SearchIcon, Table2Icon } from "lucide-react";
 import { type ReactElement, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { desktopRpc } from "@/desktop-rpc";
@@ -11,7 +11,6 @@ import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
 import { AnimeScoreControl } from "@/mainview/components/anime-score-control";
 import { AnimeSeriesInfo } from "@/mainview/components/anime-series-info";
 import { AnimeStatusNotice } from "@/mainview/components/anime-status-notice";
-import { PlaceholderView } from "@/mainview/components/placeholder-view";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/mainview/components/ui/alert";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
@@ -27,6 +26,7 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from "@/mainview/components/ui/empty";
 import { Progress, ProgressLabel, ProgressValue } from "@/mainview/components/ui/progress";
 import { Separator } from "@/mainview/components/ui/separator";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
@@ -58,6 +58,19 @@ const commandParts = {
 	Separator: ContextMenuSeparator,
 	Shortcut: ContextMenuShortcut,
 };
+
+function lastPlayedArt(row: { animeId: number | null; bannerUrl: string | null; coverUrl: string | null } | null): { id: number; url: string; kind: "banner" | "cover" } | null {
+	if (row?.animeId == null) {
+		return null;
+	}
+	if (row.bannerUrl) {
+		return { id: row.animeId, url: row.bannerUrl, kind: "banner" };
+	}
+	if (row.coverUrl) {
+		return { id: row.animeId, url: row.coverUrl, kind: "cover" };
+	}
+	return null;
+}
 
 function selectedFromContinue(item: ContinueWatchingItem): SelectedAnime {
 	return {
@@ -146,8 +159,10 @@ function IdleNowPlaying() {
 	const history = historyQuery.data?.history ?? [];
 	const listed = listedQuery.data ?? [];
 	const skipStatus = new Set(listed.filter((row) => row.status === "Completed" || row.status === "Dropped").map((row) => row.id));
-	const continueWatching = buildContinueWatching([...queued, ...history], listed, Date.now());
-	const airingSkip = new Set([...skipStatus, ...continueWatching.map((item) => item.animeId)]);
+	const staleDays = settingsQuery.data?.continueWatchingStaleDays ?? 30;
+	const continueWatching = buildContinueWatching([...queued, ...history], listed, Date.now(), staleDays * 24 * 60 * 60 * 1000);
+	const continueItems = [...continueWatching.recent, ...continueWatching.older];
+	const airingSkip = new Set([...skipStatus, ...continueItems.map((item) => item.animeId)]);
 	const airing = buildAiringSoon(listed, airingSkip, Date.now());
 	const airingIds = airing.flatMap((group) => group.items.map((item) => item.animeId));
 	const upcomingSkip = new Set([...skipStatus, ...airingIds]);
@@ -161,8 +176,12 @@ function IdleNowPlaying() {
 		return <NowPlayingSkeleton />;
 	}
 
-	if (continueWatching.length === 0 && !hasAiring && upcoming.length === 0) {
-		return <PlaceholderView icon={PlayCircleIcon} title='Nothing is playing' description="Episodes you're currently watching will show up here." />;
+	if (continueWatching.recent.length === 0 && continueWatching.older.length === 0 && !hasAiring && upcoming.length === 0) {
+		return (
+			<div className='flex h-full items-center justify-center p-4'>
+				<ContinueWatchingEmpty className='min-h-64 w-full max-w-2xl' description='They show up here once a new episode is in your library.' />
+			</div>
+		);
 	}
 
 	return (
@@ -174,12 +193,14 @@ function IdleNowPlaying() {
 						<h1 className='text-xl font-semibold tracking-tight'>Nothing is playing</h1>
 						<p className='text-sm text-muted-foreground'>Continue from recent list updates.</p>
 					</div>
-					{continueWatching.length > 0 || hasAiring ? <IdleLayoutToggle value={layout} onValueChange={setLayout} /> : null}
+					{continueItems.length > 0 || hasAiring ? <IdleLayoutToggle value={layout} onValueChange={setLayout} /> : null}
 				</header>
 
 				{layout === "table" ? (
 					<IdleTables
-						continueWatching={continueWatching}
+						continueWatching={continueWatching.recent}
+						earlierWatching={continueWatching.older}
+						earlierDays={staleDays}
 						airing={airing}
 						playDisabled={playNext.isPending}
 						onPlay={(item) => {
@@ -193,30 +214,33 @@ function IdleNowPlaying() {
 						}}
 						watchedLastWeek={watchedLastWeek}
 					/>
-				) : continueWatching.length > 0 || hasAiring ? (
+				) : (
 					<div className='flex min-w-0 flex-col gap-6 @3xl:flex-row @3xl:items-start @3xl:gap-3'>
-						{continueWatching.length > 0 ? (
-							<section className='flex w-full min-w-0 flex-col @3xl:max-w-max @3xl:flex-1'>
-								<IdlePosterStrip
-									heading='Continue watching'
-									label='Continue watching'
-									items={continueWatching}
-									disabled={playNext.isPending}
-									onActivate={(item) => {
-										void playNext.mutateAsync({
-											animeId: item.animeId,
-											episodesWatched: item.nextEpisode - 1,
-										});
-									}}
-								/>
-								{watchedLastWeek > 0 ? (
-									<p className='mt-3 w-0 min-w-full text-sm text-muted-foreground'>
-										You've watched {watchedLastWeek} episode
-										{watchedLastWeek === 1 ? "" : "s"} last week.
-									</p>
-								) : null}
-							</section>
-						) : null}
+						<section className='flex w-full min-w-0 flex-col gap-6 @3xl:max-w-max @3xl:flex-1'>
+							<IdlePosterStrip
+								heading='Continue watching'
+								label='Continue watching'
+								items={continueWatching.recent}
+								earlier={continueWatching.older}
+								earlierDays={staleDays}
+								disabled={playNext.isPending}
+								onActivate={(item) => {
+									void playNext.mutateAsync({
+										animeId: item.animeId,
+										episodesWatched: item.nextEpisode - 1,
+									});
+								}}
+								onOpen={(item) => {
+									animeInfo.open({ id: item.animeId, infoTab: "main" });
+								}}
+							/>
+							{watchedLastWeek > 0 ? (
+								<p className='mt-3 w-0 min-w-full text-sm text-muted-foreground'>
+									You've watched {watchedLastWeek} episode
+									{watchedLastWeek === 1 ? "" : "s"} last week.
+								</p>
+							) : null}
+						</section>
 						{hasAiring ? (
 							<section className='w-full min-w-0 @3xl:max-w-max @3xl:flex-1'>
 								<IdleAiringRail
@@ -231,7 +255,7 @@ function IdleNowPlaying() {
 							</section>
 						) : null}
 					</div>
-				) : null}
+				)}
 
 				{upcoming.length > 0 ? (
 					<section>
@@ -312,8 +336,14 @@ function TitleCellWithPoster({ item }: { item: ContinueWatchingItem }) {
 	);
 }
 
+function earlierThanLabel(days: number): string {
+	return `Earlier than ${days} ${days === 1 ? "day" : "days"}`;
+}
+
 function IdleTables({
 	continueWatching,
+	earlierWatching,
+	earlierDays,
 	airing,
 	playDisabled,
 	onPlay,
@@ -321,6 +351,8 @@ function IdleTables({
 	watchedLastWeek,
 }: {
 	continueWatching: ContinueWatchingItem[];
+	earlierWatching: ContinueWatchingItem[];
+	earlierDays: number;
 	airing: AiringSoonGroup[];
 	playDisabled: boolean;
 	onPlay: (item: ContinueWatchingItem) => void;
@@ -329,9 +361,59 @@ function IdleTables({
 }) {
 	return (
 		<div className='flex flex-col gap-6'>
-			{continueWatching.length > 0 ? (
+			<section>
+				<h2 className='mb-1 text-sm font-semibold'>Continue watching</h2>
+				<Separator className='mb-2' />
+				{continueWatching.length > 0 ? (
+					<>
+						<Table containerClassName='overflow-visible'>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Title</TableHead>
+									<TableHead>Episode</TableHead>
+									<TableHead>Type</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{continueWatching.map((item) => (
+									<IdleItemContextMenu
+										key={item.animeId}
+										item={item}
+										playNextEnabled={!playDisabled}
+										render={
+											<TableRow
+												className={playDisabled ? "opacity-50" : "cursor-pointer"}
+												onClick={() => {
+													if (!playDisabled) {
+														onPlay(item);
+													}
+												}}>
+												<TitleCellWithPoster item={item} />
+												<TableCell className='text-muted-foreground'>
+													Next episode {item.nextEpisode}
+													{item.episodes != null && item.episodes > 0 ? ` of ${item.episodes}` : ""}
+												</TableCell>
+												<TableCell className='text-muted-foreground'>{item.type ?? "-"}</TableCell>
+											</TableRow>
+										}
+									/>
+								))}
+							</TableBody>
+						</Table>
+						{watchedLastWeek > 0 ? (
+							<p className='mt-3 text-sm text-muted-foreground'>
+								You've watched {watchedLastWeek} episode
+								{watchedLastWeek === 1 ? "" : "s"} last week.
+							</p>
+						) : null}
+					</>
+				) : (
+					<ContinueWatchingEmpty className='min-h-32' />
+				)}
+			</section>
+			{earlierWatching.length > 0 ? (
 				<section>
-					<h2 className='mb-1 text-sm font-semibold'>Continue watching</h2>
+					<h2 className='mb-1 text-sm font-semibold'>{earlierThanLabel(earlierDays)}</h2>
 					<Separator className='mb-2' />
 					<Table containerClassName='overflow-visible'>
 						<TableHeader>
@@ -342,7 +424,7 @@ function IdleTables({
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{continueWatching.map((item) => (
+							{earlierWatching.map((item) => (
 								<IdleItemContextMenu
 									key={item.animeId}
 									item={item}
@@ -367,12 +449,6 @@ function IdleTables({
 							))}
 						</TableBody>
 					</Table>
-					{watchedLastWeek > 0 ? (
-						<p className='mt-3 text-sm text-muted-foreground'>
-							You've watched {watchedLastWeek} episode
-							{watchedLastWeek === 1 ? "" : "s"} last week.
-						</p>
-					) : null}
 				</section>
 			) : null}
 			{airing.length > 0 ? (
@@ -429,30 +505,124 @@ function IdleAiringDayRows({ group, onOpen }: { group: AiringSoonGroup; onOpen: 
 	);
 }
 
+function ContinueWatchingEmpty({ className, description }: { className?: string; description?: string }) {
+	const art = trpc.history.latest.useQuery(undefined, { select: lastPlayedArt }).data ?? null;
+	return (
+		<Empty className={cn("relative justify-center overflow-hidden border p-3", className)}>
+			{art != null ? (
+				<AnimeCover
+					id={art.id}
+					kind={art.kind}
+					sourceUrl={art.kind === "banner" ? art.url : undefined}
+					coverUrl={art.url}
+					alt=''
+					className='pointer-events-none absolute inset-0 size-full opacity-10 grayscale scale-110 object-center object-cover'
+				/>
+			) : null}
+			<EmptyHeader className='relative z-10 max-w-none gap-2'>
+				<EmptyMedia variant='icon'>
+					<PlayCircleIcon />
+				</EmptyMedia>
+				<EmptyDescription className='text-xs/snug'>Waiting for new anime episodes.</EmptyDescription>
+				{description != null ? <EmptyDescription>{description}</EmptyDescription> : null}
+			</EmptyHeader>
+		</Empty>
+	);
+}
+
+function episodeLine(item: ContinueWatchingItem): string {
+	const total = item.episodes != null && item.episodes > 0 ? item.episodes : null;
+	return total != null ? `Episode ${item.nextEpisode} of ${total}` : `Episode ${item.nextEpisode}`;
+}
+
+function EarlierWatchingList({
+	items,
+	disabled,
+	onOpen,
+	onPlay,
+}: {
+	items: ContinueWatchingItem[];
+	disabled?: boolean;
+	onOpen: (item: ContinueWatchingItem) => void;
+	onPlay: (item: ContinueWatchingItem) => void;
+}) {
+	return (
+		<ScrollArea className='h-60 w-40 md:h-75 md:w-50' viewportClassName='overscroll-contain'>
+			<ul aria-label='Earlier' className='flex flex-col gap-0.5 pr-2'>
+				{items.map((item) => (
+					<li key={item.animeId}>
+						<IdleItemContextMenu
+							item={item}
+							playNextEnabled={!disabled}
+							render={
+								<div className='flex h-10 items-center gap-1 pr-0.5 pl-1'>
+									<button type='button' className='flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5 text-left' onClick={() => onOpen(item)}>
+										<span className='truncate text-xs leading-none'>{item.title}</span>
+										<span className='truncate text-xs leading-none text-muted-foreground'>{episodeLine(item)}</span>
+									</button>
+									<Button
+										type='button'
+										variant='ghost'
+										size='icon-sm'
+										className='[&_svg]:size-3'
+										disabled={disabled}
+										aria-label={`Play ${item.title}`}
+										onClick={() => onPlay(item)}>
+										<PlayIcon />
+									</Button>
+								</div>
+							}
+						/>
+					</li>
+				))}
+			</ul>
+		</ScrollArea>
+	);
+}
+
 function IdlePosterStrip({
 	heading,
 	label,
 	items,
+	earlier,
+	earlierDays,
 	disabled,
 	onActivate,
+	onOpen,
 	description,
 }: {
 	heading?: string;
 	label: string;
 	items: ContinueWatchingItem[];
+	earlier?: ContinueWatchingItem[];
+	earlierDays: number;
 	disabled?: boolean;
 	onActivate: (item: ContinueWatchingItem) => void;
+	onOpen?: (item: ContinueWatchingItem) => void;
 	description?: (item: ContinueWatchingItem) => string;
 }) {
+	const earlierItems = earlier ?? [];
 	return (
 		<ScrollArea className='h-auto min-w-0 max-w-full' viewportClassName='overflow-x-auto overflow-y-hidden'>
 			{heading ? <IdleColumnHeading sticky>{heading}</IdleColumnHeading> : null}
-			<ul aria-label={label} className='flex w-max snap-x snap-mandatory gap-3 pb-1'>
-				{items.map((item) => (
-					<li key={item.animeId} className='w-40 shrink-0 snap-start md:w-50'>
-						<ContinueWatchingCard item={item} disabled={disabled} playNextEnabled description={description?.(item)} onActivate={() => onActivate(item)} />
+			<ul aria-label={label} className='flex w-max snap-x snap-mandatory items-start gap-3 pb-1'>
+				{items.length === 0 ? (
+					<li className='shrink-0 snap-start'>
+						<ContinueWatchingEmpty className='h-60 w-40 md:h-75 md:w-50' />
 					</li>
-				))}
+				) : (
+					items.map((item) => (
+						<li key={item.animeId} className='w-40 shrink-0 snap-start md:w-50'>
+							<ContinueWatchingCard item={item} disabled={disabled} playNextEnabled description={description?.(item)} onActivate={() => onActivate(item)} />
+						</li>
+					))
+				)}
+				{earlierItems.length > 0 && onOpen ? (
+					<li className='shrink-0 snap-start'>
+						<h2 className='mb-1 text-sm font-semibold'>{earlierThanLabel(earlierDays)}</h2>
+						<EarlierWatchingList items={earlierItems} disabled={disabled} onOpen={onOpen} onPlay={onActivate} />
+					</li>
+				) : null}
 			</ul>
 		</ScrollArea>
 	);

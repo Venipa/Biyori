@@ -3,6 +3,7 @@ import { formatAiringDayLabel } from "./format-date";
 
 export const CONTINUE_WATCHING_LIMIT = 20;
 export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+export const CONTINUE_STALE_MS = 30 * 24 * 60 * 60 * 1000;
 
 export type IdleHistoryRow = {
 	animeId: number;
@@ -22,6 +23,12 @@ export type IdleListedRow = {
 	coverUrl?: string | null;
 	type?: string | null;
 	libraryEpisodes?: number[];
+	episodeSeenAt?: Record<string, string>;
+};
+
+export type ContinueWatchingGroups = {
+	recent: ContinueWatchingItem[];
+	older: ContinueWatchingItem[];
 };
 
 export type ContinueWatchingItem = {
@@ -80,7 +87,7 @@ function isUpcoming(row: IdleListedRow, now: number): boolean {
 	return nextAt != null && nextAt > now && row.lastAiredEpisode < nextListEpisode(row.episodesWatched);
 }
 
-export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], listed: readonly IdleListedRow[], now: number): ContinueWatchingItem[] {
+export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], listed: readonly IdleListedRow[], now: number, staleMs = CONTINUE_STALE_MS): ContinueWatchingGroups {
 	const historyRank = new Map<number, number>();
 	for (const row of historyRows) {
 		if (row.animeId <= 0 || row.episode <= 0 || historyRank.has(row.animeId)) {
@@ -88,13 +95,14 @@ export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], li
 		}
 		historyRank.set(row.animeId, historyRank.size);
 	}
-	const ranked: Array<ContinueWatchingItem & { historyRank: number; upcoming: boolean; airMs: number | null; nextAt: number | null; updated: number }> = [];
+	const ranked: Array<ContinueWatchingItem & { historyRank: number; upcoming: boolean; airMs: number | null; nextAt: number | null; updated: number; fileStale: boolean }> = [];
 	for (const row of listed) {
 		if (!row.status || !CONTINUE_STATUSES.has(row.status)) {
 			continue;
 		}
 		const nextEpisode = nextListEpisode(row.episodesWatched);
-		if (!row.libraryEpisodes?.includes(nextEpisode) || !episodeInAirWindow(row, now)) {
+		const seenAt = timeMs(row.episodeSeenAt?.[String(nextEpisode)]);
+		if (!row.libraryEpisodes?.includes(nextEpisode) || seenAt == null || !episodeInAirWindow(row, now)) {
 			continue;
 		}
 		ranked.push({
@@ -109,6 +117,7 @@ export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], li
 			airMs: recentAirMs(row, now),
 			nextAt: timeMs(row.nextAiringAt),
 			updated: timeMs(row.lastUpdated) ?? 0,
+			fileStale: now - seenAt >= staleMs,
 		});
 	}
 	ranked.sort((left, right) => {
@@ -131,7 +140,17 @@ export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], li
 		}
 		return right.updated - left.updated || left.title.localeCompare(right.title);
 	});
-	return ranked.slice(0, CONTINUE_WATCHING_LIMIT).map(({ historyRank: _historyRank, upcoming: _upcoming, airMs: _airMs, nextAt: _nextAt, updated: _updated, ...item }) => item);
+	const recent: ContinueWatchingItem[] = [];
+	const older: ContinueWatchingItem[] = [];
+	for (const { historyRank: _historyRank, upcoming: _upcoming, airMs: _airMs, nextAt: _nextAt, updated, fileStale, ...item } of ranked) {
+		const stale = fileStale || updated <= 0 || now - updated >= staleMs;
+		const bucket = stale ? older : recent;
+		if (bucket.length >= CONTINUE_WATCHING_LIMIT) {
+			continue;
+		}
+		bucket.push(item);
+	}
+	return { recent, older };
 }
 
 function airingMs(value: string | null | undefined): number | null {

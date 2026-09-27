@@ -28,7 +28,7 @@ async function runFileDialog<T>(win: BrowserWindow | null, run: () => Promise<T>
 	}
 	try {
 		// Unparented: attaching the dialog to main uses the same Windows sheet-disable
-		// as a modal child window (settings), and that dim can stick after close.
+		// as a modal child, and that dim can stick after close.
 		return await run();
 	} finally {
 		if (nested && owner && !owner.isDestroyed()) {

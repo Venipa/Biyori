@@ -78,6 +78,7 @@ function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: S
 						episode: hit.episode,
 						path: hit.path,
 						size: hit.size,
+						createdAt: new Date().toISOString(),
 					})),
 				)
 				.onConflictDoUpdate({

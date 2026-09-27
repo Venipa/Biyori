@@ -10,12 +10,12 @@ export function uiZoomToFactor(percent: number): number {
 	return percent / 100;
 }
 
-function applyUiZoom(win: BrowserWindow, percent: number = loadAppSettings().uiZoom, force: boolean = false): void {
+function applyUiZoom(win: BrowserWindow, percent: number = loadAppSettings().uiZoom): void {
 	if (win.isDestroyed()) {
 		return;
 	}
 	const factor = uiZoomToFactor(percent);
-	if (!force && win.webContents.getZoomFactor() === factor) {
+	if (win.webContents.getZoomFactor() === factor) {
 		return;
 	}
 	win.webContents.setZoomFactor(factor);
@@ -26,7 +26,11 @@ function isZoomIdle(win: BrowserWindow): boolean {
 }
 
 function restoreUiZoom(win: BrowserWindow): void {
-	applyUiZoom(win, loadAppSettings().uiZoom, true);
+	if (win.isDestroyed() || win.webContents.getZoomFactor() === uiZoomToFactor(loadAppSettings().uiZoom)) {
+		return;
+	}
+	// setZoomFactor inside the focus event aborts Windows Alt-Tab activation.
+	setImmediate(() => applyUiZoom(win));
 }
 
 function isZoomShortcut(input: Input): boolean {

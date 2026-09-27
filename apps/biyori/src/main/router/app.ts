@@ -158,6 +158,21 @@ async function libraryEpisodesByAnime(db: SelectDatabase): Promise<Map<number, n
 	return new Map([...libraryById].map(([id, episodes]) => [id, [...episodes]]));
 }
 
+async function episodeSeenAtByAnime(db: SelectDatabase): Promise<Map<number, Record<string, string>>> {
+	const episodeRows = await db.select({ animeId: episodeFile.animeId, episode: episodeFile.episode, createdAt: episodeFile.createdAt }).from(episodeFile);
+	const seenById = new Map<number, Record<string, string>>();
+	for (const file of episodeRows) {
+		const seen = seenById.get(file.animeId) ?? {};
+		const key = String(file.episode);
+		const current = seen[key];
+		if (!current || file.createdAt < current) {
+			seen[key] = file.createdAt;
+		}
+		seenById.set(file.animeId, seen);
+	}
+	return seenById;
+}
+
 export const appRouter = t.router({
 	about: t.procedure.query(() => ({
 		hanaVersion,
@@ -262,13 +277,14 @@ export const appRouter = t.router({
 				})
 				.from(anime)
 				.innerJoin(listEntry, eq(listEntry.animeId, anime.id));
-			const libraryById = await libraryEpisodesByAnime(ctx.db);
+			const [libraryById, seenById] = await Promise.all([libraryEpisodesByAnime(ctx.db), episodeSeenAtByAnime(ctx.db)]);
 			return rows.map((row) => {
 				const { titles, ...rest } = row;
 				return {
 					...rest,
 					title: displayTitleFromRow(rest.title, titles, language),
 					libraryEpisodes: libraryById.get(row.id) ?? [],
+					episodeSeenAt: seenById.get(row.id) ?? {},
 				};
 			});
 		}),

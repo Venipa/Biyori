@@ -7,6 +7,8 @@ import { isTorrentFeedUrl } from "../torrent-feeds";
 import { anilistSeasonNameSchema, seasonGroupBySchema, seasonSortBySchema, seasonViewAsSchema } from "./seasons";
 import { torrentFilterSchema, torrentFiltersFileDefaultValues } from "./torrent-filter";
 
+export const CONTINUE_WATCHING_STALE_DAYS = [7, 14, 30, 60, 90] as const;
+
 export const titleLanguageSchema = z.enum(["Romaji", "English", "Native"]);
 export type TitleLanguage = z.infer<typeof titleLanguageSchema>;
 export const torrentActionSchema = z.enum(["notify", "download"]);
@@ -43,6 +45,7 @@ export const appSettingsSchema = z.object({
 	realtimeMonitor: z.boolean(),
 	episodeScanEnabled: z.boolean(),
 	episodeScanIntervalMinutes: z.coerce.number().int().min(5).max(1440),
+	continueWatchingStaleDays: z.coerce.number().int().min(1).max(365),
 	ignoreOutsideLibrary: z.boolean(),
 	ignoreOutOfRangeEpisode: z.boolean().default(false),
 	recognitionDelaySeconds: z.coerce.number().int().min(0, "Required"),
@@ -130,6 +133,7 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	realtimeMonitor: true,
 	episodeScanEnabled: true,
 	episodeScanIntervalMinutes: 15,
+	continueWatchingStaleDays: 30,
 	ignoreOutsideLibrary: true,
 	ignoreOutOfRangeEpisode: false,
 	recognitionDelaySeconds: 120,

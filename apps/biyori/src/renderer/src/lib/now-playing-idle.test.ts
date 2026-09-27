@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { addDays, startOfDay } from "date-fns";
-import { buildAiringSoon, buildContinueWatching, buildUpcoming, CONTINUE_WATCHING_LIMIT, SEVEN_DAYS_MS } from "./now-playing-idle";
+import { buildAiringSoon, buildContinueWatching, buildUpcoming, CONTINUE_STALE_MS, CONTINUE_WATCHING_LIMIT, SEVEN_DAYS_MS } from "./now-playing-idle";
 
 const now = Date.parse("2026-09-25T12:00:00.000Z");
 
@@ -12,14 +12,16 @@ const listed = {
 	episodesWatched: 3,
 	lastAiredEpisode: 4,
 	libraryEpisodes: [1, 2, 3, 4],
+	episodeSeenAt: { "1": new Date(now - 1000).toISOString(), "4": new Date(now - 1000).toISOString() },
+	lastUpdated: new Date(now - 1000).toISOString(),
 	coverUrl: "",
 	type: "TV",
 };
 
 describe("buildContinueWatching", () => {
 	test("keeps the next episode only when the file is on disk", () => {
-		expect(buildContinueWatching([{ animeId: 1, episode: 3 }], [listed], now).map((item) => item.nextEpisode)).toEqual([4]);
-		expect(buildContinueWatching([{ animeId: 1, episode: 3 }], [{ ...listed, episodesWatched: 4 }], now)).toEqual([]);
+		expect(buildContinueWatching([{ animeId: 1, episode: 3 }], [listed], now).recent.map((item) => item.nextEpisode)).toEqual([4]);
+		expect(buildContinueWatching([{ animeId: 1, episode: 3 }], [{ ...listed, episodesWatched: 4 }], now)).toEqual({ recent: [], older: [] });
 	});
 
 	test("sorts history, then newest aired, then soonest upcoming", () => {
@@ -36,7 +38,7 @@ describe("buildContinueWatching", () => {
 		};
 		const dropped = { ...listed, id: 5, title: "Dropped", status: "Dropped" };
 		const items = buildContinueWatching([{ animeId: 2, episode: 3 }], [upcoming, newer, older, dropped], now);
-		expect(items.map((item) => item.animeId)).toEqual([2, 3, 4]);
+		expect(items.recent.map((item) => item.animeId)).toEqual([2, 3, 4]);
 	});
 
 	test("keeps the newest aired title when the rail is full", () => {
@@ -47,7 +49,15 @@ describe("buildContinueWatching", () => {
 			endDate: "2010-01-01",
 		}));
 		const items = buildContinueWatching([], [...older, { ...listed, endDate: "2026-09-20" }], now);
-		expect(items[0]?.animeId).toBe(listed.id);
+		expect(items.recent[0]?.animeId).toBe(listed.id);
+	});
+
+	test("moves an old index and a stale list update into the earlier rows", () => {
+		const indexedLongAgo = { ...listed, id: 8, episodeSeenAt: { "4": new Date(now - CONTINUE_STALE_MS - 1000).toISOString() } };
+		const staleList = { ...listed, id: 9, title: "Stale", lastUpdated: new Date(now - CONTINUE_STALE_MS - 1000).toISOString() };
+		const groups = buildContinueWatching([], [indexedLongAgo, staleList, listed], now);
+		expect(groups.recent.map((item) => item.animeId)).toEqual([1]);
+		expect(groups.older.map((item) => item.animeId)).toEqual([8, 9]);
 	});
 
 	test("skips a file whose episode airs after the 7 day gap", () => {
@@ -59,7 +69,7 @@ describe("buildContinueWatching", () => {
 			nextAiringAt: new Date(now + 8 * 24 * 60 * 60 * 1000).toISOString(),
 			libraryEpisodes: [1],
 		};
-		expect(buildContinueWatching([], [early], now)).toEqual([]);
+		expect(buildContinueWatching([], [early], now)).toEqual({ recent: [], older: [] });
 	});
 });
 

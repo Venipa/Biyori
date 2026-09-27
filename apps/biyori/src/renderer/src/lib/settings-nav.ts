@@ -91,6 +91,7 @@ export const settingsFieldNav: Record<string, { section: SettingsSectionId; chil
 	realtimeMonitor: { section: "library" },
 	episodeScanEnabled: { section: "library" },
 	episodeScanIntervalMinutes: { section: "library" },
+	continueWatchingStaleDays: { section: "library" },
 	ignoreOutsideLibrary: { section: "recognition", child: "general" },
 	ignoreOutOfRangeEpisode: { section: "recognition", child: "general" },
 	recognitionDelaySeconds: { section: "recognition", child: "general" },

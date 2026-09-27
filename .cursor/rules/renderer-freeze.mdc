@@ -7,7 +7,7 @@ alwaysApply: true
 
 # Renderer freeze prevention
 
-These patterns freeze the Electron renderer (main window or settings). Settings is a small `alwaysOnTop` window, so overlay + layout loops show up there first.
+These patterns freeze the Electron renderer (main window or settings). Settings is a small owned window, so overlay + layout loops show up there first.
 
 ## 1. Hash-history search params
 
@@ -45,7 +45,7 @@ A new `data` array every render + grouping/`expanded: true` + opening a dialog/m
 
 ## 3. No Base UI Positioner in the settings window
 
-Settings is `alwaysOnTop` and small. `ContextMenu` / `DropdownMenu` / `Popover` `Positioner` runs collision in a rAF loop. If the anchor row re-renders or unmounts (RHF `remove`, new table `data`), that loop never exits. `setTimeout` before `remove` does not help: the freeze is the **re-render**, not the click.
+Settings is small. `ContextMenu` / `DropdownMenu` / `Popover` `Positioner` runs collision in a rAF loop. If the anchor row re-renders or unmounts (RHF `remove`, new table `data`), that loop never exits. `setTimeout` before `remove` does not help: the freeze is the **re-render**, not the click.
 
 Do **not** use `ContextMenu`, `DropdownMenu`, or `Popover` `Positioner` in `/settings`.
 

@@ -21,7 +21,12 @@ export function SettingsSelect({ id, value, onValueChange, options, "aria-invali
 				}
 			}}>
 			<SelectTrigger id={id} size='sm' aria-invalid={ariaInvalid || undefined}>
-				<SelectValue />
+				<SelectValue>
+					{(selected: unknown) => {
+						const key = typeof selected === "string" ? selected : "";
+						return items[key] ?? key;
+					}}
+				</SelectValue>
 			</SelectTrigger>
 			<SelectContent alignItemWithTrigger={false} align='start'>
 				<SelectGroup>

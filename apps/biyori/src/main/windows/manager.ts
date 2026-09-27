@@ -21,7 +21,6 @@ export type WindowDefinition = {
 	singleton?: boolean;
 	saveState?: boolean;
 	alwaysOnTop?: boolean;
-	modal?: boolean;
 	resizable?: boolean;
 };
 
@@ -204,7 +203,6 @@ export class WindowManager<TId extends string> {
 		const parent = id === "main" ? undefined : (this.get("main" as TId) ?? undefined);
 		const isMac = process.platform === "darwin";
 		const skipTaskbar = options.skipTaskbar ?? Boolean(parent && !isMac);
-		const alwaysOnTop = definition.alwaysOnTop ?? Boolean(definition.modal && parent);
 		const win = this.createChrome({
 			title: definition.title,
 			width: definition.width,
@@ -215,7 +213,7 @@ export class WindowManager<TId extends string> {
 			maxHeight: definition.maxHeight,
 			show,
 			skipTaskbar,
-			alwaysOnTop,
+			alwaysOnTop: definition.alwaysOnTop ?? false,
 			modal: false,
 			parent,
 			resizable: definition.resizable,

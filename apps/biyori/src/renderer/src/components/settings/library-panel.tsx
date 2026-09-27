@@ -1,9 +1,9 @@
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { FolderIcon, FolderPlusIcon, Trash2Icon } from "lucide-react";
 import { useId } from "react";
-import { useFieldArray, useFormContext, useFormState, useWatch } from "react-hook-form";
+import { Controller, useFieldArray, useFormContext, useFormState, useWatch } from "react-hook-form";
 import { folderDisplayName } from "@/lib/folder-path";
-import type { AppSettingsInput } from "@/lib/schemas/app-settings";
+import { type AppSettingsInput, CONTINUE_WATCHING_STALE_DAYS } from "@/lib/schemas/app-settings";
 import { FormCheckbox } from "@/mainview/components/form-checkbox";
 import { SettingsFieldError } from "@/mainview/components/settings/settings-field-error";
 import { SettingsSectionCard } from "@/mainview/components/settings/settings-section-card";
@@ -11,8 +11,15 @@ import { Button } from "@/mainview/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/mainview/components/ui/empty";
 import { Field, FieldError, FieldLabel } from "@/mainview/components/ui/field";
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/mainview/components/ui/input-group";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 import { folderPathExists, pickLibraryFolderPath } from "@/mainview/lib/library-folder";
+
+const CONTINUE_WATCHING_STALE_OPTIONS = CONTINUE_WATCHING_STALE_DAYS.map((day) => ({
+	value: String(day),
+	label: `${day} days`,
+}));
+const CONTINUE_WATCHING_STALE_ITEMS = Object.fromEntries(CONTINUE_WATCHING_STALE_OPTIONS.map((option) => [option.value, option.label]));
 
 type LibraryFolderRow = {
 	id: string;
@@ -167,6 +174,7 @@ export function LibraryPanel() {
 	const realtimeId = useId();
 	const scanId = useId();
 	const intervalId = useId();
+	const staleDaysId = useId();
 	const form = useFormContext<AppSettingsInput>();
 	const episodeScanEnabled = useWatch({ control: form.control, name: "episodeScanEnabled" });
 
@@ -201,6 +209,61 @@ export function LibraryPanel() {
 					</InputGroup>
 					<SettingsFieldError<AppSettingsInput> name='episodeScanIntervalMinutes' />
 				</Field>
+			</SettingsSectionCard>
+			<SettingsSectionCard title='Continue watching' description='A next episode indexed this long ago moves into the Earlier rows. A list update older than this does the same.'>
+				<Controller
+					control={form.control}
+					name='continueWatchingStaleDays'
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid || undefined}>
+							<FieldLabel htmlFor={staleDaysId}>Age</FieldLabel>
+							<InputGroup className='w-40'>
+								<InputGroupInput
+									id={staleDaysId}
+									type='number'
+									min={1}
+									max={365}
+									name={field.name}
+									ref={field.ref}
+									value={typeof field.value === "number" && Number.isFinite(field.value) ? field.value : ""}
+									aria-invalid={fieldState.invalid}
+									onBlur={field.onBlur}
+									onChange={(event) => {
+										const next = event.target.valueAsNumber;
+										field.onChange(Number.isFinite(next) ? next : event.target.value);
+									}}
+								/>
+								<InputGroupAddon align='inline-end' className='pr-1'>
+									<Select
+										items={CONTINUE_WATCHING_STALE_ITEMS}
+										value={CONTINUE_WATCHING_STALE_DAYS.some((day) => day === field.value) ? String(field.value) : null}
+										onValueChange={(next) => {
+											if (typeof next === "string") {
+												field.onChange(Number(next));
+											}
+										}}>
+										<SelectTrigger
+											size='sm'
+											aria-label='Day presets'
+											className='h-6 gap-1 border-0 bg-transparent px-1.5 text-muted-foreground shadow-none hover:bg-transparent focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent'>
+											<SelectValue>days</SelectValue>
+										</SelectTrigger>
+										<SelectContent align='end' alignItemWithTrigger={false}>
+											<SelectGroup>
+												{CONTINUE_WATCHING_STALE_OPTIONS.map((option) => (
+													<SelectItem key={option.value} value={option.value}>
+														{option.label}
+													</SelectItem>
+												))}
+											</SelectGroup>
+										</SelectContent>
+									</Select>
+								</InputGroupAddon>
+							</InputGroup>
+							<FieldError errors={[fieldState.error]} />
+						</Field>
+					)}
+				/>
 			</SettingsSectionCard>
 		</>
 	);

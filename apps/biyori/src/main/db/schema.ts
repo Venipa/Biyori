@@ -71,6 +71,7 @@ export const episodeFile = sqliteTable("episode_file", {
 	episode: integer("episode").notNull(),
 	path: text("path").notNull().unique(),
 	size: integer("size").notNull(),
+	createdAt: text("created_at").notNull(),
 });
 
 export const syncQueue = sqliteTable("sync_queue", {
