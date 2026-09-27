@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, RefreshCwIcon } from "lucide-react";
 import { desktopRpc } from "@/desktop-rpc";
-import Logo from "@/mainview/components/logo";
+import Logo from "@/mainview/components/app/shell/logo";
 import { Alert, AlertDescription, AlertTitle } from "@/mainview/components/ui/alert";
 import { Button } from "@/mainview/components/ui/button";
 import { Progress, ProgressLabel, ProgressValue } from "@/mainview/components/ui/progress";

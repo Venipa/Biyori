@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AdvancedPanel } from "@/mainview/components/settings/advanced-panel";
+import { AdvancedPanel } from "@/mainview/components/app/settings/advanced-panel";
 
 export const Route = createFileRoute("/settings/advanced/general")({
 	component: AdvancedPanel,

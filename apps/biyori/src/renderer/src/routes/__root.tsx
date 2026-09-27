@@ -1,6 +1,6 @@
 import { createRootRoute, Outlet, useRouterState } from "@tanstack/react-router";
-import { AnilistAuthSplash } from "@/mainview/components/anilist-auth-splash";
-import { AppTitleBar } from "@/mainview/components/app-titlebar";
+import { AnilistAuthSplash } from "@/mainview/components/app/onboarding/anilist-auth-splash";
+import { AppTitleBar } from "@/mainview/components/app/shell/titlebar";
 
 export const Route = createRootRoute({
 	component: RootLayout,

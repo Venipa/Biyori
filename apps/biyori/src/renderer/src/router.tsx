@@ -1,5 +1,5 @@
 import { createHashHistory, createRouter } from "@tanstack/react-router";
-import { RouterFallback } from "@/mainview/components/router-fallback";
+import { RouterFallback } from "@/mainview/components/app/shared/router-fallback";
 import { seedRendererHash } from "./lib/start-path";
 import { routeTree } from "./routeTree.gen";
 

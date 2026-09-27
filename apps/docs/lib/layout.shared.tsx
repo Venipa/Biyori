@@ -1,7 +1,7 @@
 import type { BaseLayoutProps, LinkItemType } from "fumadocs-ui/layouts/shared";
 import { BookIcon, ScrollTextIcon } from "lucide-react";
+import { Logo } from "@/components/app/shell/logo";
 import { DiscordIcon, GitHubIcon } from "@/components/icons";
-import { Logo } from "@/components/logo";
 import { getRepositoryUrl } from "./github";
 import { changelogRoute, docsRoute, socials } from "./shared";
 

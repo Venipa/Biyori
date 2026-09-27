@@ -1,6 +1,6 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { OnboardingWizard } from "@/mainview/components/onboarding-wizard";
-import { PageLoad } from "@/mainview/components/page-load";
+import { OnboardingWizard } from "@/mainview/components/app/onboarding/wizard";
+import { PageLoad } from "@/mainview/components/app/shell/page-load";
 import { trpc } from "@/mainview/trpc";
 
 export const Route = createFileRoute("/onboarding")({

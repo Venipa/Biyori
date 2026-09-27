@@ -3,12 +3,12 @@ import { type ColumnDef, getCoreRowModel, getSortedRowModel, type SortingState, 
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, SearchIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { AiringStatusMark } from "@/components/airing-status";
+import { AiringStatusMark } from "@/components/app/anime/airing-status";
 import { anilistSearchRouteSchema } from "@/lib/schemas/anilist-search";
 import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
-import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
-import { DataTable, resizableTableOptions } from "@/mainview/components/data-table";
-import { PlaceholderView } from "@/mainview/components/placeholder-view";
+import { AnimeItemCommands } from "@/mainview/components/app/anime-info/item-commands";
+import { DataTable, resizableTableOptions } from "@/mainview/components/app/shared/data-table";
+import { PlaceholderView } from "@/mainview/components/app/shared/placeholder-view";
 import {
 	ContextMenu,
 	ContextMenuContent,

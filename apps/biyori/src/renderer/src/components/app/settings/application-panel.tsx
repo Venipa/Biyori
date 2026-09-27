@@ -1,0 +1,143 @@
+import { useId } from "react";
+import { Controller, useFormContext } from "react-hook-form";
+import type { AppSettingsInput } from "@/lib/schemas/app-settings";
+import { SettingsFieldError } from "@/mainview/components/app/settings/settings-field-error";
+import { SettingsSectionCard } from "@/mainview/components/app/settings/settings-section-card";
+import { SettingsSelect } from "@/mainview/components/app/settings/settings-select";
+import { SettingsToggleGroup } from "@/mainview/components/app/settings/settings-toggle-group";
+import { FormCheckbox } from "@/mainview/components/app/shared/form-checkbox";
+import { UpdateChannelToggle } from "@/mainview/components/app/update/channel-toggle";
+import { Field, FieldError, FieldLabel } from "@/mainview/components/ui/field";
+import { Textarea } from "@/mainview/components/ui/textarea";
+import { listStatusSchema } from "@/shared/list";
+import { parseUpdateChannel } from "@/shared/updater";
+
+const TITLE_LANGUAGE_OPTIONS = [
+	{ value: "Romaji", label: "Romaji" },
+	{ value: "English", label: "English" },
+	{ value: "Native", label: "Native" },
+] as const;
+
+const LIST_STATUS_OPTIONS = listStatusSchema.options.map((status) => ({
+	value: status,
+	label: status,
+}));
+
+const UI_ZOOM_OPTIONS = [
+	{ value: "75", label: "75%" },
+	{ value: "90", label: "90%" },
+	{ value: "100", label: "100%" },
+	{ value: "110", label: "110%" },
+	{ value: "125", label: "125%" },
+	{ value: "150", label: "150%" },
+] as const;
+
+export function ApplicationPanel() {
+	const titleLanguageId = useId();
+	const uiZoomId = useId();
+	const defaultAddToListStatusId = useId();
+	const autostartId = useId();
+	const closeToTrayId = useId();
+	const sendCrashReportsId = useId();
+	const updateChannelId = useId();
+	const externalLinksId = useId();
+	const form = useFormContext<AppSettingsInput>();
+
+	return (
+		<>
+			<SettingsSectionCard title='Titles' description='How anime titles appear in lists and details.'>
+				<Controller
+					control={form.control}
+					name='titleLanguage'
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid || undefined}>
+							<FieldLabel htmlFor={titleLanguageId}>Title language</FieldLabel>
+							<SettingsToggleGroup
+								id={titleLanguageId}
+								value={typeof field.value === "string" ? field.value : "Romaji"}
+								onValueChange={field.onChange}
+								options={TITLE_LANGUAGE_OPTIONS}
+								aria-invalid={fieldState.invalid}
+							/>
+							<FieldError errors={[fieldState.error]} />
+						</Field>
+					)}
+				/>
+			</SettingsSectionCard>
+			<SettingsSectionCard title='Display' description='Interface size. OS display scale is unchanged.'>
+				<Controller
+					control={form.control}
+					name='uiZoom'
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid || undefined}>
+							<FieldLabel htmlFor={uiZoomId}>Zoom</FieldLabel>
+							<SettingsSelect
+								id={uiZoomId}
+								value={String(typeof field.value === "number" ? field.value : 100)}
+								onValueChange={(value) => field.onChange(Number(value))}
+								options={UI_ZOOM_OPTIONS}
+								aria-invalid={fieldState.invalid}
+							/>
+							<FieldError errors={[fieldState.error]} />
+						</Field>
+					)}
+				/>
+			</SettingsSectionCard>
+			<SettingsSectionCard title='Add to list' description='Status used when you add a title to your list.'>
+				<Controller
+					control={form.control}
+					name='defaultAddToListStatus'
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid || undefined}>
+							<FieldLabel htmlFor={defaultAddToListStatusId}>Default status</FieldLabel>
+							<SettingsSelect
+								id={defaultAddToListStatusId}
+								value={typeof field.value === "string" ? field.value : "Plan to watch"}
+								onValueChange={field.onChange}
+								options={LIST_STATUS_OPTIONS}
+								aria-invalid={fieldState.invalid}
+							/>
+							<FieldError errors={[fieldState.error]} />
+						</Field>
+					)}
+				/>
+			</SettingsSectionCard>
+			<SettingsSectionCard title='Startup'>
+				<FormCheckbox control={form.control} name='autostart' id={autostartId} label='Autostart' />
+				<AutostartTrayField />
+			</SettingsSectionCard>
+			<SettingsSectionCard title='Updates' description='Which release channel the updater checks.'>
+				<Controller
+					control={form.control}
+					name='updateChannel'
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid || undefined}>
+							<FieldLabel htmlFor={updateChannelId}>Release channel</FieldLabel>
+							<UpdateChannelToggle id={updateChannelId} value={parseUpdateChannel(field.value)} onValueChange={field.onChange} />
+							<FieldError errors={[fieldState.error]} />
+						</Field>
+					)}
+				/>
+			</SettingsSectionCard>
+			<SettingsSectionCard title='Tray'>
+				<FormCheckbox control={form.control} name='closeToTray' id={closeToTrayId} label='Close to tray' />
+			</SettingsSectionCard>
+			<SettingsSectionCard title='Privacy' description='Crash reports go to the Biyori Sentry project. No AniList name or token.'>
+				<FormCheckbox control={form.control} name='sendCrashReports' id={sendCrashReportsId} label='Send crash reports' />
+			</SettingsSectionCard>
+			<SettingsSectionCard title='External links' description='One URL template per line. Used from title details.'>
+				<Field>
+					<Textarea id={externalLinksId} className='min-h-28 font-mono text-xs' {...form.register("externalLinks")} />
+					<SettingsFieldError<AppSettingsInput> name='externalLinks' />
+				</Field>
+			</SettingsSectionCard>
+		</>
+	);
+}
+
+function AutostartTrayField() {
+	const autostartTrayId = useId();
+	const form = useFormContext<AppSettingsInput>();
+	const autostart = form.watch("autostart");
+	return <FormCheckbox control={form.control} name='autostartTray' id={autostartTrayId} label='Autostart in tray' disabled={!autostart} />;
+}

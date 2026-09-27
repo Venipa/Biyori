@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import Logo from "@/mainview/components/logo";
+import Logo from "@/mainview/components/app/shell/logo";
 import { splashSegmentState } from "@/mainview/lib/splash-progress";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";

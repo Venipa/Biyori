@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/electron/renderer";
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { ParentWindowScrim } from "@/components/parent-window-scrim";
+import { ParentWindowScrim } from "@/components/app/shell/parent-window-scrim";
 import "./index.css";
 import { rendererRoutePath } from "./lib/start-path";
 import { initTheme } from "./lib/theme";

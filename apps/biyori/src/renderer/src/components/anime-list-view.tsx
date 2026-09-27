@@ -3,14 +3,14 @@ import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon } from "lucide-react";
 import { startTransition, useEffect, useRef, useState } from "react";
-import { AiringStatusMark } from "@/components/airing-status";
+import { AiringStatusMark } from "@/components/app/anime/airing-status";
 import { desktopRpc } from "@/desktop-rpc";
 import type { AnimeListViewAs } from "@/lib/schemas/app-settings";
-import { AnimeCover } from "@/mainview/components/anime-cover";
-import { AnimeItemCommands } from "@/mainview/components/anime-item-commands";
-import { AnimeListProgress } from "@/mainview/components/anime-list-progress";
-import { DataTable, resizableTableOptions } from "@/mainview/components/data-table";
-import { PlaceholderView } from "@/mainview/components/placeholder-view";
+import { AnimeCover } from "@/mainview/components/app/anime/cover";
+import { AnimeListProgress } from "@/mainview/components/app/anime/list-progress";
+import { AnimeItemCommands } from "@/mainview/components/app/anime-info/item-commands";
+import { DataTable, resizableTableOptions } from "@/mainview/components/app/shared/data-table";
+import { PlaceholderView } from "@/mainview/components/app/shared/placeholder-view";
 import {
 	ContextMenu,
 	ContextMenuContent,

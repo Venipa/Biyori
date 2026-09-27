@@ -2,7 +2,7 @@ import { type ColumnDef, getCoreRowModel, useReactTable } from "@tanstack/react-
 import type { inferRouterOutputs } from "@trpc/server";
 import { ArrowUpIcon, FileTextIcon } from "lucide-react";
 import { useMemo, useState } from "react";
-import { DataTable, resizableTableOptions } from "@/mainview/components/data-table";
+import { DataTable, resizableTableOptions } from "@/mainview/components/app/shared/data-table";
 import {
 	AlertDialog,
 	AlertDialogAction,

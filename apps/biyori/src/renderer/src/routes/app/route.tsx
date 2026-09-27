@@ -1,12 +1,12 @@
 import { createFileRoute, Navigate, Outlet, useBlocker, useNavigate } from "@tanstack/react-router";
 import { type ReactElement, useRef } from "react";
-import { AnimeDeleteDialog } from "@/mainview/components/anime-delete-dialog";
-import { AppAnimeInfoDialog } from "@/mainview/components/app-anime-info-dialog";
-import { AppSidebar } from "@/mainview/components/app-sidebar";
-import { AppStatusBar } from "@/mainview/components/app-status-bar";
-import { PageLoad } from "@/mainview/components/page-load";
+import { AnimeDeleteDialog } from "@/mainview/components/app/anime-info/delete-dialog";
+import { AppAnimeInfoDialog } from "@/mainview/components/app/anime-info/host";
+import { WatchConfirmDialog } from "@/mainview/components/app/confirm/watch-dialog";
+import { PageLoad } from "@/mainview/components/app/shell/page-load";
+import { AppSidebar } from "@/mainview/components/app/shell/sidebar";
+import { AppStatusBar } from "@/mainview/components/app/shell/status-bar";
 import { TooltipProvider } from "@/mainview/components/ui/tooltip";
-import { WatchConfirmDialog } from "@/mainview/components/watch-confirm-dialog";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { trpc } from "@/mainview/trpc";
 
