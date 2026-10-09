@@ -1,0 +1,9 @@
+nowPlaying:
+  continueWatching: Continue watching
+  olderThan_one: Older than {{days}} day
+  olderThan_other: Older than {{days}} days
+  waitingTitle: Waiting for new anime episodes.
+  waitingDescription: They show up here once a new episode is in your library.
+  watchedLastWeek_one: You've watched {{count}} episode last week.
+  watchedLastWeek_other: You've watched {{count}} episodes last week.
+  upcoming: Upcoming

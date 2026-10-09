@@ -34,6 +34,7 @@
 		"@biyori/electron-trpc": "workspace:*",
 		"@biyori/hana": "workspace:*",
 		"@biyori/logger": "workspace:*",
+		"@biyori/translations": "workspace:*",
 		"@biyori/recognition": "workspace:*",
 		"@biyori/worker": "workspace:*",
 		"@electron-toolkit/preload": "^3.0.2",

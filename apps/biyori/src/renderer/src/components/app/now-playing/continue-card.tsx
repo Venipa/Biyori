@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { PlayCircleIcon, PlayIcon } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
@@ -13,6 +14,7 @@ import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 
 export function ContinueWatchingEmpty({ className, description }: { className?: string; description?: string }) {
+	const { t } = useTranslation();
 	const art = trpc.history.latest.useQuery(undefined, { select: lastPlayedArt }).data ?? null;
 	return (
 		<Empty className={cn("relative justify-center overflow-hidden border p-3", className)}>
@@ -30,7 +32,7 @@ export function ContinueWatchingEmpty({ className, description }: { className?: 
 				<EmptyMedia variant='icon'>
 					<PlayCircleIcon />
 				</EmptyMedia>
-				<EmptyDescription className='text-xs/snug'>Waiting for new anime episodes.</EmptyDescription>
+				<EmptyDescription className='text-xs/snug'>{t("nowPlaying.waitingTitle")}</EmptyDescription>
 				{description != null ? <EmptyDescription>{description}</EmptyDescription> : null}
 			</EmptyHeader>
 		</Empty>

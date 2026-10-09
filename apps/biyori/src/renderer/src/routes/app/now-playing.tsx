@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { LayoutGridIcon, Table2Icon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -60,6 +61,13 @@ function IdleNowPlaying() {
 	});
 	const playNext = trpc.library.playNext.useMutation();
 	const animeInfo = useAnimeInfoNav();
+	const { t } = useTranslation();
+	function playContinue(item: ContinueWatchingItem): void {
+		void playNext.mutateAsync({
+			animeId: item.animeId,
+			episodesWatched: item.nextEpisode - 1,
+		});
+	}
 	const layout = settingsQuery.data?.nowPlayingView ?? "cards";
 	function setLayout(next: NowPlayingView) {
 		const current = utils.settings.get.getData();
@@ -75,6 +83,8 @@ function IdleNowPlaying() {
 	const listed = listedQuery.data ?? [];
 	const skipStatus = new Set(listed.filter((row) => row.status === "Completed" || row.status === "Dropped").map((row) => row.id));
 	const staleDays = settingsQuery.data?.continueWatchingStaleDays ?? 30;
+	const continueLabel = t("nowPlaying.continueWatching");
+	const olderLabel = t("nowPlaying.olderThan", { days: staleDays, count: staleDays });
 	const continueWatching = buildContinueWatching(
 		played.map((row) => ({ animeId: row.animeId, episode: row.episode, playedAt: row.lastModified })),
 		listed,
@@ -99,7 +109,7 @@ function IdleNowPlaying() {
 	if (continueWatching.recent.length === 0 && continueWatching.older.length === 0 && !hasAiring && upcoming.length === 0) {
 		return (
 			<div className='flex h-full items-center justify-center p-4'>
-				<ContinueWatchingEmpty className='min-h-64 w-full max-w-2xl' description='They show up here once a new episode is in your library.' />
+				<ContinueWatchingEmpty className='min-h-64 w-full max-w-2xl' description={t("nowPlaying.waitingDescription")} />
 			</div>
 		);
 	}
@@ -123,12 +133,7 @@ function IdleNowPlaying() {
 						earlierDays={staleDays}
 						airing={airing}
 						playDisabled={playNext.isPending}
-						onPlay={(item) => {
-							void playNext.mutateAsync({
-								animeId: item.animeId,
-								episodesWatched: item.nextEpisode - 1,
-							});
-						}}
+						onPlay={playContinue}
 						onOpen={(item) => {
 							animeInfo.open({ id: item.animeId, infoTab: "main" });
 						}}
@@ -137,29 +142,11 @@ function IdleNowPlaying() {
 				) : (
 					<div className='flex min-w-0 flex-col gap-6 @3xl:flex-row @3xl:items-start @3xl:gap-3'>
 						<section className='flex w-full min-w-0 flex-col gap-6 @3xl:max-w-max @3xl:flex-1'>
-							<IdlePosterStrip
-								heading='Continue watching'
-								label='Continue watching'
-								items={continueWatching.recent}
-								earlier={continueWatching.older}
-								earlierDays={staleDays}
-								disabled={playNext.isPending}
-								onActivate={(item) => {
-									void playNext.mutateAsync({
-										animeId: item.animeId,
-										episodesWatched: item.nextEpisode - 1,
-									});
-								}}
-								onOpen={(item) => {
-									animeInfo.open({ id: item.animeId, infoTab: "main" });
-								}}
-							/>
-							{watchedLastWeek > 0 ? (
-								<p className='mt-3 w-0 min-w-full text-sm text-muted-foreground'>
-									You've watched {watchedLastWeek} episode
-									{watchedLastWeek === 1 ? "" : "s"} last week.
-								</p>
+							<IdlePosterStrip heading={continueLabel} label={continueLabel} items={continueWatching.recent} disabled={playNext.isPending} onActivate={playContinue} />
+							{continueWatching.older.length > 0 ? (
+								<IdlePosterStrip heading={olderLabel} label={olderLabel} items={continueWatching.older} disabled={playNext.isPending} onActivate={playContinue} />
 							) : null}
+							{watchedLastWeek > 0 ? <p className='mt-3 w-0 min-w-full text-sm text-muted-foreground'>{t("nowPlaying.watchedLastWeek", { count: watchedLastWeek })}</p> : null}
 						</section>
 						{hasAiring ? (
 							<section className='w-full min-w-0 @3xl:max-w-max @3xl:flex-1'>
@@ -179,7 +166,7 @@ function IdleNowPlaying() {
 
 				{upcoming.length > 0 ? (
 					<section>
-						<h2 className='mb-1 text-sm font-semibold'>Upcoming</h2>
+						<h2 className='mb-1 text-sm font-semibold'>{t("nowPlaying.upcoming")}</h2>
 						<Separator className='mb-2' />
 						<div className='flex flex-wrap gap-1.5'>
 							{upcoming.map((item) => (

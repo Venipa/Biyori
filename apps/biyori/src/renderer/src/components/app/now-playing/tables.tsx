@@ -1,7 +1,8 @@
+import { useTranslation } from "@biyori/translations/react";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { ContinueWatchingEmpty } from "@/mainview/components/app/now-playing/continue-card";
 import { IdleItemContextMenu } from "@/mainview/components/app/now-playing/item-menu";
-import { airingCaption, earlierThanLabel } from "@/mainview/components/app/now-playing/utils";
+import { airingCaption } from "@/mainview/components/app/now-playing/utils";
 import { Separator } from "@/mainview/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 import type { AiringSoonGroup, ContinueWatchingItem } from "@/mainview/lib/now-playing-idle";
@@ -44,10 +45,11 @@ export function IdleTables({
 	onOpen: (item: ContinueWatchingItem) => void;
 	watchedLastWeek: number;
 }) {
+	const { t } = useTranslation();
 	return (
 		<div className='flex flex-col gap-6'>
 			<section>
-				<h2 className='mb-1 text-sm font-semibold'>Continue watching</h2>
+				<h2 className='mb-1 text-sm font-semibold'>{t("nowPlaying.continueWatching")}</h2>
 				<Separator className='mb-2' />
 				{continueWatching.length > 0 ? (
 					<>
@@ -85,12 +87,7 @@ export function IdleTables({
 								))}
 							</TableBody>
 						</Table>
-						{watchedLastWeek > 0 ? (
-							<p className='mt-3 text-sm text-muted-foreground'>
-								You've watched {watchedLastWeek} episode
-								{watchedLastWeek === 1 ? "" : "s"} last week.
-							</p>
-						) : null}
+						{watchedLastWeek > 0 ? <p className='mt-3 text-sm text-muted-foreground'>{t("nowPlaying.watchedLastWeek", { count: watchedLastWeek })}</p> : null}
 					</>
 				) : (
 					<ContinueWatchingEmpty className='min-h-32' />
@@ -98,7 +95,7 @@ export function IdleTables({
 			</section>
 			{earlierWatching.length > 0 ? (
 				<section>
-					<h2 className='mb-1 text-sm font-semibold'>{earlierThanLabel(earlierDays)}</h2>
+					<h2 className='mb-1 text-sm font-semibold'>{t("nowPlaying.olderThan", { days: earlierDays, count: earlierDays })}</h2>
 					<Separator className='mb-2' />
 					<Table containerClassName='overflow-visible'>
 						<TableHeader>

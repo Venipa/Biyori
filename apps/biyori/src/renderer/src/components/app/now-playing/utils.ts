@@ -38,10 +38,6 @@ export function airingCaption(item: ContinueWatchingItem): string {
 	return `Episode ${item.nextEpisode} at ${formatClock(item.nextAiringAt)}`;
 }
 
-export function earlierThanLabel(days: number): string {
-	return `Earlier than ${days} ${days === 1 ? "day" : "days"}`;
-}
-
 export function episodeLine(item: ContinueWatchingItem): string {
 	const total = item.episodes != null && item.episodes > 0 ? item.episodes : null;
 	return total != null ? `Episode ${item.nextEpisode} of ${total}` : `Episode ${item.nextEpisode}`;

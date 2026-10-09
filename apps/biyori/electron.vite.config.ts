@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { translationsYaml } from "@biyori/translations/vite";
 import styledJsxPlugin from "@rolldown/plugin-styled-jsx";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
@@ -87,7 +88,7 @@ export default defineConfig({
 			sourcemap: sentrySourcemap,
 			externalizeDeps: {
 				include: ["encryption.js", "lodash-es", "@biyori/hana"],
-				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/worker"],
+				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/translations", "@biyori/worker"],
 			},
 		},
 	},
@@ -97,7 +98,7 @@ export default defineConfig({
 		build: {
 			sourcemap: sentrySourcemap,
 			externalizeDeps: {
-				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/worker", "@sentry/electron"],
+				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/translations", "@biyori/worker", "@sentry/electron"],
 			},
 		},
 	},
@@ -107,6 +108,7 @@ export default defineConfig({
 			sourcemap: sentrySourcemap,
 		},
 		plugins: [
+			translationsYaml(),
 			tanstackRouter({
 				target: "react",
 				autoCodeSplitting: true,
