@@ -1,22 +1,26 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import i18n from "i18next";
-import { parse } from "yaml";
+import { translationsYaml } from "./vite";
 
-const en = parse(readFileSync(new URL("../locales/en.yaml", import.meta.url), "utf8"));
+describe("locale yml", () => {
+	test("plugin inlines yml as a js module", () => {
+		const transform = translationsYaml().transform;
+		if (!transform || typeof transform === "function") {
+			throw new Error("expected a filtered transform");
+		}
+		const transformed = transform.handler("hello: world\n", "/pkg/translations/locales/en.yml");
+		if (!transformed || typeof transformed === "string") {
+			throw new Error("expected a yml module");
+		}
+		expect(transformed.code).toBe(`export default {"hello":"world"};\n`);
+	});
 
-describe("en locale", () => {
-	test("resolves copy and plurals", async () => {
-		await i18n.init({
-			lng: "en",
-			fallbackLng: "en",
-			initImmediate: false,
-			resources: { en: { translation: en } },
-			interpolation: { escapeValue: false },
-		});
-		expect(i18n.t("nowPlaying.continueWatching")).toBe("Continue watching");
-		expect(i18n.t("nowPlaying.olderThan", { count: 1, days: 1 })).toBe("Older than 1 day");
-		expect(i18n.t("nowPlaying.olderThan", { count: 30, days: 30 })).toBe("Older than 30 days");
-		expect(i18n.t("nowPlaying.watchedLastWeek", { count: 2 })).toBe("You've watched 2 episodes last week.");
+	test("leaves other files alone", () => {
+		const transform = translationsYaml().transform;
+		if (!transform || typeof transform === "function" || !(transform.filter.id instanceof RegExp)) {
+			throw new Error("expected a path filter");
+		}
+		expect(transform.filter.id.test("/pkg/translations/locales/en.yml")).toBe(true);
+		expect(transform.filter.id.test("/pkg/translations/src/react.tsx")).toBe(false);
+		expect(transform.filter.id.test("/pkg/translations/locales/en.yaml")).toBe(false);
 	});
 });

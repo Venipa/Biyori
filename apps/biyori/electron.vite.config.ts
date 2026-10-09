@@ -83,7 +83,7 @@ const sentrySourcemap = process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG 
 export default defineConfig({
 	main: {
 		...mainResolve,
-		plugins: [sentryUploadPlugin()],
+		plugins: [translationsYaml(), sentryUploadPlugin()],
 		build: {
 			sourcemap: sentrySourcemap,
 			externalizeDeps: {
@@ -94,7 +94,7 @@ export default defineConfig({
 	},
 	preload: {
 		...mainResolve,
-		plugins: [sentryUploadPlugin()],
+		plugins: [translationsYaml(), sentryUploadPlugin()],
 		build: {
 			sourcemap: sentrySourcemap,
 			externalizeDeps: {

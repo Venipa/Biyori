@@ -14,7 +14,7 @@
 	"dependencies": {
 		"i18next": "26.4.2",
 		"react-i18next": "17.0.16",
-		"yaml": "^2.9.0"
+		"vite-yaml-plugin": "3.0.3"
 	},
 	"peerDependencies": {
 		"react": "^19.2.1"

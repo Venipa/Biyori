@@ -1,4 +1,4 @@
-declare module "*.yaml" {
+declare module "*.yml" {
 	const value: {
 		[key: string]: string | { [key: string]: string };
 	};

@@ -1,7 +1,7 @@
 /// <reference path="./yaml.d.ts" />
 import i18n from "i18next";
 import { initReactI18next, useTranslation } from "react-i18next";
-import en from "../locales/en.yaml";
+import en from "../locales/en.yml";
 
 void i18n.use(initReactI18next).init({
 	lng: "en",
