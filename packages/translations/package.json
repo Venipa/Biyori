@@ -13,6 +13,7 @@
 	},
 	"dependencies": {
 		"i18next": "26.4.2",
+		"js-yaml": "5.4.3",
 		"react-i18next": "17.0.16",
 		"vite-yaml-plugin": "3.0.3"
 	},
