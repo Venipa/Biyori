@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { flexRender, type Header, type Row, type Table as TanstackTable } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDownIcon, ChevronsUpDownIcon, ChevronUpIcon } from "lucide-react";
@@ -169,6 +170,7 @@ export function DataTable<TData>({
 	compact?: boolean;
 	rowSize?: number;
 }) {
+	const { t } = useTranslation();
 	const rootRef = useRef<HTMLDivElement>(null);
 	const colSpan = table.getVisibleLeafColumns().length;
 	const leaves = table.getRowModel().rows.filter((row) => row.depth === 0);
@@ -220,7 +222,7 @@ export function DataTable<TData>({
 											<button
 												type='button'
 												tabIndex={-1}
-												aria-label={`Resize ${header.column.id} column`}
+												aria-label={t("common.resizeColumn", { column: header.column.id })}
 												className={cn(
 													"absolute inset-y-0 -right-2 z-10 w-4 cursor-col-resize touch-none border-0 bg-transparent p-0",
 													"after:pointer-events-none after:absolute after:inset-y-2 after:right-2 after:w-px after:bg-transparent hover:after:bg-border",

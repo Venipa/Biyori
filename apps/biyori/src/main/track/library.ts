@@ -3,6 +3,7 @@ import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
 import { dirname, join } from "node:path";
 import { logger as log } from "@biyori/logger";
 import { pathUnderRoot, VIDEO_EXT } from "@biyori/recognition";
+import { t } from "@biyori/translations/i18n";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { shell } from "electron";
 import { type LibrarySummary, summarizeLibraryFolders } from "../../lib/library-summary";
@@ -254,19 +255,23 @@ export async function runStartupScan(): Promise<void> {
 }
 
 function onScanProgress(kind: "full" | "quick", progress: ScanProgress): void {
-	const prefix = kind === "quick" ? "Checking folders" : "Scanning library";
+	const prefix = kind === "quick" ? t("main.library.checkingFolders") : t("main.library.scanningLibrary");
 	if (progress.phase === "walk") {
-		const title = `${prefix}... (${progress.files} files)`;
+		const title = t(kind === "quick" ? "main.library.checkingFoldersProgress" : "main.library.scanningLibraryProgress", { count: progress.files });
 		setAppNotice(title, { toast: false, busy: true });
-		upsertActivity({ source: "library-scan", title: prefix, body: `${progress.files} files` });
+		upsertActivity({ source: "library-scan", title: prefix, body: t("main.library.files", { count: progress.files }) });
 		return;
 	}
 	if (progress.phase === "match") {
 		const total = progress.total > 0 ? progress.total : progress.files;
 		const seen = progress.total > 0 ? progress.files : progress.hits;
-		const title = `Matching titles... (${seen}/${total})`;
+		const title = t("main.library.matchingProgress", { seen, total });
 		setAppNotice(title, { toast: false, busy: true });
-		upsertActivity({ source: "library-scan", title: "Matching titles", body: `${seen}/${total}, ${progress.hits} matched` });
+		upsertActivity({
+			source: "library-scan",
+			title: t("main.library.matchingTitles"),
+			body: t("main.library.matchBody", { seen, total, hits: progress.hits }),
+		});
 	}
 }
 
@@ -311,8 +316,8 @@ function announceContinueEpisodes(database: DatabaseClient, hits: ScanHit[]): vo
 	for (const hit of continueReadyEpisodes(hits, onDisk, nextByAnime)) {
 		pushNotice({
 			source: "episode-ready",
-			title: titles.get(hit.animeId) ?? "New episode",
-			body: `Episode ${hit.episode}`,
+			title: titles.get(hit.animeId) ?? t("main.library.newEpisode"),
+			body: t("main.library.episode", { episode: hit.episode }),
 		});
 	}
 }
@@ -326,9 +331,13 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 	const candidates = await loadCandidates(database);
 	await refreshRelations(database);
 	if (kind !== "watch") {
-		const title = kind === "quick" ? "Checking known folders..." : "Scanning library...";
+		const title = kind === "quick" ? t("main.library.checkingKnownFolders") : t("main.library.scanningLibraryDots");
 		setAppNotice(title, { toast: false, busy: true });
-		upsertActivity({ source: "library-scan", title: kind === "quick" ? "Checking folders" : "Scanning library", body: "Starting" });
+		upsertActivity({
+			source: "library-scan",
+			title: kind === "quick" ? t("main.library.checkingFolders") : t("main.library.scanningLibrary"),
+			body: t("main.library.starting"),
+		});
 	}
 	try {
 		const result = await hana.scan(
@@ -345,21 +354,22 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 		}
 		applyScanHits(database, result.scannedRoots, result.hits);
 		if (kind !== "watch") {
-			const title = `Library scan: ${result.files} files, ${result.hits.length} matched`;
+			const detail = t("main.library.scanBody", { count: result.files, hits: result.hits.length });
+			const title = t("main.library.scanSummary", { detail });
 			setAppNotice(title, { toast: false, busy: false });
 			completeActivity({
 				source: "library-scan",
-				title: "Library scan",
-				body: `${result.files} files, ${result.hits.length} matched`,
+				title: t("main.library.scanTitle"),
+				body: detail,
 				status: "ok",
 			});
 		}
 		return { files: result.files, matched: result.hits.length };
 	} catch (error) {
 		if (kind !== "watch") {
-			const title = "Library scan failed";
+			const title = t("main.library.scanFailed");
 			setAppNotice(title, { toast: false, busy: false });
-			completeActivity({ source: "library-scan", title: "Library scan", body: "Failed", status: "error" });
+			completeActivity({ source: "library-scan", title: t("main.library.scanTitle"), body: t("main.library.failed"), status: "error" });
 		}
 		throw error;
 	}
@@ -433,12 +443,12 @@ export async function playNext(database: DatabaseClient, animeId: number, episod
 	}
 	const played = await playEpisode(database, animeId, episode);
 	if (!played.ok) {
-		const title = `Could not find episode #${episode}`;
+		const title = t("main.library.couldNotFindEpisode", { episode });
 		setAppNotice(title);
 		pushNotice({
 			source: "play-next",
-			title: rows[0]?.title ?? "Play next",
-			body: `Could not find episode #${episode}`,
+			title: rows[0]?.title ?? t("main.library.playNext"),
+			body: title,
 		});
 	}
 	return { ...played, episode };

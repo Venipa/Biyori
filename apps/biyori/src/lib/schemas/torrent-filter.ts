@@ -169,59 +169,6 @@ export function defaultTorrentFilters(): TorrentFilter[] {
 	];
 }
 
-export const TORRENT_FILTER_ELEMENT_LABELS: Record<TorrentFilterElement, string> = {
-	meta_id: "Anime ID",
-	meta_status: "Anime airing status",
-	meta_type: "Anime type",
-	meta_episodes: "Anime episode count",
-	meta_date_start: "Anime date started",
-	meta_date_end: "Anime date ended",
-	user_notes: "Anime notes",
-	user_status: "Anime watching status",
-	local_episode_available: "Episode availability",
-	episode_title: "Episode title",
-	episode_number: "Episode number",
-	episode_version: "Episode version",
-	episode_group: "Episode fansub group",
-	episode_video_resolution: "Episode video resolution",
-	episode_video_type: "Episode video type",
-	file_title: "File name",
-	file_category: "File category",
-	file_description: "File description",
-	file_link: "File link",
-	file_size: "File size",
-};
-
-export const TORRENT_FILTER_OPERATOR_LABELS: Record<TorrentFilterOperator, string> = {
-	equals: "is",
-	not_equals: "is not",
-	gt: "is greater than",
-	gte: "is greater than or equal to",
-	lt: "is less than",
-	lte: "is less than or equal to",
-	begins_with: "begins with",
-	ends_with: "ends with",
-	contains: "contains",
-	not_contains: "does not contain",
-};
-
-export const TORRENT_FILTER_ACTION_LABELS: Record<TorrentFilterAction, string> = {
-	discard: "Discard matched items",
-	select: "Select matched items",
-	prefer: "Prefer matched items to similar ones",
-};
-
-export const TORRENT_FILTER_MATCH_LABELS: Record<TorrentFilterMatch, string> = {
-	all: "All conditions",
-	any: "Any condition",
-};
-
-export const TORRENT_FILTER_OPTION_LABELS: Record<TorrentFilterOption, string> = {
-	default: "Default",
-	deactivate: "Deactivate discarded items",
-	hide: "Hide discarded items",
-};
-
 export function cloneTorrentFilter(row: TorrentFilter, id: string = crypto.randomUUID()): TorrentFilter {
 	return {
 		...row,

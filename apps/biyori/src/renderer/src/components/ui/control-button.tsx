@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { CopyIcon, MinusIcon, SquareIcon, XIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 import { Button } from "@/mainview/components/ui/button";
@@ -8,16 +9,12 @@ type ControlButtonBase = Omit<ComponentProps<typeof Button>, "variant" | "size" 
 
 export type ControlButtonProps = (ControlButtonBase & { control: "minimize" | "close" }) | (ControlButtonBase & { control: "maximize"; maximized?: boolean });
 
-const CONTROL_LABEL = {
-	minimize: "Minimize",
-	close: "Close",
-} as const;
-
 export function ControlButton(props: ControlButtonProps) {
+	const { t } = useTranslation();
 	const { control, inactive, ...rest } = props;
 	const restore = control === "maximize" && props.maximized;
 	const { maximized: _maximized, ...buttonProps } = rest as ControlButtonBase & { maximized?: boolean };
-	const label = control === "maximize" ? (restore ? "Restore" : "Maximize") : CONTROL_LABEL[control];
+	const label = control === "maximize" ? (restore ? t("shell.restore") : t("shell.maximize")) : control === "close" ? t("common.close") : t("shell.minimize");
 
 	return (
 		<Button

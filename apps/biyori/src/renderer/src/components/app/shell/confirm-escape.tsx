@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { useEffect, useRef, useState } from "react";
 import {
 	AlertDialog,
@@ -33,8 +34,8 @@ export function ConfirmEscape({
 	onConfirm,
 	title,
 	description,
-	confirmLabel = "Discard",
-	cancelLabel = "Keep editing",
+	confirmLabel,
+	cancelLabel,
 }: {
 	blocked: boolean;
 	onConfirm: () => void;
@@ -43,6 +44,9 @@ export function ConfirmEscape({
 	confirmLabel?: string;
 	cancelLabel?: string;
 }) {
+	const { t } = useTranslation();
+	const confirmText = confirmLabel ?? t("common.discard");
+	const cancelText = cancelLabel ?? t("shell.keepEditing");
 	const [open, setOpen] = useState(false);
 	const blockedRef = useRef(blocked);
 	const openRef = useRef(open);
@@ -97,9 +101,9 @@ export function ConfirmEscape({
 					<AlertDialogDescription>{description}</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+					<AlertDialogCancel>{cancelText}</AlertDialogCancel>
 					<AlertDialogAction variant='destructive' onClick={() => onConfirmRef.current()}>
-						{confirmLabel}
+						{confirmText}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

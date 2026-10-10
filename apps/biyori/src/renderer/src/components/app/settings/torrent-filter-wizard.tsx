@@ -1,14 +1,10 @@
+import { useTranslation } from "@biyori/translations/react";
 import { ArrowDownIcon, ArrowUpIcon, FilterIcon, FilterXIcon, MinusIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { AiringStatusMark } from "@/components/app/anime/airing-status";
 import {
 	blankTorrentFilter,
 	cloneTorrentFilter,
-	TORRENT_FILTER_ACTION_LABELS,
-	TORRENT_FILTER_ELEMENT_LABELS,
-	TORRENT_FILTER_MATCH_LABELS,
-	TORRENT_FILTER_OPERATOR_LABELS,
-	TORRENT_FILTER_OPTION_LABELS,
 	type TorrentFilter,
 	type TorrentFilterAction,
 	type TorrentFilterCondition,
@@ -28,8 +24,6 @@ import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import { listStatusSchema } from "@/shared/list";
 
-const ELEMENT_KEYS = Object.keys(TORRENT_FILTER_ELEMENT_LABELS) as TorrentFilterElement[];
-const OPERATOR_KEYS = Object.keys(TORRENT_FILTER_OPERATOR_LABELS) as TorrentFilterOperator[];
 const AIRING_VALUES = ["Currently airing", "Finished airing", "Not yet released", "Cancelled", "Hiatus"];
 const TYPE_VALUES = ["TV", "ONA", "Movie", "OVA"];
 const STATUS_VALUES = [...listStatusSchema.options, "Not in list"];
@@ -108,14 +102,160 @@ function valueChoices(element: TorrentFilterElement): string[] | null {
 	}
 }
 
+type Translate = ReturnType<typeof useTranslation>["t"];
+
+function listStatusLabel(t: Translate, status: string): string {
+	switch (status) {
+		case "Currently watching":
+			return t("settings.listStatus.currentlyWatching");
+		case "Completed":
+			return t("settings.listStatus.completed");
+		case "On hold":
+			return t("settings.listStatus.onHold");
+		case "Dropped":
+			return t("settings.listStatus.dropped");
+		case "Plan to watch":
+			return t("settings.listStatus.planToWatch");
+		case "Not in list":
+			return t("settings.torrents.filters.values.notInList");
+		default:
+			return status;
+	}
+}
+
+function filterValueLabel(t: Translate, value: string): string {
+	switch (value) {
+		case "True":
+			return t("settings.torrents.filters.values.true");
+		case "False":
+			return t("settings.torrents.filters.values.false");
+		case "Currently airing":
+			return t("settings.torrents.filters.values.currentlyAiring");
+		case "Finished airing":
+			return t("settings.torrents.filters.values.finishedAiring");
+		case "Not yet released":
+			return t("settings.torrents.filters.values.notYetReleased");
+		case "Cancelled":
+			return t("settings.torrents.filters.values.cancelled");
+		case "Hiatus":
+			return t("settings.torrents.filters.values.hiatus");
+		case "TV":
+			return t("settings.torrents.filters.values.tv");
+		case "ONA":
+			return t("settings.torrents.filters.values.ona");
+		case "Movie":
+			return t("settings.torrents.filters.values.movie");
+		case "OVA":
+			return t("settings.torrents.filters.values.ova");
+		default:
+			return listStatusLabel(t, value);
+	}
+}
+
+function elementItems(t: Translate): Record<TorrentFilterElement, string> {
+	return {
+		meta_id: t("settings.torrents.filters.elements.metaId"),
+		meta_status: t("settings.torrents.filters.elements.metaStatus"),
+		meta_type: t("settings.torrents.filters.elements.metaType"),
+		meta_episodes: t("settings.torrents.filters.elements.metaEpisodes"),
+		meta_date_start: t("settings.torrents.filters.elements.metaDateStart"),
+		meta_date_end: t("settings.torrents.filters.elements.metaDateEnd"),
+		user_notes: t("settings.torrents.filters.elements.userNotes"),
+		user_status: t("settings.torrents.filters.elements.userStatus"),
+		local_episode_available: t("settings.torrents.filters.elements.localEpisodeAvailable"),
+		episode_title: t("settings.torrents.filters.elements.episodeTitle"),
+		episode_number: t("settings.torrents.filters.elements.episodeNumber"),
+		episode_version: t("settings.torrents.filters.elements.episodeVersion"),
+		episode_group: t("settings.torrents.filters.elements.episodeGroup"),
+		episode_video_resolution: t("settings.torrents.filters.elements.episodeVideoResolution"),
+		episode_video_type: t("settings.torrents.filters.elements.episodeVideoType"),
+		file_title: t("settings.torrents.filters.elements.fileTitle"),
+		file_category: t("settings.torrents.filters.elements.fileCategory"),
+		file_description: t("settings.torrents.filters.elements.fileDescription"),
+		file_link: t("settings.torrents.filters.elements.fileLink"),
+		file_size: t("settings.torrents.filters.elements.fileSize"),
+	};
+}
+
+function operatorItems(t: Translate): Record<TorrentFilterOperator, string> {
+	return {
+		equals: t("settings.torrents.filters.operators.equals"),
+		not_equals: t("settings.torrents.filters.operators.notEquals"),
+		gt: t("settings.torrents.filters.operators.gt"),
+		gte: t("settings.torrents.filters.operators.gte"),
+		lt: t("settings.torrents.filters.operators.lt"),
+		lte: t("settings.torrents.filters.operators.lte"),
+		begins_with: t("settings.torrents.filters.operators.beginsWith"),
+		ends_with: t("settings.torrents.filters.operators.endsWith"),
+		contains: t("settings.torrents.filters.operators.contains"),
+		not_contains: t("settings.torrents.filters.operators.notContains"),
+	};
+}
+
+function actionItems(t: Translate): Record<TorrentFilterAction, string> {
+	return {
+		discard: t("settings.torrents.filters.actions.discard"),
+		select: t("settings.torrents.filters.actions.select"),
+		prefer: t("settings.torrents.filters.actions.prefer"),
+	};
+}
+
+function matchItems(t: Translate): Record<"all" | "any", string> {
+	return {
+		all: t("settings.torrents.filters.matches.all"),
+		any: t("settings.torrents.filters.matches.any"),
+	};
+}
+
+function discardOptionItems(t: Translate): Record<"default" | "deactivate" | "hide", string> {
+	return {
+		default: t("settings.torrents.filters.discardOptions.default"),
+		deactivate: t("settings.torrents.filters.discardOptions.deactivate"),
+		hide: t("settings.torrents.filters.discardOptions.hide"),
+	};
+}
+
+function presetCopy(t: Translate, preset: { id: string; name: string; description: string }): { name: string; description: string } {
+	switch (preset.id) {
+		case "custom":
+			return {
+				name: t("settings.torrents.filters.presets.custom.name"),
+				description: t("settings.torrents.filters.presets.custom.description"),
+			};
+		case "fansub":
+			return {
+				name: t("settings.torrents.filters.presets.fansub.name"),
+				description: t("settings.torrents.filters.presets.fansub.description"),
+			};
+		case "bad-keywords":
+			return {
+				name: t("settings.torrents.filters.presets.badKeywords.name"),
+				description: t("settings.torrents.filters.presets.badKeywords.description"),
+			};
+		case "new-versions":
+			return {
+				name: t("settings.torrents.filters.presets.newVersions.name"),
+				description: t("settings.torrents.filters.presets.newVersions.description"),
+			};
+		default:
+			return { name: preset.name, description: preset.description };
+	}
+}
+
 export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
+	const { t } = useTranslation();
+	const elements = elementItems(t);
+	const operators = operatorItems(t);
+	const actions = actionItems(t);
+	const matches = matchItems(t);
+	const discardOptions = discardOptionItems(t);
 	const editing = mode?.kind === "edit";
 	const [page, setPage] = useState(editing ? 1 : 0);
 	const [draft, setDraft] = useState(() => (editing ? cloneTorrentFilter(mode.filter, mode.filter.id) : blankTorrentFilter()));
 	const [presetId, setPresetId] = useState("custom");
 	const [conditionIndex, setConditionIndex] = useState<number | null>(null);
 	const [conditionOpen, setConditionOpen] = useState(false);
-	const [error, setError] = useState("");
+	const [error, setError] = useState(false);
 	const listedQuery = trpc.anime.listed.useQuery(undefined, {
 		enabled: Boolean(mode),
 	});
@@ -143,14 +283,14 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 		}
 		if (page === 1) {
 			if (draft.conditions.length === 0) {
-				setError("There must be at least one condition in order to create a filter.");
+				setError(true);
 				return;
 			}
-			setError("");
+			setError(false);
 			setPage(2);
 			return;
 		}
-		const name = draft.name.trim() || "New Filter";
+		const name = draft.name.trim() || t("settings.torrents.filters.unnamed");
 		onSave({ ...draft, name });
 	}
 
@@ -164,45 +304,44 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 			}}>
 			<DialogContent showCloseButton={false} className='sm:max-w-2xl'>
 				<DialogHeader>
-					<DialogTitle>{editing ? "Edit Filter" : "Add New Filter"}</DialogTitle>
+					<DialogTitle>{editing ? t("settings.torrents.filters.editTitle") : t("settings.torrents.filters.addTitle")}</DialogTitle>
 					<DialogDescription className='text-primary'>
-						{page === 0
-							? "Choose one of the preset filters, or create a custom one"
-							: page === 1
-								? "Change filter options and add conditions"
-								: "Limit this filter to one or more anime title, or leave it blank to apply to all items"}
+						{page === 0 ? t("settings.torrents.filters.pagePreset") : page === 1 ? t("settings.torrents.filters.pageConditions") : t("settings.torrents.filters.pageLimit")}
 					</DialogDescription>
 				</DialogHeader>
 				{page === 0 ? (
 					<ul className='flex flex-col gap-1'>
-						{torrentFilterWizardPresets().map((preset) => (
-							<li key={preset.id}>
-								<button
-									type='button'
-									className={cn("flex w-full items-start gap-3 rounded-md px-2 py-2 text-left hover:bg-muted", presetId === preset.id && "bg-muted")}
-									onClick={() => {
-										setPresetId(preset.id);
-									}}
-									onDoubleClick={() => {
-										applyPreset(preset.id);
-										setPage(1);
-									}}>
-									<FilterKindIcon action={preset.filter?.action ?? "discard"} custom={!preset.filter} />
-									<span className='min-w-0'>
-										<span className='block font-medium'>{preset.name}</span>
-										<span className='block text-sm text-muted-foreground'>{preset.description}</span>
-									</span>
-								</button>
-							</li>
-						))}
+						{torrentFilterWizardPresets().map((preset) => {
+							const copy = presetCopy(t, preset);
+							return (
+								<li key={preset.id}>
+									<button
+										type='button'
+										className={cn("flex w-full items-start gap-3 rounded-md px-2 py-2 text-left hover:bg-muted", presetId === preset.id && "bg-muted")}
+										onClick={() => {
+											setPresetId(preset.id);
+										}}
+										onDoubleClick={() => {
+											applyPreset(preset.id);
+											setPage(1);
+										}}>
+										<FilterKindIcon action={preset.filter?.action ?? "discard"} custom={!preset.filter} />
+										<span className='min-w-0'>
+											<span className='block font-medium'>{copy.name}</span>
+											<span className='block text-sm text-muted-foreground'>{copy.description}</span>
+										</span>
+									</button>
+								</li>
+							);
+						})}
 					</ul>
 				) : null}
 				{page === 1 ? (
 					<FieldGroup>
 						<Field>
-							<FieldLabel className='font-medium'>Filter name</FieldLabel>
+							<FieldLabel className='font-medium'>{t("settings.torrents.filters.filterName")}</FieldLabel>
 							<Input
-								placeholder='Type something to identify this filter'
+								placeholder={t("settings.torrents.filters.namePlaceholder")}
 								value={draft.name}
 								onChange={(event) => {
 									setDraft({ ...draft, name: event.target.value });
@@ -210,14 +349,14 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 							/>
 						</Field>
 						<Field>
-							<FieldLabel className='font-medium'>Conditions</FieldLabel>
+							<FieldLabel className='font-medium'>{t("settings.torrents.filters.conditions")}</FieldLabel>
 							<div className='flex gap-2'>
 								<Table containerClassName='min-h-36 flex-1 rounded-md border'>
 									<TableHeader>
 										<TableRow>
-											<TableHead>Element</TableHead>
-											<TableHead>Operator</TableHead>
-											<TableHead>Value</TableHead>
+											<TableHead>{t("settings.torrents.filters.element")}</TableHead>
+											<TableHead>{t("settings.torrents.filters.operator")}</TableHead>
+											<TableHead>{t("settings.torrents.filters.value")}</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
@@ -233,9 +372,9 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 													setConditionIndex(index);
 													setConditionOpen(true);
 												}}>
-												<TableCell>{TORRENT_FILTER_ELEMENT_LABELS[condition.element]}</TableCell>
-												<TableCell>{TORRENT_FILTER_OPERATOR_LABELS[condition.op]}</TableCell>
-												<TableCell className='max-w-40 truncate'>{condition.value || "(empty)"}</TableCell>
+												<TableCell>{elements[condition.element]}</TableCell>
+												<TableCell>{operators[condition.op]}</TableCell>
+												<TableCell className='max-w-40 truncate'>{condition.value ? filterValueLabel(t, condition.value) : t("settings.torrents.filters.empty")}</TableCell>
 											</TableRow>
 										))}
 									</TableBody>
@@ -245,7 +384,7 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 										type='button'
 										size='icon-xs'
 										variant='outline'
-										aria-label='Add new condition'
+										aria-label={t("settings.torrents.filters.addCondition")}
 										onClick={() => {
 											setConditionIndex(null);
 											setConditionOpen(true);
@@ -256,7 +395,7 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 										type='button'
 										size='icon-xs'
 										variant='outline'
-										aria-label='Delete condition'
+										aria-label={t("settings.torrents.filters.deleteCondition")}
 										disabled={selectedCondition < 0}
 										onClick={() => {
 											if (selectedCondition < 0) {
@@ -274,7 +413,7 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 										type='button'
 										size='icon-xs'
 										variant='outline'
-										aria-label='Move condition up'
+										aria-label={t("settings.torrents.filters.moveConditionUp")}
 										disabled={selectedCondition <= 0}
 										onClick={() => {
 											if (selectedCondition <= 0) {
@@ -292,7 +431,7 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 										type='button'
 										size='icon-xs'
 										variant='outline'
-										aria-label='Move condition down'
+										aria-label={t("settings.torrents.filters.moveConditionDown")}
 										disabled={selectedCondition < 0 || selectedCondition >= conditionCount - 1}
 										onClick={() => {
 											if (selectedCondition < 0 || selectedCondition >= conditionCount - 1) {
@@ -308,16 +447,16 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 									</Button>
 								</div>
 							</div>
-							{error ? <p className='text-sm text-destructive'>{error}</p> : null}
+							{error ? <p className='text-sm text-destructive'>{t("settings.torrents.filters.needCondition")}</p> : null}
 						</Field>
 						<Field>
-							<FieldLabel className='font-medium'>Options</FieldLabel>
+							<FieldLabel className='font-medium'>{t("settings.torrents.filters.options")}</FieldLabel>
 							<div className='grid gap-3 sm:grid-cols-2'>
 								<Field>
-									<FieldLabel>Match</FieldLabel>
+									<FieldLabel>{t("settings.torrents.filters.match")}</FieldLabel>
 									<Select
 										value={draft.match}
-										items={TORRENT_FILTER_MATCH_LABELS}
+										items={matches}
 										onValueChange={(value) => {
 											if (value === "all" || value === "any") {
 												setDraft({ ...draft, match: value });
@@ -328,17 +467,17 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 										</SelectTrigger>
 										<SelectContent>
 											<SelectGroup>
-												<SelectItem value='all'>{TORRENT_FILTER_MATCH_LABELS.all}</SelectItem>
-												<SelectItem value='any'>{TORRENT_FILTER_MATCH_LABELS.any}</SelectItem>
+												<SelectItem value='all'>{matches.all}</SelectItem>
+												<SelectItem value='any'>{matches.any}</SelectItem>
 											</SelectGroup>
 										</SelectContent>
 									</Select>
 								</Field>
 								<Field>
-									<FieldLabel>Action</FieldLabel>
+									<FieldLabel>{t("settings.torrents.filters.action")}</FieldLabel>
 									<Select
 										value={draft.action}
-										items={TORRENT_FILTER_ACTION_LABELS}
+										items={actions}
 										onValueChange={(value) => {
 											if (value === "discard" || value === "select" || value === "prefer") {
 												setDraft({
@@ -353,9 +492,9 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 										</SelectTrigger>
 										<SelectContent>
 											<SelectGroup>
-												{(Object.keys(TORRENT_FILTER_ACTION_LABELS) as TorrentFilterAction[]).map((action) => (
+												{(Object.keys(actions) as TorrentFilterAction[]).map((action) => (
 													<SelectItem key={action} value={action}>
-														{TORRENT_FILTER_ACTION_LABELS[action]}
+														{actions[action]}
 													</SelectItem>
 												))}
 											</SelectGroup>
@@ -364,10 +503,10 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 								</Field>
 								{showOption ? (
 									<Field>
-										<FieldLabel>Discard type</FieldLabel>
+										<FieldLabel>{t("settings.torrents.filters.discardType")}</FieldLabel>
 										<Select
 											value={draft.option}
-											items={TORRENT_FILTER_OPTION_LABELS}
+											items={discardOptions}
 											onValueChange={(value) => {
 												if (value === "default" || value === "deactivate" || value === "hide") {
 													setDraft({ ...draft, option: value });
@@ -378,9 +517,9 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 											</SelectTrigger>
 											<SelectContent>
 												<SelectGroup>
-													<SelectItem value='default'>{TORRENT_FILTER_OPTION_LABELS.default}</SelectItem>
-													<SelectItem value='deactivate'>{TORRENT_FILTER_OPTION_LABELS.deactivate}</SelectItem>
-													<SelectItem value='hide'>{TORRENT_FILTER_OPTION_LABELS.hide}</SelectItem>
+													<SelectItem value='default'>{discardOptions.default}</SelectItem>
+													<SelectItem value='deactivate'>{discardOptions.deactivate}</SelectItem>
+													<SelectItem value='hide'>{discardOptions.hide}</SelectItem>
 												</SelectGroup>
 											</SelectContent>
 										</Select>
@@ -400,7 +539,7 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 								}
 								return (
 									<details key={status} className='border-b px-2 py-1' open={status === "Currently watching" || undefined}>
-										<summary className='cursor-pointer text-sm font-medium'>{status}</summary>
+										<summary className='cursor-pointer text-sm font-medium'>{listStatusLabel(t, status)}</summary>
 										<ul className='flex flex-col gap-1 py-1'>
 											{rows.map((row) => (
 												<AnimeLimitRow
@@ -421,7 +560,11 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 								);
 							})}
 						</ScrollArea>
-						<p className='text-sm text-muted-foreground'>Currently limited to: {selectedTitles.length > 0 ? selectedTitles.join(", ") : "(nothing)"}</p>
+						<p className='text-sm text-muted-foreground'>
+							{t("settings.torrents.filters.limitedTo", {
+								titles: selectedTitles.length > 0 ? selectedTitles.join(", ") : t("settings.torrents.filters.nothing"),
+							})}
+						</p>
 					</div>
 				) : null}
 				<DialogFooter className='-mx-4 -mb-4'>
@@ -430,16 +573,16 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 						variant='outline'
 						disabled={page === 0}
 						onClick={() => {
-							setError("");
+							setError(false);
 							setPage(page - 1);
 						}}>
-						Back
+						{t("common.back")}
 					</Button>
 					<Button type='button' onClick={goNext}>
-						{page < 2 ? "Next" : "Finish"}
+						{page < 2 ? t("settings.torrents.filters.next") : t("settings.torrents.filters.finish")}
 					</Button>
 					<Button type='button' variant='outline' onClick={onClose}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
@@ -489,6 +632,9 @@ function ConditionDialog({
 	onClose: () => void;
 	onSave: (condition: TorrentFilterCondition) => void;
 }) {
+	const { t } = useTranslation();
+	const elements = elementItems(t);
+	const operators = operatorItems(t);
 	const elementId = useId();
 	const opId = useId();
 	const valueId = useId();
@@ -496,6 +642,7 @@ function ConditionDialog({
 	const [op, setOp] = useState<TorrentFilterOperator>(condition?.op ?? "contains");
 	const [value, setValue] = useState(condition?.value ?? "");
 	const choices = valueChoices(element);
+	const choiceLabels = Object.fromEntries((choices ?? []).map((row) => [row, filterValueLabel(t, row)]));
 
 	return (
 		<Dialog
@@ -507,14 +654,14 @@ function ConditionDialog({
 			}}>
 			<DialogContent className='sm:max-w-md'>
 				<DialogHeader>
-					<DialogTitle>{condition ? "Edit Condition" : "Add Condition"}</DialogTitle>
+					<DialogTitle>{condition ? t("settings.torrents.filters.editCondition") : t("settings.torrents.filters.addConditionTitle")}</DialogTitle>
 				</DialogHeader>
 				<FieldGroup>
 					<Field>
-						<FieldLabel htmlFor={elementId}>Element</FieldLabel>
+						<FieldLabel htmlFor={elementId}>{t("settings.torrents.filters.element")}</FieldLabel>
 						<Select
 							value={element}
-							items={TORRENT_FILTER_ELEMENT_LABELS}
+							items={elements}
 							onValueChange={(next) => {
 								if (typeof next === "string") {
 									setElement(next as TorrentFilterElement);
@@ -526,9 +673,9 @@ function ConditionDialog({
 							</SelectTrigger>
 							<SelectContent>
 								<SelectGroup>
-									{ELEMENT_KEYS.map((key) => (
+									{(Object.keys(elements) as TorrentFilterElement[]).map((key) => (
 										<SelectItem key={key} value={key}>
-											{TORRENT_FILTER_ELEMENT_LABELS[key]}
+											{elements[key]}
 										</SelectItem>
 									))}
 								</SelectGroup>
@@ -536,10 +683,10 @@ function ConditionDialog({
 						</Select>
 					</Field>
 					<Field>
-						<FieldLabel htmlFor={opId}>Operator</FieldLabel>
+						<FieldLabel htmlFor={opId}>{t("settings.torrents.filters.operator")}</FieldLabel>
 						<Select
 							value={op}
-							items={TORRENT_FILTER_OPERATOR_LABELS}
+							items={operators}
 							onValueChange={(next) => {
 								if (typeof next === "string") {
 									setOp(next as TorrentFilterOperator);
@@ -550,9 +697,9 @@ function ConditionDialog({
 							</SelectTrigger>
 							<SelectContent>
 								<SelectGroup>
-									{OPERATOR_KEYS.map((key) => (
+									{(Object.keys(operators) as TorrentFilterOperator[]).map((key) => (
 										<SelectItem key={key} value={key}>
-											{TORRENT_FILTER_OPERATOR_LABELS[key]}
+											{operators[key]}
 										</SelectItem>
 									))}
 								</SelectGroup>
@@ -560,7 +707,7 @@ function ConditionDialog({
 						</Select>
 					</Field>
 					<Field>
-						<FieldLabel htmlFor={valueId}>Value</FieldLabel>
+						<FieldLabel htmlFor={valueId}>{t("settings.torrents.filters.value")}</FieldLabel>
 						{element === "meta_id" ? (
 							<Select
 								value={value}
@@ -586,7 +733,7 @@ function ConditionDialog({
 						) : choices ? (
 							<Select
 								value={value}
-								items={Object.fromEntries(choices.map((row) => [row, row]))}
+								items={choiceLabels}
 								onValueChange={(next) => {
 									if (typeof next === "string") {
 										setValue(next);
@@ -599,7 +746,7 @@ function ConditionDialog({
 									<SelectGroup>
 										{choices.map((row) => (
 											<SelectItem key={row} value={row}>
-												{row}
+												{filterValueLabel(t, row)}
 											</SelectItem>
 										))}
 									</SelectGroup>
@@ -618,14 +765,14 @@ function ConditionDialog({
 				</FieldGroup>
 				<DialogFooter className='-mx-4 -mb-4'>
 					<Button type='button' variant='outline' onClick={onClose}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button
 						type='button'
 						onClick={() => {
 							onSave({ element, op, value });
 						}}>
-						OK
+						{t("common.ok")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

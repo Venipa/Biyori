@@ -1,6 +1,8 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { useNavigate } from "@tanstack/react-router";
 import type { ComponentType, ReactNode } from "react";
 import { desktopRpc } from "@/desktop-rpc";
+import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import type { SelectedAnime } from "@/mainview/lib/selected-anime";
 import { trpc } from "@/mainview/trpc";
@@ -87,15 +89,36 @@ function externalUrl(
 	}
 }
 
+function externalLabel(kind: (typeof externalItems)[number]["kind"]): string {
+	switch (kind) {
+		case "anilist":
+			return t("anime.anilist");
+		case "anidb":
+			return t("anime.anidb");
+		case "ann":
+			return t("anime.animeNewsNetwork");
+		case "mal":
+			return t("anime.myAnimeList");
+		case "reddit":
+			return t("anime.reddit");
+		case "wikipedia":
+			return t("anime.wikipedia");
+		case "youtube":
+			return t("anime.youtube");
+		case "google":
+			return t("anime.google");
+	}
+}
+
 const externalItems = [
-	{ kind: "anilist" as const, label: "AniList" },
-	{ kind: "anidb" as const, label: "AniDB" },
-	{ kind: "ann" as const, label: "Anime News Network" },
-	{ kind: "mal" as const, label: "MyAnimeList" },
-	{ kind: "reddit" as const, label: "Reddit" },
-	{ kind: "wikipedia" as const, label: "Wikipedia" },
-	{ kind: "youtube" as const, label: "YouTube" },
-	{ kind: "google" as const, label: "Google" },
+	{ kind: "anilist" as const },
+	{ kind: "anidb" as const },
+	{ kind: "ann" as const },
+	{ kind: "mal" as const },
+	{ kind: "reddit" as const },
+	{ kind: "wikipedia" as const },
+	{ kind: "youtube" as const },
+	{ kind: "google" as const },
 ];
 
 async function copyText(value: string): Promise<void> {
@@ -126,6 +149,7 @@ export function AnimeItemCommands({
 	showPlayNext?: boolean;
 }) {
 	const { Item, Sub, SubTrigger, SubContent, Separator, Shortcut } = parts;
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
 	const isList = mode === "list";
@@ -210,7 +234,8 @@ export function AnimeItemCommands({
 								episodesWatched: anime.episodesWatched,
 							});
 						}}>
-						Play next episode (#{nextEpisode})<Shortcut>Ctrl+N</Shortcut>
+						{t("anime.playNext", { episode: nextEpisode })}
+						<Shortcut>{t("anime.shortcutCtrlN")}</Shortcut>
 					</Item>
 				) : null}
 				<Item
@@ -224,14 +249,14 @@ export function AnimeItemCommands({
 							search: { q: anime.title },
 						});
 					}}>
-					Search
+					{t("common.search")}
 				</Item>
 				<Item disabled={disabled || !title} onClick={openTorrentSearch}>
-					Search torrents
+					{t("anime.searchTorrents")}
 				</Item>
 				{onEdit ? (
 					<Item disabled={disabled} onClick={onEdit}>
-						Edit...
+						{t("anime.edit")}
 					</Item>
 				) : null}
 				<Item
@@ -239,14 +264,14 @@ export function AnimeItemCommands({
 					onClick={() => {
 						void scan.mutateAsync();
 					}}>
-					Scan available episodes
-					<Shortcut>F5</Shortcut>
+					{t("anime.scanAvailable")}
+					<Shortcut>{t("anime.shortcutF5")}</Shortcut>
 				</Item>
 				<Sub>
-					<SubTrigger>Play episode</SubTrigger>
+					<SubTrigger>{t("anime.playEpisode")}</SubTrigger>
 					<SubContent>
 						{localEpisodes.length === 0 ? (
-							<Item disabled>No local episodes</Item>
+							<Item disabled>{t("anime.noLocalEpisodes")}</Item>
 						) : (
 							localEpisodes.map((item) => (
 								<Item
@@ -260,7 +285,7 @@ export function AnimeItemCommands({
 											episode: item.episode,
 										});
 									}}>
-									Episode {item.episode}
+									{t("nowPlaying.episodeNumber", { episode: item.episode })}
 								</Item>
 							))
 						)}
@@ -274,7 +299,7 @@ export function AnimeItemCommands({
 		<>
 			{onInformation ? (
 				<Item disabled={disabled} onClick={onInformation}>
-					Information
+					{t("anime.information")}
 				</Item>
 			) : null}
 
@@ -290,12 +315,12 @@ export function AnimeItemCommands({
 							search: { q: anime.title },
 						});
 					}}>
-					Search
+					{t("common.search")}
 				</Item>
 			) : null}
 
 			<Sub>
-				<SubTrigger>External</SubTrigger>
+				<SubTrigger>{t("anime.external")}</SubTrigger>
 				<SubContent>
 					{externalItems.map((item) => (
 						<Item
@@ -304,7 +329,7 @@ export function AnimeItemCommands({
 							onClick={() => {
 								openExternal(item.kind);
 							}}>
-							{item.label}
+							{externalLabel(item.kind)}
 						</Item>
 					))}
 					{customLinks.map((item) => (
@@ -326,11 +351,11 @@ export function AnimeItemCommands({
 				<>
 					{onEdit ? (
 						<Item disabled={disabled} onClick={onEdit}>
-							Edit...
+							{t("anime.edit")}
 						</Item>
 					) : null}
 					<Sub>
-						<SubTrigger>Status</SubTrigger>
+						<SubTrigger>{t("anime.status")}</SubTrigger>
 						<SubContent>
 							{listStatusSchema.options.map((status) => (
 								<Item
@@ -348,20 +373,20 @@ export function AnimeItemCommands({
 											rewatching: false,
 										});
 									}}>
-									{status}
+									{listStatusLabel(status)}
 								</Item>
 							))}
 						</SubContent>
 					</Sub>
 					{onDelete ? (
 						<Item disabled={disabled} variant='destructive' onClick={onDelete}>
-							Delete from list...
-							<Shortcut>Del</Shortcut>
+							{t("anime.deleteFromListMenu")}
+							<Shortcut>{t("anime.shortcutDel")}</Shortcut>
 						</Item>
 					) : null}
 				</>
 			) : discoverStatus ? (
-				<Item disabled>On list: {discoverStatus}</Item>
+				<Item disabled>{t("anime.onList", { status: listStatusLabel(discoverStatus) })}</Item>
 			) : (
 				<Sub>
 					<SubTrigger
@@ -369,7 +394,7 @@ export function AnimeItemCommands({
 						onClick={() => {
 							void addWithStatus();
 						}}>
-						Add to list
+						{t("anime.addToList")}
 					</SubTrigger>
 					<SubContent>
 						{listStatusSchema.options.map((status) => (
@@ -379,7 +404,7 @@ export function AnimeItemCommands({
 								onClick={() => {
 									void addWithStatus(status);
 								}}>
-								{status}
+								{listStatusLabel(status)}
 							</Item>
 						))}
 					</SubContent>
@@ -393,14 +418,14 @@ export function AnimeItemCommands({
 						onClick={() => {
 							openExternal("youtube");
 						}}>
-						Watch trailer
+						{t("anime.watchTrailer")}
 					</Item>
 					<Item
 						disabled={disabled || id == null}
 						onClick={() => {
 							openExternal("anilist");
 						}}>
-						View on AniList
+						{t("anime.viewOnAnilist")}
 					</Item>
 				</>
 			) : null}
@@ -417,23 +442,23 @@ export function AnimeItemCommands({
 							}
 							void desktopRpc.request.openPath({ path: anime.folder });
 						}}>
-						Open folder
-						<Shortcut>Ctrl+O</Shortcut>
+						{t("anime.openFolder")}
+						<Shortcut>{t("anime.shortcutCtrlO")}</Shortcut>
 					</Item>
 					<Item
 						disabled={disabled}
 						onClick={() => {
 							void scan.mutateAsync();
 						}}>
-						Scan available episodes
-						<Shortcut>F5</Shortcut>
+						{t("anime.scanAvailable")}
+						<Shortcut>{t("anime.shortcutF5")}</Shortcut>
 					</Item>
 					<Separator />
 					<Sub>
-						<SubTrigger>Play episode</SubTrigger>
+						<SubTrigger>{t("anime.playEpisode")}</SubTrigger>
 						<SubContent>
 							{localEpisodes.length === 0 ? (
-								<Item disabled>No local episodes</Item>
+								<Item disabled>{t("anime.noLocalEpisodes")}</Item>
 							) : (
 								localEpisodes.map((item) => (
 									<Item
@@ -447,7 +472,7 @@ export function AnimeItemCommands({
 												episode: item.episode,
 											});
 										}}>
-										Episode {item.episode}
+										{t("nowPlaying.episodeNumber", { episode: item.episode })}
 									</Item>
 								))
 							)}
@@ -464,7 +489,7 @@ export function AnimeItemCommands({
 								episode: lastEpisode,
 							});
 						}}>
-						Play last episode (#{lastEpisode})
+						{t("anime.playLast", { episode: lastEpisode })}
 					</Item>
 					<Item
 						disabled={disabled || localEpisodes.length === 0}
@@ -477,7 +502,8 @@ export function AnimeItemCommands({
 								episodesWatched: anime.episodesWatched,
 							});
 						}}>
-						Play next episode (#{nextEpisode})<Shortcut>Ctrl+N</Shortcut>
+						{t("anime.playNext", { episode: nextEpisode })}
+						<Shortcut>{t("anime.shortcutCtrlN")}</Shortcut>
 					</Item>
 					<Item
 						disabled={disabled || localEpisodes.length === 0}
@@ -487,26 +513,26 @@ export function AnimeItemCommands({
 							}
 							void playRandom.mutateAsync({ animeId: anime.id });
 						}}>
-						Play random episode
-						<Shortcut>Ctrl+R</Shortcut>
+						{t("anime.playRandom")}
+						<Shortcut>{t("anime.shortcutCtrlR")}</Shortcut>
 					</Item>
 					<Separator />
 				</>
 			) : null}
 
 			<Item disabled={disabled || !title} onClick={openTorrentSearch}>
-				Torrents
+				{t("anime.torrents")}
 			</Item>
 
 			<Sub>
-				<SubTrigger>Copy</SubTrigger>
+				<SubTrigger>{t("anime.copy")}</SubTrigger>
 				<SubContent>
 					<Item
 						disabled={disabled || !title}
 						onClick={() => {
 							void copyText(title);
 						}}>
-						Title
+						{t("list.title")}
 					</Item>
 					<Item
 						disabled={disabled || id == null}
@@ -516,7 +542,7 @@ export function AnimeItemCommands({
 							}
 							void copyText(`https://anilist.co/anime/${id}`);
 						}}>
-						Link
+						{t("anime.link")}
 					</Item>
 				</SubContent>
 			</Sub>

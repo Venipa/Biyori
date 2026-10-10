@@ -1,3 +1,4 @@
+import { t } from "@biyori/translations/i18n";
 import semver from "semver";
 import { z } from "zod";
 import { cleanSemver, isVersionAllowedOnChannel, type ReleaseNoteEntry, type UpdateChannel } from "../shared/updater";
@@ -17,15 +18,15 @@ export type GithubRelease = z.infer<typeof githubReleaseSchema>;
 const FULL_CHANGELOG_LINK = /(?:\*{2})?Full Changelog(?:\*{2})?:\s+(https:\/\/github\.com\/[^\s]+)/gi;
 
 export function preprocessReleaseNotes(content: string): string {
-	return content.replace(FULL_CHANGELOG_LINK, "[View on GitHub]($1)");
+	return content.replace(FULL_CHANGELOG_LINK, `[${t("main.update.viewOnGitHub")}]($1)`);
 }
 
 const HTTP_DUMP = /\s*(?:Headers|Data|XML)\s*:[\s\S]*$/i;
 
-export function sanitizeUpdateError(error: unknown, fallback = "Update check failed"): string {
+export function sanitizeUpdateError(error: unknown, fallback = t("main.update.checkFailed")): string {
 	const raw = error instanceof Error ? error.message : String(error);
 	if (/Unable to find latest version on GitHub/i.test(raw) || /HttpError:\s*406/i.test(raw)) {
-		return "No production GitHub release found for this channel";
+		return t("main.update.noRelease");
 	}
 	const firstLine = raw.split("\n")[0]?.replace(HTTP_DUMP, "").trim() ?? "";
 	if (!firstLine || firstLine.length > 180 || /set-cookie|content-security-policy/i.test(firstLine)) {
@@ -37,7 +38,7 @@ export function sanitizeUpdateError(error: unknown, fallback = "Update check fai
 export function parseGithubChangelog(payload: unknown, channel: UpdateChannel): { ok: true; items: ReleaseNoteEntry[] } | { ok: false; error: string } {
 	const parsed = z.array(githubReleaseSchema).safeParse(payload);
 	if (!parsed.success) {
-		return { ok: false, error: "Could not load changelog" };
+		return { ok: false, error: t("main.update.changelogFailed") };
 	}
 	const items: ReleaseNoteEntry[] = [];
 	for (const release of parsed.data) {

@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { CircleHelpIcon, DownloadIcon, ExternalLinkIcon } from "lucide-react";
 import type { ReactElement } from "react";
 import { AiringStatusMark } from "@/components/app/anime/airing-status";
@@ -39,26 +40,27 @@ export function TorrentInfoDialog({
 	onViewAnime: (id: number) => void;
 }): ReactElement {
 	const matched = Boolean(row?.matched && row.animeId != null);
+	const { t } = useTranslation();
 	const releaseFacts = row?.parse ?? [];
 	return (
 		<Dialog open={row != null} onOpenChange={onOpenChange}>
 			<DialogContent className='flex max-h-[min(90vh,40rem)] min-w-0 flex-col overflow-hidden px-0 pb-0 sm:max-w-lg' showCloseButton>
 				<DialogHeader className='min-w-0 shrink-0 px-4'>
 					<DialogTitle className='pr-8 leading-snug break-all' title={row?.title}>
-						{row?.title ?? "Torrent"}
+						{row?.title ?? t("torrents.torrent")}
 					</DialogTitle>
 					<DialogDescription className='flex min-w-0 flex-wrap items-center gap-1 text-xs'>
 						<Badge variant='ghost' className='h-5 px-1 py-0 text-xs tabular-nums text-muted-foreground'>
-							{row?.size || "Unknown size"}
+							{row?.size || t("torrents.unknownSize")}
 						</Badge>
 						<Badge variant='ghost' className='h-5 bg-emerald-500/10 px-1 py-0 text-xs tabular-nums text-emerald-700 dark:text-emerald-400'>
-							S {countLabel(row?.seeders ?? null)}
+							{t("torrents.countBadge", { mark: t("torrents.seeders"), count: countLabel(row?.seeders ?? null) })}
 						</Badge>
 						<Badge variant='ghost' className='h-5 bg-amber-500/10 px-1 py-0 text-xs tabular-nums text-amber-700 dark:text-amber-400'>
-							L {countLabel(row?.leechers ?? null)}
+							{t("torrents.countBadge", { mark: t("torrents.leechers"), count: countLabel(row?.leechers ?? null) })}
 						</Badge>
 						<Badge variant='ghost' className='h-5 bg-sky-500/10 px-1 py-0 text-xs tabular-nums text-sky-700 dark:text-sky-400'>
-							D {countLabel(row?.downloads ?? null)}
+							{t("torrents.countBadge", { mark: t("torrents.downloads"), count: countLabel(row?.downloads ?? null) })}
 						</Badge>
 						{row?.pubDate ? (
 							<Badge variant='ghost' className='h-5 px-1 py-0 text-xs tabular-nums text-muted-foreground'>
@@ -71,7 +73,7 @@ export function TorrentInfoDialog({
 					<div className='flex min-w-0 flex-col gap-4 px-4 pb-4'>
 						{matched && row?.animeId != null ? (
 							<div className='flex min-w-0 flex-col gap-1.5'>
-								<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Anime</p>
+								<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>{t("torrents.anime")}</p>
 								<Button
 									type='button'
 									variant='outline'
@@ -99,9 +101,9 @@ export function TorrentInfoDialog({
 											</span>
 										</span>
 										<span className='truncate text-xs text-muted-foreground'>
-											{row.episode != null ? `Episode ${row.episode}` : "Episode unknown"}
-											{row.group ? ` · ${row.group}` : ""}
-											{row.videoFormat ? ` · ${row.videoFormat}` : ""}
+											{[row.episode != null ? t("nowPlaying.episodeNumber", { episode: row.episode }) : t("nowPlaying.episodeUnknown"), row.group, row.videoFormat]
+												.filter(Boolean)
+												.join(" · ")}
 										</span>
 									</span>
 								</Button>
@@ -112,14 +114,14 @@ export function TorrentInfoDialog({
 									<EmptyMedia variant='icon'>
 										<CircleHelpIcon />
 									</EmptyMedia>
-									<EmptyTitle>Unknown anime detected</EmptyTitle>
-									<EmptyDescription>This release is not on your list.</EmptyDescription>
+									<EmptyTitle>{t("torrents.unknownAnime")}</EmptyTitle>
+									<EmptyDescription>{t("torrents.notOnList")}</EmptyDescription>
 								</EmptyHeader>
 							</Empty>
 						)}
 						{releaseFacts.length ? (
 							<div className='flex min-w-0 flex-col gap-1.5'>
-								<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Release</p>
+								<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>{t("torrents.release")}</p>
 								<FactList facts={releaseFacts} />
 							</div>
 						) : null}
@@ -135,7 +137,7 @@ export function TorrentInfoDialog({
 							}
 						}}>
 						<DownloadIcon data-icon='inline-start' />
-						Download
+						{t("torrents.download")}
 					</Button>
 					<Button
 						type='button'
@@ -147,7 +149,7 @@ export function TorrentInfoDialog({
 							}
 							void desktopRpc.request.openExternal({ url: row.infoLink });
 						}}>
-						Torrent Post
+						{t("torrents.torrentPost")}
 						<ExternalLinkIcon data-icon='inline-end' />
 					</Button>
 				</DialogFooter>

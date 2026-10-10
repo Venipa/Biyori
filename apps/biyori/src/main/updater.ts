@@ -1,4 +1,5 @@
 import { log } from "@biyori/logger";
+import { t } from "@biyori/translations/i18n";
 import { is } from "@electron-toolkit/utils";
 import { observable } from "@trpc/server/observable";
 import { app } from "electron";
@@ -168,7 +169,7 @@ function hookStatus(): void {
 		if (ignoreUpdaterEvents) {
 			return;
 		}
-		patch({ phase: "checking", message: "Checking for updates...", error: null });
+		patch({ phase: "checking", message: t("main.update.checking"), error: null });
 	});
 	autoUpdater.on("update-available", (info) => {
 		if (ignoreUpdaterEvents) {
@@ -179,7 +180,7 @@ function hookStatus(): void {
 			updateAvailable: true,
 			remoteVersion: info.version,
 			progress: null,
-			message: `Update available: ${info.version}`,
+			message: t("main.update.available", { version: info.version }),
 			error: null,
 		});
 	});
@@ -192,7 +193,7 @@ function hookStatus(): void {
 			updateAvailable: false,
 			remoteVersion: info.version,
 			progress: null,
-			message: "You are up to date",
+			message: t("main.update.upToDate"),
 			error: null,
 		});
 	});
@@ -209,7 +210,7 @@ function hookStatus(): void {
 				percent: info.percent,
 				bytesPerSecond: info.bytesPerSecond,
 			},
-			message: "Downloading update...",
+			message: t("main.update.downloading"),
 			error: null,
 		});
 	});
@@ -223,12 +224,12 @@ function hookStatus(): void {
 			updateReady: true,
 			progress: null,
 			remoteVersion: info.version,
-			message: "Update downloaded. Restart to apply.",
+			message: t("main.update.downloaded"),
 			error: null,
 		});
 	});
 	autoUpdater.on("error", (error) => {
-		applyUpdateError(error, "Update check failed");
+		applyUpdateError(error, t("main.update.checkFailed"));
 	});
 }
 
@@ -258,11 +259,11 @@ export async function loadChangelog(): Promise<ChangelogResult> {
 		});
 		const payload: unknown = await response.json();
 		if (!response.ok) {
-			return { ok: false, error: "Could not load changelog" };
+			return { ok: false, error: t("main.update.changelogFailed") };
 		}
 		return parseGithubChangelog(payload, channel);
 	} catch {
-		return { ok: false, error: "Could not load changelog" };
+		return { ok: false, error: t("main.update.changelogFailed") };
 	}
 }
 
@@ -347,12 +348,12 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 				progress: null,
 				remoteVersion: null,
 				remoteHash: null,
-				message: "Dev builds skip updates",
+				message: t("main.update.devSkip"),
 				error: null,
 			});
 			return state;
 		}
-		patch({ phase: "checking", message: "Checking for updates...", progress: null, error: null });
+		patch({ phase: "checking", message: t("main.update.checking"), progress: null, error: null });
 		const best = await resolveBestUpdate(channel);
 		if (!best) {
 			patch({
@@ -361,7 +362,7 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 				updateReady: false,
 				remoteVersion: null,
 				progress: null,
-				message: "You are up to date",
+				message: t("main.update.upToDate"),
 				error: null,
 			});
 			return state;
@@ -372,7 +373,7 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 			updateReady: false,
 			remoteVersion: best.version,
 			progress: null,
-			message: `Update available: ${best.version}`,
+			message: t("main.update.available", { version: best.version }),
 			error: null,
 		});
 		if (!state.updateReady) {
@@ -380,7 +381,7 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 		}
 		return state;
 	} catch (error) {
-		applyUpdateError(error, "Update check failed");
+		applyUpdateError(error, t("main.update.checkFailed"));
 		return state;
 	} finally {
 		checking = false;
@@ -397,7 +398,7 @@ export async function downloadAppUpdate(): Promise<AppUpdateState> {
 		if (is.dev) {
 			patch({
 				phase: "dev",
-				message: "Dev builds skip updates",
+				message: t("main.update.devSkip"),
 			});
 			return state;
 		}
@@ -405,13 +406,13 @@ export async function downloadAppUpdate(): Promise<AppUpdateState> {
 		patch({
 			phase: "downloading",
 			progress: null,
-			message: "Downloading update...",
+			message: t("main.update.downloading"),
 			error: null,
 		});
 		await autoUpdater.downloadUpdate();
 		return state;
 	} catch (error) {
-		applyUpdateError(error, "Download failed");
+		applyUpdateError(error, t("main.update.downloadFailed"));
 		return state;
 	} finally {
 		downloading = false;
@@ -424,7 +425,7 @@ export async function applyAppUpdate(): Promise<void> {
 	}
 	patch({
 		phase: "ready",
-		message: "Restarting to apply update...",
+		message: t("main.update.restarting"),
 	});
 	await requestQuitAndInstall();
 }

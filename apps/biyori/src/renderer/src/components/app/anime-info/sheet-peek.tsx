@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { motion, useReducedMotion } from "motion/react";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import type { AnimeInfoFrame } from "@/mainview/lib/anime-info-stack";
@@ -18,9 +19,10 @@ type AnimeInfoSheetPeekProps = {
 
 export function AnimeInfoSheetPeek({ frame, depth }: AnimeInfoSheetPeekProps) {
 	const reduce = useReducedMotion();
+	const { t } = useTranslation();
 	const pose = reduce ? { x: 0, opacity: 1, scale: 1 } : { ...DEPTH[depth], opacity: 1 };
 	const off = reduce ? { x: 0, opacity: 0, scale: 1 } : FROM_RIGHT;
-	const title = frame.title?.trim() || `Anime ${frame.id}`;
+	const title = frame.title?.trim() || t("anime.animeId", { id: frame.id });
 	return (
 		<motion.div
 			aria-hidden

@@ -1,3 +1,5 @@
+import { t } from "@biyori/translations/react";
+
 export function parseRatio(body: string): { current: number; total: number } | null {
 	const matched = /^(\d+)\/(\d+)/.exec(body);
 	if (!matched) {
@@ -16,7 +18,7 @@ export function splashSegmentState(input: { bootBody?: string; scanTitle?: strin
 	const scanning = Boolean(input.scanTitle || input.scanBody);
 	const total = Math.max(1, bootRatio?.total ?? (scanning ? 2 : 1));
 	const done = bootRatio != null && bootRatio.current >= total;
-	const matching = Boolean(input.scanTitle === "Matching titles" || innerRatio);
+	const matching = Boolean(input.scanTitle === t("main.library.matchingTitles") || innerRatio);
 	const inner = innerRatio ? Math.min(100, Math.round((innerRatio.current / innerRatio.total) * 100)) : null;
 	if (done) {
 		return { completed: total, total, inner: null };

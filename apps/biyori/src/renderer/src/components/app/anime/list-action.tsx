@@ -1,3 +1,4 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { Button } from "@/mainview/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
@@ -5,7 +6,41 @@ import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
 
-const STATUS_ITEMS: Record<ListStatus, string> = Object.fromEntries(listStatusSchema.options.map((value) => [value, value])) as Record<ListStatus, string>;
+export function listStatusLabel(status: string): string {
+	switch (status) {
+		case "Currently watching":
+			return t("list.currentlyWatching");
+		case "Completed":
+			return t("list.completed");
+		case "On hold":
+			return t("list.onHold");
+		case "Dropped":
+			return t("list.dropped");
+		case "Plan to watch":
+			return t("list.planToWatch");
+		default:
+			return status;
+	}
+}
+
+export function listStatusShortText(status: ListStatus): string {
+	switch (status) {
+		case "Currently watching":
+			return t("list.watching");
+		case "Completed":
+			return t("list.completed");
+		case "On hold":
+			return t("list.onHoldShort");
+		case "Dropped":
+			return t("list.dropped");
+		case "Plan to watch":
+			return t("list.planned");
+	}
+}
+
+function statusItems(): Record<ListStatus, string> {
+	return Object.fromEntries(listStatusSchema.options.map((value) => [value, listStatusLabel(value)])) as Record<ListStatus, string>;
+}
 
 type AnimeListActionProps = {
 	mediaId: number;
@@ -15,6 +50,7 @@ type AnimeListActionProps = {
 };
 
 export function AnimeListAction({ mediaId, onAdded, size, className }: AnimeListActionProps) {
+	const { t } = useTranslation();
 	const utils = trpc.useUtils();
 	const addFromSearch = trpc.anilist.addFromSearch.useMutation();
 
@@ -30,7 +66,7 @@ export function AnimeListAction({ mediaId, onAdded, size, className }: AnimeList
 					onAdded?.(result.id);
 				});
 			}}>
-			Add to list
+			{t("anime.addToList")}
 		</Button>
 	);
 }
@@ -50,10 +86,11 @@ export function AnimeListStatusSelect({
 	className?: string;
 	"aria-label"?: string;
 }) {
+	useTranslation();
 	return (
 		<Select
 			value={value}
-			items={STATUS_ITEMS}
+			items={statusItems()}
 			onValueChange={(next) => {
 				if (typeof next !== "string") {
 					return;
@@ -71,7 +108,7 @@ export function AnimeListStatusSelect({
 				<SelectGroup>
 					{listStatusSchema.options.map((option) => (
 						<SelectItem key={option} value={option}>
-							{option}
+							{listStatusLabel(option)}
 						</SelectItem>
 					))}
 				</SelectGroup>

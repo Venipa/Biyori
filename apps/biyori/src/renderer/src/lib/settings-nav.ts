@@ -3,52 +3,33 @@ import { AppWindowIcon, DownloadIcon, FolderIcon, GlobeIcon, ScanEyeIcon, Share2
 
 export type SettingsNavChild = {
 	id: string;
-	label: string;
-	description: string;
 };
 
 export type SettingsNavSection = {
 	id: string;
-	label: string;
-	description: string;
 	icon: LucideIcon;
 	children?: readonly SettingsNavChild[];
 };
 
 export const settingsSections = [
-	{ id: "services", label: "Services", description: "List providers and account login.", icon: GlobeIcon },
-	{ id: "library", label: "Library", description: "Folders Biyori scans for episodes.", icon: FolderIcon },
-	{ id: "application", label: "Application", description: "Titles, startup, updates, and tray.", icon: AppWindowIcon },
+	{ id: "services", icon: GlobeIcon },
+	{ id: "library", icon: FolderIcon },
+	{ id: "application", icon: AppWindowIcon },
 	{
 		id: "recognition",
-		label: "Recognition",
-		description: "Match playing media to your list.",
 		icon: ScanEyeIcon,
-		children: [
-			{ id: "general", label: "General", description: "Matching, validation, and notifications." },
-			{ id: "sources", label: "Sources", description: "Media players and streaming sites." },
-		],
+		children: [{ id: "general" }, { id: "sources" }],
 	},
-	{ id: "sharing", label: "Sharing", description: "Discord presence and local HTTP.", icon: Share2Icon },
+	{ id: "sharing", icon: Share2Icon },
 	{
 		id: "torrents",
-		label: "Torrents",
-		description: "Feeds, downloads, and filters.",
 		icon: DownloadIcon,
-		children: [
-			{ id: "general", label: "General", description: "Feeds, downloads, and client." },
-			{ id: "filters", label: "Filters", description: "Download the files you want and ignore the others." },
-		],
+		children: [{ id: "general" }, { id: "filters" }],
 	},
 	{
 		id: "advanced",
-		label: "Advanced",
-		description: "Low-level options. Change with care.",
 		icon: SlidersHorizontalIcon,
-		children: [
-			{ id: "general", label: "General", description: "Low-level options. Change with care." },
-			{ id: "cache", label: "Cache", description: "Clear stored files and history." },
-		],
+		children: [{ id: "general" }, { id: "cache" }],
 	},
 ] as const satisfies readonly SettingsNavSection[];
 

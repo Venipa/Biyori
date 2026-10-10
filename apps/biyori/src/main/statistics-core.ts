@@ -1,3 +1,5 @@
+import { t } from "@biyori/translations/i18n";
+
 export type StatisticsEntry = {
 	title: string;
 	status: string;
@@ -142,7 +144,7 @@ export function summarizeList(entries: StatisticsEntry[]): StatisticsSummary {
 			scoreCounts[index] += 1;
 		}
 		statusCounts.set(entry.status, (statusCounts.get(entry.status) ?? 0) + 1);
-		const typeLabel = entry.type.trim() || "Unknown";
+		const typeLabel = entry.type.trim() || t("common.unknown");
 		typeCounts.set(typeLabel, (typeCounts.get(typeLabel) ?? 0) + 1);
 		for (const genre of entry.genres) {
 			const name = genre.trim();

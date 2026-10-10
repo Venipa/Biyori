@@ -1,4 +1,5 @@
 import { normalizeTitle } from "@biyori/recognition";
+import { t } from "@biyori/translations/i18n";
 import { observable } from "@trpc/server/observable";
 import { eq } from "drizzle-orm";
 import { parseStoredTitles, titleStrings } from "../../lib/anime-titles";
@@ -337,13 +338,13 @@ async function runTick(): Promise<void> {
 		pending = null;
 		pendingExit = null;
 		if (match && settings.notifyOnRecognized) {
-			const title = `Now playing: ${match.title}`;
+			const title = t("main.playback.nowPlaying", { title: match.title });
 			setAppNotice(title);
-			pushNotice({ source: "playback", title: match.title, body: "Now playing" });
+			pushNotice({ source: "playback", title: match.title, body: t("main.playback.nowPlayingBody") });
 		} else if (!match && settings.notifyOnUnrecognized) {
-			const title = `Unrecognized: ${parsed.title}`;
+			const title = t("main.playback.unrecognized", { title: parsed.title });
 			setAppNotice(title);
-			pushNotice({ source: "playback", title: parsed.title, body: "Unrecognized" });
+			pushNotice({ source: "playback", title: parsed.title, body: t("main.playback.unrecognizedBody") });
 		}
 	}
 
@@ -430,8 +431,8 @@ export async function confirmPendingUpdate(): Promise<void> {
 		nextMatch = await applyProgress(match, pending.episode);
 		pushNotice({
 			source: "watch-confirm",
-			title: `Update ${pending.title}`,
-			body: `Updated to episode ${pending.episode}`,
+			title: t("main.playback.updateTitle", { title: pending.title }),
+			body: t("main.playback.updatedToEpisode", { episode: pending.episode }),
 		});
 	}
 	pending = null;

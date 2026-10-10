@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { useNavigate } from "@tanstack/react-router";
 import { type ColumnDef, getCoreRowModel, getSortedRowModel, type RowSelectionState, type SortingState, useReactTable } from "@tanstack/react-table";
 import { type ReactElement, useEffect, useRef, useState } from "react";
@@ -63,6 +64,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 	const [menuRow, setMenuRow] = useState<TorrentRow | null>(null);
 	const [infoRow, setInfoRow] = useState<TorrentRow | null>(null);
 	const rowClickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const { t } = useTranslation();
 	const { columnSizing, onColumnSizingChange } = usePersistedColumnSizing("torrents");
 
 	useEffect(() => {
@@ -83,7 +85,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 			maxSize: 36,
 			header: ({ table }) => (
 				<Checkbox
-					aria-label='Select all torrents'
+					aria-label={t("torrents.selectAll")}
 					checked={table.getIsAllRowsSelected()}
 					onCheckedChange={(checked) => {
 						table.toggleAllRowsSelected(Boolean(checked));
@@ -92,7 +94,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 			),
 			cell: ({ row }) => (
 				<Checkbox
-					aria-label={`Select ${row.original.animeTitle}`}
+					aria-label={t("torrents.selectRow", { title: row.original.animeTitle })}
 					checked={row.getIsSelected()}
 					onCheckedChange={(checked) => {
 						row.toggleSelected(Boolean(checked));
@@ -111,7 +113,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 		},
 		{
 			accessorKey: "animeTitle",
-			header: "Anime title",
+			header: t("torrents.animeTitle"),
 			size: 240,
 			minSize: 120,
 			cell: ({ row }) => (
@@ -123,7 +125,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 		},
 		{
 			accessorKey: "episode",
-			header: "Episode",
+			header: t("torrents.episode"),
 			cell: ({ row }) => (
 				<span
 					className={
@@ -139,37 +141,37 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 		},
 		{
 			accessorKey: "group",
-			header: "Group",
+			header: t("torrents.group"),
 			cell: ({ row }) => row.original.group || "-",
 		},
 		{
 			accessorKey: "size",
-			header: "Size",
+			header: t("torrents.size"),
 			cell: ({ row }) => <span className='tabular-nums'>{row.original.size || "-"}</span>,
 		},
 		{
 			accessorKey: "videoFormat",
-			header: "Video",
+			header: t("torrents.video"),
 			cell: ({ row }) => row.original.videoFormat || "-",
 		},
 		{
 			accessorKey: "seeders",
-			header: "S",
+			header: t("torrents.seeders"),
 			cell: ({ row }) => <span className='tabular-nums'>{countLabel(row.original.seeders)}</span>,
 		},
 		{
 			accessorKey: "leechers",
-			header: "L",
+			header: t("torrents.leechers"),
 			cell: ({ row }) => <span className='tabular-nums'>{countLabel(row.original.leechers)}</span>,
 		},
 		{
 			accessorKey: "downloads",
-			header: "D",
+			header: t("torrents.downloads"),
 			cell: ({ row }) => <span className='tabular-nums'>{countLabel(row.original.downloads)}</span>,
 		},
 		{
 			accessorKey: "filename",
-			header: "Filename",
+			header: t("torrents.filename"),
 			cell: ({ row }) => (
 				<span className='block max-w-72 truncate' title={row.original.filename}>
 					{row.original.filename || row.original.title}
@@ -178,7 +180,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 		},
 		{
 			accessorKey: "pubDate",
-			header: "Release date",
+			header: t("torrents.releaseDate"),
 			cell: ({ row }) => <span className='tabular-nums'>{formatLocalDateTime(row.original.pubDate)}</span>,
 		},
 	];
@@ -231,7 +233,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 							guids: selected.map((row) => row.original.guid),
 						});
 					}}>
-					Download marked torrents
+					{t("torrents.downloadMarked")}
 				</Button>
 				<Button
 					variant='outline'
@@ -243,7 +245,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 						}
 						setRowSelection({});
 					}}>
-					Discard all
+					{t("torrents.discardAll")}
 				</Button>
 				<CheckNewTorrentsButton />
 			</TorrentToolbar>
@@ -297,7 +299,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 								}
 								downloadTorrent(menuRow);
 							}}>
-							Download torrent
+							{t("torrents.downloadTorrent")}
 						</ContextMenuItem>
 						<ContextMenuItem
 							disabled={!menuOnList}
@@ -307,7 +309,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 								}
 								animeInfo.open({ id: menuRow.animeId, infoTab: "main" });
 							}}>
-							View anime information
+							{t("torrents.viewAnime")}
 						</ContextMenuItem>
 						<ContextMenuItem
 							disabled={!menuRow}
@@ -317,7 +319,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 								}
 								openTorrentInfo(menuRow);
 							}}>
-							View torrent information
+							{t("torrents.viewTorrent")}
 						</ContextMenuItem>
 						<ContextMenuSeparator />
 						<ContextMenuItem
@@ -328,10 +330,10 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 								}
 								void discard.mutateAsync({ guid: menuRow.guid });
 							}}>
-							Discard
+							{t("torrents.discard")}
 						</ContextMenuItem>
 						<ContextMenuSub>
-							<ContextMenuSubTrigger disabled={!menuOnList}>Quick filters</ContextMenuSubTrigger>
+							<ContextMenuSubTrigger disabled={!menuOnList}>{t("torrents.quickFilters")}</ContextMenuSubTrigger>
 							<ContextMenuSubContent className='min-w-72'>
 								<ContextMenuItem
 									disabled={!menuOnList}
@@ -344,7 +346,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 											title: menuRow.animeTitle,
 										});
 									}}>
-									Discard all torrents for this anime
+									{t("torrents.discardAnime")}
 								</ContextMenuItem>
 								<ContextMenuItem
 									disabled={!menuOnList || !menuRow?.group}
@@ -358,7 +360,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 											title: menuRow.animeTitle,
 										});
 									}}>
-									Select this fansub group for this anime
+									{t("torrents.preferFansub")}
 								</ContextMenuItem>
 							</ContextMenuSubContent>
 						</ContextMenuSub>
@@ -371,7 +373,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 								}
 								void searchFeed.mutateAsync({ title: menuRow.animeTitle });
 							}}>
-							Search for more torrents with this title
+							{t("torrents.searchMore")}
 						</ContextMenuItem>
 						<ContextMenuItem
 							disabled={!menuRow?.animeTitle}
@@ -384,7 +386,7 @@ export function TorrentFeed({ items }: { items: TorrentRow[] }): ReactElement {
 									search: { q: menuRow.animeTitle },
 								});
 							}}>
-							Search for anime with this title
+							{t("torrents.searchAnime")}
 						</ContextMenuItem>
 					</ContextMenuContent>
 				</ContextMenu>

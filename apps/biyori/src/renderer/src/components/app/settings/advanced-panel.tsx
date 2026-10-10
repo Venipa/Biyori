@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { TriangleAlertIcon } from "lucide-react";
 import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
@@ -12,6 +13,7 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "
 import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
 
 export function AdvancedPanel() {
+	const { t } = useTranslation();
 	const themeId = useId();
 	const sizeId = useId();
 	const intervalId = useId();
@@ -24,19 +26,19 @@ export function AdvancedPanel() {
 		<>
 			<Alert>
 				<TriangleAlertIcon />
-				<AlertTitle>Advanced</AlertTitle>
-				<AlertDescription>Do not change these unless you know what they do.</AlertDescription>
+				<AlertTitle>{t("settings.advanced.warningTitle")}</AlertTitle>
+				<AlertDescription>{t("settings.advanced.warning")}</AlertDescription>
 			</Alert>
-			<SettingsSectionCard title='Interface'>
+			<SettingsSectionCard title={t("settings.advanced.interfaceTitle")}>
 				<Field>
-					<FieldLabel htmlFor={themeId}>UI theme</FieldLabel>
+					<FieldLabel htmlFor={themeId}>{t("settings.advanced.uiTheme")}</FieldLabel>
 					<Input id={themeId} className='max-w-64 font-mono text-xs' {...form.register("uiTheme")} />
 					<SettingsFieldError<AppSettingsInput> name='uiTheme' />
 				</Field>
 			</SettingsSectionCard>
-			<SettingsSectionCard title='Library'>
+			<SettingsSectionCard title={t("settings.advanced.libraryTitle")}>
 				<Field>
-					<FieldLabel htmlFor={sizeId}>File size threshold</FieldLabel>
+					<FieldLabel htmlFor={sizeId}>{t("settings.advanced.fileSize")}</FieldLabel>
 					<Input
 						id={sizeId}
 						type='number'
@@ -48,9 +50,9 @@ export function AdvancedPanel() {
 					<SettingsFieldError<AppSettingsInput> name='fileSizeThreshold' />
 				</Field>
 			</SettingsSectionCard>
-			<SettingsSectionCard title='Recognition'>
+			<SettingsSectionCard title={t("settings.advanced.recognitionTitle")}>
 				<Field>
-					<FieldLabel htmlFor={intervalId}>Media detection interval</FieldLabel>
+					<FieldLabel htmlFor={intervalId}>{t("settings.advanced.detectionInterval")}</FieldLabel>
 					<Input
 						id={intervalId}
 						type='number'
@@ -62,7 +64,7 @@ export function AdvancedPanel() {
 					<SettingsFieldError<AppSettingsInput> name='mediaDetectionInterval' />
 				</Field>
 			</SettingsSectionCard>
-			<SettingsSectionCard title='Torrents'>
+			<SettingsSectionCard title={t("settings.advanced.torrentsTitle")}>
 				<Controller
 					control={form.control}
 					name='torrentUseMagnet'
@@ -76,14 +78,14 @@ export function AdvancedPanel() {
 								}}
 							/>
 							<FieldLabel htmlFor={magnetId} className='font-normal'>
-								Use magnet links if available
+								{t("settings.advanced.useMagnet")}
 							</FieldLabel>
 							<FieldError errors={[fieldState.error]} />
 						</Field>
 					)}
 				/>
 				<Field>
-					<FieldLabel htmlFor={torrentFileId}>Download path for .torrent files</FieldLabel>
+					<FieldLabel htmlFor={torrentFileId}>{t("settings.advanced.torrentPath")}</FieldLabel>
 					<InputGroup>
 						<InputGroupInput id={torrentFileId} className='font-mono text-xs' {...form.register("torrentFileDownloadPath")} />
 						<InputGroupAddon align='inline-end'>
@@ -96,14 +98,14 @@ export function AdvancedPanel() {
 										}
 									});
 								}}>
-								Browse...
+								{t("settings.advanced.browse")}
 							</InputGroupButton>
 						</InputGroupAddon>
 					</InputGroup>
 					<SettingsFieldError<AppSettingsInput> name='torrentFileDownloadPath' />
 				</Field>
 				<Field>
-					<FieldLabel htmlFor={archiveId}>Archive limit</FieldLabel>
+					<FieldLabel htmlFor={archiveId}>{t("settings.advanced.archiveLimit")}</FieldLabel>
 					<Input
 						id={archiveId}
 						type='number'

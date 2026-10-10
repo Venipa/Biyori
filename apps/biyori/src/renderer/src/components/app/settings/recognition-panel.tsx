@@ -1,6 +1,98 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { MEDIA_PLAYERS, STREAMING_PROVIDERS } from "@/lib/recognition-catalog";
+
+function playerLabel(id: string): string {
+	switch (id) {
+		case "gom":
+			return t("recognition.players.gom");
+		case "kmplayer":
+			return t("recognition.players.kmplayer");
+		case "mpc-be":
+			return t("recognition.players.mpcBe");
+		case "mpc-hc":
+			return t("recognition.players.mpcHc");
+		case "mpc-qt":
+			return t("recognition.players.mpcQt");
+		case "mpcstar":
+			return t("recognition.players.mpcstar");
+		case "mpdn":
+			return t("recognition.players.mpdn");
+		case "mpv":
+			return t("recognition.players.mpv");
+		case "mpvnet":
+			return t("recognition.players.mpvnet");
+		case "mv2player":
+			return t("recognition.players.mv2player");
+		case "potplayer":
+			return t("recognition.players.potplayer");
+		case "smplayer":
+			return t("recognition.players.smplayer");
+		case "splash":
+			return t("recognition.players.splash");
+		case "splayer":
+			return t("recognition.players.splayer");
+		case "umplayer":
+			return t("recognition.players.umplayer");
+		case "vlc":
+			return t("recognition.players.vlc");
+		case "webtorrent":
+			return t("recognition.players.webtorrent");
+		case "winamp":
+			return t("recognition.players.winamp");
+		case "wmplayer":
+			return t("recognition.players.wmplayer");
+		case "zoomplayer":
+			return t("recognition.players.zoomplayer");
+		default:
+			return id;
+	}
+}
+
+function providerLabel(id: string): string {
+	switch (id) {
+		case "animelab":
+			return t("recognition.providers.animelab");
+		case "adn":
+			return t("recognition.providers.adn");
+		case "ann":
+			return t("recognition.providers.ann");
+		case "bilibili":
+			return t("recognition.providers.bilibili");
+		case "crunchyroll":
+			return t("recognition.providers.crunchyroll");
+		case "funimation":
+			return t("recognition.providers.funimation");
+		case "hidive":
+			return t("recognition.providers.hidive");
+		case "jellyfin":
+			return t("recognition.providers.jellyfin");
+		case "plex":
+			return t("recognition.providers.plex");
+		case "roku":
+			return t("recognition.providers.roku");
+		case "tubi":
+			return t("recognition.providers.tubi");
+		case "veoh":
+			return t("recognition.providers.veoh");
+		case "viz":
+			return t("recognition.providers.viz");
+		case "vrv":
+			return t("recognition.providers.vrv");
+		case "wakanim":
+			return t("recognition.providers.wakanim");
+		case "yahoo":
+			return t("recognition.providers.yahoo");
+		case "youtube":
+			return t("recognition.providers.youtube");
+		case "netflix":
+			return t("recognition.providers.netflix");
+		default:
+			return id;
+	}
+}
+
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { SettingsFieldError } from "@/mainview/components/app/settings/settings-field-error";
 import { SettingsSectionCard } from "@/mainview/components/app/settings/settings-section-card";
@@ -30,28 +122,29 @@ export function RecognitionGeneralPanel() {
 	const gotoOkId = useId();
 	const notifyBadId = useId();
 	const gotoBadId = useId();
+	const { t } = useTranslation();
 	const form = useFormContext<AppSettingsInput>();
 
 	return (
 		<>
-			<SettingsSectionCard title='Recognition' description='Match playing media to titles on your list.'>
-				<FormCheckbox control={form.control} name='enableRecognition' id={enableId} label='Enable media recognition' />
+			<SettingsSectionCard title={t("settings.recognition.title")} description={t("settings.recognition.description")}>
+				<FormCheckbox control={form.control} name='enableRecognition' id={enableId} label={t("settings.recognition.enable")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title='Validation'>
-				<FormCheckbox control={form.control} name='ignoreOutsideLibrary' id={ignoreId} label='Ignore files outside of library folders' />
-				<FormCheckbox control={form.control} name='ignoreOutOfRangeEpisode' id={rangeId} label='Ignore if episode number is greater than next episode' />
+			<SettingsSectionCard title={t("settings.recognition.validationTitle")}>
+				<FormCheckbox control={form.control} name='ignoreOutsideLibrary' id={ignoreId} label={t("settings.recognition.ignoreOutside")} />
+				<FormCheckbox control={form.control} name='ignoreOutOfRangeEpisode' id={rangeId} label={t("settings.recognition.ignoreRange")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title='When an episode is recognized'>
-				<FormCheckbox control={form.control} name='notifyOnRecognized' id={notifyOkId} label='Notify me' />
-				<FormCheckbox control={form.control} name='goToNowPlayingOnRecognized' id={gotoOkId} label='Go to Now Playing' />
+			<SettingsSectionCard title={t("settings.recognition.recognizedTitle")}>
+				<FormCheckbox control={form.control} name='notifyOnRecognized' id={notifyOkId} label={t("settings.recognition.notify")} />
+				<FormCheckbox control={form.control} name='goToNowPlayingOnRecognized' id={gotoOkId} label={t("settings.recognition.goToNowPlaying")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title='When an episode is not recognized'>
-				<FormCheckbox control={form.control} name='notifyOnUnrecognized' id={notifyBadId} label='Notify me' />
-				<FormCheckbox control={form.control} name='goToNowPlayingOnUnrecognized' id={gotoBadId} label='Go to Now Playing' />
+			<SettingsSectionCard title={t("settings.recognition.unrecognizedTitle")}>
+				<FormCheckbox control={form.control} name='notifyOnUnrecognized' id={notifyBadId} label={t("settings.recognition.notify")} />
+				<FormCheckbox control={form.control} name='goToNowPlayingOnUnrecognized' id={gotoBadId} label={t("settings.recognition.goToNowPlaying")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title='List updates and sharing' description='Delay and extra checks before writing progress.'>
+			<SettingsSectionCard title={t("settings.recognition.updatesTitle")} description={t("settings.recognition.updatesDescription")}>
 				<Field>
-					<FieldLabel htmlFor={delayId}>Delay (seconds)</FieldLabel>
+					<FieldLabel htmlFor={delayId}>{t("settings.recognition.delay")}</FieldLabel>
 					<div className='flex items-center gap-2'>
 						<Input
 							id={delayId}
@@ -64,14 +157,14 @@ export function RecognitionGeneralPanel() {
 					</div>
 					<SettingsFieldError<AppSettingsInput> name='recognitionDelaySeconds' />
 				</Field>
-				<FormCheckbox control={form.control} name='playerMustBeInFocus' id={focusId} label='Media player must be in focus' />
-				<FormCheckbox control={form.control} name='waitUntilPlayerExits' id={waitId} label='Wait for media player to close' />
-				<FormCheckbox control={form.control} name='askToConfirmUpdate' id={confirmId} label='Ask for confirmation' />
+				<FormCheckbox control={form.control} name='playerMustBeInFocus' id={focusId} label={t("settings.recognition.mustFocus")} />
+				<FormCheckbox control={form.control} name='waitUntilPlayerExits' id={waitId} label={t("settings.recognition.waitExit")} />
+				<FormCheckbox control={form.control} name='askToConfirmUpdate' id={confirmId} label={t("settings.recognition.confirm")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title='Ignored strings' description='Strip these from titles before matching. One per line.'>
+			<SettingsSectionCard title={t("settings.recognition.ignoredTitle")} description={t("settings.recognition.ignoredDescription")}>
 				<Field>
 					<FieldLabel htmlFor={ignoredId} className='sr-only'>
-						Ignored strings
+						{t("settings.recognition.ignoredLabel")}
 					</FieldLabel>
 					<Textarea id={ignoredId} className='min-h-20 font-mono text-xs' {...form.register("ignoredStrings")} />
 					<SettingsFieldError<AppSettingsInput> name='ignoredStrings' />
@@ -93,11 +186,12 @@ export function RecognitionSourcesPanel() {
 function MediaPlayersFields() {
 	const playersEnableId = useId();
 	const playersAllId = useId();
+	const { t } = useTranslation();
 	const form = useFormContext<AppSettingsInput>();
 	const playersEnabled = form.watch("enableMediaPlayerDetection");
 	return (
-		<SettingsSectionCard title='Media players' description='Select the players you use, deselect the others.'>
-			<FormCheckbox control={form.control} name='enableMediaPlayerDetection' id={playersEnableId} label='Enable media player detection' />
+		<SettingsSectionCard title={t("settings.recognition.playersTitle")} description={t("settings.recognition.playersDescription")}>
+			<FormCheckbox control={form.control} name='enableMediaPlayerDetection' id={playersEnableId} label={t("settings.recognition.enablePlayers")} />
 			<Controller
 				control={form.control}
 				name='enabledMediaPlayers'
@@ -118,7 +212,7 @@ function MediaPlayersFields() {
 										}}
 									/>
 									<FieldLabel htmlFor={playersAllId} className='font-normal'>
-										Select/deselect all
+										{t("settings.recognition.selectAll")}
 									</FieldLabel>
 								</Field>
 							</li>
@@ -136,7 +230,7 @@ function MediaPlayersFields() {
 												}}
 											/>
 											<FieldLabel htmlFor={itemId} className='font-normal'>
-												{player.label}
+												{playerLabel(player.id)}
 											</FieldLabel>
 										</Field>
 									</li>
@@ -153,11 +247,12 @@ function MediaPlayersFields() {
 function StreamingFields() {
 	const streamEnableId = useId();
 	const streamAllId = useId();
+	const { t } = useTranslation();
 	const form = useFormContext<AppSettingsInput>();
 	const streamingEnabled = form.watch("enableStreamingDetection");
 	return (
-		<SettingsSectionCard title='Streaming media' description='Supported browsers are Google Chrome, Mozilla Firefox, and Opera. Works best with a browser in English.'>
-			<FormCheckbox control={form.control} name='enableStreamingDetection' id={streamEnableId} label='Enable streaming media detection' />
+		<SettingsSectionCard title={t("settings.recognition.streamingTitle")} description={t("settings.recognition.streamingDescription")}>
+			<FormCheckbox control={form.control} name='enableStreamingDetection' id={streamEnableId} label={t("settings.recognition.enableStreaming")} />
 			<Controller
 				control={form.control}
 				name='enabledStreamingProviders'
@@ -178,7 +273,7 @@ function StreamingFields() {
 										}}
 									/>
 									<FieldLabel htmlFor={streamAllId} className='font-normal'>
-										Select/deselect all
+										{t("settings.recognition.selectAll")}
 									</FieldLabel>
 								</Field>
 							</li>
@@ -196,7 +291,7 @@ function StreamingFields() {
 												}}
 											/>
 											<FieldLabel htmlFor={itemId} className='font-normal'>
-												{provider.label}
+												{providerLabel(provider.id)}
 											</FieldLabel>
 										</Field>
 									</li>

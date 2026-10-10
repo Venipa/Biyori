@@ -1,3 +1,4 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { type ColumnDef, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
 import { ArrowUpIcon, FileTextIcon } from "lucide-react";
@@ -29,15 +30,10 @@ type HistoryTableRow = HistoryRow & { queued: boolean };
 
 const HISTORY_GROUP_ORDER = ["Queued for update", "History"] as const;
 
-const clearLabels = {
-	history: "history",
-	queued: "queue",
-} as const;
-
 const columns: ColumnDef<HistoryTableRow>[] = [
 	{
 		accessorKey: "title",
-		header: "Anime title",
+		header: () => t("history.animeTitle"),
 		size: 280,
 		minSize: 120,
 		enableSorting: false,
@@ -50,14 +46,14 @@ const columns: ColumnDef<HistoryTableRow>[] = [
 	},
 	{
 		accessorKey: "episode",
-		header: "Details",
+		header: () => t("history.details"),
 		size: 140,
 		enableSorting: false,
-		cell: ({ row }) => <span className='text-muted-foreground'>Episode: {row.original.episode}</span>,
+		cell: ({ row }) => <span className='text-muted-foreground'>{t("history.episode", { episode: row.original.episode })}</span>,
 	},
 	{
 		accessorKey: "lastModified",
-		header: "Last modified",
+		header: () => t("history.lastModified"),
 		size: 180,
 		enableSorting: false,
 		cell: ({ row }) => <span className='text-muted-foreground'>{row.original.lastModified}</span>,
@@ -67,6 +63,7 @@ const columns: ColumnDef<HistoryTableRow>[] = [
 const EMPTY_ROWS: HistoryTableRow[] = [];
 
 export function HistoryView() {
+	const { t } = useTranslation();
 	const query = trpc.history.list.useQuery();
 	const utils = trpc.useUtils();
 	const animeInfo = useAnimeInfoNav();
@@ -112,7 +109,7 @@ export function HistoryView() {
 	if (query.isPending && !query.data) {
 		return (
 			<ScrollArea className='h-full min-h-0'>
-				<TableRowsSkeleton columnCount={3} headers={["Anime title", "Details", "Last modified"]} />
+				<TableRowsSkeleton columnCount={3} headers={[t("history.animeTitle"), t("history.details"), t("history.lastModified")]} />
 			</ScrollArea>
 		);
 	}
@@ -120,8 +117,8 @@ export function HistoryView() {
 	if (isEmpty) {
 		return (
 			<Empty>
-				<EmptyTitle>No history</EmptyTitle>
-				<EmptyDescription>Watched episodes show up here.</EmptyDescription>
+				<EmptyTitle>{t("history.noHistory")}</EmptyTitle>
+				<EmptyDescription>{t("history.emptyDescription")}</EmptyDescription>
 			</Empty>
 		);
 	}
@@ -136,6 +133,7 @@ export function HistoryView() {
 							compact
 							groupBy={(row) => (row.original.queued ? "Queued for update" : "History")}
 							groupOrder={HISTORY_GROUP_ORDER}
+							groupLabel={(value) => (value === "Queued for update" ? t("history.queuedForUpdate") : t("history.history"))}
 							renderRow={(row, cells) => (
 								<TableRow
 									className={row.original.animeId > 0 ? "cursor-pointer" : undefined}
@@ -159,7 +157,7 @@ export function HistoryView() {
 								openInfo(menuRow);
 							}
 						}}>
-						Information
+						{t("history.information")}
 					</ContextMenuItem>
 					<ContextMenuItem
 						disabled={!menuRow || remove.isPending}
@@ -169,7 +167,7 @@ export function HistoryView() {
 								void remove.mutateAsync({ id: menuRow.id });
 							}
 						}}>
-						Delete
+						{t("common.delete")}
 					</ContextMenuItem>
 					<ContextMenuSeparator />
 					<ContextMenuItem
@@ -177,14 +175,14 @@ export function HistoryView() {
 						onClick={() => {
 							setClearKind("history");
 						}}>
-						Clear history...
+						{t("history.clearHistoryMenu")}
 					</ContextMenuItem>
 					<ContextMenuItem
 						disabled={!queued || queued.length === 0}
 						onClick={() => {
 							setClearKind("queued");
 						}}>
-						Clear queue...
+						{t("history.clearQueueMenu")}
 					</ContextMenuItem>
 				</ContextMenuContent>
 			</ContextMenu>
@@ -197,13 +195,11 @@ export function HistoryView() {
 				}}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Clear {clearLabels[clearKind ?? "history"]}</AlertDialogTitle>
-						<AlertDialogDescription>
-							{clearKind === "queued" ? "Discard all pending list updates? They will not be sent to AniList." : "Remove all history entries?"}
-						</AlertDialogDescription>
+						<AlertDialogTitle>{clearKind === "queued" ? t("history.clearQueueTitle") : t("history.clearHistoryTitle")}</AlertDialogTitle>
+						<AlertDialogDescription>{clearKind === "queued" ? t("history.discardQueued") : t("history.removeHistory")}</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
 						<AlertDialogAction
 							variant='destructive'
 							disabled={clear.isPending}
@@ -215,7 +211,7 @@ export function HistoryView() {
 									setClearKind(null);
 								});
 							}}>
-							Clear
+							{t("history.clear")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

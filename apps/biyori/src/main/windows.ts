@@ -1,8 +1,9 @@
+import { t } from "@biyori/translations/i18n";
 import { WindowManager } from "./windows/manager";
 
 export const windowManager = new WindowManager({
 	main: {
-		title: "Biyori",
+		title: t("shell.biyori"),
 		width: 1200,
 		height: 960,
 		minWidth: 960,
@@ -10,7 +11,7 @@ export const windowManager = new WindowManager({
 		saveState: true,
 	},
 	settings: {
-		title: "Settings",
+		title: t("main.window.settings"),
 		width: 760,
 		height: 680,
 		minWidth: 600,
@@ -18,7 +19,7 @@ export const windowManager = new WindowManager({
 		to: "/settings/services",
 	},
 	update: {
-		title: "Update",
+		title: t("main.window.update"),
 		width: 480,
 		height: 400,
 		minWidth: 400,
@@ -27,7 +28,7 @@ export const windowManager = new WindowManager({
 		singleton: true,
 	},
 	splash: {
-		title: "Biyori",
+		title: t("shell.biyori"),
 		width: 380,
 		height: 240,
 		minWidth: 380,

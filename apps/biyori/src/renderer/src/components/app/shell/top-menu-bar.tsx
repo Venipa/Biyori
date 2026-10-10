@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { useNavigate } from "@tanstack/react-router";
 import { desktopRpc } from "@/desktop-rpc";
 import {
@@ -23,6 +24,7 @@ import { useCheckForUpdates } from "@/mainview/lib/update-status";
 import { trpc } from "@/mainview/trpc";
 
 export function TopMenuBar() {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
 	const settingsQuery = trpc.settings.get.useQuery();
@@ -49,16 +51,16 @@ export function TopMenuBar() {
 		<div className='app-region-no-drag ml-3 flex h-full shrink-0 items-stretch'>
 			<Menubar className='h-full gap-0 rounded-none border-none bg-transparent p-0'>
 				<MenubarMenu>
-					<MenubarTrigger>File</MenubarTrigger>
+					<MenubarTrigger>{t("shell.file")}</MenubarTrigger>
 					<MenubarContent>
 						<MenubarItem
 							onClick={() => {
 								void navigate({ to: "/app/library" });
 							}}>
-							Library
+							{t("nav.library")}
 						</MenubarItem>
 						<MenubarSub>
-							<MenubarSubTrigger>Library folders</MenubarSubTrigger>
+							<MenubarSubTrigger>{t("shell.libraryFolders")}</MenubarSubTrigger>
 							<MenubarSubContent>
 								{folders.map((folder) => (
 									<MenubarItem
@@ -76,7 +78,7 @@ export function TopMenuBar() {
 											void addLibraryFolder.addFromPicker();
 										}, 0);
 									}}>
-									Add new folder...
+									{t("shell.addNewFolder")}
 								</MenubarItem>
 							</MenubarSubContent>
 						</MenubarSub>
@@ -84,13 +86,13 @@ export function TopMenuBar() {
 							onClick={() => {
 								void scan.mutateAsync();
 							}}>
-							Scan available episodes
+							{t("shell.scanAvailableEpisodes")}
 						</MenubarItem>
 						<MenubarItem
 							onClick={() => {
 								void scanAll.mutateAsync();
 							}}>
-							Scan library folders
+							{t("shell.scanLibraryFolders")}
 						</MenubarItem>
 						<MenubarSeparator />
 						<MenubarItem
@@ -104,8 +106,8 @@ export function TopMenuBar() {
 									episodesWatched: selected.episodesWatched,
 								});
 							}}>
-							Play next episode
-							<MenubarShortcut>Ctrl+N</MenubarShortcut>
+							{t("shell.playNextEpisode")}
+							<MenubarShortcut>{t("shell.shortcutPlayNext")}</MenubarShortcut>
 						</MenubarItem>
 						<MenubarItem
 							disabled={!selected}
@@ -115,38 +117,38 @@ export function TopMenuBar() {
 								}
 								void playRandom.mutateAsync({ animeId: selected.id });
 							}}>
-							Play random episode
-							<MenubarShortcut>Ctrl+R</MenubarShortcut>
+							{t("shell.playRandomEpisode")}
+							<MenubarShortcut>{t("shell.shortcutPlayRandom")}</MenubarShortcut>
 						</MenubarItem>
 						<MenubarSeparator />
 						<MenubarItem
 							onClick={() => {
 								void desktopRpc.request.closeWindow({});
 							}}>
-							Exit
+							{t("shell.exit")}
 						</MenubarItem>
 					</MenubarContent>
 				</MenubarMenu>
 
 				<MenubarMenu>
-					<MenubarTrigger>Services</MenubarTrigger>
+					<MenubarTrigger>{t("shell.services")}</MenubarTrigger>
 					<MenubarContent>
 						<MenubarItem
 							disabled={syncRunning || sync.isPending}
 							onClick={() => {
 								void sync.mutateAsync();
 							}}>
-							Synchronize list
-							<MenubarShortcut>Ctrl+S</MenubarShortcut>
+							{t("shell.synchronizeList")}
+							<MenubarShortcut>{t("shell.shortcutSync")}</MenubarShortcut>
 						</MenubarItem>
 					</MenubarContent>
 				</MenubarMenu>
 
 				<MenubarMenu>
-					<MenubarTrigger>View</MenubarTrigger>
+					<MenubarTrigger>{t("shell.view")}</MenubarTrigger>
 					<MenubarContent>
 						<MenubarSub>
-							<MenubarSubTrigger>Themes</MenubarSubTrigger>
+							<MenubarSubTrigger>{t("shell.themes")}</MenubarSubTrigger>
 							<MenubarSubContent>
 								<MenubarRadioGroup
 									value={theme}
@@ -155,9 +157,9 @@ export function TopMenuBar() {
 											setThemeMode(value);
 										}
 									}}>
-									<MenubarRadioItem value='light'>Light</MenubarRadioItem>
-									<MenubarRadioItem value='dark'>Dark</MenubarRadioItem>
-									<MenubarRadioItem value='system'>System</MenubarRadioItem>
+									<MenubarRadioItem value='light'>{t("shell.light")}</MenubarRadioItem>
+									<MenubarRadioItem value='dark'>{t("shell.dark")}</MenubarRadioItem>
+									<MenubarRadioItem value='system'>{t("shell.system")}</MenubarRadioItem>
 								</MenubarRadioGroup>
 							</MenubarSubContent>
 						</MenubarSub>
@@ -165,7 +167,7 @@ export function TopMenuBar() {
 				</MenubarMenu>
 
 				<MenubarMenu>
-					<MenubarTrigger>Tools</MenubarTrigger>
+					<MenubarTrigger>{t("shell.tools")}</MenubarTrigger>
 					<MenubarContent>
 						<MenubarCheckboxItem
 							checked={settings?.enableRecognition ?? true}
@@ -177,7 +179,7 @@ export function TopMenuBar() {
 									enableRecognition: Boolean(checked),
 								});
 							}}>
-							Enable anime recognition
+							{t("shell.enableAnimeRecognition")}
 						</MenubarCheckboxItem>
 						<MenubarCheckboxItem
 							checked={settings?.updateRichPresence ?? true}
@@ -189,29 +191,29 @@ export function TopMenuBar() {
 									updateRichPresence: Boolean(checked),
 								});
 							}}>
-							Enable auto sharing
+							{t("shell.enableAutoSharing")}
 						</MenubarCheckboxItem>
 						<MenubarSeparator />
 						<MenubarItem
 							onClick={() => {
 								void desktopRpc.request.openSettings({});
 							}}>
-							Settings
+							{t("shell.settings")}
 						</MenubarItem>
 					</MenubarContent>
 				</MenubarMenu>
 
 				<MenubarMenu>
-					<MenubarTrigger>Help</MenubarTrigger>
+					<MenubarTrigger>{t("shell.help")}</MenubarTrigger>
 					<MenubarContent>
 						<MenubarItem disabled={checking} onClick={checkForUpdates}>
-							Check for updates
+							{t("shell.checkForUpdates")}
 						</MenubarItem>
 						<MenubarItem
 							onClick={() => {
 								void navigate({ to: "/app/about" });
 							}}>
-							About Biyori
+							{t("shell.aboutBiyori")}
 						</MenubarItem>
 					</MenubarContent>
 				</MenubarMenu>

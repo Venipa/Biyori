@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { createFileRoute } from "@tanstack/react-router";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, RefreshCwIcon } from "lucide-react";
@@ -19,30 +20,30 @@ export const Route = createFileRoute("/update")({
 type UpdateState = inferRouterOutputs<AppRouter>["updater"]["status"];
 type PrimaryKind = "check" | "restart" | null;
 
-function statusCopy(status: UpdateState): { title: string; detail: string } {
+function statusCopy(status: UpdateState, t: ReturnType<typeof useTranslation>["t"]): { title: string; detail: string } {
 	switch (status.phase) {
 		case "checking":
-			return { title: "Checking for updates", detail: status.message || "Looking for a newer build." };
+			return { title: t("update.checkingTitle"), detail: status.message || t("update.lookingForNewer") };
 		case "available":
 			return {
-				title: "Downloading update",
-				detail: status.remoteVersion ? `Getting Biyori ${status.remoteVersion}.` : status.message || "Getting the new build.",
+				title: t("update.downloadingTitle"),
+				detail: status.remoteVersion ? t("update.gettingVersion", { version: status.remoteVersion }) : status.message || t("update.gettingBuild"),
 			};
 		case "downloading":
-			return { title: "Downloading update", detail: status.message || "Keep this window open until the download finishes." };
+			return { title: t("update.downloadingTitle"), detail: status.message || t("update.keepWindowOpen") };
 		case "ready":
 			return {
-				title: "Restart to finish",
-				detail: status.remoteVersion ? `Restart Biyori to apply ${status.remoteVersion}.` : status.message || "Restart to apply the update.",
+				title: t("update.restartTitle"),
+				detail: status.remoteVersion ? t("update.restartToApplyVersion", { version: status.remoteVersion }) : status.message || t("update.restartToApply"),
 			};
 		case "up-to-date":
-			return { title: "You're up to date", detail: status.message || "No newer build on this channel." };
+			return { title: t("update.upToDateTitle"), detail: status.message || t("update.noNewerBuild") };
 		case "error":
-			return { title: "Could not update", detail: "Check your connection and try again." };
+			return { title: t("update.couldNotUpdate"), detail: t("update.checkConnection") };
 		case "dev":
-			return { title: "Updates are off", detail: status.message || "This build does not install updates." };
+			return { title: t("update.updatesOff"), detail: status.message || t("update.noInstall") };
 		default:
-			return { title: "Updates", detail: status.message || "Check for a newer build when you want." };
+			return { title: t("update.updates"), detail: status.message || t("update.checkWhenYouWant") };
 	}
 }
 
@@ -60,11 +61,12 @@ function primaryKind(status: UpdateState): PrimaryKind {
 }
 
 function UpdatePage() {
+	const { t } = useTranslation();
 	usePreventNavigation(true);
 	const status = useUpdateStatus();
 	const check = trpc.updater.check.useMutation();
 	const apply = trpc.updater.restartAndApply.useMutation();
-	const copy = statusCopy(status);
+	const copy = statusCopy(status, t);
 	const action = primaryKind(status);
 	const progress = status.phase === "downloading" ? status.progress : null;
 	const percent = progress && Number.isFinite(progress.percent) ? Math.max(0, Math.min(100, progress.percent)) : null;
@@ -72,7 +74,7 @@ function UpdatePage() {
 	const checkBusy = check.isPending || status.phase === "checking";
 	const applyBusy = apply.isPending;
 	const primaryBusy = action === "check" ? checkBusy : applyBusy;
-	const versionLabel = [status.localVersion || "...", status.localChannel].filter(Boolean).join(" ");
+	const versionLabel = [status.localVersion || t("update.versionUnknown"), status.localChannel].filter(Boolean).join(" ");
 
 	return (
 		<div className='flex min-h-0 flex-1 flex-col bg-background text-foreground'>
@@ -85,13 +87,13 @@ function UpdatePage() {
 				{status.phase === "error" && status.error ? (
 					<Alert variant='destructive' className='w-full max-w-sm'>
 						<CircleAlertIcon />
-						<AlertTitle>Update failed</AlertTitle>
+						<AlertTitle>{t("update.updateFailed")}</AlertTitle>
 						<AlertDescription>{status.error}</AlertDescription>
 					</Alert>
 				) : null}
 				{percent != null ? (
 					<Progress value={percent} className='w-full max-w-sm'>
-						<ProgressLabel className='sr-only'>Download</ProgressLabel>
+						<ProgressLabel className='sr-only'>{t("update.download")}</ProgressLabel>
 						<ProgressValue>{() => `${Math.round(percent)}%${speed ? ` · ${speed}` : ""}`}</ProgressValue>
 					</Progress>
 				) : null}
@@ -104,7 +106,7 @@ function UpdatePage() {
 					onClick={() => {
 						void desktopRpc.request.closeUpdate({});
 					}}>
-					Close
+					{t("common.close")}
 				</Button>
 				{action === "check" ? (
 					<Button
@@ -114,7 +116,7 @@ function UpdatePage() {
 							void check.mutateAsync();
 						}}>
 						<RefreshCwIcon data-icon='inline-start' />
-						Check again
+						{t("update.checkAgain")}
 					</Button>
 				) : null}
 				{action === "restart" ? (
@@ -124,7 +126,7 @@ function UpdatePage() {
 						onClick={() => {
 							void apply.mutateAsync();
 						}}>
-						Restart to update
+						{t("update.restartToUpdate")}
 					</Button>
 				) : null}
 			</div>

@@ -1,3 +1,4 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useId, useState } from "react";
 import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
@@ -12,11 +13,13 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Textarea } from "@/mainview/components/ui/textarea";
 import { trpc } from "@/mainview/trpc";
 
-const SERVICE_LABELS = {
-	anilist: "AniList",
-	myanimelist: "MyAnimeList",
-	kitsu: "Kitsu",
-} as const satisfies Record<DefaultService, string>;
+function serviceLabels() {
+	return {
+		anilist: t("anime.anilist"),
+		myanimelist: t("anime.myAnimeList"),
+		kitsu: t("anime.kitsu"),
+	} as const satisfies Record<DefaultService, string>;
+}
 
 function serviceValue(value: unknown): DefaultService {
 	if (value === "anilist" || value === "myanimelist" || value === "kitsu") {
@@ -35,6 +38,7 @@ function ServiceOption({ label, detail }: { label: string; detail?: string }) {
 }
 
 export function AniListAccountCard() {
+	const { t } = useTranslation();
 	const serviceId = useId();
 	const tokenId = useId();
 	const settingsForm = useFormContext<AppSettingsInput>();
@@ -61,6 +65,7 @@ export function AniListAccountCard() {
 	const username = statusQuery.data?.username?.trim() ?? "";
 	const avatarUrl = statusQuery.data?.avatarUrl?.trim() || null;
 	const errorMessage = statusQuery.data?.loginError ?? authorize.error?.message ?? connectWithToken.error?.message ?? disconnect.error?.message ?? null;
+	const labels = serviceLabels();
 
 	return (
 		<Card>
@@ -71,8 +76,8 @@ export function AniListAccountCard() {
 						{connected && avatarUrl ? <Image src={avatarUrl} alt='' className='absolute inset-0 size-full rounded-full' skeletonClassName='rounded-full' /> : null}
 					</span>
 					<div className='min-w-0 flex-1'>
-						<p className='truncate text-sm font-medium'>{connected ? username || "AniList" : "Not connected"}</p>
-						<p className='truncate text-xs text-muted-foreground'>{connected ? "Connected" : "Authorize opens your browser and returns here."}</p>
+						<p className='truncate text-sm font-medium'>{connected ? username || t("anime.anilist") : t("onboarding.notConnected")}</p>
+						<p className='truncate text-xs text-muted-foreground'>{connected ? t("onboarding.connected") : t("onboarding.authorizeHint")}</p>
 					</div>
 					{connected ? (
 						<Button
@@ -82,7 +87,7 @@ export function AniListAccountCard() {
 							onClick={() => {
 								void disconnect.mutateAsync();
 							}}>
-							Disconnect
+							{t("onboarding.disconnect")}
 						</Button>
 					) : (
 						<Button
@@ -91,7 +96,7 @@ export function AniListAccountCard() {
 							onClick={() => {
 								void authorize.mutateAsync();
 							}}>
-							Authorize
+							{t("onboarding.authorize")}
 						</Button>
 					)}
 				</div>
@@ -105,7 +110,7 @@ export function AniListAccountCard() {
 							onClick={() => {
 								setPasteOpen((open) => !open);
 							}}>
-							or paste access token/redirect url
+							{t("onboarding.pasteTokenLink")}
 						</Button>
 						{pasteOpen ? (
 							<FormProvider {...tokenForm}>
@@ -114,11 +119,11 @@ export function AniListAccountCard() {
 									name='token'
 									render={({ field, fieldState }) => (
 										<Field data-invalid={fieldState.invalid || undefined} className='w-full'>
-											<FieldLabel htmlFor={tokenId}>Access token</FieldLabel>
+											<FieldLabel htmlFor={tokenId}>{t("onboarding.accessToken")}</FieldLabel>
 											<Textarea
 												id={tokenId}
 												rows={4}
-												placeholder='Paste the access token or the full redirect URL'
+												placeholder={t("onboarding.tokenPlaceholder")}
 												aria-invalid={fieldState.invalid || undefined}
 												name={field.name}
 												ref={field.ref}
@@ -148,10 +153,10 @@ export function AniListAccountCard() {
 					name='defaultService'
 					render={({ field, fieldState }) => (
 						<Field data-invalid={fieldState.invalid || undefined}>
-							<FieldLabel htmlFor={serviceId}>Default service</FieldLabel>
+							<FieldLabel htmlFor={serviceId}>{t("onboarding.defaultService")}</FieldLabel>
 							<Select
 								value={serviceValue(field.value)}
-								items={SERVICE_LABELS}
+								items={labels}
 								onValueChange={(next) => {
 									if (next === "anilist" || next === "myanimelist" || next === "kitsu") {
 										field.onChange(next);
@@ -165,29 +170,25 @@ export function AniListAccountCard() {
 										{(value: unknown) => {
 											const service = serviceValue(value);
 											const detail = service === "anilist" && connected && username ? username : undefined;
-											return <ServiceOption label={SERVICE_LABELS[service]} detail={detail} />;
+											return <ServiceOption label={labels[service]} detail={detail} />;
 										}}
 									</SelectValue>
 								</SelectTrigger>
 								<SelectContent align='start'>
 									<SelectGroup>
 										<SelectItem value='anilist'>
-											<ServiceOption label='AniList' detail={connected && username ? username : undefined} />
+											<ServiceOption label={t("anime.anilist")} detail={connected && username ? username : undefined} />
 										</SelectItem>
 										<SelectItem value='myanimelist' disabled>
-											MyAnimeList
+											{t("anime.myAnimeList")}
 										</SelectItem>
 										<SelectItem value='kitsu' disabled>
-											Kitsu
+											{t("anime.kitsu")}
 										</SelectItem>
 									</SelectGroup>
 								</SelectContent>
 							</Select>
-							<FieldDescription>
-								{connected
-									? "MyAnimeList and Kitsu are not available yet. Disconnect applies immediately and is not included when you Save other settings."
-									: "MyAnimeList and Kitsu are not available yet."}
-							</FieldDescription>
+							<FieldDescription>{connected ? t("onboarding.servicesUnavailableConnected") : t("onboarding.servicesUnavailable")}</FieldDescription>
 							<FieldError errors={[fieldState.error]} />
 						</Field>
 					)}
@@ -199,11 +200,12 @@ export function AniListAccountCard() {
 }
 
 function AniListConnectButton({ onConnect }: { onConnect: () => void }) {
+	const { t } = useTranslation();
 	const { control } = useFormContext<AnilistTokenInput>();
 	const { isSubmitting } = useFormState({ control });
 	return (
 		<Button type='button' disabled={isSubmitting} onClick={onConnect}>
-			Connect
+			{t("onboarding.connect")}
 		</Button>
 	);
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { useFormContext, useFormState, useWatch } from "react-hook-form";
 import type { SettingsFormInput, SettingsFormValues } from "@/lib/schemas/app-settings";
 import { settingsFormIsDirty } from "@/lib/settings-dirty";
@@ -5,6 +6,7 @@ import { ConfirmEscape } from "@/mainview/components/app/shell/confirm-escape";
 import { trpc } from "@/mainview/trpc";
 
 export function SettingsCloseGuard() {
+	const { t } = useTranslation();
 	const closeWindow = trpc.desktop.closeWindow.useMutation();
 	const form = useFormContext<SettingsFormInput, unknown, SettingsFormValues>();
 	const { defaultValues } = useFormState({ control: form.control });
@@ -17,8 +19,8 @@ export function SettingsCloseGuard() {
 			onConfirm={() => {
 				closeWindow.mutate();
 			}}
-			title='Discard changes?'
-			description='Unsaved settings will be lost.'
+			title={t("settings.close.discardTitle")}
+			description={t("settings.close.discardDescription")}
 		/>
 	);
 }

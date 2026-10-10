@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -14,8 +15,8 @@ export function ConfirmDialog({
 	onOpenChange,
 	title,
 	description,
-	confirmLabel = "Confirm",
-	cancelLabel = "Cancel",
+	confirmLabel,
+	cancelLabel,
 	onConfirm,
 	pending = false,
 }: {
@@ -28,6 +29,9 @@ export function ConfirmDialog({
 	onConfirm: () => void;
 	pending?: boolean;
 }) {
+	const { t } = useTranslation();
+	const confirmText = confirmLabel ?? t("confirm.confirm");
+	const cancelText = cancelLabel ?? t("common.cancel");
 	return (
 		<AlertDialog
 			open={open}
@@ -43,9 +47,9 @@ export function ConfirmDialog({
 					<AlertDialogDescription>{description}</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel disabled={pending}>{cancelLabel}</AlertDialogCancel>
+					<AlertDialogCancel disabled={pending}>{cancelText}</AlertDialogCancel>
 					<AlertDialogAction variant='destructive' loading={pending} onClick={onConfirm}>
-						{confirmLabel}
+						{confirmText}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

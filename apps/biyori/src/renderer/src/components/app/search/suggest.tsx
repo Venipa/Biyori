@@ -1,9 +1,12 @@
+import { useTranslation } from "@biyori/translations/react";
 import type { inferRouterOutputs } from "@trpc/server";
 import { motion } from "motion/react";
 import { type KeyboardEvent, type ReactNode, useLayoutEffect } from "react";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
+import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
 import { Badge } from "@/mainview/components/ui/badge";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
+import { animeTypeLabel } from "@/mainview/lib/anime-list-filter";
 import { listProgressLabel } from "@/mainview/lib/list-progress";
 import { cn } from "@/mainview/lib/utils";
 import type { AppRouter } from "@/shared/app-router";
@@ -94,13 +97,14 @@ export function SearchSuggestPanel({
 	className?: string;
 }) {
 	const footerIndex = items.length;
+	const { t } = useTranslation();
 	useLayoutEffect(() => {
 		document.getElementById(`${listId}-${activeIndex}`)?.scrollIntoView({ block: "nearest" });
 	}, [activeIndex, listId]);
 	return (
 		<SearchOverlayCard className={className}>
 			<ScrollArea className='h-auto max-h-80 overflow-hidden' viewportClassName='h-auto max-h-80 w-full outline-none focus-visible:ring-0'>
-				<div id={listId} role='listbox' aria-label='Title suggestions' className='py-1'>
+				<div id={listId} role='listbox' aria-label={t("search.suggestions")} className='py-1'>
 					{items.map((item, index) => {
 						const progress = listProgressLabel(item.episodesWatched, item.episodes);
 						const optionId = `${listId}-${index}`;
@@ -139,11 +143,11 @@ export function SearchSuggestPanel({
 									<span className='flex min-w-0 flex-wrap items-center gap-1'>
 										{item.type ? (
 											<Badge variant='outline' size='xs'>
-												{item.type}
+												{animeTypeLabel(item.type)}
 											</Badge>
 										) : null}
 										<Badge variant='secondary' size='xs'>
-											{item.status}
+											{listStatusLabel(item.status)}
 										</Badge>
 										<span className='text-xs tabular-nums text-muted-foreground'>
 											{progress.watched}/{progress.total}
@@ -172,7 +176,7 @@ export function SearchSuggestPanel({
 						onClick={() => {
 							onSearchAnilist();
 						}}>
-						<span className='truncate'>Search AniList for "{q}"</span>
+						<span className='truncate'>{t("search.searchFor", { query: q })}</span>
 					</button>
 				</div>
 			</ScrollArea>

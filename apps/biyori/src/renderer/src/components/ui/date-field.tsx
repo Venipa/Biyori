@@ -1,4 +1,5 @@
 import { Popover } from "@base-ui/react/popover";
+import { useTranslation } from "@biyori/translations/react";
 import { cva } from "class-variance-authority";
 import { format, isValid, parse } from "date-fns";
 import { CalendarIcon } from "lucide-react";
@@ -26,7 +27,7 @@ function DateField({
 	onChange,
 	onBlur,
 	invalid,
-	placeholder = "Pick a date",
+	placeholder,
 }: {
 	id: string;
 	value: string;
@@ -35,6 +36,7 @@ function DateField({
 	invalid?: boolean;
 	placeholder?: string;
 }) {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const selected = parseFieldDate(value);
 
@@ -58,7 +60,7 @@ function DateField({
 					/>
 				}>
 				<CalendarIcon />
-				{selected ? format(selected, "MMM d, yyyy") : placeholder}
+				{selected ? format(selected, "MMM d, yyyy") : (placeholder ?? t("common.pickDate"))}
 			</Popover.Trigger>
 			<Popover.Portal>
 				<Popover.Positioner className='isolate z-[60] outline-none' side='bottom' align='start' sideOffset={4}>

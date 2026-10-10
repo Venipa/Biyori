@@ -1,3 +1,5 @@
+import { t } from "@biyori/translations/i18n";
+
 export type TorrentFact = {
 	label: string;
 	value: string;
@@ -30,15 +32,15 @@ function episodeLabel(input: TorrentParseInput): string {
 
 export function torrentParseFacts(input: TorrentParseInput): TorrentFact[] {
 	const rows: Array<[string, string]> = [
-		["Title", input.title],
-		["Season", input.season == null ? "" : String(input.season)],
-		["Year", input.year == null ? "" : String(input.year)],
-		["Episode", episodeLabel(input)],
-		["Group", input.group],
-		["Video", input.videoFormat],
-		["Version", input.releaseVersion > 1 ? `v${input.releaseVersion}` : ""],
-		["Category", input.category],
-		["Extension", input.fileExtension],
+		[t("main.torrent.fact.title"), input.title],
+		[t("main.torrent.fact.season"), input.season == null ? "" : String(input.season)],
+		[t("main.torrent.fact.year"), input.year == null ? "" : String(input.year)],
+		[t("main.torrent.fact.episode"), episodeLabel(input)],
+		[t("main.torrent.fact.group"), input.group],
+		[t("main.torrent.fact.video"), input.videoFormat],
+		[t("main.torrent.fact.version"), input.releaseVersion > 1 ? `v${input.releaseVersion}` : ""],
+		[t("main.torrent.fact.category"), input.category],
+		[t("main.torrent.fact.extension"), input.fileExtension],
 	];
 	return rows.filter(([, value]) => value).map(([label, value]) => ({ label, value }));
 }

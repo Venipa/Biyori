@@ -1,3 +1,4 @@
+import { t } from "@biyori/translations/react";
 import type { inferRouterOutputs } from "@trpc/server";
 import { formatClock } from "@/mainview/lib/format-date";
 import { type ContinueWatchingItem, SEVEN_DAYS_MS } from "@/mainview/lib/now-playing-idle";
@@ -35,12 +36,12 @@ export function selectedFromContinue(item: ContinueWatchingItem): SelectedAnime 
 }
 
 export function airingCaption(item: ContinueWatchingItem): string {
-	return `Episode ${item.nextEpisode} at ${formatClock(item.nextAiringAt)}`;
+	return t("nowPlaying.episodeAt", { episode: item.nextEpisode, time: formatClock(item.nextAiringAt) });
 }
 
 export function episodeLine(item: ContinueWatchingItem): string {
 	const total = item.episodes != null && item.episodes > 0 ? item.episodes : null;
-	return total != null ? `Episode ${item.nextEpisode} of ${total}` : `Episode ${item.nextEpisode}`;
+	return total != null ? t("nowPlaying.episodeOf", { episode: item.nextEpisode, total }) : t("nowPlaying.episodeNumber", { episode: item.nextEpisode });
 }
 
 export function countWatchedLastWeek(rows: HistoryRow[]): number {
@@ -60,11 +61,11 @@ export function countWatchedLastWeek(rows: HistoryRow[]): number {
 
 export function formatNowPlayingLine(episode: number | null | undefined, group: string | null | undefined, isMovie: boolean = false): string {
 	if (isMovie) {
-		return "Movie";
+		return t("nowPlaying.movie");
 	}
-	const episodePart = episode != null ? `Episode ${episode}` : "Episode unknown";
+	const episodeLineText = episode != null ? t("nowPlaying.episodeNumber", { episode }) : t("nowPlaying.episodeUnknown");
 	if (group) {
-		return `${episodePart} by ${group}`;
+		return t("nowPlaying.episodeBy", { episodeLine: episodeLineText, group });
 	}
-	return episodePart;
+	return episodeLineText;
 }

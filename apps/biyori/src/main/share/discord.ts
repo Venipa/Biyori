@@ -1,3 +1,4 @@
+import { t } from "@biyori/translations/i18n";
 import type { AppSettings, DefaultService } from "../../lib/schemas/app-settings";
 import DiscordClient from "../lib/discord-rpc";
 import { type DiscordActivity, DiscordActivityStatusDisplayType, DiscordActivityType } from "../lib/discord-rpc/discord-rpc";
@@ -135,14 +136,14 @@ export function syncDiscordPresence(snapshot: NowPlayingSnapshot | null, setting
 			type: DiscordActivityType.Watching,
 			status_display_type: DiscordActivityStatusDisplayType.Details,
 			details: snapshot.match.title,
-			state: snapshot.parsed.episode ? `Episode ${snapshot.parsed.episode}` : "Watching",
+			state: snapshot.parsed.episode ? t("nowPlaying.episodeNumber", { episode: snapshot.parsed.episode }) : t("list.watching"),
 			timestamps: settings.showElapsedTime && snapshot.startedAt ? { start: snapshot.startedAt } : undefined,
 			assets,
 			instance: false,
 			buttons: snapshot.match
 				? [
 						{
-							label: "AniList",
+							label: t("anime.anilist"),
 							url: `https://anilist.co/anime/${snapshot.match.id}`,
 						},
 					]

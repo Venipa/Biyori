@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { useEffect } from "react";
 import { useWatchConfirm, WatchConfirmActions } from "@/mainview/components/app/confirm/watch-actions";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/mainview/components/ui/alert-dialog";
@@ -25,6 +26,7 @@ export function WatchConfirmDialog() {
 	}, [pendingKey]);
 
 	const dialogOpen = Boolean(pending) && !watchConfirmPromoted;
+	const { t } = useTranslation();
 
 	return (
 		<AlertDialog
@@ -36,10 +38,8 @@ export function WatchConfirmDialog() {
 			}}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
-					<AlertDialogTitle>Update list?</AlertDialogTitle>
-					<AlertDialogDescription>
-						Update {pending?.title ?? "this anime"} to episode {pending?.episode}?
-					</AlertDialogDescription>
+					<AlertDialogTitle>{t("confirm.updateList")}</AlertDialogTitle>
+					<AlertDialogDescription>{t("confirm.updateEpisode", { title: pending?.title ?? t("confirm.thisAnime"), episode: pending?.episode })}</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
 					<WatchConfirmActions

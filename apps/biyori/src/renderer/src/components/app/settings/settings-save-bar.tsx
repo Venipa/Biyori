@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { useNavigate } from "@tanstack/react-router";
 import { CircleAlertIcon } from "lucide-react";
 import { type FieldErrors, type FieldPath, useFormContext, useFormState, useWatch } from "react-hook-form";
@@ -29,6 +30,7 @@ function firstErrorPath(errors: FieldErrors): string | null {
 }
 
 export function SettingsSaveBar() {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const saveSettings = trpc.settings.set.useMutation();
 	const form = useFormContext<SettingsFormInput, unknown, SettingsFormValues>();
@@ -49,7 +51,7 @@ export function SettingsSaveBar() {
 				{changeCount}
 			</Badge>
 			<div className='flex min-w-0 flex-1 flex-col gap-0.5'>
-				<p className='truncate text-sm font-medium'>{serverError ? "Could not save" : changeCount === 1 ? "1 unsaved change" : `${changeCount} unsaved changes`}</p>
+				<p className='truncate text-sm font-medium'>{serverError ? t("settings.saveBar.couldNotSave") : t("settings.saveBar.unsaved", { count: changeCount })}</p>
 				<FieldError errors={[serverError]} />
 			</div>
 			<div className='flex shrink-0 items-center gap-2'>
@@ -62,7 +64,7 @@ export function SettingsSaveBar() {
 						form.clearErrors("root.serverError");
 						form.reset();
 					}}>
-					Discard
+					{t("common.discard")}
 				</Button>
 				<Button
 					size='sm'
@@ -82,7 +84,7 @@ export function SettingsSaveBar() {
 									form.reset(saved);
 								} catch (error) {
 									form.setError("root.serverError", {
-										message: error instanceof Error ? error.message : "Could not save settings",
+										message: error instanceof Error ? error.message : t("settings.saveBar.couldNotSaveSettings"),
 									});
 								}
 							},
@@ -95,12 +97,12 @@ export function SettingsSaveBar() {
 									void form.setFocus(path as FieldPath<SettingsFormInput>);
 								}
 								form.setError("root.serverError", {
-									message: path ? `Fix ${path} in ${nav.section}` : "Fix invalid settings",
+									message: path ? t("settings.saveBar.fixField", { path, section: nav.section }) : t("settings.saveBar.fixInvalid"),
 								});
 							},
 						)();
 					}}>
-					Save
+					{t("common.save")}
 				</Button>
 			</div>
 		</SaveBar>

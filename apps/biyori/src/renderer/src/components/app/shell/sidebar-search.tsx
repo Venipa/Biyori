@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { SearchIcon } from "lucide-react";
@@ -27,6 +28,7 @@ function routeQuery(search: unknown): string {
 }
 
 export function SidebarSearch() {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const animeInfo = useAnimeInfoNav();
 	const pathname = useRouterState({
@@ -72,7 +74,7 @@ export function SidebarSearch() {
 		setActive({ q: debouncedQ, index: 0 });
 	}
 	const activeIndex = active.q === debouncedQ ? active.index : 0;
-	const placeholder = isAnimeListPage ? "Filter this list" : isSeasonsPage ? "Filter this season" : "Search AniList";
+	const placeholder = isAnimeListPage ? t("shell.filterThisList") : isSeasonsPage ? t("shell.filterThisSeason") : t("shell.searchAnilist");
 
 	function goToAnilistSearch(q: string): void {
 		if (!q) {
@@ -184,7 +186,7 @@ export function SidebarSearch() {
 					goToAnilistSearch(data.q.trim());
 				})}>
 				<label className='sr-only' htmlFor={searchId}>
-					Search
+					{t("common.search")}
 				</label>
 				<Controller
 					control={form.control}
@@ -238,10 +240,10 @@ export function SidebarSearch() {
 							/>
 							<InputGroupAddon align='inline-end'>
 								<Tooltip>
-									<TooltipTrigger render={<InputGroupButton type='submit' size='icon-xs' aria-label='Search AniList' disabled={!canSubmit} />}>
+									<TooltipTrigger render={<InputGroupButton type='submit' size='icon-xs' aria-label={t("shell.searchAnilist")} disabled={!canSubmit} />}>
 										<SearchIcon />
 									</TooltipTrigger>
-									<TooltipContent>Search AniList</TooltipContent>
+									<TooltipContent>{t("shell.searchAnilist")}</TooltipContent>
 								</Tooltip>
 							</InputGroupAddon>
 						</InputGroup>

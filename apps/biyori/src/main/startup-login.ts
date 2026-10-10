@@ -1,4 +1,5 @@
 import { basename } from "node:path";
+import { t } from "@biyori/translations/i18n";
 
 export const STARTUP_FLAG = "--startup";
 
@@ -32,7 +33,7 @@ export function linuxAutostartDesktopEntry(opts: { name: string; execArgs: reado
 		"Type=Application",
 		"Version=1.0",
 		`Name=${opts.name}`,
-		"Comment=Anime library tracker",
+		`Comment=${t("main.startup.comment")}`,
 		`Exec=${exec}`,
 		"Terminal=false",
 		"StartupNotify=false",

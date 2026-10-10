@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
@@ -37,7 +38,8 @@ export function AppAnimeInfoDialog() {
 	const stayOpenRef = useRef(false);
 	const lastShownRef = useRef<NonNullable<typeof byIdQuery.data> | undefined>(undefined);
 	const ensureForThisId = ensureAnime.variables?.id === id;
-	const ensureError = id != null && ensureAnime.isError && ensureForThisId ? (ensureAnime.error.message ?? "Could not load anime") : undefined;
+	const { t } = useTranslation();
+	const ensureError = id != null && ensureAnime.isError && ensureForThisId ? (ensureAnime.error.message ?? t("anime.couldNotLoad")) : undefined;
 	const gate = selectAnimeInfoDialog({
 		id,
 		heldId,

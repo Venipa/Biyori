@@ -1,4 +1,4 @@
-import { useTranslation } from "@biyori/translations/react";
+import { t, useTranslation } from "@biyori/translations/react";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { ContinueWatchingEmpty } from "@/mainview/components/app/now-playing/continue-card";
 import { IdleItemContextMenu } from "@/mainview/components/app/now-playing/item-menu";
@@ -27,7 +27,9 @@ export function TitleCellWithPoster({ item }: { item: ContinueWatchingItem }) {
 }
 
 function nextEpisodeCaption(item: ContinueWatchingItem): string {
-	return `Next episode ${item.nextEpisode}${item.episodes != null && item.episodes > 0 ? ` of ${item.episodes}` : ""}`;
+	return item.episodes != null && item.episodes > 0
+		? t("nowPlaying.nextEpisodeOf", { episode: item.nextEpisode, total: item.episodes })
+		: t("nowPlaying.nextEpisode", { episode: item.nextEpisode });
 }
 
 export function IdleWatchingTable({
@@ -48,9 +50,9 @@ export function IdleWatchingTable({
 			<Table containerClassName='overflow-visible'>
 				<TableHeader>
 					<TableRow>
-						<TableHead>Title</TableHead>
-						<TableHead>Episode</TableHead>
-						<TableHead>Type</TableHead>
+						<TableHead>{t("nowPlaying.title")}</TableHead>
+						<TableHead>{t("nowPlaying.episode")}</TableHead>
+						<TableHead>{t("nowPlaying.type")}</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>
@@ -119,14 +121,14 @@ export function IdleTables({
 			) : null}
 			{airing.length > 0 ? (
 				<section>
-					<h2 className='mb-1 text-sm font-semibold'>Airing soon</h2>
+					<h2 className='mb-1 text-sm font-semibold'>{t("nowPlaying.airingSoon")}</h2>
 					<Separator className='mb-2' />
 					<Table containerClassName='overflow-visible'>
 						<TableHeader>
 							<TableRow>
-								<TableHead>Title</TableHead>
-								<TableHead>Airing</TableHead>
-								<TableHead>Type</TableHead>
+								<TableHead>{t("nowPlaying.title")}</TableHead>
+								<TableHead>{t("nowPlaying.airing")}</TableHead>
+								<TableHead>{t("nowPlaying.type")}</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>

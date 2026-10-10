@@ -1,9 +1,55 @@
+import { useTranslation } from "@biyori/translations/react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutGroup, motion } from "motion/react";
 import { type ReactNode, useRef } from "react";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { matchSettingsNav, settingsSectionHref, settingsSections } from "@/mainview/lib/settings-nav";
 import { cn } from "@/mainview/lib/utils";
+
+type Translate = ReturnType<typeof useTranslation>["t"];
+
+function sectionCopy(t: Translate, id: string): { label: string; description: string } {
+	switch (id) {
+		case "services":
+			return { label: t("settings.nav.services.label"), description: t("settings.nav.services.description") };
+		case "library":
+			return { label: t("settings.nav.library.label"), description: t("settings.nav.library.description") };
+		case "application":
+			return { label: t("settings.nav.application.label"), description: t("settings.nav.application.description") };
+		case "recognition":
+			return { label: t("settings.nav.recognition.label"), description: t("settings.nav.recognition.description") };
+		case "sharing":
+			return { label: t("settings.nav.sharing.label"), description: t("settings.nav.sharing.description") };
+		case "torrents":
+			return { label: t("settings.nav.torrents.label"), description: t("settings.nav.torrents.description") };
+		case "advanced":
+			return { label: t("settings.nav.advanced.label"), description: t("settings.nav.advanced.description") };
+		default:
+			return { label: id, description: "" };
+	}
+}
+
+function childCopy(t: Translate, sectionId: string, childId: string): { label: string; description: string } {
+	if (sectionId === "recognition" && childId === "general") {
+		return { label: t("settings.nav.recognition.general.label"), description: t("settings.nav.recognition.general.description") };
+	}
+	if (sectionId === "recognition" && childId === "sources") {
+		return { label: t("settings.nav.recognition.sources.label"), description: t("settings.nav.recognition.sources.description") };
+	}
+	if (sectionId === "torrents" && childId === "general") {
+		return { label: t("settings.nav.torrents.general.label"), description: t("settings.nav.torrents.general.description") };
+	}
+	if (sectionId === "torrents" && childId === "filters") {
+		return { label: t("settings.nav.torrents.filters.label"), description: t("settings.nav.torrents.filters.description") };
+	}
+	if (sectionId === "advanced" && childId === "general") {
+		return { label: t("settings.nav.advanced.general.label"), description: t("settings.nav.advanced.general.description") };
+	}
+	if (sectionId === "advanced" && childId === "cache") {
+		return { label: t("settings.nav.advanced.cache.label"), description: t("settings.nav.advanced.cache.description") };
+	}
+	return { label: childId, description: "" };
+}
 
 export function navLinkClass(isActive: boolean) {
 	return cn(
@@ -20,7 +66,8 @@ const subNavPillSpring = { type: "spring", stiffness: 420, damping: 32 } as cons
 const subNavPillEnter = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const;
 const subNavPillInstant = { duration: 0 } as const;
 
-export function SettingsSubNav({ sectionId, items, pathname }: { sectionId: string; items: readonly { id: string; label: string }[]; pathname: string }) {
+export function SettingsSubNav({ sectionId, items, pathname }: { sectionId: string; items: readonly { id: string }[]; pathname: string }) {
+	const { t } = useTranslation();
 	const groupActive = items.some((child) => pathname === settingsSectionHref(sectionId, child.id));
 	const shown = useRef(false);
 	if (!groupActive) {
@@ -53,7 +100,7 @@ export function SettingsSubNav({ sectionId, items, pathname }: { sectionId: stri
 									}}
 								/>
 							) : null}
-							<span className='truncate'>{child.label}</span>
+							<span className='truncate'>{childCopy(t, sectionId, child.id).label}</span>
 						</Link>
 					);
 				})}
@@ -66,14 +113,15 @@ export function SettingsChrome({ children, overlay }: { children: ReactNode; ove
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
 	});
+	const { t } = useTranslation();
 	const { section: active, child: activeChild } = matchSettingsNav(pathname);
-	const heading = activeChild ?? active;
+	const heading = activeChild && active ? childCopy(t, active.id, activeChild.id) : active ? sectionCopy(t, active.id) : undefined;
 
 	return (
 		<div className='flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-background text-foreground'>
 			<div className='flex min-h-0 flex-1 gap-0 overflow-hidden'>
 				<ScrollArea className='h-full w-48 shrink-0 bg-card/20 border-r'>
-					<nav aria-label='Settings sections' className='flex flex-col gap-1 p-2'>
+					<nav aria-label={t("settings.nav.sections")} className='flex flex-col gap-1 p-2'>
 						{settingsSections.map((item) => {
 							const children = "children" in item ? item.children : undefined;
 							if (children?.length) {
@@ -83,7 +131,7 @@ export function SettingsChrome({ children, overlay }: { children: ReactNode; ove
 									<div key={item.id} className='flex flex-col gap-0.5'>
 										<Link to={firstHref} className={navLinkClass(groupActive)}>
 											<item.icon className='size-4 shrink-0' />
-											<span className='truncate'>{item.label}</span>
+											<span className='truncate'>{sectionCopy(t, item.id).label}</span>
 										</Link>
 										<SettingsSubNav sectionId={item.id} items={children} pathname={pathname} />
 									</div>
@@ -94,7 +142,7 @@ export function SettingsChrome({ children, overlay }: { children: ReactNode; ove
 							return (
 								<Link key={item.id} to={href} aria-current={isActive ? "page" : undefined} className={navLinkClass(isActive)}>
 									<item.icon className='size-4 shrink-0' />
-									<span className='truncate'>{item.label}</span>
+									<span className='truncate'>{sectionCopy(t, item.id).label}</span>
 								</Link>
 							);
 						})}
@@ -103,7 +151,7 @@ export function SettingsChrome({ children, overlay }: { children: ReactNode; ove
 				<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-muted/30'>
 					<ScrollArea className='min-h-0 flex-1' viewportClassName='rounded-none pb-20'>
 						<div className='sticky top-0 z-10 flex flex-col gap-0.5 border-b bg-card/80 px-4 py-3 backdrop-blur-md'>
-							<h2 className='text-lg font-semibold tracking-tight'>{heading?.label ?? "Settings"}</h2>
+							<h2 className='text-lg font-semibold tracking-tight'>{heading?.label ?? t("settings.nav.title")}</h2>
 							{heading?.description ? <p className='text-sm text-muted-foreground'>{heading.description}</p> : null}
 						</div>
 						<div className='flex flex-col gap-4 p-4'>{children}</div>

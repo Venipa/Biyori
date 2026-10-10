@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { useNavigate } from "@tanstack/react-router";
 import { CircleAlertIcon, CircleHelpIcon, PlayCircleIcon, SearchIcon } from "lucide-react";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
@@ -21,7 +22,8 @@ export function UnrecognizedPlayback({ snapshot }: { snapshot: NowPlayingSnapsho
 			void utils.anime.listed.invalidate();
 		},
 	});
-	const title = snapshot.parsed?.title ?? snapshot.media?.title ?? "Unknown title";
+	const { t } = useTranslation();
+	const title = snapshot.parsed?.title ?? snapshot.media?.title ?? t("nowPlaying.unknownTitle");
 	const episode = snapshot.parsed?.episode;
 	const group = snapshot.parsed?.group;
 	const searchQuery = title.trim();
@@ -35,12 +37,12 @@ export function UnrecognizedPlayback({ snapshot }: { snapshot: NowPlayingSnapsho
 				</div>
 				<div className='flex min-w-0 flex-1 flex-col gap-3'>
 					<div className='flex flex-col gap-1.5'>
-						<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Now playing</p>
+						<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>{t("nowPlaying.kicker")}</p>
 						<h1 className='text-balance text-xl font-semibold tracking-tight sm:text-2xl'>{title}</h1>
 						<p className='text-sm text-muted-foreground'>{formatNowPlayingLine(episode, group)}</p>
 					</div>
 					<div className='flex flex-wrap items-center gap-1.5'>
-						<Badge variant='destructive'>Not recognized</Badge>
+						<Badge variant='destructive'>{t("nowPlaying.notRecognized")}</Badge>
 						{snapshot.media ? <Badge variant='outline'>{snapshot.media.player}</Badge> : null}
 					</div>
 				</div>
@@ -48,12 +50,8 @@ export function UnrecognizedPlayback({ snapshot }: { snapshot: NowPlayingSnapsho
 
 			<Alert variant='destructive'>
 				<CircleAlertIcon />
-				<AlertTitle>Unable to match this title</AlertTitle>
-				<AlertDescription>
-					{similar.length > 0
-						? "Biyori could not identify this episode. Choose the correct anime from the list below, or search AniList."
-						: "Biyori could not identify this episode against your list. Search AniList and add it, or check the filename."}
-				</AlertDescription>
+				<AlertTitle>{t("nowPlaying.unableToMatch")}</AlertTitle>
+				<AlertDescription>{similar.length > 0 ? t("nowPlaying.chooseOrSearch") : t("nowPlaying.searchList")}</AlertDescription>
 				{searchQuery ? (
 					<AlertAction>
 						<Button
@@ -67,7 +65,7 @@ export function UnrecognizedPlayback({ snapshot }: { snapshot: NowPlayingSnapsho
 								});
 							}}>
 							<SearchIcon data-icon='inline-start' />
-							Search
+							{t("common.search")}
 						</Button>
 					</AlertAction>
 				) : null}
@@ -75,7 +73,7 @@ export function UnrecognizedPlayback({ snapshot }: { snapshot: NowPlayingSnapsho
 
 			{similar.length > 0 ? (
 				<section className='flex flex-col gap-2'>
-					<h2 className='text-sm font-semibold'>Similar titles</h2>
+					<h2 className='text-sm font-semibold'>{t("nowPlaying.similarTitles")}</h2>
 					<Separator />
 					<ul className='flex flex-col gap-2'>
 						{similar.map((item) => (
@@ -98,7 +96,7 @@ export function UnrecognizedPlayback({ snapshot }: { snapshot: NowPlayingSnapsho
 
 			{snapshot.media?.filePath || snapshot.parsed?.filePath ? (
 				<div>
-					<h2 className='mb-1 text-sm font-semibold'>Source</h2>
+					<h2 className='mb-1 text-sm font-semibold'>{t("nowPlaying.source")}</h2>
 					<Separator className='mb-2' />
 					<p className='break-all font-mono text-xs text-muted-foreground'>{snapshot.media?.filePath ?? snapshot.parsed?.filePath}</p>
 				</div>
@@ -118,6 +116,7 @@ export function SimilarTitleCard({
 	onChoose: () => void;
 	onInfo: () => void;
 }) {
+	const { t } = useTranslation();
 	return (
 		<Card size='sm' className='py-0'>
 			<div className='flex items-stretch'>
@@ -141,7 +140,14 @@ export function SimilarTitleCard({
 						{item.type ? <span className='text-xs text-muted-foreground'>{item.type}</span> : null}
 					</span>
 				</Button>
-				<Button type='button' variant='ghost' size='icon' className='m-1 shrink-0 self-center' aria-label={`Open ${item.title}`} disabled={disabled} onClick={onInfo}>
+				<Button
+					type='button'
+					variant='ghost'
+					size='icon'
+					className='m-1 shrink-0 self-center'
+					aria-label={t("nowPlaying.openTitle", { title: item.title })}
+					disabled={disabled}
+					onClick={onInfo}>
 					<CircleHelpIcon />
 				</Button>
 			</div>

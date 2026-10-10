@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { type ReactNode, useState } from "react";
@@ -22,6 +23,7 @@ export function ListFilterChip({
 	size?: "xs" | "sm";
 }) {
 	const [hovered, setHovered] = useState(false);
+	const { t } = useTranslation();
 	const [menuOpen, setMenuOpen] = useState(false);
 	const showRemove = hovered || menuOpen;
 	const iconSize = size === "sm" ? "icon-sm" : "icon-xs";
@@ -65,7 +67,7 @@ export function ListFilterChip({
 							<div className='flex justify-end pl-0.5'>
 								<FilterPillButton
 									size={iconSize}
-									aria-label={`Remove ${label} filter`}
+									aria-label={t("list.removeFilter", { label })}
 									onClick={() => {
 										window.setTimeout(onRemove, 0);
 									}}>

@@ -1,3 +1,4 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type ColumnDef, getCoreRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
@@ -6,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AiringStatusMark } from "@/components/app/anime/airing-status";
 import { anilistSearchRouteSchema } from "@/lib/schemas/anilist-search";
 import { parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
+import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
 import { AnimeItemCommands } from "@/mainview/components/app/anime-info/item-commands";
 import { DataTable, resizableTableOptions } from "@/mainview/components/app/shared/data-table";
 import { PlaceholderView } from "@/mainview/components/app/shared/placeholder-view";
@@ -25,6 +27,7 @@ import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { rememberAnilistSearch, useAnilistSearches } from "@/mainview/lib/anilist-search-history";
 import { useAnimeInfoNav, useAnimeInfoOpen } from "@/mainview/lib/anime-info-nav";
+import { animeTypeLabel } from "@/mainview/lib/anime-list-filter";
 import { formatSeasonLabel } from "@/mainview/lib/season-view";
 import { usePersistedColumnSizing } from "@/mainview/lib/table-column-sizing";
 import { cn } from "@/mainview/lib/utils";
@@ -43,7 +46,7 @@ type SearchRow = SearchItem & { inList: boolean };
 const columns: ColumnDef<SearchRow>[] = [
 	{
 		accessorKey: "title",
-		header: "Anime title",
+		header: () => t("search.animeTitle"),
 		size: 280,
 		minSize: 120,
 		cell: ({ row }) => (
@@ -55,22 +58,23 @@ const columns: ColumnDef<SearchRow>[] = [
 	},
 	{
 		accessorKey: "format",
-		header: "Type",
+		header: () => t("search.type"),
+		cell: ({ row }) => (row.original.format ? animeTypeLabel(row.original.format) : "-"),
 	},
 	{
 		accessorKey: "episodes",
-		header: "Episodes",
+		header: () => t("search.episodes"),
 		cell: ({ row }) => <span className='tabular-nums'>{row.original.episodes > 0 ? row.original.episodes : "-"}</span>,
 	},
 	{
 		accessorKey: "averageScore",
-		header: "Score",
+		header: () => t("search.score"),
 		cell: ({ row }) => <span className='tabular-nums'>{row.original.averageScore > 0 ? `${row.original.averageScore}%` : "-"}</span>,
 	},
 	{
 		id: "season",
 		accessorFn: (row) => formatSeasonLabel(row.season, row.seasonYear),
-		header: "Season",
+		header: () => t("search.season"),
 		cell: ({ row }) => formatSeasonLabel(row.original.season, row.original.seasonYear) || "-",
 	},
 ];
@@ -95,6 +99,7 @@ function parseListStatus(value: string | undefined): ListStatus | null {
 }
 
 function SearchPage() {
+	const { t } = useTranslation();
 	const { q, id: openIdRaw } = Route.useSearch();
 	const openId = useAnimeInfoOpen()?.id ?? parseAnimeInfoId(openIdRaw);
 	const animeInfo = useAnimeInfoNav();
@@ -138,7 +143,7 @@ function SearchPage() {
 	return (
 		<div className='flex h-full min-h-0 flex-col'>
 			{searchTabs.length > 0 ? (
-				<div className='flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-1' role='tablist' aria-label='Recent AniList searches'>
+				<div className='flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-1' role='tablist' aria-label={t("search.recent")}>
 					{searchTabs.map((query) => {
 						const selected = currentQuery.toLowerCase() === query.toLowerCase();
 						return (
@@ -162,13 +167,13 @@ function SearchPage() {
 				<ContextMenu>
 					<ContextMenuTrigger className='block h-full min-h-0'>
 						<ScrollArea className='h-full'>
-							{!hasQuery ? <PlaceholderView icon={SearchIcon} title='Search AniList' description='Type a title in the sidebar and submit.' /> : null}
+							{!hasQuery ? <PlaceholderView icon={SearchIcon} title={t("search.searchAnilist")} description={t("search.searchHint")} /> : null}
 							{hasQuery && query.isPending && items.length === 0 ? (
-								<TableRowsSkeleton columnCount={columns.length} headers={["Anime title", "Type", "Episodes", "Score", "Season"]} />
+								<TableRowsSkeleton columnCount={columns.length} headers={[t("search.animeTitle"), t("search.type"), t("search.episodes"), t("search.score"), t("search.season")]} />
 							) : null}
-							{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Search failed' description={query.error.message} /> : null}
+							{query.error ? <PlaceholderView icon={CircleAlertIcon} title={t("search.failed")} description={query.error.message} /> : null}
 							{hasQuery && !query.isPending && !query.error && items.length === 0 ? (
-								<PlaceholderView icon={SearchIcon} title='No results' description={`Nothing matched "${q}".`} />
+								<PlaceholderView icon={SearchIcon} title={t("search.noResults")} description={t("search.nothingMatched", { query: q })} />
 							) : null}
 							{items.length > 0 ? (
 								<DataTable
@@ -182,6 +187,16 @@ function SearchPage() {
 										return parsed.success ? parsed.data : "In list";
 									}}
 									groupOrder={SEARCH_GROUP_ORDER}
+									groupLabel={(value) => {
+										const text = String(value);
+										if (text === "Not in list") {
+											return t("search.notInList");
+										}
+										if (text === "In list") {
+											return t("search.inList");
+										}
+										return listStatusLabel(text);
+									}}
 									renderRow={(row, cells) => (
 										<TableRow
 											data-state={openId === row.original.id ? "selected" : undefined}

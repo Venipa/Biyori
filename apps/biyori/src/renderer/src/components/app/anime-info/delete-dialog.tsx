@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -15,6 +16,7 @@ import { trpc } from "@/mainview/trpc";
 
 export function AnimeDeleteDialog() {
 	const pending = useAnimeDeleteRequest();
+	const { t } = useTranslation();
 	const { payload: held, onOpenChangeComplete } = useHeldOpenPayload(pending ?? undefined);
 	const utils = trpc.useUtils();
 	const remove = trpc.anime.remove.useMutation();
@@ -30,11 +32,11 @@ export function AnimeDeleteDialog() {
 			onOpenChangeComplete={onOpenChangeComplete}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
-					<AlertDialogTitle>Delete from list</AlertDialogTitle>
-					<AlertDialogDescription>Remove {held?.title ?? "this anime"} from your list?</AlertDialogDescription>
+					<AlertDialogTitle>{t("anime.deleteFromList")}</AlertDialogTitle>
+					<AlertDialogDescription>{t("anime.removeFromList", { title: held?.title ?? t("confirm.thisAnime") })}</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
+					<AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
 					<AlertDialogAction
 						variant='destructive'
 						disabled={remove.isPending}
@@ -48,7 +50,7 @@ export function AnimeDeleteDialog() {
 								void invalidateAnimeQueries(utils, "removed");
 							});
 						}}>
-						Delete
+						{t("common.delete")}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

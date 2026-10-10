@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { t } from "@biyori/translations/i18n";
 import { asc, count, inArray } from "drizzle-orm";
 import { shell } from "electron";
 import type { AppSettings } from "../lib/schemas/app-settings";
@@ -388,12 +389,12 @@ async function ingestFeed(database: DatabaseClient, feedUrl: string, force: bool
 		});
 		archivedTitles.add(row.entry.title);
 		if (announce && !force && !bootstrap) {
-			const title = `New torrent: ${row.entry.title}`;
+			const title = t("main.torrent.newTorrent", { title: row.entry.title });
 			setAppNotice(title);
 			pushNotice({
 				source: "torrent",
 				title: row.match?.title ?? row.entry.title,
-				body: episodeHigh > 0 ? `New torrent · episode ${episodeHigh}` : "New torrent",
+				body: episodeHigh > 0 ? t("main.torrent.newTorrentEpisode", { episode: episodeHigh }) : t("main.torrent.newTorrentBody"),
 			});
 			if (settings.newTorrentAction === "download" && row.entry.link) {
 				await openTorrent(row.entry.link, row.entry.title, settings, row.match);

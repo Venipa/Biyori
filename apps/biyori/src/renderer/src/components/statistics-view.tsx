@@ -1,9 +1,38 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { type ReactElement, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
 import { Separator } from "@/mainview/components/ui/separator";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
+import { airingStatusLabel } from "@/mainview/lib/anime-airing-notice";
+import { animeTypeLabel, genreLabel } from "@/mainview/lib/anime-list-filter";
 import { trpc } from "@/mainview/trpc";
+
+function displayStatLabel(label: string): string {
+	switch (label) {
+		case "Currently watching":
+		case "Completed":
+		case "On hold":
+		case "Dropped":
+		case "Plan to watch":
+			return listStatusLabel(label);
+		case "Currently airing":
+		case "Finished airing":
+		case "Finished":
+		case "Not yet released":
+		case "Cancelled":
+		case "Hiatus":
+			return airingStatusLabel(label);
+		case "TV":
+		case "Movie":
+		case "OVA":
+		case "ONA":
+			return animeTypeLabel(label);
+		default:
+			return genreLabel(label);
+	}
+}
 
 const tabTriggerClass =
 	"rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none";
@@ -31,12 +60,12 @@ function StatRow({ label, value }: { label: string; value: string | number }): R
 
 function formatDuration(minutes: number): string {
 	if (minutes <= 0) {
-		return "None";
+		return t("common.none");
 	}
 	const days = Math.floor(minutes / 1440);
 	const hours = Math.floor((minutes % 1440) / 60);
 	const remainingMinutes = Math.floor(minutes % 60);
-	return `${days} days ${hours} hours ${remainingMinutes} minutes`;
+	return t("statistics.duration", { days, hours, minutes: remainingMinutes });
 }
 
 function formatUptime(seconds: number): string {
@@ -44,7 +73,7 @@ function formatUptime(seconds: number): string {
 	const hours = Math.floor((seconds % 86400) / 3600);
 	const minutes = Math.floor((seconds % 3600) / 60);
 	const remainingSeconds = seconds % 60;
-	return `${days} days ${hours} hours ${minutes} minutes ${remainingSeconds} seconds`;
+	return t("statistics.uptimeValue", { days, hours, minutes, seconds: remainingSeconds });
 }
 
 function formatBytes(bytes: number): string {
@@ -75,39 +104,45 @@ function pieBackground(items: StatBar[]): string {
 }
 
 function BarList({ items, value }: { items?: StatBar[] | null; value?: (item: StatBar) => string }): ReactElement {
+	const { t } = useTranslation();
 	if (!items || items.length === 0) {
-		return <p className='text-sm text-muted-foreground'>None</p>;
+		return <p className='text-sm text-muted-foreground'>{t("common.none")}</p>;
 	}
 	return (
 		<div className='flex max-w-xl flex-col gap-1'>
-			{items.map((item, index) => (
-				<div key={item.label} className='grid grid-cols-[7rem_1fr_4.5rem] items-center gap-2 text-sm'>
-					<span className='truncate text-right' title={item.label}>
-						{item.label}
-					</span>
-					<div className='h-4 overflow-hidden rounded-sm bg-muted'>
-						<div
-							role='img'
-							aria-label={`${item.label}: ${value?.(item) ?? item.count}`}
-							className={`h-full ${CHART_BG[index % CHART_BG.length]}`}
-							style={{ width: `${item.ratio * 100}%` }}
-						/>
+			{items.map((item, index) => {
+				const label = displayStatLabel(item.label);
+				const shown = value?.(item) ?? String(item.count);
+				return (
+					<div key={item.label} className='grid grid-cols-[7rem_1fr_4.5rem] items-center gap-2 text-sm'>
+						<span className='truncate text-right' title={label}>
+							{label}
+						</span>
+						<div className='h-4 overflow-hidden rounded-sm bg-muted'>
+							<div
+								role='img'
+								aria-label={t("statistics.barValue", { label, value: shown })}
+								className={`h-full ${CHART_BG[index % CHART_BG.length]}`}
+								style={{ width: `${item.ratio * 100}%` }}
+							/>
+						</div>
+						<span className='tabular-nums text-muted-foreground'>{shown}</span>
 					</div>
-					<span className='tabular-nums text-muted-foreground'>{value?.(item) ?? item.count}</span>
-				</div>
-			))}
+				);
+			})}
 		</div>
 	);
 }
 
 function StatusPie({ items }: { items?: StatBar[] | null }): ReactElement {
+	const { t } = useTranslation();
 	const slices = items ?? [];
 	const total = slices.reduce((sum, item) => sum + item.count, 0);
 	return (
 		<div className='flex flex-wrap items-center gap-8'>
 			<div
 				role='img'
-				aria-label={slices.map((item) => `${item.label} ${item.count}`).join(", ") || "No list statuses"}
+				aria-label={slices.map((item) => t("statistics.pieSlice", { label: displayStatLabel(item.label), count: item.count })).join(", ") || t("statistics.noListStatuses")}
 				className='size-40 shrink-0 rounded-full'
 				style={{ background: pieBackground(slices) }}
 			/>
@@ -115,7 +150,7 @@ function StatusPie({ items }: { items?: StatBar[] | null }): ReactElement {
 				{slices.map((item, index) => (
 					<li key={item.label} className='flex items-center gap-2'>
 						<span className={`size-2.5 shrink-0 rounded-sm ${CHART_BG[index % CHART_BG.length]}`} />
-						<span className='flex-1'>{item.label}</span>
+						<span className='flex-1'>{displayStatLabel(item.label)}</span>
 						<span className='tabular-nums text-muted-foreground'>
 							{item.count}
 							{total > 0 ? ` (${Math.round((item.count / total) * 100)}%)` : ""}
@@ -158,6 +193,7 @@ function StatisticsSkeleton(): ReactElement {
 }
 
 export function StatisticsView(): ReactElement {
+	const { t } = useTranslation();
 	const query = trpc.statistics.summary.useQuery();
 	const data = query.data;
 	const coverage = data?.libraryCoverage ?? { have: 0, aired: 0, ratio: 0, byStatus: [] };
@@ -174,16 +210,16 @@ export function StatisticsView(): ReactElement {
 				<div className='shrink-0 border-b bg-card px-2 pt-2'>
 					<TabsList className='h-auto bg-transparent p-0'>
 						<TabsTrigger value='overview' className={tabTriggerClass}>
-							Overview
+							{t("statistics.overview")}
 						</TabsTrigger>
 						<TabsTrigger value='mix' className={tabTriggerClass}>
-							Mix
+							{t("statistics.mix")}
 						</TabsTrigger>
 						<TabsTrigger value='genres' className={tabTriggerClass}>
-							Genres
+							{t("statistics.genres")}
 						</TabsTrigger>
 						<TabsTrigger value='library' className={tabTriggerClass}>
-							Library
+							{t("statistics.library")}
 						</TabsTrigger>
 					</TabsList>
 				</div>
@@ -194,24 +230,29 @@ export function StatisticsView(): ReactElement {
 						) : data && tab === "overview" ? (
 							<>
 								<section>
-									<h1 className='text-base font-semibold'>Anime list</h1>
+									<h1 className='text-base font-semibold'>{t("statistics.animeList")}</h1>
 									<Separator className='my-2' />
-									<StatRow label='Anime count:' value={data.animeCount} />
-									<StatRow label='Episode count:' value={data.episodeCount} />
-									<StatRow label='Time spent watching:' value={formatDuration(data.spentMinutes)} />
-									<StatRow label='Time remaining:' value={formatDuration(data.remainingMinutes)} />
-									<StatRow label='Mean score:' value={data.meanScore.toFixed(2)} />
-									<StatRow label='Score deviation:' value={data.scoreDeviation.toFixed(2)} />
+									<StatRow label={t("statistics.animeCount")} value={data.animeCount} />
+									<StatRow label={t("statistics.episodeCount")} value={data.episodeCount} />
+									<StatRow label={t("statistics.timeSpent")} value={formatDuration(data.spentMinutes)} />
+									<StatRow label={t("statistics.timeRemaining")} value={formatDuration(data.remainingMinutes)} />
+									<StatRow label={t("statistics.meanScore")} value={data.meanScore.toFixed(2)} />
+									<StatRow label={t("statistics.scoreDeviation")} value={data.scoreDeviation.toFixed(2)} />
 								</section>
 								<section>
-									<h2 className='text-sm font-semibold'>Score distribution</h2>
+									<h2 className='text-sm font-semibold'>{t("statistics.scoreDistribution")}</h2>
 									<Separator className='my-2' />
 									<div className='flex max-w-xl flex-col gap-1'>
 										{data.scoreDistribution.map((bucket) => (
 											<div key={bucket.score} className='grid grid-cols-[2rem_1fr_3rem] items-center gap-2 text-sm'>
 												<span className='text-right tabular-nums'>{bucket.score}</span>
 												<div className='h-4 overflow-hidden rounded-sm bg-muted'>
-													<div role='img' aria-label={`Score ${bucket.score}: ${bucket.count}`} className='h-full bg-primary' style={{ width: `${bucket.ratio * 100}%` }} />
+													<div
+														role='img'
+														aria-label={t("statistics.scoreBucket", { score: bucket.score, count: bucket.count })}
+														className='h-full bg-primary'
+														style={{ width: `${bucket.ratio * 100}%` }}
+													/>
 												</div>
 												<span className='tabular-nums text-muted-foreground'>{bucket.count}</span>
 											</div>
@@ -219,52 +260,55 @@ export function StatisticsView(): ReactElement {
 									</div>
 								</section>
 								<section>
-									<h2 className='text-sm font-semibold'>Local database</h2>
+									<h2 className='text-sm font-semibold'>{t("statistics.localDatabase")}</h2>
 									<Separator className='my-2' />
-									<StatRow label='Anime count:' value={data.localAnimeCount} />
-									<StatRow label='Image files:' value={`${data.imageCount} (${formatBytes(data.imageSizeBytes)})`} />
-									<StatRow label='Torrent files:' value={`${data.torrentCount} (${formatBytes(data.torrentSizeBytes)})`} />
+									<StatRow label={t("statistics.animeCount")} value={data.localAnimeCount} />
+									<StatRow label={t("statistics.imageFiles")} value={t("statistics.fileSize", { count: data.imageCount, size: formatBytes(data.imageSizeBytes) })} />
+									<StatRow label={t("statistics.torrentFiles")} value={t("statistics.fileSize", { count: data.torrentCount, size: formatBytes(data.torrentSizeBytes) })} />
 								</section>
 								<section>
-									<h2 className='text-sm font-semibold'>Biyori</h2>
+									<h2 className='text-sm font-semibold'>{t("statistics.biyori")}</h2>
 									<Separator className='my-2' />
-									<StatRow label='Connections:' value={`${data.connectionCount}${data.connectionsFailed > 0 ? ` (${data.connectionsFailed} failed)` : ""}`} />
-									<StatRow label='Uptime:' value={formatUptime(data.uptimeSeconds)} />
+									<StatRow
+										label={t("statistics.connections")}
+										value={data.connectionsFailed > 0 ? t("statistics.connectionsFailed", { count: data.connectionCount, failed: data.connectionsFailed }) : data.connectionCount}
+									/>
+									<StatRow label={t("statistics.uptime")} value={formatUptime(data.uptimeSeconds)} />
 								</section>
 							</>
 						) : data && tab === "mix" ? (
 							<>
 								<section>
-									<h2 className='text-sm font-semibold'>List status</h2>
+									<h2 className='text-sm font-semibold'>{t("statistics.listStatus")}</h2>
 									<Separator className='my-2' />
 									<StatusPie items={data.statusDistribution} />
 								</section>
 								<section>
-									<h2 className='text-sm font-semibold'>Format</h2>
+									<h2 className='text-sm font-semibold'>{t("statistics.format")}</h2>
 									<Separator className='my-2' />
 									<BarList items={data.typeDistribution} />
 								</section>
 							</>
 						) : data && tab === "genres" ? (
 							<section>
-								<h2 className='text-sm font-semibold'>Top genres</h2>
+								<h2 className='text-sm font-semibold'>{t("statistics.topGenres")}</h2>
 								<Separator className='my-2' />
 								<BarList items={data.genreDistribution} />
 							</section>
 						) : data && tab === "library" ? (
 							<>
 								<section>
-									<h2 className='text-sm font-semibold'>Library coverage</h2>
+									<h2 className='text-sm font-semibold'>{t("statistics.libraryCoverage")}</h2>
 									<Separator className='my-2' />
-									<StatRow label='Episode files:' value={coverage.have} />
-									<StatRow label='Aired episodes:' value={coverage.aired} />
-									<StatRow label='Coverage:' value={`${Math.round(coverage.ratio * 100)}%`} />
+									<StatRow label={t("statistics.episodeFiles")} value={coverage.have} />
+									<StatRow label={t("statistics.airedEpisodes")} value={coverage.aired} />
+									<StatRow label={t("statistics.coverage")} value={`${Math.round(coverage.ratio * 100)}%`} />
 									<div className='mt-3'>
 										<BarList items={coverage.byStatus} value={(item) => `${item.count}/${item.total ?? 0}`} />
 									</div>
 								</section>
 								<section>
-									<h2 className='text-sm font-semibold'>Rewatches</h2>
+									<h2 className='text-sm font-semibold'>{t("statistics.rewatches")}</h2>
 									<Separator className='my-2' />
 									<BarList items={data.rewatchDistribution} />
 								</section>

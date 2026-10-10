@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon, CircleAlertIcon, FilterIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -21,35 +22,6 @@ import type { ListStatus } from "@/shared/list";
 import { listStatusSchema } from "@/shared/list";
 
 const seasons = ["WINTER", "SPRING", "SUMMER", "FALL"] as const;
-
-const seasonItems = {
-	WINTER: "Winter",
-	SPRING: "Spring",
-	SUMMER: "Summer",
-	FALL: "Fall",
-} as const;
-
-const groupByItems = {
-	airing: "Airing status",
-	list: "List status",
-	type: "Type",
-	date: "Release date",
-} as const;
-
-const sortByItems = {
-	date: "Airing date",
-	episodes: "Episodes",
-	popularity: "Popularity",
-	score: "Score",
-	title: "Title",
-} as const;
-
-const viewAsItems = {
-	tiles: "Tiles",
-	images: "Images",
-	guide: "Guide",
-	skyline: "Skyline",
-} as const;
 
 type SeasonLocalPrefs = {
 	season?: AnilistSeasonName;
@@ -84,6 +56,7 @@ export const Route = createFileRoute("/app/seasons")({
 });
 
 function SeasonsPage() {
+	const { t } = useTranslation();
 	const fallback = useMemo(() => currentSeason(), []);
 	const settingsQuery = trpc.settings.get.useQuery();
 	const utils = trpc.useUtils();
@@ -204,6 +177,31 @@ function SeasonsPage() {
 		});
 	}, [filtered, sortBy, groupBy, inListIds]);
 
+	const seasonLabels = {
+		WINTER: t("seasons.winter"),
+		SPRING: t("seasons.spring"),
+		SUMMER: t("seasons.summer"),
+		FALL: t("seasons.fall"),
+	} as const;
+	const groupLabels = {
+		airing: t("seasons.airingStatus"),
+		list: t("seasons.listStatus"),
+		type: t("seasons.type"),
+		date: t("seasons.releaseDate"),
+	} as const;
+	const sortLabels = {
+		date: t("seasons.airingDate"),
+		episodes: t("seasons.episodes"),
+		popularity: t("seasons.popularity"),
+		score: t("seasons.score"),
+		title: t("seasons.title"),
+	} as const;
+	const viewLabels = {
+		tiles: t("seasons.tiles"),
+		images: t("seasons.images"),
+		guide: t("seasons.guide"),
+		skyline: t("seasons.skyline"),
+	} as const;
 	const busy = query.isFetching || refreshing;
 	const activeFilterCount = showAdult ? 1 : 0;
 
@@ -214,7 +212,7 @@ function SeasonsPage() {
 					type='button'
 					size='icon-sm'
 					variant='outline'
-					aria-label='Previous season'
+					aria-label={t("seasons.previousSeason")}
 					onClick={() => {
 						persistPrefs(shiftSeason(season, seasonYear, -1));
 					}}>
@@ -222,20 +220,20 @@ function SeasonsPage() {
 				</Button>
 				<Select
 					value={season}
-					items={seasonItems}
+					items={seasonLabels}
 					onValueChange={(value) => {
 						if (typeof value === "string") {
 							persistPrefs({ season: value as AnilistSeasonName });
 						}
 					}}>
-					<SelectTrigger id='season' size='sm' aria-label='Season'>
+					<SelectTrigger id='season' size='sm' aria-label={t("seasons.season")}>
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent side='bottom' alignItemWithTrigger={false} collisionAvoidance={{ side: "none", fallbackAxisSide: "none" }}>
 						<SelectGroup>
 							{seasons.map((item) => (
 								<SelectItem key={item} value={item}>
-									{seasonItems[item]}
+									{seasonLabels[item]}
 								</SelectItem>
 							))}
 						</SelectGroup>
@@ -245,7 +243,7 @@ function SeasonsPage() {
 					id='season-year'
 					type='number'
 					className='h-8 w-20 rounded-md border bg-background px-2 text-sm'
-					aria-label='Year'
+					aria-label={t("seasons.year")}
 					value={seasonYear}
 					onChange={(event) => {
 						const next = Number.parseInt(event.target.value, 10);
@@ -259,7 +257,7 @@ function SeasonsPage() {
 					type='button'
 					size='icon-sm'
 					variant='outline'
-					aria-label='Next season'
+					aria-label={t("seasons.nextSeason")}
 					onClick={() => {
 						persistPrefs(shiftSeason(season, seasonYear, 1));
 					}}>
@@ -269,7 +267,7 @@ function SeasonsPage() {
 					type='button'
 					size='icon-sm'
 					variant='outline'
-					aria-label='Refresh season'
+					aria-label={t("seasons.refreshSeason")}
 					disabled={busy}
 					onClick={() => {
 						void refreshSeason();
@@ -277,11 +275,11 @@ function SeasonsPage() {
 					<RefreshCwIcon className={busy ? "animate-spin" : undefined} />
 				</Button>
 				<label className='ml-2 text-xs text-muted-foreground' htmlFor='season-group'>
-					Group
+					{t("seasons.group")}
 				</label>
 				<Select
 					value={groupBy}
-					items={groupByItems}
+					items={groupLabels}
 					onValueChange={(value) => {
 						if (typeof value === "string") {
 							persistPrefs({ groupBy: value as SeasonGroupBy });
@@ -292,20 +290,20 @@ function SeasonsPage() {
 					</SelectTrigger>
 					<SelectContent side='bottom' alignItemWithTrigger={false} collisionAvoidance={{ side: "none", fallbackAxisSide: "none" }}>
 						<SelectGroup>
-							{(Object.keys(groupByItems) as SeasonGroupBy[]).map((value) => (
+							{(Object.keys(groupLabels) as SeasonGroupBy[]).map((value) => (
 								<SelectItem key={value} value={value}>
-									{groupByItems[value]}
+									{groupLabels[value]}
 								</SelectItem>
 							))}
 						</SelectGroup>
 					</SelectContent>
 				</Select>
 				<label className='text-xs text-muted-foreground' htmlFor='season-sort'>
-					Sort
+					{t("seasons.sort")}
 				</label>
 				<Select
 					value={sortBy}
-					items={sortByItems}
+					items={sortLabels}
 					onValueChange={(value) => {
 						if (typeof value === "string") {
 							persistPrefs({ sortBy: value as SeasonSortBy });
@@ -316,20 +314,20 @@ function SeasonsPage() {
 					</SelectTrigger>
 					<SelectContent side='bottom' alignItemWithTrigger={false} collisionAvoidance={{ side: "none", fallbackAxisSide: "none" }}>
 						<SelectGroup>
-							{(Object.keys(sortByItems) as SeasonSortBy[]).map((value) => (
+							{(Object.keys(sortLabels) as SeasonSortBy[]).map((value) => (
 								<SelectItem key={value} value={value}>
-									{sortByItems[value]}
+									{sortLabels[value]}
 								</SelectItem>
 							))}
 						</SelectGroup>
 					</SelectContent>
 				</Select>
 				<label className='text-xs text-muted-foreground' htmlFor='season-view'>
-					View
+					{t("seasons.view")}
 				</label>
 				<Select
 					value={viewAs}
-					items={viewAsItems}
+					items={viewLabels}
 					onValueChange={(value) => {
 						if (typeof value === "string") {
 							persistPrefs({ viewAs: value as SeasonViewAs });
@@ -340,9 +338,9 @@ function SeasonsPage() {
 					</SelectTrigger>
 					<SelectContent side='bottom' alignItemWithTrigger={false} collisionAvoidance={{ side: "none", fallbackAxisSide: "none" }}>
 						<SelectGroup>
-							{(Object.keys(viewAsItems) as SeasonViewAs[]).map((value) => (
+							{(Object.keys(viewLabels) as SeasonViewAs[]).map((value) => (
 								<SelectItem key={value} value={value}>
-									{viewAsItems[value]}
+									{viewLabels[value]}
 								</SelectItem>
 							))}
 						</SelectGroup>
@@ -351,7 +349,13 @@ function SeasonsPage() {
 				<DropdownMenu>
 					<DropdownMenuTrigger
 						render={
-							<Button type='button' size='icon-sm' variant='outline' className='relative' aria-label={activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : "Filters"} />
+							<Button
+								type='button'
+								size='icon-sm'
+								variant='outline'
+								className='relative'
+								aria-label={activeFilterCount > 0 ? t("seasons.filtersActive", { count: activeFilterCount }) : t("seasons.filters")}
+							/>
 						}>
 						<FilterIcon />
 						{activeFilterCount > 0 ? (
@@ -362,22 +366,24 @@ function SeasonsPage() {
 					</DropdownMenuTrigger>
 					<DropdownMenuContent side='bottom' align='start' collisionAvoidance={{ side: "none", fallbackAxisSide: "none" }} className='min-w-40'>
 						<DropdownMenuCheckboxItem checked={showAdult} onCheckedChange={(checked) => setShowAdult(checked === true)}>
-							Adult
+							{t("seasons.adult")}
 						</DropdownMenuCheckboxItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
 				<p className='ml-auto text-xs text-muted-foreground'>
-					{filtered.length} title{filtered.length === 1 ? "" : "s"}
-					{query.data?.fromCache ? " · cached" : ""}
+					{t("seasons.titleCount", { count: filtered.length })}
+					{query.data?.fromCache ? t("seasons.cachedSuffix") : ""}
 				</p>
 			</div>
 			<div className='min-h-0 flex-1'>
 				<ScrollArea className='h-full'>
 					{!ready || (query.isPending && !query.data) ? <SeasonGridSkeleton viewAs={viewAs} /> : null}
-					{query.error ? <PlaceholderView icon={CircleAlertIcon} title='Could not load season' description={query.error.message} /> : null}
-					{query.data && (query.data.items?.length ?? 0) === 0 ? <PlaceholderView icon={CalendarDaysIcon} title='No titles' description='Nothing listed for this season.' /> : null}
+					{query.error ? <PlaceholderView icon={CircleAlertIcon} title={t("seasons.couldNotLoad")} description={query.error.message} /> : null}
+					{query.data && (query.data.items?.length ?? 0) === 0 ? (
+						<PlaceholderView icon={CalendarDaysIcon} title={t("seasons.noTitles")} description={t("seasons.nothingListed")} />
+					) : null}
 					{query.data && (query.data.items?.length ?? 0) > 0 && filtered.length === 0 ? (
-						<PlaceholderView icon={FilterIcon} title='No matches' description='Nothing matched the list filter.' />
+						<PlaceholderView icon={FilterIcon} title={t("seasons.noMatches")} description={t("seasons.nothingMatched")} />
 					) : null}
 					{groups.length > 0 ? (
 						<SeasonVirtualGrid

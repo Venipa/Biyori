@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { animeInfoSearchSchema } from "@/lib/schemas/anime-info-search";
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/app/torrents")({
 });
 
 function TorrentsPage(): ReactElement {
+	const { t } = useTranslation();
 	const query = trpc.torrents.list.useQuery();
 	const utils = trpc.useUtils();
 	const items = query.data ?? [];
@@ -30,12 +32,27 @@ function TorrentsPage(): ReactElement {
 				</TorrentToolbar>
 			) : null}
 			{query.isPending && items.length === 0 ? (
-				<TableRowsSkeleton columnCount={11} headers={["", "Anime title", "Episode", "Group", "Size", "Video", "S", "L", "D", "Filename", "Release date"]} />
+				<TableRowsSkeleton
+					columnCount={11}
+					headers={[
+						"",
+						t("torrents.animeTitle"),
+						t("torrents.episode"),
+						t("torrents.group"),
+						t("torrents.size"),
+						t("torrents.video"),
+						t("torrents.seeders"),
+						t("torrents.leechers"),
+						t("torrents.downloads"),
+						t("torrents.filename"),
+						t("torrents.releaseDate"),
+					]}
+				/>
 			) : null}
 			{items.length === 0 && !query.isLoading ? (
 				<Empty>
-					<EmptyTitle>No torrents found</EmptyTitle>
-					<EmptyDescription>Matching torrents for your list will be listed here.</EmptyDescription>
+					<EmptyTitle>{t("torrents.noTorrents")}</EmptyTitle>
+					<EmptyDescription>{t("torrents.emptyDescription")}</EmptyDescription>
 				</Empty>
 			) : null}
 			{items.length > 0 ? <TorrentFeed key={items.map((item) => `${item.guid}:${item.state}`).join("|")} items={items} /> : null}

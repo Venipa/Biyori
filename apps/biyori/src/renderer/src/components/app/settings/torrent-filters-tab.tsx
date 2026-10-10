@@ -1,3 +1,4 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, FilterIcon, FilterXIcon, MinusIcon, PlusIcon, UploadIcon, XIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { useFieldArray, useFormContext } from "react-hook-form";
@@ -23,6 +24,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/mainview/lib/utils";
 import { TorrentFilterWizard, type TorrentFilterWizardMode } from "./torrent-filter-wizard";
 
+function defaultFilterName(name: string): string {
+	switch (name) {
+		case "Select currently watching":
+			return t("settings.torrents.filters.defaults.selectWatching");
+		case "Select airing anime in plan to watch":
+			return t("settings.torrents.filters.defaults.selectAiringPlan");
+		case "Discard dropped":
+			return t("settings.torrents.filters.defaults.discardDropped");
+		case "Discard and deactivate not-in-list anime":
+			return t("settings.torrents.filters.defaults.discardNotInList");
+		case "Discard watched and available episodes":
+			return t("settings.torrents.filters.defaults.discardWatched");
+		case "Prefer high-resolution files":
+			return t("settings.torrents.filters.defaults.preferHighResolution");
+		default:
+			return name;
+	}
+}
+
 function moveItem<T>(items: T[], from: number, to: number): T[] {
 	const next = [...items];
 	const [row] = next.splice(from, 1);
@@ -41,6 +61,7 @@ function FilterActionIcon({ action }: { action: TorrentFilterAction }) {
 }
 
 export function TorrentFiltersTab() {
+	const { t } = useTranslation();
 	const filterId = useId();
 	const form = useFormContext<SettingsFormInput>();
 	const filters = useFieldArray({
@@ -73,15 +94,15 @@ export function TorrentFiltersTab() {
 
 	return (
 		<FieldGroup>
-			<FormCheckbox control={form.control} name='torrentFilterEnabled' id={filterId} label='Enable torrent filters' />
-			<FieldDescription>Filters allow you to download the files you want and ignore the others.</FieldDescription>
+			<FormCheckbox control={form.control} name='torrentFilterEnabled' id={filterId} label={t("settings.torrents.filters.enable")} />
+			<FieldDescription>{t("settings.torrents.filters.hint")}</FieldDescription>
 			<div className={cn("flex flex-col gap-2", !enabled && "pointer-events-none opacity-50")}>
 				<Table containerClassName='max-h-80 overflow-y-auto rounded-md border'>
 					<TableHeader>
 						<TableRow>
 							<TableHead className='w-8' />
-							<TableHead>Name</TableHead>
-							<TableHead className='text-right'>Applies to</TableHead>
+							<TableHead>{t("settings.torrents.filters.name")}</TableHead>
+							<TableHead className='text-right'>{t("settings.torrents.filters.appliesTo")}</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -105,7 +126,7 @@ export function TorrentFiltersTab() {
 								}}>
 								<TableCell>
 									<Checkbox
-										aria-label={`Enable ${row.name || "filter"}`}
+										aria-label={t("settings.torrents.filters.enableNamed", { name: row.name ? defaultFilterName(row.name) : t("settings.torrents.filters.filterFallback") })}
 										checked={row.enabled}
 										onCheckedChange={(checked) => {
 											filters.update(index, {
@@ -121,10 +142,12 @@ export function TorrentFiltersTab() {
 								<TableCell>
 									<span className='flex items-center gap-2'>
 										<FilterActionIcon action={row.action} />
-										<span className='truncate'>{row.name || "New Filter"}</span>
+										<span className='truncate'>{row.name ? defaultFilterName(row.name) : t("settings.torrents.filters.unnamed")}</span>
 									</span>
 								</TableCell>
-								<TableCell className='text-right text-muted-foreground'>{row.animeIds.length === 0 ? "All" : `${row.animeIds.length} anime`}</TableCell>
+								<TableCell className='text-right text-muted-foreground'>
+									{row.animeIds.length === 0 ? t("settings.torrents.filters.all") : t("settings.torrents.filters.animeCount", { count: row.animeIds.length })}
+								</TableCell>
 							</TableRow>
 						))}
 					</TableBody>
@@ -134,7 +157,7 @@ export function TorrentFiltersTab() {
 						type='button'
 						size='icon-xs'
 						variant='outline'
-						aria-label='Add new filter'
+						aria-label={t("settings.torrents.filters.add")}
 						onClick={() => {
 							setWizard({ kind: "add" });
 						}}>
@@ -144,7 +167,7 @@ export function TorrentFiltersTab() {
 						type='button'
 						size='icon-xs'
 						variant='outline'
-						aria-label='Delete filter'
+						aria-label={t("settings.torrents.filters.delete")}
 						disabled={!canRemove}
 						onClick={() => {
 							if (selected < 0) {
@@ -160,7 +183,7 @@ export function TorrentFiltersTab() {
 						type='button'
 						size='icon-xs'
 						variant='outline'
-						aria-label='Move up'
+						aria-label={t("settings.torrents.filters.moveUp")}
 						disabled={!canMoveUp}
 						onClick={() => {
 							swap(selected, selected - 1);
@@ -171,7 +194,7 @@ export function TorrentFiltersTab() {
 						type='button'
 						size='icon-xs'
 						variant='outline'
-						aria-label='Move down'
+						aria-label={t("settings.torrents.filters.moveDown")}
 						disabled={!canMoveDown}
 						onClick={() => {
 							swap(selected, selected + 1);
@@ -183,7 +206,7 @@ export function TorrentFiltersTab() {
 						type='button'
 						size='icon-xs'
 						variant='outline'
-						aria-label='Import filters'
+						aria-label={t("settings.torrents.filters.import")}
 						onClick={() => {
 							void desktopRpc.request.importBiyori({}).then((result) => {
 								if (result.canceled) {
@@ -203,7 +226,7 @@ export function TorrentFiltersTab() {
 						type='button'
 						size='icon-xs'
 						variant='outline'
-						aria-label='Export filters'
+						aria-label={t("settings.torrents.filters.export")}
 						onClick={() => {
 							const payload = {
 								kind: "torrent-filters" as const,
@@ -221,7 +244,7 @@ export function TorrentFiltersTab() {
 						type='button'
 						size='icon-xs'
 						variant='outline'
-						aria-label='Reset filters'
+						aria-label={t("settings.torrents.filters.reset")}
 						onClick={() => {
 							setResetOpen(true);
 						}}>
@@ -250,16 +273,16 @@ export function TorrentFiltersTab() {
 			<AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Reset Torrent Filters</AlertDialogTitle>
-						<AlertDialogDescription>Are you sure you want to reset the filters? All custom filters will be lost.</AlertDialogDescription>
+						<AlertDialogTitle>{t("settings.torrents.filters.resetTitle")}</AlertDialogTitle>
+						<AlertDialogDescription>{t("settings.torrents.filters.resetDescription")}</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>No</AlertDialogCancel>
+						<AlertDialogCancel>{t("settings.torrents.filters.no")}</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={() => {
 								replaceFilters(defaultTorrentFilters());
 							}}>
-							Yes
+							{t("settings.torrents.filters.yes")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -267,13 +290,11 @@ export function TorrentFiltersTab() {
 			<AlertDialog open={importError} onOpenChange={setImportError}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Import Filters</AlertDialogTitle>
-						<AlertDialogDescription>
-							Could not parse the filter file. It may be missing characters, or encoded with an incompatible version of the application.
-						</AlertDialogDescription>
+						<AlertDialogTitle>{t("settings.torrents.filters.importTitle")}</AlertDialogTitle>
+						<AlertDialogDescription>{t("settings.torrents.filters.importDescription")}</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogAction>OK</AlertDialogAction>
+						<AlertDialogAction>{t("common.ok")}</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>

@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { FolderIcon, FolderPlusIcon, Trash2Icon } from "lucide-react";
 import { useId } from "react";
@@ -14,12 +15,6 @@ import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 import { folderPathExists, pickLibraryFolderPath } from "@/mainview/lib/library-folder";
-
-const CONTINUE_WATCHING_STALE_OPTIONS = CONTINUE_WATCHING_STALE_DAYS.map((day) => ({
-	value: String(day),
-	label: `${day} days`,
-}));
-const CONTINUE_WATCHING_STALE_ITEMS = Object.fromEntries(CONTINUE_WATCHING_STALE_OPTIONS.map((option) => [option.value, option.label]));
 
 type LibraryFolderRow = {
 	id: string;
@@ -45,19 +40,8 @@ function LibraryFoldersError() {
 	);
 }
 
-const emptyLibraryFolders = (
-	<Empty className='min-h-32 border border-dashed'>
-		<EmptyHeader>
-			<EmptyMedia variant='icon'>
-				<FolderIcon />
-			</EmptyMedia>
-			<EmptyTitle>No library folders</EmptyTitle>
-			<EmptyDescription>Add a folder to scan and monitor for episodes. Removing a folder only updates settings and does not delete files.</EmptyDescription>
-		</EmptyHeader>
-	</Empty>
-);
-
 function LibraryFoldersField() {
+	const { t } = useTranslation();
 	const form = useFormContext<AppSettingsInput>();
 	const folders = useFieldArray({
 		control: form.control,
@@ -69,7 +53,7 @@ function LibraryFoldersField() {
 		{
 			id: "name",
 			accessorFn: (row) => folderDisplayName(row.path),
-			header: "Folder",
+			header: t("settings.library.folder"),
 			cell: ({ getValue }) => (
 				<span className='flex min-w-0 items-center gap-2'>
 					<FolderIcon />
@@ -79,20 +63,20 @@ function LibraryFoldersField() {
 		},
 		{
 			accessorKey: "path",
-			header: "Path",
+			header: t("settings.library.path"),
 			meta: { className: "w-full max-w-0" },
 			cell: ({ getValue }) => <span className='block truncate text-muted-foreground'>{String(getValue())}</span>,
 		},
 		{
 			id: "remove",
-			header: () => <span className='sr-only'>Remove</span>,
+			header: () => <span className='sr-only'>{t("common.remove")}</span>,
 			meta: { className: "w-10" },
 			cell: ({ row }) => (
 				<Button
 					type='button'
 					variant='ghost'
 					size='icon-xs'
-					aria-label={`Remove ${folderDisplayName(row.original.path)} from library`}
+					aria-label={t("settings.library.removeFolder", { name: folderDisplayName(row.original.path) })}
 					className='opacity-50 group-hover:opacity-100'
 					onClick={() => {
 						folders.remove(row.index);
@@ -122,7 +106,15 @@ function LibraryFoldersField() {
 		<>
 			<Field>
 				{rows.length === 0 ? (
-					emptyLibraryFolders
+					<Empty className='min-h-32 border border-dashed'>
+						<EmptyHeader>
+							<EmptyMedia variant='icon'>
+								<FolderIcon />
+							</EmptyMedia>
+							<EmptyTitle>{t("settings.library.emptyTitle")}</EmptyTitle>
+							<EmptyDescription>{t("settings.library.emptyDescription")}</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
 				) : (
 					<Table containerClassName='rounded-lg border'>
 						<TableHeader>
@@ -163,7 +155,7 @@ function LibraryFoldersField() {
 						});
 					}}>
 					<FolderPlusIcon data-icon='inline-start' />
-					Add library folder
+					{t("settings.library.addFolder")}
 				</Button>
 			</Field>
 		</>
@@ -171,6 +163,12 @@ function LibraryFoldersField() {
 }
 
 export function LibraryPanel() {
+	const { t } = useTranslation();
+	const staleOptions = CONTINUE_WATCHING_STALE_DAYS.map((day) => ({
+		value: String(day),
+		label: t("settings.library.staleDays", { count: day }),
+	}));
+	const staleItems = Object.fromEntries(staleOptions.map((option) => [option.value, option.label]));
 	const realtimeId = useId();
 	const scanId = useId();
 	const intervalId = useId();
@@ -180,18 +178,16 @@ export function LibraryPanel() {
 
 	return (
 		<>
-			<SettingsSectionCard title='Library folders' description='These folders are scanned and monitored for new episodes.'>
+			<SettingsSectionCard title={t("settings.library.foldersTitle")} description={t("settings.library.foldersDescription")}>
 				<LibraryFoldersField />
 			</SettingsSectionCard>
-			<SettingsSectionCard title='Real-time monitor' description='Watch library folders for new files without waiting for a scan.'>
-				<FormCheckbox control={form.control} name='realtimeMonitor' id={realtimeId} label='Detect new files and folders under library folders' />
+			<SettingsSectionCard title={t("settings.library.monitorTitle")} description={t("settings.library.monitorDescription")}>
+				<FormCheckbox control={form.control} name='realtimeMonitor' id={realtimeId} label={t("settings.library.detectNew")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard
-				title='Episode scan'
-				description='On a timer, check series that are missing the next episode. Watching, completed, and plan to watch titles qualify when that episode has aired or airs within 7 days.'>
-				<FormCheckbox control={form.control} name='episodeScanEnabled' id={scanId} label='Scan for missing episodes' />
+			<SettingsSectionCard title={t("settings.library.scanTitle")} description={t("settings.library.scanDescription")}>
+				<FormCheckbox control={form.control} name='episodeScanEnabled' id={scanId} label={t("settings.library.scanMissing")} />
 				<Field>
-					<FieldLabel htmlFor={intervalId}>Interval</FieldLabel>
+					<FieldLabel htmlFor={intervalId}>{t("settings.library.interval")}</FieldLabel>
 					<InputGroup className='w-40'>
 						<InputGroupInput
 							id={intervalId}
@@ -204,19 +200,19 @@ export function LibraryPanel() {
 							})}
 						/>
 						<InputGroupAddon align='inline-end'>
-							<InputGroupText>(minutes)</InputGroupText>
+							<InputGroupText>{t("settings.library.minutes")}</InputGroupText>
 						</InputGroupAddon>
 					</InputGroup>
 					<SettingsFieldError<AppSettingsInput> name='episodeScanIntervalMinutes' />
 				</Field>
 			</SettingsSectionCard>
-			<SettingsSectionCard title='Continue watching' description='A next episode indexed this long ago moves into the older list. A list update older than this does the same.'>
+			<SettingsSectionCard title={t("settings.library.continueTitle")} description={t("settings.library.continueDescription")}>
 				<Controller
 					control={form.control}
 					name='continueWatchingStaleDays'
 					render={({ field, fieldState }) => (
 						<Field data-invalid={fieldState.invalid || undefined}>
-							<FieldLabel htmlFor={staleDaysId}>Age</FieldLabel>
+							<FieldLabel htmlFor={staleDaysId}>{t("settings.library.age")}</FieldLabel>
 							<InputGroup className='w-40'>
 								<InputGroupInput
 									id={staleDaysId}
@@ -235,7 +231,7 @@ export function LibraryPanel() {
 								/>
 								<InputGroupAddon align='inline-end' className='pr-1'>
 									<Select
-										items={CONTINUE_WATCHING_STALE_ITEMS}
+										items={staleItems}
 										value={CONTINUE_WATCHING_STALE_DAYS.some((day) => day === field.value) ? String(field.value) : null}
 										onValueChange={(next) => {
 											if (typeof next === "string") {
@@ -244,13 +240,13 @@ export function LibraryPanel() {
 										}}>
 										<SelectTrigger
 											size='sm'
-											aria-label='Day presets'
+											aria-label={t("settings.library.dayPresets")}
 											className='h-6 gap-1 border-0 bg-transparent px-1.5 text-muted-foreground shadow-none hover:bg-transparent focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent'>
-											<SelectValue>days</SelectValue>
+											<SelectValue>{t("settings.library.days")}</SelectValue>
 										</SelectTrigger>
 										<SelectContent align='end' alignItemWithTrigger={false}>
 											<SelectGroup>
-												{CONTINUE_WATCHING_STALE_OPTIONS.map((option) => (
+												{staleOptions.map((option) => (
 													<SelectItem key={option.value} value={option.value}>
 														{option.label}
 													</SelectItem>

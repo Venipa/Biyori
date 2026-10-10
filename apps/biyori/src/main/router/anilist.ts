@@ -1,3 +1,4 @@
+import { t } from "@biyori/translations/i18n";
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { eq } from "drizzle-orm";
@@ -17,7 +18,7 @@ import { loadAppSettings } from "../settings";
 import { abortAniListSync, getSyncSnapshot, requestAniListSync, subscribeSyncStatus } from "../sync";
 import { enqueueUpdate } from "../track/queue";
 import { noteManualListUpdate, rematchIfUnrecognized } from "../track/tracker";
-import { t } from "../trpc";
+import { t as trpc } from "../trpc";
 
 function mapAnilistError(error: unknown): never {
 	if (error instanceof TRPCError) {
@@ -37,7 +38,7 @@ function mapAnilistError(error: unknown): never {
 	}
 	throw new TRPCError({
 		code: "INTERNAL_SERVER_ERROR",
-		message: "AniList request failed",
+		message: t("main.anilist.requestFailed"),
 	});
 }
 
@@ -46,32 +47,32 @@ function requireAuth() {
 	if (!auth || auth.expiresAt <= Date.now()) {
 		throw new TRPCError({
 			code: "UNAUTHORIZED",
-			message: "AniList is not connected",
+			message: t("main.anilist.notConnected"),
 		});
 	}
 	return auth;
 }
 
-export const anilistRouter = t.router({
-	status: t.procedure.query(() => {
+export const anilistRouter = trpc.router({
+	status: trpc.procedure.query(() => {
 		const auth = readAnilistAuth();
 		return {
 			...toPublicStatus(auth),
 			loginError: getAnilistLoginError(),
 		};
 	}),
-	authorize: t.procedure.mutation(() => {
+	authorize: trpc.procedure.mutation(() => {
 		if (!getAnilistClientId()) {
 			throw new TRPCError({
 				code: "BAD_REQUEST",
-				message: "VITE_ANILIST_CLIENT_ID is not set",
+				message: t("main.anilist.clientIdMissing"),
 			});
 		}
 		clearAnilistLoginError();
 		try {
 			return openAnilistLogin();
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Could not open AniList login";
+			const message = error instanceof Error ? error.message : t("main.anilist.couldNotOpenLogin");
 			setAnilistLoginError(message);
 			throw new TRPCError({
 				code: "BAD_REQUEST",
@@ -79,7 +80,7 @@ export const anilistRouter = t.router({
 			});
 		}
 	}),
-	connectWithToken: t.procedure.input(anilistTokenSchema).mutation(async ({ input }) => {
+	connectWithToken: trpc.procedure.input(anilistTokenSchema).mutation(async ({ input }) => {
 		clearAnilistLoginError();
 		try {
 			const status = await connectAnilistAccessToken(input.token);
@@ -91,7 +92,7 @@ export const anilistRouter = t.router({
 			mapAnilistError(error);
 		}
 	}),
-	disconnect: t.procedure.mutation(() => {
+	disconnect: trpc.procedure.mutation(() => {
 		clearAnilistLoginError();
 		abortAniListSync();
 		clearAnilistAuth();
@@ -100,13 +101,13 @@ export const anilistRouter = t.router({
 			loginError: null as string | null,
 		};
 	}),
-	sync: t.procedure.mutation(() => {
+	sync: trpc.procedure.mutation(() => {
 		return requestAniListSync();
 	}),
-	syncStatus: t.procedure.query(() => {
+	syncStatus: trpc.procedure.query(() => {
 		return getSyncSnapshot();
 	}),
-	onSyncStatus: t.procedure.subscription(() => {
+	onSyncStatus: trpc.procedure.subscription(() => {
 		return observable<ReturnType<typeof getSyncSnapshot>>((emit) => {
 			emit.next(getSyncSnapshot());
 			return subscribeSyncStatus((next) => {
@@ -114,21 +115,21 @@ export const anilistRouter = t.router({
 			});
 		});
 	}),
-	onAuthSuccess: t.procedure.subscription(() => {
+	onAuthSuccess: trpc.procedure.subscription(() => {
 		return observable<{ username: string }>((emit) => {
 			return subscribeAnilistAuthSuccess((username) => {
 				emit.next({ username });
 			});
 		});
 	}),
-	onAuthError: t.procedure.subscription(() => {
+	onAuthError: trpc.procedure.subscription(() => {
 		return observable<{ message: string }>((emit) => {
 			return subscribeAnilistAuthError((message) => {
 				emit.next({ message });
 			});
 		});
 	}),
-	season: t.procedure
+	season: trpc.procedure
 		.input(
 			z.object({
 				season: z.enum(["WINTER", "SPRING", "SUMMER", "FALL"]),
@@ -152,7 +153,7 @@ export const anilistRouter = t.router({
 				mapAnilistError(error);
 			}
 		}),
-	search: t.procedure.input(anilistSearchSchema).query(async ({ input }) => {
+	search: trpc.procedure.input(anilistSearchSchema).query(async ({ input }) => {
 		try {
 			const auth = readAnilistAuth();
 			const settings = loadAppSettings();
@@ -166,7 +167,7 @@ export const anilistRouter = t.router({
 			mapAnilistError(error);
 		}
 	}),
-	addFromSearch: t.procedure
+	addFromSearch: trpc.procedure
 		.input(
 			z.object({
 				mediaId: z.number().int(),
@@ -187,7 +188,7 @@ export const anilistRouter = t.router({
 				if (!upserted) {
 					throw new TRPCError({
 						code: "INTERNAL_SERVER_ERROR",
-						message: "Could not save anime to local list",
+						message: t("main.anilist.couldNotSaveLocal"),
 					});
 				}
 				await rematchIfUnrecognized();
@@ -196,7 +197,7 @@ export const anilistRouter = t.router({
 				mapAnilistError(error);
 			}
 		}),
-	saveEntry: t.procedure
+	saveEntry: trpc.procedure
 		.input(
 			animeListEntrySchema.extend({
 				animeId: z.number().int(),
@@ -219,7 +220,7 @@ export const anilistRouter = t.router({
 				if (!row) {
 					throw new TRPCError({
 						code: "NOT_FOUND",
-						message: "Anime not found",
+						message: t("main.anilist.animeNotFound"),
 					});
 				}
 				await enqueueUpdate(ctx.db, {

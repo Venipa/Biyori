@@ -1,6 +1,8 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import type { ReactNode } from "react";
 import type { SeasonItem } from "@/lib/schemas/seasons";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
+import { listStatusShortText } from "@/mainview/components/app/anime/list-action";
 import { AnimeItemCommands } from "@/mainview/components/app/anime-info/item-commands";
 import { Button } from "@/mainview/components/ui/button";
 import {
@@ -16,7 +18,7 @@ import {
 } from "@/mainview/components/ui/context-menu";
 import { airingBarClass, airStamp, formatPopularityCompact, formatScore, skylinePosterHeight } from "@/mainview/lib/season-view";
 import { cn } from "@/mainview/lib/utils";
-import { type ListStatus, listStatusShortLabel } from "@/shared/list";
+import type { ListStatus } from "@/shared/list";
 
 const commandParts = {
 	Item: ContextMenuItem,
@@ -103,15 +105,16 @@ function otherTitle(item: SeasonItem): string | null {
 }
 
 function metaLine(item: SeasonItem): string {
-	const episodes = item.episodes > 0 ? `${item.episodes} eps` : null;
+	const episodes = item.episodes > 0 ? t("seasons.epsShort", { count: item.episodes }) : null;
 	const genres = item.genres.slice(0, 2).join(", ");
 	return [item.format || "TV", episodes, genres || null].filter((part) => part != null).join(", ");
 }
 
 function ListOrAdd(props: { listStatus: ListStatus | null; onAdd: () => void; adding: boolean; className?: string }) {
 	const { listStatus, onAdd, adding, className } = props;
+	const { t } = useTranslation();
 	if (listStatus) {
-		return <span className={cn("truncate text-xs text-muted-foreground", className)}>{listStatusShortLabel(listStatus)}</span>;
+		return <span className={cn("truncate text-xs text-muted-foreground", className)}>{listStatusShortText(listStatus)}</span>;
 	}
 	return (
 		<Button
@@ -124,13 +127,14 @@ function ListOrAdd(props: { listStatus: ListStatus | null; onAdd: () => void; ad
 				event.stopPropagation();
 				onAdd();
 			}}>
-			Add to list
+			{t("seasons.addToList")}
 		</Button>
 	);
 }
 
 function GuideRow(props: { item: SeasonItem; listStatus: ListStatus | null; onAdd: () => void; adding: boolean }) {
 	const { item, listStatus, onAdd, adding } = props;
+	const { t } = useTranslation();
 	const stamp = airStamp(item.startDate);
 	const alt = otherTitle(item);
 	return (
@@ -143,7 +147,7 @@ function GuideRow(props: { item: SeasonItem; listStatus: ListStatus | null; onAd
 						<span className='text-lg leading-none font-medium tabular-nums'>{stamp.day}</span>
 					</>
 				) : (
-					<span className='text-[10px] tracking-widest text-muted-foreground'>TBA</span>
+					<span className='text-[10px] tracking-widest text-muted-foreground'>{t("seasons.tba")}</span>
 				)}
 			</div>
 			<AnimeCover id={item.id} coverUrl={item.coverUrl || undefined} alt='' className='my-2 aspect-2/3 w-9 shrink-0 overflow-hidden rounded-sm bg-muted' lazy />
@@ -165,6 +169,7 @@ function GuideRow(props: { item: SeasonItem; listStatus: ListStatus | null; onAd
 
 function SkylineRow(props: { item: SeasonItem; listStatus: ListStatus | null }) {
 	const { item, listStatus } = props;
+	useTranslation();
 	const unrated = item.averageScore <= 0;
 	return (
 		<div className='flex min-w-0 flex-col justify-end gap-1'>
@@ -175,7 +180,7 @@ function SkylineRow(props: { item: SeasonItem; listStatus: ListStatus | null }) 
 			<span className='line-clamp-2 min-h-8 text-xs leading-4'>{item.title}</span>
 			<span className='text-[10px] tabular-nums text-muted-foreground'>
 				{formatScore(item.averageScore)}
-				{listStatus ? `, ${listStatusShortLabel(listStatus)}` : ""}
+				{listStatus ? `, ${listStatusShortText(listStatus)}` : ""}
 			</span>
 		</div>
 	);

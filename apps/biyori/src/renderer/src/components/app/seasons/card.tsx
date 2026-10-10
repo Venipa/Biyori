@@ -1,5 +1,7 @@
+import { useTranslation } from "@biyori/translations/react";
 import type { SeasonItem, SeasonSortBy, SeasonViewAs } from "@/lib/schemas/seasons";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
+import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
 import { AnimeItemCommands } from "@/mainview/components/app/anime-info/item-commands";
 import { Button } from "@/mainview/components/ui/button";
 import {
@@ -13,6 +15,7 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
+import { genreLabel } from "@/mainview/lib/anime-list-filter";
 import { airingBarClass, formatAiredRange, formatPopularity, formatScore, imageFooterText } from "@/mainview/lib/season-view";
 import { cn } from "@/mainview/lib/utils";
 import type { ListStatus } from "@/shared/list";
@@ -36,6 +39,7 @@ export function SeasonCard(props: {
 	adding: boolean;
 }) {
 	const { item, viewAs, sortBy, listStatus, onOpen, onAdd, adding } = props;
+	const { t } = useTranslation();
 	const bar = airingBarClass(item.status);
 	const inList = listStatus != null;
 	const quietText = item.bannerUrl ? "text-foreground/60 group-hover:text-foreground/80" : "text-muted-foreground";
@@ -62,7 +66,7 @@ export function SeasonCard(props: {
 						<div className='absolute inset-x-0 bottom-0 flex flex-col'>
 							{inList ? (
 								<div className='bg-black/70 px-2 py-1 text-center text-[10px] font-medium text-white backdrop-blur-[2px]'>
-									<span className='block truncate'>{listStatus}</span>
+									<span className='block truncate'>{listStatusLabel(listStatus)}</span>
 								</div>
 							) : null}
 							<div className={cn("flex items-center justify-center px-2 py-1.5 text-xs font-medium", bar)}>
@@ -86,7 +90,7 @@ export function SeasonCard(props: {
 								<AnimeCover id={item.id} coverUrl={item.coverUrl || undefined} alt='' className='size-full' lazy />
 							</div>
 							{inList ? (
-								<span className={cn("block truncate rounded-md border bg-card/90 px-2 py-1 text-center text-xs", quietText)}>{listStatus}</span>
+								<span className={cn("block truncate rounded-md border bg-card/90 px-2 py-1 text-center text-xs", quietText)}>{listStatusLabel(listStatus)}</span>
 							) : (
 								<Button
 									type='button'
@@ -98,7 +102,7 @@ export function SeasonCard(props: {
 										event.stopPropagation();
 										onAdd();
 									}}>
-									Add to list
+									{t("seasons.addToList")}
 								</Button>
 							)}
 						</div>
@@ -107,17 +111,17 @@ export function SeasonCard(props: {
 								<span className='min-w-0 flex-1 truncate'>{item.title}</span>
 							</div>
 							<div className='grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs'>
-								<span className={quietText}>Aired:</span>
+								<span className={quietText}>{t("seasons.aired")}</span>
 								<span className='truncate'>{formatAiredRange(item)}</span>
-								<span className={quietText}>Episodes:</span>
-								<span>{item.episodes > 0 ? item.episodes : "Unknown"}</span>
-								<span className={quietText}>Genres:</span>
-								<span className='truncate'>{item.genres.length > 0 ? item.genres.join(", ") : "?"}</span>
-								<span className={quietText}>Producers:</span>
-								<span className='truncate'>{item.producers.length > 0 ? item.producers.join(", ") : "?"}</span>
-								<span className={quietText}>Score:</span>
+								<span className={quietText}>{t("seasons.episodesLabel")}</span>
+								<span>{item.episodes > 0 ? item.episodes : t("common.unknown")}</span>
+								<span className={quietText}>{t("seasons.genres")}</span>
+								<span className='truncate'>{item.genres.length > 0 ? item.genres.map((genre) => genreLabel(genre)).join(", ") : t("seasons.unknownMark")}</span>
+								<span className={quietText}>{t("seasons.producers")}</span>
+								<span className='truncate'>{item.producers.length > 0 ? item.producers.join(", ") : t("seasons.unknownMark")}</span>
+								<span className={quietText}>{t("seasons.scoreLabel")}</span>
 								<span>{formatScore(item.averageScore)}</span>
-								<span className={quietText}>Popularity:</span>
+								<span className={quietText}>{t("seasons.popularityLabel")}</span>
 								<span>{formatPopularity(item.popularity)}</span>
 							</div>
 							{item.synopsis ? <p className={cn("mt-2 line-clamp-3 text-xs", quietText)}>{item.synopsis}</p> : null}

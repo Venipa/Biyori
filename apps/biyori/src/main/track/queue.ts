@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { t } from "@biyori/translations/i18n";
 import { and, asc, count, eq } from "drizzle-orm";
 import { z } from "zod";
 import { type ListStatus, listStatusSchema } from "../../shared/list";
@@ -243,12 +244,12 @@ async function flushNext(db: DatabaseClient): Promise<boolean> {
 	const payload = parsePayload(item.payload);
 	const remaining = await countQueued(db);
 	const progress = payload.progress ?? row.episodesWatched;
-	const title = remaining > 1 ? `Updating anime list... (${remaining} queued)` : "Updating anime list...";
+	const title = remaining > 1 ? t("main.list.updatingQueued", { queued: remaining }) : t("main.list.updating");
 	setAppNotice(title);
 	upsertActivity({
 		source: "list-update",
-		title: `Update ${row.title}`,
-		body: remaining > 1 ? `Update to episode ${progress} · ${remaining} queued` : `Update to episode ${progress}`,
+		title: t("main.list.updateTitle", { title: row.title }),
+		body: remaining > 1 ? t("main.list.updateToEpisodeQueued", { episode: progress, queued: remaining }) : t("main.list.updateToEpisode", { episode: progress }),
 	});
 
 	try {
@@ -299,12 +300,12 @@ async function flushNext(db: DatabaseClient): Promise<boolean> {
 		}
 		return true;
 	} catch {
-		const title = "List update failed; will retry";
+		const title = t("main.list.failedWillRetry");
 		setAppNotice(title);
 		completeActivity({
 			source: "list-update",
-			title: `Update ${row.title}`,
-			body: "Failed; will retry",
+			title: t("main.list.updateTitle", { title: row.title }),
+			body: t("main.list.failedBody"),
 			status: "error",
 		});
 		/* stay queued; retry timer will try again */

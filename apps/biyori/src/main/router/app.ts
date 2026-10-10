@@ -1,3 +1,4 @@
+import { t } from "@biyori/translations/i18n";
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { and, desc, eq } from "drizzle-orm";
@@ -41,7 +42,7 @@ import { listEpisodes, loadLibrarySummary, playEpisode, playNext, playRandom, sc
 import { loadCandidates, suggestTitles } from "../track/match";
 import { countQueued, subscribeHistoryFlush } from "../track/queue";
 import { chooseNowPlayingMatch, confirmPendingUpdate, getNowPlayingSnapshot, nowPlayingObservable, skipPendingUpdate } from "../track/tracker";
-import { t } from "../trpc";
+import { t as trpc } from "../trpc";
 import { anilistRouter } from "./anilist";
 import { coversRouter } from "./covers";
 import { desktopRouter } from "./desktop";
@@ -173,12 +174,12 @@ async function episodeSeenAtByAnime(db: SelectDatabase): Promise<Map<number, Rec
 	return seenById;
 }
 
-export const appRouter = t.router({
-	about: t.procedure.query(() => ({
+export const appRouter = trpc.router({
+	about: trpc.procedure.query(() => ({
 		hanaVersion,
 	})),
-	anime: t.router({
-		list: t.procedure.input(z.object({ status: listStatusSchema.optional() })).query(async ({ ctx, input }) => {
+	anime: trpc.router({
+		list: trpc.procedure.input(z.object({ status: listStatusSchema.optional() })).query(async ({ ctx, input }) => {
 			const language = loadAppSettings().titleLanguage;
 			const rows = await ctx.db
 				.select({
@@ -228,7 +229,7 @@ export const appRouter = t.router({
 				};
 			});
 		}),
-		tagNames: t.procedure.query(async ({ ctx }) => {
+		tagNames: trpc.procedure.query(async ({ ctx }) => {
 			const rows = await ctx.db.select({ tags: anime.tags }).from(listEntry).innerJoin(anime, eq(listEntry.animeId, anime.id));
 			const names = new Set<string>();
 			for (const row of rows) {
@@ -241,7 +242,7 @@ export const appRouter = t.router({
 			}
 			return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 		}),
-		counts: t.procedure.query(async ({ ctx }) => {
+		counts: trpc.procedure.query(async ({ ctx }) => {
 			const rows = await ctx.db.select({ status: listEntry.status }).from(listEntry);
 			const counts: Record<string, number> = {
 				"Currently watching": 0,
@@ -255,7 +256,7 @@ export const appRouter = t.router({
 			}
 			return counts;
 		}),
-		listed: t.procedure.query(async ({ ctx }) => {
+		listed: trpc.procedure.query(async ({ ctx }) => {
 			const language = loadAppSettings().titleLanguage;
 			const rows = await ctx.db
 				.select({
@@ -288,14 +289,14 @@ export const appRouter = t.router({
 				};
 			});
 		}),
-		suggest: t.procedure.input(z.object({ q: z.string().trim().min(1) })).query(async ({ ctx, input }) => {
+		suggest: trpc.procedure.input(z.object({ q: z.string().trim().min(1) })).query(async ({ ctx, input }) => {
 			const candidates = await loadCandidates(ctx.db);
 			return suggestTitles(input.q, candidates);
 		}),
-		byId: t.procedure.input(z.object({ id: z.number().int() })).query(async ({ ctx, input }) => {
+		byId: trpc.procedure.input(z.object({ id: z.number().int() })).query(async ({ ctx, input }) => {
 			return loadAnimeDetail(ctx.db, input.id);
 		}),
-		ensure: t.procedure.input(z.object({ id: z.number().int() })).mutation(async ({ ctx, input, signal }) => {
+		ensure: trpc.procedure.input(z.object({ id: z.number().int() })).mutation(async ({ ctx, input, signal }) => {
 			try {
 				const auth = readAnilistAuth();
 				const settings = loadAppSettings();
@@ -310,7 +311,7 @@ export const appRouter = t.router({
 				if (!detail) {
 					throw new TRPCError({
 						code: "INTERNAL_SERVER_ERROR",
-						message: "Anime cache write failed",
+						message: t("main.anilist.cacheWriteFailed"),
 					});
 				}
 				return detail;
@@ -320,11 +321,11 @@ export const appRouter = t.router({
 				}
 				throw new TRPCError({
 					code: "BAD_REQUEST",
-					message: error instanceof Error ? error.message : "Could not cache anime",
+					message: error instanceof Error ? error.message : t("main.anilist.couldNotCache"),
 				});
 			}
 		}),
-		setFansub: t.procedure
+		setFansub: trpc.procedure
 			.input(
 				z.object({
 					id: z.number().int(),
@@ -335,7 +336,7 @@ export const appRouter = t.router({
 				await ctx.db.update(anime).set({ fansub: input.fansub.trim() }).where(eq(anime.id, input.id));
 				return { ok: true as const };
 			}),
-		setLocal: t.procedure
+		setLocal: trpc.procedure
 			.input(
 				z.object({
 					id: z.number().int(),
@@ -355,32 +356,32 @@ export const appRouter = t.router({
 					.where(eq(anime.id, input.id));
 				return { ok: true as const };
 			}),
-		remove: t.procedure.input(z.object({ id: z.number().int() })).mutation(async ({ ctx, input }) => {
+		remove: trpc.procedure.input(z.object({ id: z.number().int() })).mutation(async ({ ctx, input }) => {
 			await ctx.db.delete(episodeFile).where(eq(episodeFile.animeId, input.id));
 			await ctx.db.delete(syncQueue).where(eq(syncQueue.animeId, input.id));
 			await ctx.db.delete(listEntry).where(eq(listEntry.animeId, input.id));
 			return { ok: true as const };
 		}),
 	}),
-	history: t.router({
-		list: t.procedure.query(async ({ ctx }) => {
+	history: trpc.router({
+		list: trpc.procedure.query(async ({ ctx }) => {
 			const rows = await ctx.db.select().from(history).orderBy(desc(history.lastModified));
 			return {
 				queued: rows.filter((row) => row.kind === "queued"),
 				history: rows.filter((row) => row.kind === "history"),
 			};
 		}),
-		queuedCount: t.procedure.query(async ({ ctx }) => {
+		queuedCount: trpc.procedure.query(async ({ ctx }) => {
 			return countQueued(ctx.db);
 		}),
-		onFlush: t.procedure.subscription(() => {
+		onFlush: trpc.procedure.subscription(() => {
 			return observable<null>((emit) => {
 				return subscribeHistoryFlush(() => {
 					emit.next(null);
 				});
 			});
 		}),
-		latest: t.procedure.query(async ({ ctx }) => {
+		latest: trpc.procedure.query(async ({ ctx }) => {
 			const rows = await ctx.db
 				.select({
 					title: history.title,
@@ -406,7 +407,7 @@ export const appRouter = t.router({
 				bannerUrl: row.bannerUrl || null,
 			};
 		}),
-		remove: t.procedure.input(z.object({ id: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+		remove: trpc.procedure.input(z.object({ id: z.string().min(1) })).mutation(async ({ ctx, input }) => {
 			const rows = await ctx.db.select().from(history).where(eq(history.id, input.id)).limit(1);
 			const row = rows[0];
 			if (!row) {
@@ -418,7 +419,7 @@ export const appRouter = t.router({
 			await ctx.db.delete(history).where(eq(history.id, input.id));
 			return { ok: true as const };
 		}),
-		clear: t.procedure.input(z.object({ kind: z.enum(["history", "queued"]) })).mutation(async ({ ctx, input }) => {
+		clear: trpc.procedure.input(z.object({ kind: z.enum(["history", "queued"]) })).mutation(async ({ ctx, input }) => {
 			if (input.kind === "queued") {
 				await ctx.db.delete(syncQueue);
 			}
@@ -426,14 +427,14 @@ export const appRouter = t.router({
 			return { ok: true as const };
 		}),
 	}),
-	statistics: t.router({
-		summary: t.procedure.query(async ({ ctx }) => loadStatistics(ctx.db)),
+	statistics: trpc.router({
+		summary: trpc.procedure.query(async ({ ctx }) => loadStatistics(ctx.db)),
 	}),
-	settings: t.router({
-		get: t.procedure.query(() => {
+	settings: trpc.router({
+		get: trpc.procedure.query(() => {
 			return loadSettingsFormValues();
 		}),
-		onChange: t.procedure.subscription(() => {
+		onChange: trpc.procedure.subscription(() => {
 			return observable<ReturnType<typeof loadSettingsFormValues>>((emit) => {
 				const push = (): void => {
 					emit.next(loadSettingsFormValues());
@@ -446,7 +447,7 @@ export const appRouter = t.router({
 				};
 			});
 		}),
-		set: t.procedure.input(settingsFormPatchSchema).mutation(async ({ ctx, input }) => {
+		set: trpc.procedure.input(settingsFormPatchSchema).mutation(async ({ ctx, input }) => {
 			const prev = loadAppSettings();
 			const next = patchSettingsForm(input);
 			if (next.titleLanguage !== prev.titleLanguage) {
@@ -457,7 +458,7 @@ export const appRouter = t.router({
 			}
 			return next;
 		}),
-		addLibraryFolder: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(({ input }) => {
+		addLibraryFolder: trpc.procedure.input(z.object({ path: z.string().min(1) })).mutation(({ input }) => {
 			const path = normalizeFolderPath(input.path);
 			const current = loadAppSettings();
 			if (folderPathExists(current.libraryFolders, path)) {
@@ -468,8 +469,8 @@ export const appRouter = t.router({
 			});
 			return loadSettingsFormValues();
 		}),
-		cacheSummary: t.procedure.query(async ({ ctx }) => loadCacheSummary(ctx.db)),
-		clearCache: t.procedure.input(z.object({ kinds: cacheKindsSchema })).mutation(async ({ ctx, input }) => {
+		cacheSummary: trpc.procedure.query(async ({ ctx }) => loadCacheSummary(ctx.db)),
+		clearCache: trpc.procedure.input(z.object({ kinds: cacheKindsSchema })).mutation(async ({ ctx, input }) => {
 			const summary = await clearCacheKinds(ctx.db, input.kinds);
 			if (input.kinds.includes("torrentHistory")) {
 				forgetArchivedTorrents();
@@ -477,47 +478,47 @@ export const appRouter = t.router({
 			return summary;
 		}),
 	}),
-	media: t.router({
-		nowPlaying: t.procedure.query(() => getNowPlayingSnapshot()),
-		onNowPlaying: t.procedure.subscription(() => nowPlayingObservable()),
-		confirmUpdate: t.procedure.mutation(async () => {
+	media: trpc.router({
+		nowPlaying: trpc.procedure.query(() => getNowPlayingSnapshot()),
+		onNowPlaying: trpc.procedure.subscription(() => nowPlayingObservable()),
+		confirmUpdate: trpc.procedure.mutation(async () => {
 			await confirmPendingUpdate();
 			return { ok: true as const };
 		}),
-		skipUpdate: t.procedure.mutation(async () => {
+		skipUpdate: trpc.procedure.mutation(async () => {
 			await skipPendingUpdate();
 			return { ok: true as const };
 		}),
-		chooseMatch: t.procedure.input(z.object({ animeId: z.number().int() })).mutation(async ({ input }) => {
+		chooseMatch: trpc.procedure.input(z.object({ animeId: z.number().int() })).mutation(async ({ input }) => {
 			await chooseNowPlayingMatch(input.animeId);
 			return getNowPlayingSnapshot();
 		}),
 	}),
-	library: t.router({
-		onIndex: t.procedure.subscription(() => {
+	library: trpc.router({
+		onIndex: trpc.procedure.subscription(() => {
 			return observable<null>((emit) => {
 				return subscribeLibraryIndex(() => {
 					emit.next(null);
 				});
 			});
 		}),
-		summary: t.procedure.query(async ({ ctx }) => loadLibrarySummary(ctx.db)),
-		scan: t.procedure.mutation(async ({ ctx }) => {
+		summary: trpc.procedure.query(async ({ ctx }) => loadLibrarySummary(ctx.db)),
+		scan: trpc.procedure.mutation(async ({ ctx }) => {
 			return scanAvailableEpisodes(ctx.db);
 		}),
-		scanAll: t.procedure.mutation(async ({ ctx }) => {
+		scanAll: trpc.procedure.mutation(async ({ ctx }) => {
 			return scanLibrary(ctx.db);
 		}),
-		scanFolder: t.procedure.input(z.object({ path: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+		scanFolder: trpc.procedure.input(z.object({ path: z.string().min(1) })).mutation(async ({ ctx, input }) => {
 			return scanLibraryPaths(ctx.db, [input.path]);
 		}),
-		episodes: t.procedure.input(z.object({ animeId: z.number().int() })).query(async ({ ctx, input }) => {
+		episodes: trpc.procedure.input(z.object({ animeId: z.number().int() })).query(async ({ ctx, input }) => {
 			return listEpisodes(ctx.db, input.animeId);
 		}),
-		playEpisode: t.procedure.input(z.object({ animeId: z.number().int(), episode: z.number().int() })).mutation(async ({ ctx, input }) => {
+		playEpisode: trpc.procedure.input(z.object({ animeId: z.number().int(), episode: z.number().int() })).mutation(async ({ ctx, input }) => {
 			return playEpisode(ctx.db, input.animeId, input.episode);
 		}),
-		playNext: t.procedure
+		playNext: trpc.procedure
 			.input(
 				z.object({
 					animeId: z.number().int(),
@@ -527,15 +528,15 @@ export const appRouter = t.router({
 			.mutation(async ({ ctx, input }) => {
 				return playNext(ctx.db, input.animeId, input.episodesWatched);
 			}),
-		playRandom: t.procedure.input(z.object({ animeId: z.number().int() })).mutation(async ({ ctx, input }) => {
+		playRandom: trpc.procedure.input(z.object({ animeId: z.number().int() })).mutation(async ({ ctx, input }) => {
 			return playRandom(ctx.db, input.animeId);
 		}),
 	}),
-	torrents: t.router({
-		list: t.procedure.query(async ({ ctx }) => {
+	torrents: trpc.router({
+		list: trpc.procedure.query(async ({ ctx }) => {
 			return applyTorrentView(ctx.db);
 		}),
-		onList: t.procedure.subscription(() => {
+		onList: trpc.procedure.subscription(() => {
 			return observable<ReturnType<typeof getTorrentItems>>((emit) => {
 				emit.next(getTorrentItems());
 				return subscribeTorrentItems((next) => {
@@ -543,8 +544,8 @@ export const appRouter = t.router({
 				});
 			});
 		}),
-		poll: t.procedure.query(() => getTorrentPollStatus()),
-		onPoll: t.procedure.subscription(() => {
+		poll: trpc.procedure.query(() => getTorrentPollStatus()),
+		onPoll: trpc.procedure.subscription(() => {
 			return observable<ReturnType<typeof getTorrentPollStatus>>((emit) => {
 				emit.next(getTorrentPollStatus());
 				return subscribeTorrentPollStatus((next) => {
@@ -552,24 +553,24 @@ export const appRouter = t.router({
 				});
 			});
 		}),
-		refresh: t.procedure.mutation(async ({ ctx }) => {
+		refresh: trpc.procedure.mutation(async ({ ctx }) => {
 			return checkTorrents(ctx.db, true);
 		}),
-		search: t.procedure.input(z.object({ title: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+		search: trpc.procedure.input(z.object({ title: z.string().min(1) })).mutation(async ({ ctx, input }) => {
 			return searchTorrents(input.title, ctx.db);
 		}),
-		download: t.procedure.input(z.object({ guid: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+		download: trpc.procedure.input(z.object({ guid: z.string().min(1) })).mutation(async ({ ctx, input }) => {
 			await downloadTorrent(input.guid, ctx.db);
 			return { ok: true as const };
 		}),
-		downloadMarked: t.procedure.input(z.object({ guids: z.array(z.string().min(1)) })).mutation(async ({ ctx, input }) => {
+		downloadMarked: trpc.procedure.input(z.object({ guids: z.array(z.string().min(1)) })).mutation(async ({ ctx, input }) => {
 			await downloadSelectedTorrents(input.guids, ctx.db);
 			return { ok: true as const };
 		}),
-		discard: t.procedure.input(z.object({ guid: z.string().min(1) })).mutation(({ input }) => {
+		discard: trpc.procedure.input(z.object({ guid: z.string().min(1) })).mutation(({ input }) => {
 			return discardTorrent(input.guid);
 		}),
-		discardAnime: t.procedure
+		discardAnime: trpc.procedure
 			.input(
 				z.object({
 					animeId: z.number().int(),
@@ -579,7 +580,7 @@ export const appRouter = t.router({
 			.mutation(async ({ ctx, input }) => {
 				return discardAnimeFilter(input.animeId, input.title, ctx.db);
 			}),
-		preferFansub: t.procedure
+		preferFansub: trpc.procedure
 			.input(
 				z.object({
 					animeId: z.number().int(),
@@ -591,9 +592,9 @@ export const appRouter = t.router({
 				return preferFansubFilter(input.animeId, input.group, input.title, ctx.db);
 			}),
 	}),
-	notice: t.router({
-		current: t.procedure.query(() => getAppNotice()),
-		onNotice: t.procedure.subscription(() => {
+	notice: trpc.router({
+		current: trpc.procedure.query(() => getAppNotice()),
+		onNotice: trpc.procedure.subscription(() => {
 			return observable<ReturnType<typeof getAppNotice>>((emit) => {
 				emit.next(getAppNotice());
 				return subscribeAppNotice((next) => {
@@ -602,9 +603,9 @@ export const appRouter = t.router({
 			});
 		}),
 	}),
-	activity: t.router({
-		snapshot: t.procedure.query(() => getActivitySnapshot()),
-		onChange: t.procedure.subscription(() => {
+	activity: trpc.router({
+		snapshot: trpc.procedure.query(() => getActivitySnapshot()),
+		onChange: trpc.procedure.subscription(() => {
 			return observable<ReturnType<typeof getActivitySnapshot>>((emit) => {
 				emit.next(getActivitySnapshot());
 				return subscribeActivity((next) => {

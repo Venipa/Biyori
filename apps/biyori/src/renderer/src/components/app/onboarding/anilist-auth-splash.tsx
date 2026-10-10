@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import Logo from "@/mainview/components/app/shell/logo";
@@ -6,6 +7,7 @@ import { trpc } from "@/mainview/trpc";
 const HIDE_MS = 1800;
 
 export function AnilistAuthSplash() {
+	const { t } = useTranslation();
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const [username, setUsername] = useState<string | null>(null);
 	const utils = trpc.useUtils();
@@ -40,7 +42,7 @@ export function AnilistAuthSplash() {
 	return (
 		<div className='absolute inset-0 flex flex-col items-center justify-center gap-5 bg-background px-8'>
 			<Logo className='size-14' />
-			<p className='text-center text-sm'>Connected as {username}</p>
+			<p className='text-center text-sm'>{t("onboarding.connectedAs", { name: username })}</p>
 		</div>
 	);
 }

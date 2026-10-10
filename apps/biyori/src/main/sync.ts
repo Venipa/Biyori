@@ -1,3 +1,4 @@
+import { t } from "@biyori/translations/i18n";
 import { eq } from "drizzle-orm";
 import { ANIME_STALE_MS, isAnimeStale } from "../lib/anime-stale";
 import { clearActivity, completeActivity, upsertActivity } from "./activity";
@@ -21,7 +22,6 @@ export type SyncSnapshot = {
 
 type SyncListener = (snapshot: SyncSnapshot) => void;
 
-const SERVICE_NAME = "AniList";
 const LIST_SYNCED_AT_KEY = "anilist.listSyncedAt";
 
 type ListSyncStamp = {
@@ -86,13 +86,13 @@ const LIVE_SYNC_MS = ANIME_STALE_MS;
 
 function synchronizingMessage(processed?: number): string {
 	if (processed == null || processed <= 0) {
-		return `Synchronizing with ${SERVICE_NAME}...`;
+		return t("main.sync.synchronizing");
 	}
-	return `Synchronizing with ${SERVICE_NAME}... (${processed})`;
+	return t("main.sync.synchronizingCount", { processed });
 }
 
 function taggedMessage(message: string): string {
-	return `[${SERVICE_NAME}] ${message}`;
+	return t("main.sync.tagged", { message });
 }
 
 function emit(next: SyncSnapshot): void {
@@ -113,8 +113,8 @@ function emitRunning(message: string, processed: number | null, total: number | 
 	});
 	upsertActivity({
 		source: "anilist-sync",
-		title: "AniList",
-		body: processed != null && processed > 0 ? `Synchronizing (${processed})` : "Synchronizing",
+		title: t("shell.anilist"),
+		body: processed != null && processed > 0 ? t("main.sync.synchronizingBodyCount", { processed }) : t("main.sync.synchronizingBody"),
 	});
 	setAppNotice(message, { toast: false, busy: true });
 }
@@ -176,7 +176,7 @@ export async function startAniListSyncIfAuthed(): Promise<void> {
 		emit({
 			...IDLE,
 			lastSuccessAt: Number.isFinite(at) ? at : Date.now(),
-			message: taggedMessage(`${stamp.count} titles`),
+			message: taggedMessage(t("main.sync.titles", { count: stamp.count })),
 			processed: stamp.count,
 			total: stamp.count,
 			listRevision: snapshot.listRevision,
@@ -239,7 +239,7 @@ async function runSync(): Promise<void> {
 	try {
 		const auth = readAnilistAuth();
 		if (!auth || auth.expiresAt <= Date.now()) {
-			const title = taggedMessage("Not connected");
+			const title = taggedMessage(t("main.sync.notConnected"));
 			emit({
 				...IDLE,
 				lastSuccessAt: snapshot.lastSuccessAt,
@@ -247,7 +247,7 @@ async function runSync(): Promise<void> {
 				phase: "error",
 				message: title,
 			});
-			completeActivity({ source: "anilist-sync", title: "AniList", body: "Not connected", status: "error" });
+			completeActivity({ source: "anilist-sync", title: t("shell.anilist"), body: t("main.sync.notConnected"), status: "error" });
 			setAppNotice(title);
 			return;
 		}
@@ -282,18 +282,18 @@ async function runSync(): Promise<void> {
 			lastSuccessAt: Date.now(),
 			listRevision: snapshot.listRevision + 1,
 		});
-		setAppNotice(taggedMessage(`${synced} titles`));
+		setAppNotice(taggedMessage(t("main.sync.titles", { count: synced })));
 		completeActivity({
 			source: "anilist-sync",
-			title: "AniList",
-			body: `Finished · ${synced} titles`,
+			title: t("shell.anilist"),
+			body: t("main.sync.finished", { count: synced }),
 			status: "ok",
 		});
 	} catch (error) {
 		if (signal.aborted) {
 			return;
 		}
-		const message = error instanceof Error ? error.message : "Request failed";
+		const message = error instanceof Error ? error.message : t("main.sync.requestFailed");
 		const title = taggedMessage(message);
 		emit({
 			phase: "error",
@@ -303,7 +303,7 @@ async function runSync(): Promise<void> {
 			lastSuccessAt: snapshot.lastSuccessAt,
 			listRevision: snapshot.listRevision,
 		});
-		completeActivity({ source: "anilist-sync", title: "AniList", body: message, status: "error" });
+		completeActivity({ source: "anilist-sync", title: t("shell.anilist"), body: message, status: "error" });
 		setAppNotice(title);
 	} finally {
 		running = false;

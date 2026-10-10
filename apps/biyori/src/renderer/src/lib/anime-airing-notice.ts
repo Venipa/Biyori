@@ -1,3 +1,4 @@
+import { t } from "@biyori/translations/react";
 import { formatLocalDateTime, formatTimeAgo } from "./format-date";
 
 export type AnimeAiringNoticeInput = {
@@ -40,6 +41,27 @@ function rankLines(input: AnimeAiringNoticeInput): AnimeRankLine[] {
 	return ranks;
 }
 
+export function airingStatusLabel(status: string | null | undefined): string {
+	switch (status?.trim()) {
+		case "Currently airing":
+			return t("anime.currentlyAiring");
+		case "Finished airing":
+			return t("anime.finishedAiring");
+		case "Finished":
+			return t("anime.finished");
+		case "Not yet released":
+			return t("anime.notYetReleased");
+		case "Cancelled":
+			return t("anime.cancelled");
+		case "Hiatus":
+			return t("anime.hiatus");
+		default: {
+			const trimmed = status?.trim();
+			return trimmed ? trimmed : t("common.unknown");
+		}
+	}
+}
+
 function dateOnly(value: string | null | undefined): string | null {
 	if (!value) {
 		return null;
@@ -50,7 +72,7 @@ function dateOnly(value: string | null | undefined): string | null {
 export function animeAiringNotice(input: AnimeAiringNoticeInput): AnimeAiringNotice | null {
 	const status = input.airingStatus.trim();
 	const ranks = rankLines(input);
-	const last = input.lastAiredEpisode > 0 ? `Last aired episode ${input.lastAiredEpisode}` : null;
+	const last = input.lastAiredEpisode > 0 ? t("anime.lastAired", { episode: input.lastAiredEpisode }) : null;
 	const nextAt = input.nextAiringAt ? airDateLine(input.nextAiringAt) : null;
 	const nextEp = input.lastAiredEpisode > 0 ? input.lastAiredEpisode + 1 : 1;
 
@@ -58,23 +80,23 @@ export function animeAiringNotice(input: AnimeAiringNoticeInput): AnimeAiringNot
 	let description: string | undefined;
 
 	if (status === "Hiatus") {
-		title = "Hiatus";
-		description = [last, nextAt ? `Next airs ${nextAt}` : null].filter(Boolean).join(". ") || undefined;
+		title = t("anime.hiatus");
+		description = [last, nextAt ? t("anime.nextAirs", { when: nextAt }) : null].filter(Boolean).join(". ") || undefined;
 	} else if (status === "Cancelled") {
-		title = "Cancelled";
+		title = t("anime.cancelled");
 	} else if (status === "Currently airing") {
 		if (nextAt) {
-			title = `Episode ${nextEp} airs`;
+			title = t("anime.episodeAirs", { episode: nextEp });
 			description = nextAt;
 		} else {
-			title = "Currently airing";
+			title = t("anime.currentlyAiring");
 			description = last ?? undefined;
 		}
 	} else if (status === "Not yet released") {
-		title = "Not yet released";
-		description = nextAt ? `Premieres ${nextAt}` : undefined;
+		title = t("anime.notYetReleased");
+		description = nextAt ? t("anime.premieres", { when: nextAt }) : undefined;
 	} else if (status === "Finished airing") {
-		title = "Finished airing";
+		title = t("anime.finishedAiring");
 		description = dateOnly(input.endDate) ?? last ?? undefined;
 	}
 

@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { MinusIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/mainview/components/ui/button";
 import { Input } from "@/mainview/components/ui/input";
@@ -29,6 +30,7 @@ function EpisodeCountInput({
 	invalid?: boolean;
 	showProgressBar?: boolean;
 }) {
+	const { t } = useTranslation();
 	const count = clampCount(value, max);
 	const knownTotal = total > 0;
 
@@ -39,7 +41,7 @@ function EpisodeCountInput({
 					type='button'
 					variant='outline'
 					size='icon'
-					aria-label='One episode back'
+					aria-label={t("anime.oneEpisodeBack")}
 					disabled={count <= 0}
 					onClick={() => {
 						onChange(count - 1);
@@ -64,14 +66,14 @@ function EpisodeCountInput({
 					type='button'
 					variant='outline'
 					size='icon'
-					aria-label='One episode forward'
+					aria-label={t("anime.oneEpisodeForward")}
 					disabled={count >= max}
 					onClick={() => {
 						onChange(count + 1);
 					}}>
 					<PlusIcon />
 				</Button>
-				{knownTotal ? <span className='text-xs whitespace-nowrap text-muted-foreground'>of {total}</span> : null}
+				{knownTotal ? <span className='text-xs whitespace-nowrap text-muted-foreground'>{t("anime.ofTotal", { total })}</span> : null}
 			</div>
 			{knownTotal && showProgressBar ? (
 				<ProgressRoot value={Math.min(count, total)} max={total} aria-hidden>

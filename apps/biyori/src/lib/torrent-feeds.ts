@@ -1,44 +1,20 @@
 export type TorrentFeedOption = {
+	id: string;
 	value: string;
-	label: string;
 };
 
 export const TORRENT_RELEASE_FEEDS: TorrentFeedOption[] = [
-	{
-		value: "https://nyaa.si/?page=rss&c=1_2&f=0",
-		label: "Nyaa.si",
-	},
-	{
-		value: "https://subsplease.org/rss/?t&r=1080",
-		label: "SubsPlease 1080p",
-	},
-	{
-		value: "https://www.tokyotosho.info/rss.php?filter=1,11&zwnj=0",
-		label: "TokyoToshokan",
-	},
-	{
-		value: "https://anidex.info/rss/?cat=1&lang_id=1",
-		label: "AniDex",
-	},
-	{
-		value: "https://nyaa.net/feed?c=3_5&s=0",
-		label: "Nyaa.net",
-	},
+	{ id: "nyaa", value: "https://nyaa.si/?page=rss&c=1_2&f=0" },
+	{ id: "subsplease", value: "https://subsplease.org/rss/?t&r=1080" },
+	{ id: "tokyotosho", value: "https://www.tokyotosho.info/rss.php?filter=1,11&zwnj=0" },
+	{ id: "anidex", value: "https://anidex.info/rss/?cat=1&lang_id=1" },
+	{ id: "nyaanet", value: "https://nyaa.net/feed?c=3_5&s=0" },
 ];
 
 export const TORRENT_SEARCH_FEEDS: TorrentFeedOption[] = [
-	{
-		value: "https://nyaa.si/?page=rss&c=1_2&f=0&q=%title%",
-		label: "Nyaa.si",
-	},
-	{
-		value: "https://anidex.info/rss/?cat=1&lang_id=1&q=%title%",
-		label: "AniDex",
-	},
-	{
-		value: "https://nyaa.net/feed?c=3_5&s=0&q=%title%",
-		label: "Nyaa.net",
-	},
+	{ id: "nyaa", value: "https://nyaa.si/?page=rss&c=1_2&f=0&q=%title%" },
+	{ id: "anidex", value: "https://anidex.info/rss/?cat=1&lang_id=1&q=%title%" },
+	{ id: "nyaanet", value: "https://nyaa.net/feed?c=3_5&s=0&q=%title%" },
 ];
 
 export function torrentSearchUrlForFeed(rssFeedUrl: string): string {
@@ -46,7 +22,7 @@ export function torrentSearchUrlForFeed(rssFeedUrl: string): string {
 	if (!release) {
 		return "";
 	}
-	return TORRENT_SEARCH_FEEDS.find((option) => option.label === release.label)?.value ?? "";
+	return TORRENT_SEARCH_FEEDS.find((option) => option.id === release.id)?.value ?? "";
 }
 
 export function fillTorrentSearchUrl(template: string, title: string): string {

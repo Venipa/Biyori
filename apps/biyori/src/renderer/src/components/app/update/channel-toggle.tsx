@@ -1,5 +1,6 @@
+import { useTranslation } from "@biyori/translations/react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
-import { parseUpdateChannel, UPDATE_CHANNEL_LABELS, UPDATE_CHANNELS, type UpdateChannel } from "@/shared/updater";
+import { parseUpdateChannel, UPDATE_CHANNELS, type UpdateChannel } from "@/shared/updater";
 
 type UpdateChannelToggleProps = {
 	value: UpdateChannel;
@@ -8,11 +9,23 @@ type UpdateChannelToggleProps = {
 	id?: string;
 };
 
+const channelLabel = {
+	stable: "update.stable",
+	beta: "update.beta",
+	alpha: "update.alpha",
+} as const;
+
 export function UpdateChannelToggle({ value, onValueChange, disabled, id }: UpdateChannelToggleProps) {
+	const { t } = useTranslation();
+	const items = {
+		stable: t(channelLabel.stable),
+		beta: t(channelLabel.beta),
+		alpha: t(channelLabel.alpha),
+	};
 	return (
 		<Select
 			value={value}
-			items={UPDATE_CHANNEL_LABELS}
+			items={items}
 			disabled={disabled}
 			onValueChange={(next) => {
 				if (typeof next === "string") {
@@ -26,7 +39,7 @@ export function UpdateChannelToggle({ value, onValueChange, disabled, id }: Upda
 				<SelectGroup>
 					{UPDATE_CHANNELS.map((channel) => (
 						<SelectItem key={channel} value={channel}>
-							{UPDATE_CHANNEL_LABELS[channel]}
+							{items[channel]}
 						</SelectItem>
 					))}
 				</SelectGroup>

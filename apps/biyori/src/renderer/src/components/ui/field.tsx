@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@biyori/translations/react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { useMemo } from "react";
 import { Label } from "@/mainview/components/ui/label";
@@ -116,7 +117,17 @@ function FieldError({
 }: React.ComponentProps<"div"> & {
 	errors?: Array<{ message?: string } | undefined>;
 }) {
+	const { t } = useTranslation();
 	const content = useMemo(() => {
+		function messageText(message: string | undefined): string | undefined {
+			if (message === "common.required") {
+				return t("common.required");
+			}
+			if (message === "common.enterValidUrl") {
+				return t("common.enterValidUrl");
+			}
+			return message;
+		}
 		if (children) {
 			return children;
 		}
@@ -128,11 +139,11 @@ function FieldError({
 		const uniqueErrors = [...new Map(errors.map((error) => [error?.message, error])).values()];
 
 		if (uniqueErrors?.length === 1) {
-			return uniqueErrors[0]?.message;
+			return messageText(uniqueErrors[0]?.message);
 		}
 
-		return <ul className='ml-4 flex list-disc flex-col gap-1'>{uniqueErrors.map((error, index) => error?.message && <li key={index}>{error.message}</li>)}</ul>;
-	}, [children, errors]);
+		return <ul className='ml-4 flex list-disc flex-col gap-1'>{uniqueErrors.map((error, index) => error?.message && <li key={index}>{messageText(error.message)}</li>)}</ul>;
+	}, [children, errors, t]);
 
 	if (!content) {
 		return null;

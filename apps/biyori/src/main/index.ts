@@ -1,5 +1,6 @@
 import "./sentry";
 import { logger } from "@biyori/logger";
+import { t } from "@biyori/translations/i18n";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { app, type BrowserWindow } from "electron";
 import { clearActivity, reportStartup } from "./activity";
@@ -61,7 +62,7 @@ async function runVisibleBoot(splash: BrowserWindow): Promise<void> {
 
 	const checkLibrary = hasIndexedLibrary();
 	if (checkLibrary) {
-		reportStartup(0, 2, "Checking library");
+		reportStartup(0, 2, t("main.startup.checkingLibrary"));
 	}
 	const scan = checkLibrary ? runStartupScan() : Promise.resolve();
 
@@ -78,7 +79,7 @@ async function runVisibleBoot(splash: BrowserWindow): Promise<void> {
 		return;
 	}
 	if (checkLibrary) {
-		reportStartup(2, 2, "Ready");
+		reportStartup(2, 2, t("main.startup.ready"));
 	}
 	scheduleAfterInit();
 	revealMain(splash, mainWindow);

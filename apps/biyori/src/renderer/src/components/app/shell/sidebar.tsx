@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { BarChart3Icon, CalendarDaysIcon, FolderIcon, HistoryIcon, HomeIcon, PlayIcon, RssIcon } from "lucide-react";
 import { LayoutGroup, motion } from "motion/react";
@@ -13,23 +14,30 @@ import { trpc } from "@/mainview/trpc";
 import { ANIME_LIST_SEARCH_TAB, animeListTabSchema, listStatusSchema } from "@/shared/list";
 
 const listItems = [
-	{ to: "/app/library", label: "Library", icon: FolderIcon },
-	{ to: "/app/history", label: "History", icon: HistoryIcon },
-	{ to: "/app/statistics", label: "Statistics", icon: BarChart3Icon },
+	{ to: "/app/library", labelKey: "nav.library", icon: FolderIcon },
+	{ to: "/app/history", labelKey: "nav.history", icon: HistoryIcon },
+	{ to: "/app/statistics", labelKey: "nav.statistics", icon: BarChart3Icon },
 ] as const;
 
 const toolItems = [
-	{ to: "/app/seasons", label: "Seasons", icon: CalendarDaysIcon },
-	{ to: "/app/torrents", label: "Torrents", icon: RssIcon },
+	{ to: "/app/seasons", labelKey: "nav.seasons", icon: CalendarDaysIcon },
+	{ to: "/app/torrents", labelKey: "nav.torrents", icon: RssIcon },
 ] as const;
 
 const otherListStatuses = listStatusSchema.options.filter((status) => status !== "Currently watching");
 
-const chipLabel: Record<(typeof otherListStatuses)[number], string> = {
-	Completed: "Done",
-	"On hold": "Hold",
-	Dropped: "Drop",
-	"Plan to watch": "Plan",
+const chipLabelKey: Record<(typeof otherListStatuses)[number], "nav.done" | "nav.hold" | "nav.drop" | "nav.plan"> = {
+	Completed: "nav.done",
+	"On hold": "nav.hold",
+	Dropped: "nav.drop",
+	"Plan to watch": "nav.plan",
+};
+
+const statusLabelKey: Record<(typeof otherListStatuses)[number], "nav.completed" | "nav.onHold" | "nav.dropped" | "nav.planToWatch"> = {
+	Completed: "nav.completed",
+	"On hold": "nav.onHold",
+	Dropped: "nav.dropped",
+	"Plan to watch": "nav.planToWatch",
 };
 
 const chipTone: Record<(typeof otherListStatuses)[number], string> = {
@@ -111,6 +119,7 @@ function NavIconSlot({ active, isEnter, children }: { active: boolean; isEnter: 
 }
 
 export function AppSidebar() {
+	const { t } = useTranslation();
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
 	});
@@ -130,7 +139,7 @@ export function AppSidebar() {
 	}
 
 	return (
-		<nav aria-label='Main navigation' className='relative z-30 flex h-full min-h-0 w-56 shrink-0 flex-col gap-2 overflow-visible border-r bg-sidebar p-2'>
+		<nav aria-label={t("nav.main")} className='relative z-30 flex h-full min-h-0 w-56 shrink-0 flex-col gap-2 overflow-visible border-r bg-sidebar p-2'>
 			<SidebarAmbient />
 			<div className='relative z-10'>
 				<SidebarSearch />
@@ -138,13 +147,13 @@ export function AppSidebar() {
 			<div className='relative z-10 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto'>
 				<LayoutGroup id='app-sidebar-nav'>
 					<NowPlayingNavLink active={pathname === "/app/now-playing"} isEnter={isEnter} />
-					<NavGroup label='Library'>
+					<NavGroup label={t("nav.library")}>
 						<AnimeListNavSection pathname={pathname} isEnter={isEnter} />
 						{listItems.map((item) => (
 							<NavLink key={item.to} {...item} active={pathname === item.to} isEnter={isEnter} badge={item.to === "/app/history" ? queuedCount : undefined} />
 						))}
 					</NavGroup>
-					<NavGroup label='Discover'>
+					<NavGroup label={t("nav.discover")}>
 						{toolItems.map((item) => (
 							<NavLink key={item.to} {...item} active={pathname === item.to} isEnter={isEnter} />
 						))}
@@ -152,10 +161,10 @@ export function AppSidebar() {
 				</LayoutGroup>
 				{update.updateAvailable ? (
 					<div className='mt-auto rounded-md border border-primary/30 bg-primary/10 p-2'>
-						<p className='text-sm font-medium text-foreground'>Update available</p>
+						<p className='text-sm font-medium text-foreground'>{t("nav.updateAvailable")}</p>
 						<p className='mt-0.5 text-xs text-muted-foreground'>
-							{update.remoteVersion ? `Version ${update.remoteVersion}` : "New build ready"}
-							{update.updateReady ? " (downloaded)" : null}
+							{update.remoteVersion ? t("nav.version", { version: update.remoteVersion }) : t("nav.newBuildReady")}
+							{update.updateReady ? ` ${t("nav.downloaded")}` : null}
 						</p>
 						<Button
 							type='button'
@@ -164,7 +173,7 @@ export function AppSidebar() {
 							onClick={() => {
 								void desktopRpc.request.openUpdate({});
 							}}>
-							Update
+							{t("shell.update")}
 						</Button>
 					</div>
 				) : null}
@@ -173,34 +182,46 @@ export function AppSidebar() {
 	);
 }
 
-function nowPlayingSubLines(snapshot: {
-	media: { player: string } | null;
-	parsed: {
-		title: string;
-		season: number | null;
-		episode: number | null;
-		group: string | null;
-	} | null;
-	match: { title: string; type: string | null } | null;
-}): string[] {
+function nowPlayingSubLines(
+	snapshot: {
+		media: { player: string } | null;
+		parsed: {
+			title: string;
+			season: number | null;
+			episode: number | null;
+			group: string | null;
+		} | null;
+		match: { title: string; type: string | null } | null;
+	},
+	labels: { movie: string; episode: (episode: number) => string },
+): string[] {
 	const title = snapshot.match?.title ?? snapshot.parsed?.title;
 	if (!snapshot.media || !title) {
 		return [];
 	}
 	const lines = [title];
 	if (snapshot.match?.type === "Movie") {
-		lines.push("Movie");
+		lines.push(labels.movie);
 	} else if (snapshot.parsed?.episode != null) {
-		lines.push(`Episode ${snapshot.parsed.episode}`);
+		lines.push(labels.episode(snapshot.parsed.episode));
 	}
 	return lines;
 }
 
 function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: boolean }) {
+	const { t } = useTranslation();
 	const snapshot = trpc.media.nowPlaying.useQuery().data;
 	const playing = Boolean(snapshot?.media);
 	const latest = trpc.history.latest.useQuery(undefined, { enabled: !playing });
-	const subLines = playing && snapshot ? nowPlayingSubLines(snapshot) : latest.data?.title ? [latest.data.title] : [];
+	const subLines =
+		playing && snapshot
+			? nowPlayingSubLines(snapshot, {
+					movie: t("nowPlaying.movie"),
+					episode: (episode) => t("nowPlaying.episodeNumber", { episode }),
+				})
+			: latest.data?.title
+				? [latest.data.title]
+				: [];
 	const coverId = playing ? snapshot?.match?.id : latest.data?.animeId;
 	const coverUrl = playing ? snapshot?.match?.coverUrl : latest.data?.coverUrl;
 	const hasSubtitle = subLines.length > 0;
@@ -231,7 +252,7 @@ function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: bool
 				<NavIconSlot active={active} isEnter={isEnter}>
 					{playing ? <PlayIcon className='size-4 shrink-0 fill-current' /> : <HomeIcon className='size-4 shrink-0' />}
 				</NavIconSlot>
-				<span className='truncate'>{playing ? "Now playing" : "Home"}</span>
+				<span className='truncate'>{playing ? t("nowPlaying.kicker") : t("nav.home")}</span>
 			</span>
 			{hasSubtitle ? (
 				<>
@@ -241,7 +262,7 @@ function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: bool
 							<AnimeCover id={coverId} coverUrl={coverUrl || undefined} alt='' className={cn("aspect-2/3 w-7 shrink-0 overflow-hidden rounded-sm", !playing && "grayscale")} />
 						) : null}
 						<span className='flex min-w-0 flex-1 flex-col items-start gap-0.5'>
-							{playing ? null : <span className='text-xs text-muted-foreground'>Last played</span>}
+							{playing ? null : <span className='text-xs text-muted-foreground'>{t("nav.lastPlayed")}</span>}
 							<span className='line-clamp-2 text-left text-xs font-normal text-foreground/80'>{subLines.join(" ")}</span>
 						</span>
 					</span>
@@ -265,6 +286,7 @@ function listTabFromSearch(search: unknown): unknown {
 }
 
 function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter: boolean }) {
+	const { t } = useTranslation();
 	const listFilter = useListFilterText();
 	const searching = listFilter.trim().length > 0;
 	const countsQuery = trpc.anime.counts.useQuery();
@@ -288,7 +310,7 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 				to='/app/anime-list'
 				search={{ tab: "Currently watching" }}
 				aria-current={watchingActive ? "page" : undefined}
-				aria-label='Currently watching'
+				aria-label={t("nav.currentlyWatching")}
 				onClick={goToStatus}
 				className={cn(
 					"relative flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm hover:bg-list-playing hover:text-list-playing-foreground",
@@ -297,10 +319,10 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 				<NavIconSlot active={watchingActive} isEnter={isEnter}>
 					<PlayIcon className='size-4 shrink-0' />
 				</NavIconSlot>
-				<span className='flex-1 truncate'>Watching</span>
+				<span className='flex-1 truncate'>{t("nav.watching")}</span>
 				<span className='text-xs tabular-nums opacity-70'>{countsQuery.data?.["Currently watching"] ?? 0}</span>
 			</Link>
-			<div className='grid grid-cols-4 gap-1' role='group' aria-label='Other lists'>
+			<div className='grid grid-cols-4 gap-1' role='group' aria-label={t("nav.otherLists")}>
 				{otherListStatuses.map((status) => {
 					const childActive = childTab === status;
 					return (
@@ -309,15 +331,15 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 							to='/app/anime-list'
 							search={{ tab: status }}
 							aria-current={childActive ? "page" : undefined}
-							aria-label={status}
-							title={status}
+							aria-label={t(statusLabelKey[status])}
+							title={t(statusLabelKey[status])}
 							onClick={goToStatus}
 							className={cn(
 								"relative flex min-h-8 flex-col items-center justify-center rounded-md px-0.5 py-1 text-center text-xs leading-tight text-muted-foreground",
 								chipTone[status],
 							)}>
 							<span className='text-xs tabular-nums'>{countsQuery.data?.[status] ?? 0}</span>
-							<span>{chipLabel[status]}</span>
+							<span>{t(chipLabelKey[status])}</span>
 						</Link>
 					);
 				})}
@@ -326,13 +348,28 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 	);
 }
 
-function NavLink({ to, label, icon: Icon, badge, active, isEnter }: { to: string; label: string; icon: typeof PlayIcon; badge?: number; active: boolean; isEnter: boolean }) {
+function NavLink({
+	to,
+	labelKey,
+	icon: Icon,
+	badge,
+	active,
+	isEnter,
+}: {
+	to: string;
+	labelKey: (typeof listItems)[number]["labelKey"] | (typeof toolItems)[number]["labelKey"];
+	icon: typeof PlayIcon;
+	badge?: number;
+	active: boolean;
+	isEnter: boolean;
+}) {
+	const { t } = useTranslation();
 	return (
 		<Link to={to} aria-current={active ? "page" : undefined} className={navItemClass(active)}>
 			<NavIconSlot active={active} isEnter={isEnter}>
 				<Icon className='size-4 shrink-0 text-current' />
 			</NavIconSlot>
-			<span className='flex-1 truncate'>{label}</span>
+			<span className='flex-1 truncate'>{t(labelKey)}</span>
 			{typeof badge === "number" && badge > 0 ? <span className='text-xs text-muted-foreground'>({badge})</span> : null}
 		</Link>
 	);

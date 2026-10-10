@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { createHashHistory, createRouter } from "@tanstack/react-router";
 import { RouterFallback } from "@/mainview/components/app/shared/router-fallback";
 import { seedRendererHash } from "./lib/start-path";
@@ -18,9 +19,19 @@ export const router = createRouter({
 	history: hashHistory,
 	defaultPendingMs: 0,
 	defaultPendingMinMs: 0,
-	defaultErrorComponent: () => <RouterFallback title='Could not load' description='This view failed to open.' />,
-	defaultNotFoundComponent: () => <RouterFallback title='Not found' description='This view does not exist.' />,
+	defaultErrorComponent: RouterError,
+	defaultNotFoundComponent: RouterNotFound,
 });
+
+function RouterError() {
+	const { t } = useTranslation();
+	return <RouterFallback title={t("common.couldNotLoad")} description={t("common.viewFailed")} />;
+}
+
+function RouterNotFound() {
+	const { t } = useTranslation();
+	return <RouterFallback title={t("common.notFound")} description={t("common.viewMissing")} />;
+}
 
 declare module "@tanstack/react-router" {
 	interface Register {

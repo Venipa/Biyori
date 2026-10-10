@@ -10,4 +10,6 @@ void i18n.use(initReactI18next).init({
 	interpolation: { escapeValue: false },
 });
 
-export { useTranslation };
+const t = i18n.t.bind(i18n);
+
+export { t, useTranslation };

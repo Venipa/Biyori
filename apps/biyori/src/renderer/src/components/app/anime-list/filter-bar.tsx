@@ -1,3 +1,4 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { PlusIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { ListFilterChip } from "@/mainview/components/app/anime-list/filter-chip";
@@ -16,7 +17,7 @@ import {
 } from "@/mainview/components/ui/dropdown-menu";
 import { Input } from "@/mainview/components/ui/input";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import { appendFilterClauses, type FilterClause, formatSearchOperator, type SearchOperator } from "@/mainview/lib/anime-list-filter";
+import { animeTypeLabel, appendFilterClauses, type FilterClause, formatSearchOperator, genreLabel, type SearchOperator } from "@/mainview/lib/anime-list-filter";
 
 const ANIME_GENRES = [
 	"Action",
@@ -49,39 +50,39 @@ const NUMERIC_OPS: Array<{ op: SearchOperator; label: string }> = [
 	{ op: "lt", label: "<" },
 ];
 
-const ADDABLE_FIELDS: Array<{ field: FilterClause["field"]; label: string }> = [
-	{ field: "genre", label: "Genre" },
-	{ field: "tags", label: "Tags" },
-	{ field: "score", label: "Score" },
-	{ field: "popular", label: "Popular" },
-	{ field: "type", label: "Type" },
-	{ field: "year", label: "Year" },
+const ADDABLE_FIELDS: Array<{ field: FilterClause["field"]; label: () => string }> = [
+	{ field: "genre", label: () => t("list.genre") },
+	{ field: "tags", label: () => t("list.tags") },
+	{ field: "score", label: () => t("list.score") },
+	{ field: "popular", label: () => t("list.popular") },
+	{ field: "type", label: () => t("list.type") },
+	{ field: "year", label: () => t("list.year") },
 ];
 
 function clauseLabel(field: FilterClause["field"]): string {
 	switch (field) {
 		case "genre":
-			return "Genre";
+			return t("list.genre");
 		case "tags":
-			return "Tags";
+			return t("list.tags");
 		case "score":
-			return "Score";
+			return t("list.score");
 		case "popular":
-			return "Popular";
+			return t("list.popular");
 		case "type":
-			return "Type";
+			return t("list.type");
 		case "year":
-			return "Year";
+			return t("list.year");
 		case "eps":
-			return "Eps";
+			return t("list.eps");
 		case "id":
-			return "Id";
+			return t("list.id");
 		case "title":
-			return "Title";
+			return t("list.title");
 		case "note":
-			return "Note";
+			return t("list.note");
 		case "season":
-			return "Season";
+			return t("list.season");
 		default:
 			return field;
 	}
@@ -89,7 +90,19 @@ function clauseLabel(field: FilterClause["field"]): string {
 
 function clauseValue(clause: FilterClause): string {
 	if (clause.field === "popular") {
-		return clause.value.trim().toLowerCase() === "false" ? "No" : "Yes";
+		return clause.value.trim().toLowerCase() === "false" ? t("list.no") : t("list.yes");
+	}
+	if (clause.field === "genre") {
+		return splitCsv(clause.value)
+			.map((name) => genreLabel(name))
+			.join(",");
+	}
+	if (clause.field === "type") {
+		return clause.value
+			.split("|")
+			.map((part) => animeTypeLabel(part.trim()))
+			.filter(Boolean)
+			.join("|");
 	}
 	const op = formatSearchOperator(clause.op);
 	return `${op}${clause.value}`;
@@ -143,7 +156,22 @@ function groupByFirstLetter(names: readonly string[]): Array<{ letter: string; i
 	return [...buckets.entries()].sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })).map(([letter, items]) => ({ letter, items }));
 }
 
-function NamedListEditor({ label, names, value, empty, onChange }: { label: string; names: readonly string[]; value: string; empty: string; onChange: (next: string) => void }) {
+function NamedListEditor({
+	label,
+	names,
+	value,
+	empty,
+	onChange,
+	nameLabel,
+}: {
+	label: string;
+	names: readonly string[];
+	value: string;
+	empty: string;
+	onChange: (next: string) => void;
+	nameLabel?: (name: string) => string;
+}) {
+	const { t } = useTranslation();
 	const searchId = useId();
 	const [query, setQuery] = useState("");
 	const needle = query.trim().toLowerCase();
@@ -155,13 +183,13 @@ function NamedListEditor({ label, names, value, empty, onChange }: { label: stri
 		<div className='flex max-h-80 min-h-0 flex-col'>
 			<div className='shrink-0 border-b p-1 mb-0'>
 				<label className='sr-only' htmlFor={searchId}>
-					Search {label.toLowerCase()}
+					{t("list.searchField", { field: label.toLowerCase() })}
 				</label>
 				<Input
 					id={searchId}
 					autoFocus
 					value={query}
-					placeholder={`Search ${label.toLowerCase()}`}
+					placeholder={t("list.searchField", { field: label.toLowerCase() })}
 					onKeyDown={(event) => {
 						if (event.key !== "Escape") {
 							event.stopPropagation();
@@ -175,7 +203,7 @@ function NamedListEditor({ label, names, value, empty, onChange }: { label: stri
 			<ScrollArea className='min-h-0 max-h-72' viewportClassName='min-h-0 max-h-72 w-full outline-none focus-visible:ring-0'>
 				<div className='px-1 pb-2'>
 					{names.length === 0 ? <p className='px-1.5 py-1 text-xs text-muted-foreground'>{empty}</p> : null}
-					{names.length > 0 && filtered.length === 0 ? <p className='px-1.5 py-1 text-xs text-muted-foreground'>No matches</p> : null}
+					{names.length > 0 && filtered.length === 0 ? <p className='px-1.5 py-1 text-xs text-muted-foreground'>{t("list.noMatches")}</p> : null}
 					{groups.map((group) => (
 						<DropdownMenuGroup key={group.letter}>
 							<DropdownMenuLabel className='sticky top-0 z-10 flex h-7 bg-popover leading-6'>{group.letter}</DropdownMenuLabel>
@@ -193,7 +221,7 @@ function NamedListEditor({ label, names, value, empty, onChange }: { label: stri
 											}
 											onChange(current.filter((item) => item.toLowerCase() !== name.toLowerCase()).join(","));
 										}}>
-										{name}
+										{nameLabel ? nameLabel(name) : name}
 									</DropdownMenuCheckboxItem>
 								);
 							})}
@@ -206,6 +234,7 @@ function NamedListEditor({ label, names, value, empty, onChange }: { label: stri
 }
 
 function TypeEditor({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+	const { t } = useTranslation();
 	const selected = new Set(
 		value
 			.split("|")
@@ -216,7 +245,7 @@ function TypeEditor({ value, onChange }: { value: string; onChange: (next: strin
 	return (
 		<div className='p-1'>
 			<DropdownMenuGroup>
-				<DropdownMenuLabel>Type</DropdownMenuLabel>
+				<DropdownMenuLabel>{t("list.type")}</DropdownMenuLabel>
 				{ANIME_TYPES.map((type) => {
 					const checked = selected.has(type.toLowerCase());
 					return (
@@ -229,7 +258,7 @@ function TypeEditor({ value, onChange }: { value: string; onChange: (next: strin
 								const nextKeys = next ? [...current.filter((item) => item !== key), key] : current.filter((item) => item !== key);
 								onChange(ANIME_TYPES.filter((item) => nextKeys.includes(item.toLowerCase())).join("|"));
 							}}>
-							{type}
+							{animeTypeLabel(type)}
 						</DropdownMenuCheckboxItem>
 					);
 				})}
@@ -239,11 +268,13 @@ function TypeEditor({ value, onChange }: { value: string; onChange: (next: strin
 }
 
 function GenreEditor({ value, onChange }: { value: string; onChange: (next: string) => void }) {
-	return <NamedListEditor label='Genres' names={ANIME_GENRES} value={value} empty='No genres' onChange={onChange} />;
+	const { t } = useTranslation();
+	return <NamedListEditor label={t("list.genres")} names={ANIME_GENRES} value={value} empty={t("list.noGenres")} nameLabel={genreLabel} onChange={onChange} />;
 }
 
 function TagEditor({ value, names, onChange }: { value: string; names: string[]; onChange: (next: string) => void }) {
-	return <NamedListEditor label='Tags' names={names} value={value} empty='No tags yet. Sync AniList to fill them.' onChange={onChange} />;
+	const { t } = useTranslation();
+	return <NamedListEditor label={t("list.tags")} names={names} value={value} empty={t("list.noTags")} onChange={onChange} />;
 }
 
 function TextEditor({ label, value, onChange }: { label: string; value: string; onChange: (next: string) => void }) {
@@ -275,6 +306,7 @@ function TextEditor({ label, value, onChange }: { label: string; value: string; 
 }
 
 function NumericEditor({ clause, onChange }: { clause: FilterClause; onChange: (next: FilterClause) => void }) {
+	const { t } = useTranslation();
 	const id = useId();
 	const [draft, setDraft] = useState(clause.value);
 	return (
@@ -292,7 +324,7 @@ function NumericEditor({ clause, onChange }: { clause: FilterClause; onChange: (
 			</DropdownMenuRadioGroup>
 			<DropdownMenuSeparator />
 			<label className='text-xs text-muted-foreground' htmlFor={id}>
-				Value
+				{t("list.value")}
 			</label>
 			<Input
 				id={id}
@@ -318,18 +350,19 @@ function NumericEditor({ clause, onChange }: { clause: FilterClause; onChange: (
 }
 
 function BooleanEditor({ clause, onChange }: { clause: FilterClause; onChange: (next: FilterClause) => void }) {
+	const { t } = useTranslation();
 	const selected = clause.value.trim().toLowerCase() === "false" ? "false" : "true";
 	return (
 		<div className='p-1'>
 			<DropdownMenuGroup>
-				<DropdownMenuLabel>Most popular</DropdownMenuLabel>
+				<DropdownMenuLabel>{t("list.mostPopular")}</DropdownMenuLabel>
 				<DropdownMenuRadioGroup
 					value={selected}
 					onValueChange={(value) => {
 						onChange({ ...clause, op: "eq", value });
 					}}>
-					<DropdownMenuRadioItem value='true'>Yes</DropdownMenuRadioItem>
-					<DropdownMenuRadioItem value='false'>No</DropdownMenuRadioItem>
+					<DropdownMenuRadioItem value='true'>{t("list.yes")}</DropdownMenuRadioItem>
+					<DropdownMenuRadioItem value='false'>{t("list.no")}</DropdownMenuRadioItem>
 				</DropdownMenuRadioGroup>
 			</DropdownMenuGroup>
 		</div>
@@ -376,6 +409,7 @@ export function ListFilterBar({
 	onClausesChange: (next: FilterClause[]) => void;
 	onMenuOpenChange?: (open: boolean) => void;
 }) {
+	const { t } = useTranslation();
 	function patch(index: number, next: FilterClause): void {
 		onClausesChange(clauses.map((clause, i) => (i === index ? next : clause)));
 	}
@@ -410,11 +444,11 @@ export function ListFilterBar({
 			<DropdownMenu onOpenChange={onMenuOpenChange}>
 				<DropdownMenuTrigger render={<ButtonToggle pressed={false} onPressedChange={() => undefined} size='xs' />}>
 					<PlusIcon />
-					Add filter
+					{t("list.addFilter")}
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align='start'>
 					<DropdownMenuGroup>
-						<DropdownMenuLabel>Add filter</DropdownMenuLabel>
+						<DropdownMenuLabel>{t("list.addFilter")}</DropdownMenuLabel>
 						{ADDABLE_FIELDS.map((item) => (
 							<DropdownMenuItem
 								key={item.field}
@@ -426,7 +460,7 @@ export function ListFilterBar({
 									}
 									onClausesChange(appendFilterClauses(clauses, [next]));
 								}}>
-								{item.label}
+								{item.label()}
 							</DropdownMenuItem>
 						))}
 					</DropdownMenuGroup>
@@ -440,7 +474,7 @@ export function ListFilterBar({
 										onClausesChange([]);
 									}, 0);
 								}}>
-								Clear filters
+								{t("list.clearFilters")}
 							</DropdownMenuItem>
 						</>
 					) : null}

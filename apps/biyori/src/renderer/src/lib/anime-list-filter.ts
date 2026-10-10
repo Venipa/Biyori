@@ -1,3 +1,4 @@
+import { t } from "@biyori/translations/react";
 import { type StoredAnimeTitles, titleStrings } from "../../../lib/anime-titles";
 import { parseJsonArray } from "../../../lib/parse-json-array";
 import { splitTitleList } from "../../../lib/split-title-list";
@@ -50,6 +51,64 @@ function parseOperator(raw: string | undefined): SearchOperator {
 			return "lt";
 		default:
 			return "eq";
+	}
+}
+
+export function genreLabel(name: string): string {
+	switch (name) {
+		case "Action":
+			return t("list.genreAction");
+		case "Adventure":
+			return t("list.genreAdventure");
+		case "Comedy":
+			return t("list.genreComedy");
+		case "Drama":
+			return t("list.genreDrama");
+		case "Ecchi":
+			return t("list.genreEcchi");
+		case "Fantasy":
+			return t("list.genreFantasy");
+		case "Horror":
+			return t("list.genreHorror");
+		case "Mahou Shoujo":
+			return t("list.genreMahouShoujo");
+		case "Mecha":
+			return t("list.genreMecha");
+		case "Music":
+			return t("list.genreMusic");
+		case "Mystery":
+			return t("list.genreMystery");
+		case "Psychological":
+			return t("list.genrePsychological");
+		case "Romance":
+			return t("list.genreRomance");
+		case "Sci-Fi":
+			return t("list.genreSciFi");
+		case "Slice of Life":
+			return t("list.genreSliceOfLife");
+		case "Sports":
+			return t("list.genreSports");
+		case "Supernatural":
+			return t("list.genreSupernatural");
+		case "Thriller":
+			return t("list.genreThriller");
+		default:
+			return name;
+	}
+}
+
+export function animeTypeLabel(name: string): string {
+	switch (name) {
+		case "TV":
+			return t("list.typeTv");
+		case "Movie":
+			return t("list.typeMovie");
+		case "OVA":
+			return t("list.typeOva");
+		case "ONA":
+			return t("list.typeOna");
+		default:
+			return name;
 	}
 }
 

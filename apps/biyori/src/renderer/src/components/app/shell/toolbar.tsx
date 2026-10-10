@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { useNavigate } from "@tanstack/react-router";
 import { ExternalLinkIcon, InfoIcon, LogOutIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
 import { useState } from "react";
@@ -61,6 +62,7 @@ function ActivityBell({ swing, unread }: { swing: boolean; unread: boolean }) {
 }
 
 function ActivityTitleButton() {
+	const { t } = useTranslation();
 	const { open } = useActivityPanelState();
 	const signature = trpc.activity.snapshot.useQuery(undefined, { select: activityBellSignature }).data;
 	const [seen, setSeen] = useState<string | null>(null);
@@ -77,7 +79,7 @@ function ActivityTitleButton() {
 			setSwingId((value) => value + 1);
 		}
 	}
-	const label = open ? "Close activity center" : "Open activity center";
+	const label = open ? t("shell.closeActivityCenter") : t("shell.openActivityCenter");
 
 	return (
 		<Tooltip>
@@ -96,12 +98,13 @@ function ActivityTitleButton() {
 				}>
 				<ActivityBell key={swingId} swing={swingId > 0} unread={unread} />
 			</TooltipTrigger>
-			<TooltipContent>{open ? "Close activity" : "Activity"}</TooltipContent>
+			<TooltipContent>{open ? t("shell.closeActivity") : t("shell.activity")}</TooltipContent>
 		</Tooltip>
 	);
 }
 
 function AccountButton() {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
 	const statusQuery = trpc.anilist.status.useQuery();
@@ -116,7 +119,7 @@ function AccountButton() {
 	const username = statusQuery.data?.username?.trim() ?? "";
 	const avatarUrl = statusQuery.data?.avatarUrl?.trim() || null;
 	const initials = profileInitials(username);
-	const label = connected && username ? username : "Account";
+	const label = connected && username ? username : t("shell.account");
 	const signingOut = disconnect.isPending || setSettings.isPending;
 	const { checking, checkForUpdates } = useCheckForUpdates();
 
@@ -150,8 +153,8 @@ function AccountButton() {
 			<DropdownMenuContent align='end' className='min-w-52'>
 				<DropdownMenuGroup>
 					<DropdownMenuLabel className='font-normal'>
-						<p className='truncate text-sm font-medium text-foreground'>{connected && username ? username : "Not signed in"}</p>
-						<p className='truncate text-xs'>{connected ? "AniList" : "Connect to use your list"}</p>
+						<p className='truncate text-sm font-medium text-foreground'>{connected && username ? username : t("shell.notSignedIn")}</p>
+						<p className='truncate text-xs'>{connected ? t("shell.anilist") : t("shell.connectToUseList")}</p>
 					</DropdownMenuLabel>
 				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
@@ -162,7 +165,7 @@ function AccountButton() {
 								openProfile();
 							}}>
 							<ExternalLinkIcon />
-							View on AniList
+							{t("shell.viewOnAnilist")}
 						</DropdownMenuItem>
 					) : (
 						<DropdownMenuItem
@@ -170,7 +173,7 @@ function AccountButton() {
 								void authorize.mutateAsync();
 							}}>
 							<ExternalLinkIcon />
-							Connect AniList
+							{t("shell.connectAnilist")}
 						</DropdownMenuItem>
 					)}
 					<DropdownMenuItem
@@ -178,18 +181,18 @@ function AccountButton() {
 							void desktopRpc.request.openSettings({});
 						}}>
 						<SettingsIcon />
-						Account settings
+						{t("shell.accountSettings")}
 					</DropdownMenuItem>
 					<DropdownMenuItem disabled={checking} onClick={checkForUpdates}>
 						<RefreshCwIcon />
-						Check for updates
+						{t("shell.checkForUpdates")}
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						onClick={() => {
 							void navigate({ to: "/app/about" });
 						}}>
 						<InfoIcon />
-						About
+						{t("shell.about")}
 					</DropdownMenuItem>
 				</DropdownMenuGroup>
 				{connected ? (
@@ -203,7 +206,7 @@ function AccountButton() {
 									logOut();
 								}}>
 								<LogOutIcon />
-								Log out
+								{t("shell.logOut")}
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 					</>
@@ -214,6 +217,7 @@ function AccountButton() {
 }
 export const APP_TOOLBAR_HEIGHT = 32;
 export function AppToolbar() {
+	const { t } = useTranslation();
 	const syncStatus = trpc.anilist.syncStatus.useQuery();
 	const sync = trpc.anilist.sync.useMutation();
 	const syncRunning = syncStatus.data?.phase === "running";
@@ -226,7 +230,7 @@ export function AppToolbar() {
 						render={
 							<Button
 								variant='ghost'
-								aria-label='Synchronize'
+								aria-label={t("shell.synchronize")}
 								className={titleButtonClass}
 								loading={syncRunning || sync.isPending}
 								onClick={() => {
@@ -236,7 +240,7 @@ export function AppToolbar() {
 						}>
 						<RefreshCwIcon />
 					</TooltipTrigger>
-					<TooltipContent>Synchronize</TooltipContent>
+					<TooltipContent>{t("shell.synchronize")}</TooltipContent>
 				</Tooltip>
 				<ActivityTitleButton />
 				<AccountButton />
@@ -245,7 +249,7 @@ export function AppToolbar() {
 						render={
 							<Button
 								variant='ghost'
-								aria-label='Settings'
+								aria-label={t("shell.settings")}
 								className={titleButtonClass}
 								onClick={() => {
 									void desktopRpc.request.openSettings({});
@@ -254,7 +258,7 @@ export function AppToolbar() {
 						}>
 						<SettingsIcon />
 					</TooltipTrigger>
-					<TooltipContent>Settings</TooltipContent>
+					<TooltipContent>{t("shell.settings")}</TooltipContent>
 				</Tooltip>
 			</div>
 		</TooltipProvider>

@@ -1,4 +1,4 @@
-import { useTranslation } from "@biyori/translations/react";
+import { t, useTranslation } from "@biyori/translations/react";
 import { PlayCircleIcon, PlayIcon } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
@@ -92,8 +92,8 @@ export function ContinueWatchingCard({
 	const playsEpisode = playNextEnabled && !disabled;
 	const showPlay = playsEpisode && hovered;
 	const total = item.episodes != null && item.episodes > 0 ? item.episodes : null;
-	const caption = description ?? `Next episode ${item.nextEpisode}${total != null ? ` of ${total}` : ""}`;
-	const playLabel = `Play episode ${item.nextEpisode}`;
+	const caption = description ?? (total != null ? t("nowPlaying.nextEpisodeOf", { episode: item.nextEpisode, total }) : t("nowPlaying.nextEpisode", { episode: item.nextEpisode }));
+	const playLabel = t("nowPlaying.playEpisode", { episode: item.nextEpisode });
 	function setPlayHover(next: boolean): void {
 		if (playsEpisode) {
 			setHovered(next);
@@ -109,7 +109,7 @@ export function ContinueWatchingCard({
 					variant='ghost'
 					className='h-auto w-full min-w-0 rounded-xl p-0 text-left font-normal whitespace-normal hover:bg-transparent dark:hover:bg-transparent'
 					disabled={disabled}
-					aria-label={playsEpisode ? `Play ${item.title}, episode ${item.nextEpisode}` : undefined}
+					aria-label={playsEpisode ? t("nowPlaying.playTitleEpisode", { title: item.title, episode: item.nextEpisode }) : undefined}
 					onMouseEnter={() => {
 						setPlayHover(true);
 					}}

@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { cn } from "@renderer/lib/utils";
 import { useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
@@ -16,22 +17,13 @@ const INITIAL_CHROME = {
 	closable: true,
 };
 
-function chromeTitle(pathname: string): string {
-	if (pathname.startsWith("/settings")) {
-		return "Settings";
-	}
-	if (pathname.startsWith("/update")) {
-		return "Update";
-	}
-	return "Biyori";
-}
-
 export function AppTitleBar() {
+	const { t } = useTranslation();
 	const [chrome, setChrome] = useState(INITIAL_CHROME);
 	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const isOnboarding = pathname === "/onboarding";
 	const isApp = pathname === "/app" || pathname.startsWith("/app/");
-	const title = chromeTitle(pathname);
+	const title = pathname.startsWith("/settings") ? t("shell.settings") : pathname.startsWith("/update") ? t("shell.update") : t("shell.biyori");
 	const minimizeWindow = trpc.desktop.minimizeWindow.useMutation();
 	const toggleMaximizeWindow = trpc.desktop.toggleMaximizeWindow.useMutation();
 	const closeWindow = trpc.desktop.closeWindow.useMutation();

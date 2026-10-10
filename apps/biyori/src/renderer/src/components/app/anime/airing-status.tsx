@@ -1,3 +1,5 @@
+import { useTranslation } from "@biyori/translations/react";
+import { airingStatusLabel } from "@/mainview/lib/anime-airing-notice";
 import { cn } from "@/mainview/lib/utils";
 
 const AIRING_STATUS_CLASS: Record<string, string> = {
@@ -27,7 +29,8 @@ export function AiringStatusMark({
 	className?: string;
 	nativeTitle?: boolean;
 }) {
-	const label = status?.trim() || "Unknown";
+	useTranslation();
+	const label = airingStatusLabel(status);
 	return (
 		<span
 			role='img'

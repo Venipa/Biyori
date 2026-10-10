@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { type ReactElement, type ReactNode, useEffect, useState } from "react";
 import { Button } from "@/mainview/components/ui/button";
 import { trpc } from "@/mainview/trpc";
@@ -24,6 +25,7 @@ export function NextTorrentCheck(): ReactElement {
 	const enabled = poll.data?.enabled ?? false;
 	const nextCheckAt = poll.data?.nextCheckAt ?? null;
 	const [now, setNow] = useState(() => Date.now());
+	const { t } = useTranslation();
 	useEffect(() => {
 		if (!enabled || nextCheckAt == null) {
 			return;
@@ -37,16 +39,19 @@ export function NextTorrentCheck(): ReactElement {
 	}, [enabled, nextCheckAt]);
 
 	if (!enabled) {
-		return <p className='text-sm text-muted-foreground'>Automatic checks are off</p>;
+		return <p className='text-sm text-muted-foreground'>{t("torrents.checksOff")}</p>;
 	}
 	if (nextCheckAt == null) {
-		return <p className='text-sm text-muted-foreground'>Next check pending</p>;
+		return <p className='text-sm text-muted-foreground'>{t("torrents.nextCheckPending")}</p>;
 	}
 	const remaining = nextCheckAt - now;
-	return <p className='text-sm text-muted-foreground tabular-nums'>{remaining <= 0 ? "Checking..." : `Next check in ${formatCheckRemaining(remaining)}`}</p>;
+	return (
+		<p className='text-sm text-muted-foreground tabular-nums'>{remaining <= 0 ? t("torrents.checking") : t("torrents.nextCheckIn", { time: formatCheckRemaining(remaining) })}</p>
+	);
 }
 
 export function CheckNewTorrentsButton(): ReactElement {
+	const { t } = useTranslation();
 	const utils = trpc.useUtils();
 	const refresh = trpc.torrents.refresh.useMutation({
 		onSuccess: (next) => {
@@ -61,7 +66,7 @@ export function CheckNewTorrentsButton(): ReactElement {
 			onClick={() => {
 				void refresh.mutateAsync();
 			}}>
-			Check new torrents
+			{t("torrents.checkNew")}
 		</Button>
 	);
 }

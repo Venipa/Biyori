@@ -4,6 +4,7 @@
 	"private": true,
 	"type": "module",
 	"exports": {
+		"./i18n": "./src/i18n.ts",
 		"./react": "./src/react.tsx",
 		"./locales/*": "./locales/*",
 		"./vite": "./src/vite.ts"

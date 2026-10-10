@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Input } from "@/mainview/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/mainview/components/ui/select";
@@ -29,6 +30,7 @@ type EditableSelectProps = VariantProps<typeof editableSelectVariants> & {
 };
 
 export function EditableSelect({ id, value, onChange, options, placeholder, invalid, variant = "default" }: EditableSelectProps) {
+	const { t } = useTranslation();
 	const items = Object.fromEntries(options.map((option) => [option.value, option.label]));
 	const selected = options.some((option) => option.value === value) ? value : undefined;
 
@@ -53,7 +55,7 @@ export function EditableSelect({ id, value, onChange, options, placeholder, inva
 					}
 				}}>
 				<SelectTrigger
-					aria-label='Choose a preset'
+					aria-label={t("common.choosePreset")}
 					className='absolute top-0 right-0 h-8 w-8 border-0 bg-transparent px-0 shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent'
 				/>
 				<SelectContent align='end' alignItemWithTrigger={false} className='min-w-64'>

@@ -1,9 +1,1154 @@
+common:
+  add: Add
+  back: Back
+  cancel: Cancel
+  choosePreset: Choose a preset
+  close: Close
+  couldNotLoad: Could not load
+  delete: Delete
+  discard: Discard
+  edit: Edit
+  enterValidUrl: Enter a valid URL
+  loading: Loading
+  none: None
+  notFound: Not found
+  ok: OK
+  open: Open
+  pickDate: Pick a date
+  remove: Remove
+  required: Required
+  resizeColumn: Resize {{column}} column
+  retry: Retry
+  save: Save
+  search: Search
+  unknown: Unknown
+  viewFailed: This view failed to open.
+  viewMissing: This view does not exist.
 nowPlaying:
+  airing: Airing
+  airingSoon: Airing soon
+  cards: Cards
+  chooseOrSearch: Biyori could not identify this episode. Choose the correct anime from the list below, or search AniList.
+  confirmUpdate: Confirm update
   continueWatching: Continue watching
+  editList: Edit list
+  episode: Episode
+  episodeAt: Episode {{episode}} at {{time}}
+  episodeBy: "{{episodeLine}} by {{group}}"
+  episodeNumber: Episode {{episode}}
+  episodeOf: Episode {{episode}} of {{total}}
+  episodeUnknown: Episode unknown
+  idleDescription: Continue from the last episode update.
+  idleTitle: Nothing is playing
+  keyArt: Key art for {{title}}
+  kicker: Now playing
+  movie: Movie
+  nextEpisode: Next episode {{episode}}
+  nextEpisodeOf: Next episode {{episode}} of {{total}}
+  notRecognized: Not recognized
   olderThan_one: Older than {{days}} day
   olderThan_other: Older than {{days}} days
-  waitingTitle: Waiting for new anime episodes.
+  openTitle: Open {{title}}
+  playEpisode: Play episode {{episode}}
+  playTitleEpisode: Play {{title}}, episode {{episode}}
+  progress: Progress
+  progressLine: Progress {{watched}} / {{total}}
+  progressOpen: "{{watched}} / ?"
+  progressValue: "{{watched}} / {{total}}"
+  rewatching: Rewatching
+  searchList: Biyori could not identify this episode against your list. Search AniList and add it, or check the filename.
+  similarTitles: Similar titles
+  source: Source
+  table: Table
+  title: Title
+  type: Type
+  unableToMatch: Unable to match this title
+  unknownTitle: Unknown title
+  upcoming: Upcoming
+  updatingIn: Updating in {{seconds}}s
+  view: View
   waitingDescription: They show up here once a new episode is in your library.
+  waitingTitle: Waiting for new anime episodes.
+  watchNext: Watch next episode
   watchedLastWeek_one: You've watched {{count}} episode last week.
   watchedLastWeek_other: You've watched {{count}} episodes last week.
-  upcoming: Upcoming
+shell:
+  about: About
+  aboutBiyori: About Biyori
+  account: Account
+  accountSettings: Account settings
+  activity: Activity
+  addNewFolder: Add new folder...
+  anilist: AniList
+  biyori: Biyori
+  checkForUpdates: Check for updates
+  closeActivity: Close activity
+  closeActivityCenter: Close activity center
+  connectAnilist: Connect AniList
+  connectToUseList: Connect to use your list
+  dark: Dark
+  done: Done
+  enableAnimeRecognition: Enable anime recognition
+  enableAutoSharing: Enable auto sharing
+  exit: Exit
+  failed: Failed
+  file: File
+  filterThisList: Filter this list
+  filterThisSeason: Filter this season
+  help: Help
+  inProgress_one: 1 in progress
+  inProgress_other: "{{count}} in progress"
+  keepEditing: Keep editing
+  libraryFolders: Library folders
+  light: Light
+  maximize: Maximize
+  minimize: Minimize
+  logOut: Log out
+  nothingYet: Nothing yet.
+  notSignedIn: Not signed in
+  openActivityCenter: Open activity center
+  playNextEpisode: Play next episode
+  playRandomEpisode: Play random episode
+  restore: Restore
+  returnToSettings: Return to settings
+  scanAvailableEpisodes: Scan available episodes
+  scanLibraryFolders: Scan library folders
+  shortcutPlayNext: Ctrl+N
+  shortcutPlayRandom: Ctrl+R
+  shortcutSync: Ctrl+S
+  searchAnilist: Search AniList
+  services: Services
+  settings: Settings
+  sevenDayHistory: 7-day history
+  starting: Starting
+  startup: Startup
+  statusInProgress: In progress
+  synchronize: Synchronize
+  synchronizeList: Synchronize list
+  system: System
+  themes: Themes
+  tools: Tools
+  update: Update
+  updateNamed: Update {{name}}
+  updateToEpisode: Update to episode {{episode}}
+  view: View
+  viewOnAnilist: View on AniList
+nav:
+  completed: Completed
+  currentlyWatching: Currently watching
+  discover: Discover
+  done: Done
+  downloaded: (downloaded)
+  drop: Drop
+  dropped: Dropped
+  history: History
+  hold: Hold
+  home: Home
+  lastPlayed: Last played
+  library: Library
+  main: Main navigation
+  newBuildReady: New build ready
+  onHold: On hold
+  otherLists: Other lists
+  plan: Plan
+  planToWatch: Plan to watch
+  seasons: Seasons
+  statistics: Statistics
+  torrents: Torrents
+  updateAvailable: Update available
+  version: Version {{version}}
+  watching: Watching
+update:
+  checkAgain: Check again
+  checkConnection: Check your connection and try again.
+  checkWhenYouWant: Check for a newer build when you want.
+  checkingTitle: Checking for updates
+  couldNotUpdate: Could not update
+  download: Download
+  downloadingTitle: Downloading update
+  gettingBuild: Getting the new build.
+  gettingVersion: Getting Biyori {{version}}.
+  keepWindowOpen: Keep this window open until the download finishes.
+  lookingForNewer: Looking for a newer build.
+  noInstall: This build does not install updates.
+  noNewerBuild: No newer build on this channel.
+  restartTitle: Restart to finish
+  restartToApply: Restart to apply the update.
+  restartToApplyVersion: Restart Biyori to apply {{version}}.
+  restartToUpdate: Restart to update
+  upToDateTitle: You're up to date
+  updateFailed: Update failed
+  updates: Updates
+  updatesOff: Updates are off
+  stable: Stable
+  beta: Beta
+  alpha: Alpha
+  versionUnknown: "..."
+recognition:
+  players:
+    gom: GOM Player
+    kmplayer: KMPlayer
+    mpcBe: MPC-BE
+    mpcHc: MPC-HC
+    mpcQt: MPC-QT
+    mpcstar: MPCSTAR
+    mpdn: MPDN
+    mpv: mpv
+    mpvnet: mpv.net
+    mv2player: MV2Player
+    potplayer: PotPlayer
+    smplayer: SMPlayer
+    splash: Splash
+    splayer: SPlayer
+    umplayer: UMPlayer
+    vlc: VLC media player
+    webtorrent: WebTorrent Desktop
+    winamp: Winamp
+    wmplayer: Windows Media Player
+    zoomplayer: Zoom Player
+  providers:
+    animelab: AnimeLab
+    adn: Anime Digital Network
+    ann: Anime News Network
+    bilibili: Bilibili
+    crunchyroll: Crunchyroll
+    funimation: Funimation
+    hidive: HIDIVE
+    jellyfin: Jellyfin Web App
+    plex: Plex Web App
+    roku: Roku Channel
+    tubi: Tubi
+    veoh: Veoh
+    viz: VIZ
+    vrv: VRV
+    wakanim: Wakanim
+    yahoo: Yahoo View
+    youtube: YouTube
+    netflix: Netflix
+feeds:
+  anidex: AniDex
+  nyaa: Nyaa.si
+  nyaanet: Nyaa.net
+  subsplease: SubsPlease 1080p
+  tokyotosho: TokyoToshokan
+main:
+  tray:
+    show: Show
+    quit: Quit
+  window:
+    settings: Settings
+    update: Update
+  startup:
+    checkingLibrary: Checking library
+    ready: Ready
+    comment: Anime library tracker
+  playback:
+    nowPlaying: "Now playing: {{title}}"
+    nowPlayingBody: Now playing
+    unrecognized: "Unrecognized: {{title}}"
+    unrecognizedBody: Unrecognized
+    updateTitle: "Update {{title}}"
+    updatedToEpisode: Updated to episode {{episode}}
+  list:
+    updating: Updating anime list...
+    updatingQueued: Updating anime list... ({{queued}} queued)
+    updateTitle: "Update {{title}}"
+    updateToEpisode: Update to episode {{episode}}
+    updateToEpisodeQueued: Update to episode {{episode}} - {{queued}} queued
+    failedWillRetry: List update failed; will retry
+    failedBody: Failed; will retry
+  library:
+    checkingFolders: Checking folders
+    scanningLibrary: Scanning library
+    checkingFoldersProgress_one: Checking folders... ({{count}} file)
+    checkingFoldersProgress_other: Checking folders... ({{count}} files)
+    scanningLibraryProgress_one: Scanning library... ({{count}} file)
+    scanningLibraryProgress_other: Scanning library... ({{count}} files)
+    files_one: "{{count}} file"
+    files_other: "{{count}} files"
+    matchingProgress: Matching titles... ({{seen}}/{{total}})
+    matchingTitles: Matching titles
+    matchBody: "{{seen}}/{{total}}, {{hits}} matched"
+    checkingKnownFolders: Checking known folders...
+    scanningLibraryDots: Scanning library...
+    starting: Starting
+    newEpisode: New episode
+    episode: Episode {{episode}}
+    scanSummary: "Library scan: {{detail}}"
+    scanTitle: Library scan
+    scanBody_one: "{{count}} file, {{hits}} matched"
+    scanBody_other: "{{count}} files, {{hits}} matched"
+    scanFailed: Library scan failed
+    failed: Failed
+    couldNotFindEpisode: "Could not find episode #{{episode}}"
+    playNext: Play next
+  sync:
+    synchronizing: Synchronizing with AniList...
+    synchronizingCount: Synchronizing with AniList... ({{processed}})
+    synchronizingBody: Synchronizing
+    synchronizingBodyCount: Synchronizing ({{processed}})
+    tagged: "[AniList] {{message}}"
+    titles_one: "{{count}} title"
+    titles_other: "{{count}} titles"
+    notConnected: Not connected
+    finished_one: "Finished - {{count}} title"
+    finished_other: "Finished - {{count}} titles"
+    requestFailed: Request failed
+  torrent:
+    newTorrent: "New torrent: {{title}}"
+    newTorrentEpisode: New torrent - episode {{episode}}
+    newTorrentBody: New torrent
+    fact:
+      title: Title
+      season: Season
+      year: Year
+      episode: Episode
+      group: Group
+      video: Video
+      version: Version
+      category: Category
+      extension: Extension
+  update:
+    checking: Checking for updates...
+    available: "Update available: {{version}}"
+    upToDate: You are up to date
+    downloading: Downloading update...
+    downloaded: Update downloaded. Restart to apply.
+    checkFailed: Update check failed
+    changelogFailed: Could not load changelog
+    devSkip: Dev builds skip updates
+    downloadFailed: Download failed
+    restarting: Restarting to apply update...
+    noRelease: No production GitHub release found for this channel
+    viewOnGitHub: View on GitHub
+  anilist:
+    requestFailed: AniList request failed
+    notConnected: AniList is not connected
+    clientIdMissing: VITE_ANILIST_CLIENT_ID is not set
+    couldNotOpenLogin: Could not open AniList login
+    couldNotSaveLocal: Could not save anime to local list
+    animeNotFound: Anime not found
+    connectFailed: AniList connect failed
+    cacheWriteFailed: Anime cache write failed
+    couldNotCache: Could not cache anime
+settings:
+  listStatus:
+    currentlyWatching: Currently watching
+    completed: Completed
+    onHold: On hold
+    dropped: Dropped
+    planToWatch: Plan to watch
+  nav:
+    title: Settings
+    sections: Settings sections
+    services:
+      label: Services
+      description: List providers and account login.
+    library:
+      label: Library
+      description: Folders Biyori scans for episodes.
+    application:
+      label: Application
+      description: Titles, startup, updates, and tray.
+    recognition:
+      label: Recognition
+      description: Match playing media to your list.
+      general:
+        label: General
+        description: Matching, validation, and notifications.
+      sources:
+        label: Sources
+        description: Media players and streaming sites.
+    sharing:
+      label: Sharing
+      description: Discord presence and local HTTP.
+    torrents:
+      label: Torrents
+      description: Feeds, downloads, and filters.
+      general:
+        label: General
+        description: Feeds, downloads, and client.
+      filters:
+        label: Filters
+        description: Download the files you want and ignore the others.
+    advanced:
+      label: Advanced
+      description: Low-level options. Change with care.
+      general:
+        label: General
+        description: Low-level options. Change with care.
+      cache:
+        label: Cache
+        description: Clear stored files and history.
+  saveBar:
+    couldNotSave: Could not save
+    unsaved_one: "{{count}} unsaved change"
+    unsaved_other: "{{count}} unsaved changes"
+    couldNotSaveSettings: Could not save settings
+    fixField: Fix {{path}} in {{section}}
+    fixInvalid: Fix invalid settings
+  close:
+    discardTitle: Discard changes?
+    discardDescription: Unsaved settings will be lost.
+  library:
+    foldersTitle: Library folders
+    foldersDescription: These folders are scanned and monitored for new episodes.
+    emptyTitle: No library folders
+    emptyDescription: Add a folder to scan and monitor for episodes. Removing a folder only updates settings and does not delete files.
+    folder: Folder
+    path: Path
+    removeFolder: Remove {{name}} from library
+    addFolder: Add library folder
+    monitorTitle: Real-time monitor
+    monitorDescription: Watch library folders for new files without waiting for a scan.
+    detectNew: Detect new files and folders under library folders
+    scanTitle: Episode scan
+    scanDescription: On a timer, check series that are missing the next episode. Watching, completed, and plan to watch titles qualify when that episode has aired or airs within 7 days.
+    scanMissing: Scan for missing episodes
+    interval: Interval
+    minutes: (minutes)
+    continueTitle: Continue watching
+    continueDescription: A next episode indexed this long ago moves into the older cards. A list update older than this does the same.
+    age: Age
+    dayPresets: Day presets
+    days: days
+    staleDays_one: "{{count}} day"
+    staleDays_other: "{{count}} days"
+  application:
+    titlesTitle: Titles
+    titlesDescription: How anime titles appear in lists and details.
+    titleLanguage: Title language
+    romaji: Romaji
+    english: English
+    native: Native
+    displayTitle: Display
+    displayDescription: Interface size. OS display scale is unchanged.
+    zoom: Zoom
+    addToListTitle: Add to list
+    addToListDescription: Status used when you add a title to your list.
+    defaultStatus: Default status
+    startupTitle: Startup
+    autostart: Autostart
+    autostartTray: Autostart in tray
+    updatesTitle: Updates
+    updatesDescription: Which release channel the updater checks.
+    releaseChannel: Release channel
+    trayTitle: Tray
+    closeToTray: Close to tray
+    privacyTitle: Privacy
+    privacyDescription: Crash reports go to the Biyori Sentry project. No AniList name or token.
+    sendCrashReports: Send crash reports
+    externalLinksTitle: External links
+    externalLinksDescription: One URL template per line. Used from title details.
+  recognition:
+    title: Recognition
+    description: Match playing media to titles on your list.
+    enable: Enable media recognition
+    validationTitle: Validation
+    ignoreOutside: Ignore files outside of library folders
+    ignoreRange: Ignore if episode number is greater than next episode
+    recognizedTitle: When an episode is recognized
+    unrecognizedTitle: When an episode is not recognized
+    notify: Notify me
+    goToNowPlaying: Go to Now Playing
+    updatesTitle: List updates and sharing
+    updatesDescription: Delay and extra checks before writing progress.
+    delay: Delay (seconds)
+    mustFocus: Media player must be in focus
+    waitExit: Wait for media player to close
+    confirm: Ask for confirmation
+    ignoredTitle: Ignored strings
+    ignoredDescription: Strip these from titles before matching. One per line.
+    ignoredLabel: Ignored strings
+    playersTitle: Media players
+    playersDescription: Select the players you use, deselect the others.
+    enablePlayers: Enable media player detection
+    selectAll: Select/deselect all
+    streamingTitle: Streaming media
+    streamingDescription: Supported browsers are Google Chrome, Mozilla Firefox, and Opera. Works best with a browser in English.
+    enableStreaming: Enable streaming media detection
+  sharing:
+    discordTitle: Discord
+    discordDescription: Requires the Discord desktop client.
+    updatePresence: Update rich presence
+    applicationId: Application ID
+    applicationIdPlaceholder: VITE_DISCORD_CLIENT_ID or paste here
+    elapsed: Display elapsed time
+    httpTitle: HTTP
+    httpDescription: "GET http://127.0.0.1:PORT returns now-playing JSON."
+    enableHttp: Enable local HTTP server
+    port: Port
+    httpHint: Leave this off unless another app on this machine needs now-playing data.
+  torrents:
+    sourcesTitle: Sources
+    sourcesDescription: RSS feeds used to find new releases.
+    rssCheck: RSS feed for checking new releases
+    rssSearch: RSS feed for searching a title
+    searchHint: Use %title% as the search string.
+    automationTitle: Automation
+    checkAuto: Check new torrents automatically
+    interval: Interval
+    minutes: (minutes)
+    whenNew: When there are new torrents
+    notify: Notify me
+    downloadNow: Download immediately
+    queueTitle: Download queue
+    sortBy: Sort by
+    episodeNumber: Episode number
+    releaseDate: Release date
+    order: Order
+    ascending: Ascending
+    descending: Descending
+    locationTitle: Download location
+    locationDescription: "Supported clients: aria2, Deluge, PicoTorrent, qBittorrent, Transmission, uTorrent."
+    useAnimeFolder: Use anime folders as the download folder
+    fallback: "If no anime folder is set, use this folder instead:"
+    fallbackFolder: Fallback download folder
+    browse: Browse...
+    createSubfolder: Create a subfolder using the anime title as its name
+    clientTitle: BitTorrent client
+    openTorrent: Open downloaded .torrent files
+    defaultApp: Use the default application associated with .torrent files
+    customApp: "Use a custom application:"
+    clientPath: BitTorrent client path
+    filtersTitle: Filters
+    filtersDescription: Download the files you want and ignore the others.
+    filters:
+      enable: Enable torrent filters
+      hint: Filters allow you to download the files you want and ignore the others.
+      name: Name
+      appliesTo: Applies to
+      all: All
+      animeCount_one: "{{count}} anime"
+      animeCount_other: "{{count}} anime"
+      enableNamed: Enable {{name}}
+      filterFallback: filter
+      unnamed: New Filter
+      defaults:
+        selectWatching: Select currently watching
+        selectAiringPlan: Select airing anime in plan to watch
+        discardDropped: Discard dropped
+        discardNotInList: Discard and deactivate not-in-list anime
+        discardWatched: Discard watched and available episodes
+        preferHighResolution: Prefer high-resolution files
+      add: Add new filter
+      delete: Delete filter
+      moveUp: Move up
+      moveDown: Move down
+      import: Import filters
+      export: Export filters
+      reset: Reset filters
+      resetTitle: Reset Torrent Filters
+      resetDescription: Are you sure you want to reset the filters? All custom filters will be lost.
+      no: No
+      yes: Yes
+      importTitle: Import Filters
+      importDescription: Could not parse the filter file. It may be missing characters, or encoded with an incompatible version of the application.
+      editTitle: Edit Filter
+      addTitle: Add New Filter
+      pagePreset: Choose one of the preset filters, or create a custom one
+      pageConditions: Change filter options and add conditions
+      pageLimit: Limit this filter to one or more anime title, or leave it blank to apply to all items
+      filterName: Filter name
+      namePlaceholder: Type something to identify this filter
+      conditions: Conditions
+      element: Element
+      operator: Operator
+      value: Value
+      empty: (empty)
+      addCondition: Add new condition
+      deleteCondition: Delete condition
+      moveConditionUp: Move condition up
+      moveConditionDown: Move condition down
+      needCondition: There must be at least one condition in order to create a filter.
+      options: Options
+      match: Match
+      action: Action
+      discardType: Discard type
+      limitedTo: "Currently limited to: {{titles}}"
+      nothing: (nothing)
+      next: Next
+      finish: Finish
+      editCondition: Edit Condition
+      addConditionTitle: Add Condition
+      elements:
+        metaId: Anime ID
+        metaStatus: Anime airing status
+        metaType: Anime type
+        metaEpisodes: Anime episode count
+        metaDateStart: Anime date started
+        metaDateEnd: Anime date ended
+        userNotes: Anime notes
+        userStatus: Anime watching status
+        localEpisodeAvailable: Episode availability
+        episodeTitle: Episode title
+        episodeNumber: Episode number
+        episodeVersion: Episode version
+        episodeGroup: Episode fansub group
+        episodeVideoResolution: Episode video resolution
+        episodeVideoType: Episode video type
+        fileTitle: File name
+        fileCategory: File category
+        fileDescription: File description
+        fileLink: File link
+        fileSize: File size
+      operators:
+        equals: is
+        notEquals: is not
+        gt: is greater than
+        gte: is greater than or equal to
+        lt: is less than
+        lte: is less than or equal to
+        beginsWith: begins with
+        endsWith: ends with
+        contains: contains
+        notContains: does not contain
+      actions:
+        discard: Discard matched items
+        select: Select matched items
+        prefer: Prefer matched items to similar ones
+      matches:
+        all: All conditions
+        any: Any condition
+      discardOptions:
+        default: Default
+        deactivate: Deactivate discarded items
+        hide: Hide discarded items
+      presets:
+        custom:
+          name: (Custom)
+          description: Lets you create a custom filter from scratch
+        fansub:
+          name: "[Fansub] Anime"
+          description: Lets you choose a fansub group for one or more anime
+        badKeywords:
+          name: Discard bad video keywords
+          description: Discards everything that is AVI, DIVX, LQ, RMVB, SD, WMV or XVID
+        newVersions:
+          name: Prefer new versions
+          description: Prefers v2 files and above when there are earlier releases of the same episode as well
+      values:
+        true: "True"
+        false: "False"
+        notInList: Not in list
+        currentlyAiring: Currently airing
+        finishedAiring: Finished airing
+        notYetReleased: Not yet released
+        cancelled: Cancelled
+        hiatus: Hiatus
+        tv: TV
+        ona: ONA
+        movie: Movie
+        ova: OVA
+  advanced:
+    warningTitle: Advanced
+    warning: Do not change these unless you know what they do.
+    interfaceTitle: Interface
+    uiTheme: UI theme
+    libraryTitle: Library
+    fileSize: File size threshold
+    recognitionTitle: Recognition
+    detectionInterval: Media detection interval
+    torrentsTitle: Torrents
+    useMagnet: Use magnet links if available
+    torrentPath: Download path for .torrent files
+    browse: Browse...
+    archiveLimit: Archive limit
+  cache:
+    title: Cache
+    description: Choose what to delete. Image and torrent files also show disk size.
+    legend: Cache items
+    history: History
+    images: Image files
+    torrents: Torrent files
+    torrentHistory: Torrent history
+    item_one: "{{count}} item"
+    item_other: "{{count}} items"
+    clearSelected: Clear selected
+    clearTitle: Clear cache
+    clearDescription: "Delete {{items}}? This cannot be undone."
+    clear: Clear
+list:
+  airedEstimated: "Aired: #{{episode}} (estimated)"
+  episodesInLibrary: All episodes are in library folders
+  episodesMissing: All episodes are missing
+  missingEpisodes: "Missing: {{episodes}}"
+  nextAiring: "Next airing: {{when}}"
+  watching: Watching
+  currentlyWatching: Currently watching
+  completed: Completed
+  onHold: On hold
+  onHoldShort: On Hold
+  dropped: Dropped
+  planToWatch: Plan to watch
+  planned: Planned
+  nowPlaying: Now playing
+  airingStatus: Airing status
+  cover: Cover
+  animeTitle: Anime title
+  progress: Progress
+  airingDate: Airing date
+  score: Score
+  average: Average
+  type: Type
+  season: Season
+  started: Started
+  completedDate: Completed
+  lastUpdated: Last updated
+  view: View
+  compact: Compact
+  rich: Rich
+  couldNotLoad: Could not load list
+  noAnime: No anime
+  nothingInList: Nothing in this list yet.
+  noMatches: No matches
+  nothingMatched: Nothing matched the list filter.
+  genre: Genre
+  genres: Genres
+  tags: Tags
+  popular: Popular
+  year: Year
+  eps: Eps
+  id: Id
+  title: Title
+  note: Note
+  yes: Yes
+  no: No
+  noGenres: No genres
+  noTags: No tags yet. Sync AniList to fill them.
+  searchField: Search {{field}}
+  value: Value
+  mostPopular: Most popular
+  addFilter: Add filter
+  clearFilters: Clear filters
+  removeFilter: Remove {{label}} filter
+  genreAction: Action
+  genreAdventure: Adventure
+  genreComedy: Comedy
+  genreDrama: Drama
+  genreEcchi: Ecchi
+  genreFantasy: Fantasy
+  genreHorror: Horror
+  genreMahouShoujo: Mahou Shoujo
+  genreMecha: Mecha
+  genreMusic: Music
+  genreMystery: Mystery
+  genrePsychological: Psychological
+  genreRomance: Romance
+  genreSciFi: Sci-Fi
+  genreSliceOfLife: Slice of Life
+  genreSports: Sports
+  genreSupernatural: Supernatural
+  genreThriller: Thriller
+  typeTv: TV
+  typeMovie: Movie
+  typeOva: OVA
+  typeOna: ONA
+history:
+  animeTitle: Anime title
+  details: Details
+  lastModified: Last modified
+  episode: "Episode: {{episode}}"
+  noHistory: No history
+  emptyDescription: Watched episodes show up here.
+  queuedForUpdate: Queued for update
+  history: History
+  information: Information
+  clearHistoryMenu: Clear history...
+  clearQueueMenu: Clear queue...
+  clearHistoryTitle: Clear history
+  clearQueueTitle: Clear queue
+  discardQueued: Discard all pending list updates? They will not be sent to AniList.
+  removeHistory: Remove all history entries?
+  clear: Clear
+library:
+  missing: Missing
+  notScanned: Not scanned
+  indexed: Indexed
+  folderMissing: Folder is missing
+  scanFolder: Scan {{name}}
+  openFolder: Open {{name}}
+  name: Name
+  path: Path
+  series: Series
+  episodes: Episodes
+  files: Files
+  size: Size
+  status: Status
+  actions: Actions
+  title: Library
+  foldersScanned: Folders scanned for local episodes
+  lastScan: "Last scan: {{body}}"
+  liveScan: "{{title}} - {{body}}"
+  scanAvailable: Scan available
+  scanFolders: Scan folders
+  addFolder: Add folder
+  folders: Folders
+  pending: "..."
+  outsideFiles_one: "{{count}} scanned file sits outside these folders ({{size}})."
+  outsideFiles_other: "{{count}} scanned files sit outside these folders ({{size}})."
+  noFolders: No library folders
+  addFolderHint: Add a folder to scan and monitor for episodes.
+statistics:
+  overview: Overview
+  mix: Mix
+  genres: Genres
+  library: Library
+  animeList: Anime list
+  animeCount: "Anime count:"
+  episodeCount: "Episode count:"
+  timeSpent: "Time spent watching:"
+  timeRemaining: "Time remaining:"
+  meanScore: "Mean score:"
+  scoreDeviation: "Score deviation:"
+  scoreDistribution: Score distribution
+  scoreBucket: "Score {{score}}: {{count}}"
+  localDatabase: Local database
+  imageFiles: "Image files:"
+  torrentFiles: "Torrent files:"
+  fileSize: "{{count}} ({{size}})"
+  biyori: Biyori
+  connections: "Connections:"
+  connectionsFailed: "{{count}} ({{failed}} failed)"
+  uptime: "Uptime:"
+  duration: "{{days}} days {{hours}} hours {{minutes}} minutes"
+  uptimeValue: "{{days}} days {{hours}} hours {{minutes}} minutes {{seconds}} seconds"
+  listStatus: List status
+  format: Format
+  topGenres: Top genres
+  libraryCoverage: Library coverage
+  episodeFiles: "Episode files:"
+  airedEpisodes: "Aired episodes:"
+  coverage: "Coverage:"
+  rewatches: Rewatches
+  barValue: "{{label}}: {{value}}"
+  pieSlice: "{{label}} {{count}}"
+  noListStatuses: No list statuses
+seasons:
+  winter: Winter
+  spring: Spring
+  summer: Summer
+  fall: Fall
+  airingStatus: Airing status
+  listStatus: List status
+  type: Type
+  releaseDate: Release date
+  airingDate: Airing date
+  episodes: Episodes
+  popularity: Popularity
+  score: Score
+  title: Title
+  tiles: Tiles
+  images: Images
+  guide: Guide
+  skyline: Skyline
+  previousSeason: Previous season
+  season: Season
+  year: Year
+  nextSeason: Next season
+  refreshSeason: Refresh season
+  group: Group
+  sort: Sort
+  view: View
+  filters: Filters
+  filtersActive: "Filters, {{count}} active"
+  adult: Adult
+  titleCount_one: "{{count}} title"
+  titleCount_other: "{{count}} titles"
+  cachedSuffix: " · cached"
+  couldNotLoad: Could not load season
+  noTitles: No titles
+  nothingListed: Nothing listed for this season.
+  noMatches: No matches
+  nothingMatched: Nothing matched the list filter.
+  inList: In list
+  notInList: Not in list
+  unknownMark: "?"
+  airedRange: "{{start}} ({{status}})"
+  airedRangeTo: "{{start}} to {{end}} ({{status}})"
+  users: "{{amount}} users"
+  episodeCount_one: "{{count}} episode"
+  episodeCount_other: "{{count}} episodes"
+  dateLabel: "{{month}} {{day}}, {{year}}"
+  monthJan: Jan
+  monthFeb: Feb
+  monthMar: Mar
+  monthApr: Apr
+  monthMay: May
+  monthJun: Jun
+  monthJul: Jul
+  monthAug: Aug
+  monthSep: Sep
+  monthOct: Oct
+  monthNov: Nov
+  monthDec: Dec
+  stampJan: JAN
+  stampFeb: FEB
+  stampMar: MAR
+  stampApr: APR
+  stampMay: MAY
+  stampJun: JUN
+  stampJul: JUL
+  stampAug: AUG
+  stampSep: SEP
+  stampOct: OCT
+  stampNov: NOV
+  stampDec: DEC
+  aired: "Aired:"
+  episodesLabel: "Episodes:"
+  genres: "Genres:"
+  producers: "Producers:"
+  scoreLabel: "Score:"
+  popularityLabel: "Popularity:"
+  addToList: Add to list
+  tba: TBA
+  epsShort: "{{count}} eps"
+torrents:
+  animeTitle: Anime title
+  episode: Episode
+  group: Group
+  size: Size
+  video: Video
+  seeders: S
+  leechers: L
+  downloads: D
+  filename: Filename
+  releaseDate: Release date
+  selectAll: Select all torrents
+  selectRow: Select {{title}}
+  downloadMarked: Download marked torrents
+  discardAll: Discard all
+  downloadTorrent: Download torrent
+  viewAnime: View anime information
+  viewTorrent: View torrent information
+  discard: Discard
+  quickFilters: Quick filters
+  discardAnime: Discard all torrents for this anime
+  preferFansub: Select this fansub group for this anime
+  searchMore: Search for more torrents with this title
+  searchAnime: Search for anime with this title
+  checksOff: Automatic checks are off
+  nextCheckPending: Next check pending
+  checking: Checking...
+  nextCheckIn: Next check in {{time}}
+  checkNew: Check new torrents
+  torrent: Torrent
+  unknownSize: Unknown size
+  countBadge: "{{mark}} {{count}}"
+  anime: Anime
+  release: Release
+  unknownAnime: Unknown anime detected
+  notOnList: This release is not on your list.
+  download: Download
+  torrentPost: Torrent Post
+  noTorrents: No torrents found
+  emptyDescription: Matching torrents for your list will be listed here.
+  episodeLine: "{{episode}} · {{group}}"
+  episodeVideo: "{{episode}} · {{video}}"
+  episodeGroupVideo: "{{episode}} · {{group}} · {{video}}"
+search:
+  animeTitle: Anime title
+  type: Type
+  episodes: Episodes
+  score: Score
+  season: Season
+  recent: Recent AniList searches
+  searchAnilist: Search AniList
+  searchHint: Type a title in the sidebar and submit.
+  failed: Search failed
+  noResults: No results
+  nothingMatched: Nothing matched "{{query}}".
+  notInList: Not in list
+  inList: In list
+  suggestions: Title suggestions
+  searchFor: Search AniList for "{{query}}"
+about:
+  appName: Biyori
+  tagline: Anime list tracker powered by AniList.
+  version: Version
+  build: Build
+  hana: Hana
+  contributors: Contributors
+  updates: Updates
+  notChecked: Not checked yet
+  pending: "..."
+  updateChannel: Update channel
+  openUpdate: Open update
+  updateCheckFailed: Update check failed
+  changelog: Changelog
+  recentReleases: Recent releases for this channel.
+  couldNotLoad: Could not load changelog
+  tryAgain: Try again later.
+  noReleases: No releases for this channel.
+  switchChannel: Switch channel or publish a matching GitHub release.
+  noNotes: No notes
+onboarding:
+  system: System
+  light: Light
+  dark: Dark
+  romaji: Romaji
+  english: English
+  native: Native
+  sendReports: Send reports
+  dontSend: Don't send
+  getStarted: Get started
+  intro: Library, preferences, and whether to send crash reports.
+  step: Step {{current}} of {{total}}
+  skip: Skip
+  next: Next
+  openBiyori: Open Biyori
+  connectedAs: Connected as {{name}}
+  signIn: Sign in to sync your anime list
+  disconnectAnilist: Disconnect AniList
+  continueAnilist: Continue with AniList
+  soon: Soon
+  pasteToken: Paste a token instead
+  accessToken: Access token
+  tokenPlaceholder: Paste the access token or the full redirect URL
+  tokenHint: Use this if the browser does not return to Biyori after authorize.
+  connect: Connect
+  addLibraryFolder: Add library folder
+  libraryHint: Folders Biyori scans for episode files. You can skip this and add them later in Settings.
+  removeFolder: Remove {{name}} from library
+  theme: Theme
+  titleLanguage: Title language
+  enableRecognition: Enable media recognition
+  detectPlayers: Detect media players
+  askBeforeUpdate: Ask before updating list progress
+  crashTitle: Help me fix crashes?
+  crashHelp: If Biyori hits an unexpected error, it can send me a technical report so I can fix it. That includes a stack trace and your AniList user id, not your token, passwords, or files. You can change this later in Settings.
+  foldersAdded_one: "{{count}} library folder added."
+  foldersAdded_other: "{{count}} library folders added."
+  noFoldersYet: No library folders yet.
+  changeLater: You can change these later in Settings.
+  notConnected: Not connected
+  connected: Connected
+  authorizeHint: Authorize opens your browser and returns here.
+  disconnect: Disconnect
+  authorize: Authorize
+  pasteTokenLink: or paste access token/redirect url
+  defaultService: Default service
+  servicesUnavailableConnected: MyAnimeList and Kitsu are not available yet. Disconnect applies immediately and is not included when you Save other settings.
+  servicesUnavailable: MyAnimeList and Kitsu are not available yet.
+confirm:
+  confirm: Confirm
+  updateList: Update list?
+  updateEpisode: Update {{title}} to episode {{episode}}?
+  thisAnime: this anime
+  skip: Skip
+  update: Update
+anime:
+  currentlyAiring: Currently airing
+  finishedAiring: Finished airing
+  finished: Finished
+  notYetReleased: Not yet released
+  cancelled: Cancelled
+  hiatus: Hiatus
+  lastAired: Last aired episode {{episode}}
+  nextAirs: Next airs {{when}}
+  episodeAirs: Episode {{episode}} airs
+  premieres: Premieres {{when}}
+  oneEpisodeBack: One episode back
+  oneEpisodeForward: One episode forward
+  ofTotal: of {{total}}
+  addToList: Add to list
+  listStatus: List status
+  animeInformation: Anime Information
+  anilist: AniList
+  myAnimeList: MyAnimeList
+  anidb: AniDB
+  kitsu: Kitsu
+  animeNewsNetwork: Anime News Network
+  reddit: Reddit
+  wikipedia: Wikipedia
+  youtube: YouTube
+  google: Google
+  shortAl: AL
+  shortMal: MAL
+  shortAdb: ADB
+  folder: Folder
+  scanFolderHint: Scan this folder for episode files
+  scanFolder: Scan folder
+  browseFolder: Browse folder
+  mainInformation: Main information
+  myList: My list and settings
+  notInList: Not in your list yet.
+  episodesWatched: Episodes watched
+  score: Score
+  scoreValue: Score {{score}}
+  scoreRange: 0-100
+  scoreZero: "0"
+  rewatching: Rewatching
+  timesRewatched: Times rewatched
+  started: Started
+  notes: Notes
+  alternativeTitles: Alternative titles
+  fansubGroup: Fansub group
+  removeTitle: Remove {{title}}
+  addMatchingTitle: Add a matching title
+  addAlternativeTitle: Add alternative title
+  synonymsHint: Add titles used to match files. Service titles cannot be edited or removed.
+  couldNotSave: Could not save
+  unsavedChange_one: "{{count}} unsaved change"
+  unsavedChange_other: "{{count}} unsaved changes"
+  couldNotSaveEntry: Could not save list entry
+  couldNotLoad: Could not load anime
+  animeId: Anime {{id}}
+  backTo: Back to {{title}}
+  seasonLine: "Season: {{season}}"
+  opensInBrowser: "{{title}}, opens in browser"
+  titleMeta: "{{title}}\n{{meta}}"
+  chapters: "{{format}} · {{chapters}} ch"
+  related: Related
+  highestRated: Highest rated
+  mostPopular: Most popular
+  details: Details
+  episodes: Episodes
+  status: Status
+  season: Season
+  genres: Genres
+  tags: Tags
+  producers: Producers
+  yourScore: Your score
+  synopsis: Synopsis
+  romaji: Romaji
+  english: English
+  native: Native
+  deleteFromList: Delete from list
+  removeFromList: Remove {{title}} from your list?
+  information: Information
+  searchTorrents: Search torrents
+  edit: Edit...
+  scanAvailable: Scan available episodes
+  playEpisode: Play episode
+  noLocalEpisodes: No local episodes
+  playNext: Play next episode (#{{episode}})
+  playLast: Play last episode (#{{episode}})
+  playRandom: Play random episode
+  openFolder: Open folder
+  deleteFromListMenu: Delete from list...
+  onList: "On list: {{status}}"
+  watchTrailer: Watch trailer
+  viewOnAnilist: View on AniList
+  torrents: Torrents
+  copy: Copy
+  link: Link
+  external: External
+  shortcutCtrlN: Ctrl+N
+  shortcutF5: F5
+  shortcutDel: Del
+  shortcutCtrlO: Ctrl+O
+  shortcutCtrlR: Ctrl+R
+  relationAdaptation: Adaptation
+  relationPrequel: Prequel
+  relationSequel: Sequel
+  relationParent: Parent
+  relationSideStory: Side story
+  relationCharacter: Character
+  relationSummary: Summary
+  relationAlternative: Alternative
+  relationSpinOff: Spin off
+  relationOther: Other
+  relationSource: Source
+  relationCompilation: Compilation
+  relationContains: Contains

@@ -35,13 +35,7 @@ export type UpdateChannel = "stable" | "beta" | "alpha";
 
 export const UPDATE_CHANNELS: readonly UpdateChannel[] = ["stable", "beta", "alpha"] as const;
 
-export const UPDATE_CHANNEL_LABELS: Record<UpdateChannel, string> = {
-	stable: "Stable",
-	beta: "Beta",
-	alpha: "Alpha",
-};
-
-const allowedChannels = Object.keys(UPDATE_CHANNEL_LABELS) as UpdateChannel[];
+const allowedChannels: readonly UpdateChannel[] = UPDATE_CHANNELS;
 
 export function cleanSemver(version: unknown): string | null {
 	if (typeof version !== "string" || version.length === 0) {

@@ -1,3 +1,4 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeftIcon, FolderIcon, FolderPlusIcon, Trash2Icon } from "lucide-react";
@@ -23,19 +24,32 @@ import { THEME_MODES, type ThemeMode } from "@/mainview/lib/theme";
 import { trpc } from "@/mainview/trpc";
 
 const STEP_COUNT = 5;
-const TITLE_LANGUAGE_OPTIONS = titleLanguageSchema.options.map((value) => ({ value, label: value }));
-const THEME_OPTIONS = THEME_MODES.map((value) => ({
-	value,
-	label: value === "system" ? "System" : value === "light" ? "Light" : "Dark",
-}));
-const CRASH_REPORT_OPTIONS = [
-	{ value: "send", label: "Send reports" },
-	{ value: "dont", label: "Don't send" },
-] as const;
+
+function themeOptions() {
+	return THEME_MODES.map((value) => ({
+		value,
+		label: value === "system" ? t("onboarding.system") : value === "light" ? t("onboarding.light") : t("onboarding.dark"),
+	}));
+}
+
+function titleLanguageOptions() {
+	return titleLanguageSchema.options.map((value) => ({
+		value,
+		label: value === "Romaji" ? t("onboarding.romaji") : value === "English" ? t("onboarding.english") : t("onboarding.native"),
+	}));
+}
+
+function crashReportOptions() {
+	return [
+		{ value: "send" as const, label: t("onboarding.sendReports") },
+		{ value: "dont" as const, label: t("onboarding.dontSend") },
+	];
+}
 
 type TitleLanguage = (typeof titleLanguageSchema.options)[number];
 
 export function OnboardingWizard() {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const [step, setStep] = useState(0);
 	const settingsQuery = trpc.settings.get.useQuery();
@@ -103,14 +117,12 @@ export function OnboardingWizard() {
 					<div className='@container mx-auto flex w-full max-w-xl flex-col gap-2 px-6 py-4'>
 						<div className='flex items-center gap-2'>
 							<Logo className='size-6' />
-							<h1 className='text-base font-medium'>Get started</h1>
+							<h1 className='text-base font-medium'>{t("onboarding.getStarted")}</h1>
 						</div>
-						<p className='text-sm text-muted-foreground'>Library, preferences, and whether to send crash reports.</p>
+						<p className='text-sm text-muted-foreground'>{t("onboarding.intro")}</p>
 						<Progress value={progress}>
 							<div className='flex w-full items-center'>
-								<ProgressLabel>
-									Step {step + 1} of {STEP_COUNT}
-								</ProgressLabel>
+								<ProgressLabel>{t("onboarding.step", { current: step + 1, total: STEP_COUNT })}</ProgressLabel>
 								<ProgressValue />
 							</div>
 						</Progress>
@@ -147,17 +159,17 @@ export function OnboardingWizard() {
 					<div className='mx-auto flex w-full max-w-xl items-center justify-between gap-2 px-6 py-3'>
 						<Button type='button' variant='ghost' disabled={setSettings.isPending} onClick={() => setStep(step - 1)}>
 							<ChevronLeftIcon data-icon='inline-start' />
-							Back
+							{t("common.back")}
 						</Button>
 						<div className='flex items-center gap-2'>
 							{step === 1 ? (
 								<Button type='button' variant='ghost' onClick={() => setStep(2)}>
-									Skip
+									{t("onboarding.skip")}
 								</Button>
 							) : null}
 							{step === 4 ? (
 								<Button type='button' disabled={setSettings.isPending} onClick={() => void finish()}>
-									Open Biyori
+									{t("onboarding.openBiyori")}
 								</Button>
 							) : (
 								<Button
@@ -174,7 +186,7 @@ export function OnboardingWizard() {
 										}
 										setStep(step + 1);
 									}}>
-									Next
+									{t("onboarding.next")}
 								</Button>
 							)}
 						</div>
@@ -186,6 +198,7 @@ export function OnboardingWizard() {
 }
 
 function OnboardingConnectStep() {
+	const { t } = useTranslation();
 	const statusQuery = trpc.anilist.status.useQuery();
 	const authorize = trpc.anilist.authorize.useMutation();
 	const disconnect = trpc.anilist.disconnect.useMutation({
@@ -201,9 +214,9 @@ function OnboardingConnectStep() {
 		<div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-5 px-8 py-6'>
 			<Logo className='size-14' />
 			{connected ? (
-				<p className='text-center text-sm'>Connected as {username || "AniList"}</p>
+				<p className='text-center text-sm'>{t("onboarding.connectedAs", { name: username || t("anime.anilist") })}</p>
 			) : (
-				<p className='text-center text-sm text-muted-foreground'>Sign in to sync your anime list</p>
+				<p className='text-center text-sm text-muted-foreground'>{t("onboarding.signIn")}</p>
 			)}
 			<div className='flex w-full max-w-xs flex-col gap-2'>
 				{connected ? (
@@ -217,7 +230,7 @@ function OnboardingConnectStep() {
 							void disconnect.mutateAsync();
 						}}>
 						<AnilistIcon data-icon='inline-start' />
-						Disconnect AniList
+						{t("onboarding.disconnectAnilist")}
 					</Button>
 				) : (
 					<Button
@@ -229,20 +242,20 @@ function OnboardingConnectStep() {
 							void authorize.mutateAsync();
 						}}>
 						<AnilistIcon data-icon='inline-start' />
-						Continue with AniList
+						{t("onboarding.continueAnilist")}
 					</Button>
 				)}
 				<Button type='button' variant='outline' size='lg' className='w-full justify-start' disabled>
 					<MyAnimeListIcon data-icon='inline-start' />
-					MyAnimeList
+					{t("anime.myAnimeList")}
 					<Badge variant='secondary' size='sm' className='ml-auto'>
-						Soon
+						{t("onboarding.soon")}
 					</Badge>
 				</Button>
 				<Button type='button' variant='outline' size='lg' className='w-full justify-start' disabled>
-					Kitsu
+					{t("anime.kitsu")}
 					<Badge variant='secondary' size='sm' className='ml-auto'>
-						Soon
+						{t("onboarding.soon")}
 					</Badge>
 				</Button>
 			</div>
@@ -253,6 +266,7 @@ function OnboardingConnectStep() {
 }
 
 function OnboardingPasteToken() {
+	const { t } = useTranslation();
 	const tokenId = useId();
 	const tokenForm = useForm<AnilistTokenInput, unknown, AnilistToken>({
 		resolver: zodResolver(anilistTokenSchema),
@@ -269,7 +283,7 @@ function OnboardingPasteToken() {
 
 	return (
 		<details className='w-full max-w-xs'>
-			<summary className='cursor-pointer text-center text-xs text-muted-foreground'>Paste a token instead</summary>
+			<summary className='cursor-pointer text-center text-xs text-muted-foreground'>{t("onboarding.pasteToken")}</summary>
 			<FormProvider {...tokenForm}>
 				<div className='mt-3 flex flex-col gap-3'>
 					<Controller
@@ -277,11 +291,11 @@ function OnboardingPasteToken() {
 						name='token'
 						render={({ field, fieldState }) => (
 							<Field data-invalid={fieldState.invalid || undefined}>
-								<FieldLabel htmlFor={tokenId}>Access token</FieldLabel>
+								<FieldLabel htmlFor={tokenId}>{t("onboarding.accessToken")}</FieldLabel>
 								<Textarea
 									id={tokenId}
 									rows={3}
-									placeholder='Paste the access token or the full redirect URL'
+									placeholder={t("onboarding.tokenPlaceholder")}
 									aria-invalid={fieldState.invalid || undefined}
 									name={field.name}
 									ref={field.ref}
@@ -300,7 +314,7 @@ function OnboardingPasteToken() {
 							})();
 						}}
 					/>
-					<FieldDescription>Use this if the browser does not return to Biyori after authorize.</FieldDescription>
+					<FieldDescription>{t("onboarding.tokenHint")}</FieldDescription>
 					{errorMessage ? <p className='text-sm text-destructive'>{errorMessage}</p> : null}
 				</div>
 			</FormProvider>
@@ -309,16 +323,18 @@ function OnboardingPasteToken() {
 }
 
 function OnboardingPasteConnectButton({ onConnect }: { onConnect: () => void }) {
+	const { t } = useTranslation();
 	const { control } = useFormContext<AnilistTokenInput>();
 	const { isSubmitting } = useFormState({ control });
 	return (
 		<Button type='button' disabled={isSubmitting} onClick={onConnect}>
-			Connect
+			{t("onboarding.connect")}
 		</Button>
 	);
 }
 
 function OnboardingLibraryStep() {
+	const { t } = useTranslation();
 	const settingsQuery = trpc.settings.get.useQuery();
 	const utils = trpc.useUtils();
 	const addFolder = useAddLibraryFolder();
@@ -331,15 +347,15 @@ function OnboardingLibraryStep() {
 
 	return (
 		<FieldGroup>
-			<p className='text-sm text-muted-foreground'>Folders Biyori scans for episode files. You can skip this and add them later in Settings.</p>
+			<p className='text-sm text-muted-foreground'>{t("onboarding.libraryHint")}</p>
 			{folders.length === 0 ? (
 				<Empty className='min-h-32 border border-dashed'>
 					<EmptyHeader>
 						<EmptyMedia variant='icon'>
 							<FolderIcon />
 						</EmptyMedia>
-						<EmptyTitle>No library folders</EmptyTitle>
-						<EmptyDescription>Add a folder to scan and monitor for episodes.</EmptyDescription>
+						<EmptyTitle>{t("library.noFolders")}</EmptyTitle>
+						<EmptyDescription>{t("library.addFolderHint")}</EmptyDescription>
 					</EmptyHeader>
 				</Empty>
 			) : (
@@ -355,7 +371,7 @@ function OnboardingLibraryStep() {
 								type='button'
 								variant='ghost'
 								size='icon-xs'
-								aria-label={`Remove ${folderDisplayName(folder.path)} from library`}
+								aria-label={t("onboarding.removeFolder", { name: folderDisplayName(folder.path) })}
 								disabled={setSettings.isPending}
 								onClick={() => {
 									void setSettings.mutateAsync({
@@ -376,7 +392,7 @@ function OnboardingLibraryStep() {
 					void addFolder.addFromPicker();
 				}}>
 				<FolderPlusIcon data-icon='inline-start' />
-				Add library folder
+				{t("onboarding.addLibraryFolder")}
 			</Button>
 		</FieldGroup>
 	);
@@ -410,39 +426,38 @@ function OnboardingPrefsStep({
 	const recognitionId = useId();
 	const playersId = useId();
 	const confirmId = useId();
+	const { t } = useTranslation();
 
 	return (
 		<FieldGroup>
 			<Field>
-				<FieldLabel htmlFor={themeId}>Theme</FieldLabel>
-				<SettingsToggleGroup id={themeId} value={theme} onValueChange={(value) => onThemeChange(value as ThemeMode)} options={THEME_OPTIONS} />
+				<FieldLabel htmlFor={themeId}>{t("onboarding.theme")}</FieldLabel>
+				<SettingsToggleGroup id={themeId} value={theme} onValueChange={(value) => onThemeChange(value as ThemeMode)} options={themeOptions()} />
 			</Field>
 			<Field>
-				<FieldLabel htmlFor={languageId}>Title language</FieldLabel>
-				<SettingsToggleGroup id={languageId} value={titleLanguage} onValueChange={(value) => onTitleLanguageChange(value as TitleLanguage)} options={TITLE_LANGUAGE_OPTIONS} />
+				<FieldLabel htmlFor={languageId}>{t("onboarding.titleLanguage")}</FieldLabel>
+				<SettingsToggleGroup id={languageId} value={titleLanguage} onValueChange={(value) => onTitleLanguageChange(value as TitleLanguage)} options={titleLanguageOptions()} />
 			</Field>
-			<PrefCheckbox id={recognitionId} label='Enable media recognition' checked={enableRecognition} onCheckedChange={onEnableRecognitionChange} />
-			<PrefCheckbox id={playersId} label='Detect media players' checked={enableMediaPlayerDetection} onCheckedChange={onEnableMediaPlayerDetectionChange} />
-			<PrefCheckbox id={confirmId} label='Ask before updating list progress' checked={askToConfirmUpdate} onCheckedChange={onAskToConfirmUpdateChange} />
+			<PrefCheckbox id={recognitionId} label={t("onboarding.enableRecognition")} checked={enableRecognition} onCheckedChange={onEnableRecognitionChange} />
+			<PrefCheckbox id={playersId} label={t("onboarding.detectPlayers")} checked={enableMediaPlayerDetection} onCheckedChange={onEnableMediaPlayerDetectionChange} />
+			<PrefCheckbox id={confirmId} label={t("onboarding.askBeforeUpdate")} checked={askToConfirmUpdate} onCheckedChange={onAskToConfirmUpdateChange} />
 		</FieldGroup>
 	);
 }
 
 function OnboardingCrashReportsStep({ sendCrashReports, onSendCrashReportsChange }: { sendCrashReports: boolean; onSendCrashReportsChange: (next: boolean) => void }) {
 	const crashReportsId = useId();
+	const { t } = useTranslation();
 	return (
 		<FieldGroup>
 			<Field>
-				<FieldLabel htmlFor={crashReportsId}>Help me fix crashes?</FieldLabel>
-				<FieldDescription>
-					If Biyori hits an unexpected error, it can send me a technical report so I can fix it. That includes a stack trace and your AniList user id, not your token, passwords, or
-					files. You can change this later in Settings.
-				</FieldDescription>
+				<FieldLabel htmlFor={crashReportsId}>{t("onboarding.crashTitle")}</FieldLabel>
+				<FieldDescription>{t("onboarding.crashHelp")}</FieldDescription>
 				<SettingsToggleGroup
 					id={crashReportsId}
 					value={sendCrashReports ? "send" : "dont"}
 					onValueChange={(value) => onSendCrashReportsChange(value === "send")}
-					options={CRASH_REPORT_OPTIONS}
+					options={crashReportOptions()}
 				/>
 			</Field>
 		</FieldGroup>
@@ -450,13 +465,15 @@ function OnboardingCrashReportsStep({ sendCrashReports, onSendCrashReportsChange
 }
 
 function OnboardingDoneStep({ username, folderCount }: { username: string; folderCount: number }) {
+	const { t } = useTranslation();
+	const name = username || t("anime.anilist");
+	const folders = folderCount > 0 ? t("onboarding.foldersAdded", { count: folderCount }) : t("onboarding.noFoldersYet");
 	return (
 		<FieldGroup>
 			<p className='text-sm'>
-				Connected as <span className='font-medium'>{username || "AniList"}</span>
-				{folderCount > 0 ? `. ${folderCount} library folder${folderCount === 1 ? "" : "s"} added.` : ". No library folders yet."}
+				{t("onboarding.connectedAs", { name })}. {folders}
 			</p>
-			<p className='text-sm text-muted-foreground'>You can change these later in Settings.</p>
+			<p className='text-sm text-muted-foreground'>{t("onboarding.changeLater")}</p>
 		</FieldGroup>
 	);
 }

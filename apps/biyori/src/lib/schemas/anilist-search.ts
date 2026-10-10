@@ -8,7 +8,7 @@ export const anilistSearchFormSchema = z.object({
 
 /** API search procedure input. */
 export const anilistSearchSchema = anilistSearchFormSchema.extend({
-	q: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string().trim().min(1, "Required")),
+	q: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string().trim().min(1, "common.required")),
 	page: z.coerce.number().int().min(1).default(1),
 });
 

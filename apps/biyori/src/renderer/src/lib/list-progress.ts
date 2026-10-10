@@ -1,3 +1,5 @@
+import { t } from "@biyori/translations/react";
+
 export function estimateEpisodeCount(knownTotal: number, lastKnown: number): number {
 	if (knownTotal > 0) {
 		return knownTotal;
@@ -115,20 +117,20 @@ export function libraryEpisodeTooltip(input: { watched: number; total: number; a
 	}
 	const lines: string[] = [];
 	if (scanUntil <= 0 || missing.length === scanUntil) {
-		lines.push("All episodes are missing");
+		lines.push(t("list.episodesMissing"));
 	} else if (missing.length === 0) {
-		lines.push("All episodes are in library folders");
+		lines.push(t("list.episodesInLibrary"));
 	} else {
 		const missingText = collapseEpisodeRanges(missing)
 			.map(([from, to]) => (to > from ? `#${from}-${to}` : `#${from}`))
 			.join(", ");
-		lines.push(`Missing: ${missingText}`);
+		lines.push(t("list.missingEpisodes", { episodes: missingText }));
 	}
 	if (!input.finished && lastAired > input.watched) {
-		lines.push(`Aired: #${lastAired} (estimated)`);
+		lines.push(t("list.airedEstimated", { episode: lastAired }));
 	}
 	if (input.nextAiring) {
-		lines.push(`Next airing: ${input.nextAiring}`);
+		lines.push(t("list.nextAiring", { when: input.nextAiring }));
 	}
 	return lines.join("\n");
 }

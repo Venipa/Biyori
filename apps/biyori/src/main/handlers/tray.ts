@@ -1,3 +1,4 @@
+import { t } from "@biyori/translations/i18n";
 import { platform } from "@electron-toolkit/utils";
 import { Menu, nativeImage, Tray } from "electron";
 import icon from "../../../resources/biyori-frame32x.png?asset";
@@ -7,7 +8,7 @@ import { setTrayState, toggleTrayState } from "./tray-state";
 let tray: Tray | null = null;
 
 function trayMenu(onQuit: () => void): Electron.Menu {
-	return Menu.buildFromTemplate([{ label: "Show", click: () => setTrayState("visible") }, { type: "separator" }, { label: "Quit", click: onQuit }]);
+	return Menu.buildFromTemplate([{ label: t("main.tray.show"), click: () => setTrayState("visible") }, { type: "separator" }, { label: t("main.tray.quit"), click: onQuit }]);
 }
 
 function trayImage(): Electron.NativeImage | string {

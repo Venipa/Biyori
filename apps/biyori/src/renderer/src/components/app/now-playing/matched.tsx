@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { ExternalLinkIcon } from "lucide-react";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
@@ -14,6 +15,7 @@ import { nextEpisodeIsAvailable } from "@/mainview/lib/list-progress";
 import { trpc } from "@/mainview/trpc";
 
 export function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
+	const { t } = useTranslation();
 	const animeInfo = useAnimeInfoNav();
 	const playNext = trpc.library.playNext.useMutation();
 	const match = snapshot.match;
@@ -67,7 +69,7 @@ export function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) 
 						<AnimeCover
 							id={match.id}
 							coverUrl={detail?.coverUrl || match.coverUrl || undefined}
-							alt={`Key art for ${title}`}
+							alt={t("nowPlaying.keyArt", { title })}
 							width={224}
 							height={336}
 							className='size-full object-cover'
@@ -89,7 +91,7 @@ export function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) 
 				</div>
 
 				<div className='flex min-h-16 min-w-0 flex-col justify-end gap-1 py-2'>
-					<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>Now playing</p>
+					<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>{t("nowPlaying.kicker")}</p>
 					<h1 className='text-balance text-lg font-semibold text-foreground sm:text-xl'>{title}</h1>
 					<p className='text-sm text-muted-foreground'>{nowPlayingLine}</p>
 				</div>
@@ -97,23 +99,20 @@ export function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) 
 				<div className='flex min-w-0 flex-col gap-4'>
 					<div className='flex flex-wrap items-center gap-1.5'>
 						{status ? <Badge variant='secondary'>{status}</Badge> : null}
-						{rewatching ? <Badge variant='outline'>Rewatching</Badge> : null}
+						{rewatching ? <Badge variant='outline'>{t("nowPlaying.rewatching")}</Badge> : null}
 						<Badge variant='outline'>{media.player}</Badge>
 						{airingStatus ? <Badge variant='outline'>{airingStatus}</Badge> : null}
-						{snapshot.delayRemainingSeconds > 0 ? <Badge variant='outline'>Updating in {snapshot.delayRemainingSeconds}s</Badge> : null}
-						{snapshot.pendingConfirm ? <Badge>Confirm update</Badge> : null}
+						{snapshot.delayRemainingSeconds > 0 ? <Badge variant='outline'>{t("nowPlaying.updatingIn", { seconds: snapshot.delayRemainingSeconds })}</Badge> : null}
+						{snapshot.pendingConfirm ? <Badge>{t("nowPlaying.confirmUpdate")}</Badge> : null}
 					</div>
 
 					{progressValue != null ? (
 						<Progress value={progressValue} className='w-full max-w-48'>
-							<ProgressLabel>Progress</ProgressLabel>
-							<ProgressValue>{() => (total != null ? `${watched} / ${total}` : `${watched} / ?`)}</ProgressValue>
+							<ProgressLabel>{t("nowPlaying.progress")}</ProgressLabel>
+							<ProgressValue>{() => (total != null ? t("nowPlaying.progressValue", { watched, total }) : t("nowPlaying.progressOpen", { watched }))}</ProgressValue>
 						</Progress>
 					) : (
-						<p className='text-sm text-muted-foreground tabular-nums'>
-							Progress {watched}
-							{total ? ` / ${total}` : " / unknown"}
-						</p>
+						<p className='text-sm text-muted-foreground tabular-nums'>{t("nowPlaying.progressLine", { watched, total: total ?? t("common.unknown") })}</p>
 					)}
 
 					<div className='flex flex-wrap gap-2'>
@@ -124,7 +123,7 @@ export function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) 
 							onClick={() => {
 								animeInfo.open({ id: match.id, infoTab: "list" });
 							}}>
-							Edit list
+							{t("nowPlaying.editList")}
 						</Button>
 						{canWatchNext ? (
 							<Button
@@ -137,7 +136,7 @@ export function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) 
 										episodesWatched: currentEpisode,
 									});
 								}}>
-								Watch next episode
+								{t("nowPlaying.watchNext")}
 							</Button>
 						) : null}
 						<AnimeScoreControl

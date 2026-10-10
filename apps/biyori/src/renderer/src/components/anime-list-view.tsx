@@ -1,4 +1,5 @@
 import { log } from "@biyori/logger";
+import { t, useTranslation } from "@biyori/translations/react";
 import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon } from "lucide-react";
@@ -7,6 +8,7 @@ import { AiringStatusMark } from "@/components/app/anime/airing-status";
 import { desktopRpc } from "@/desktop-rpc";
 import type { AnimeListViewAs } from "@/lib/schemas/app-settings";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
+import { listStatusLabel, listStatusShortText } from "@/mainview/components/app/anime/list-action";
 import { AnimeListProgress } from "@/mainview/components/app/anime/list-progress";
 import { AnimeItemCommands } from "@/mainview/components/app/anime-info/item-commands";
 import { DataTable, resizableTableOptions } from "@/mainview/components/app/shared/data-table";
@@ -26,7 +28,7 @@ import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { ToggleRadio, ToggleRadioItem } from "@/mainview/components/ui/toggle-radio";
-import { animeMatchesListFilter } from "@/mainview/lib/anime-list-filter";
+import { animeTypeLabel } from "@/mainview/lib/anime-list-filter";
 import { formatLocalDateTime, formatTimeAgo } from "@/mainview/lib/format-date";
 import { useListFilterText } from "@/mainview/lib/list-filter";
 import { libraryEpisodeTooltip, listProgressRatio } from "@/mainview/lib/list-progress";
@@ -35,7 +37,7 @@ import { usePersistedColumnSizing } from "@/mainview/lib/table-column-sizing";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
-import { ANIME_LIST_SEARCH_TAB, type AnimeListTab, type ListStatus, listStatusSchema, listStatusShortLabel } from "@/shared/list";
+import { ANIME_LIST_SEARCH_TAB, type AnimeListTab, type ListStatus, listStatusSchema } from "@/shared/list";
 
 const tabs = listStatusSchema.options;
 
@@ -71,10 +73,11 @@ function isAiringFinished(status: string | null | undefined): boolean {
 }
 
 function PlayingOrAiringCell({ playing, status }: { playing: boolean; status: string | null | undefined }) {
+	const { t } = useTranslation();
 	if (playing) {
 		return (
-			<span className='flex justify-center' title='Now playing'>
-				<PlayIcon className='size-3.5 fill-current text-success' aria-label='Now playing' />
+			<span className='flex justify-center' title={t("list.nowPlaying")}>
+				<PlayIcon className='size-3.5 fill-current text-success' aria-label={t("list.nowPlaying")} />
 			</span>
 		);
 	}
@@ -89,7 +92,7 @@ const columns: ColumnDef<AnimeRow>[] = [
 	{
 		id: "airingStatus",
 		accessorKey: "airingStatus",
-		header: () => <span className='sr-only'>Airing status</span>,
+		header: () => <span className='sr-only'>{t("list.airingStatus")}</span>,
 		enableSorting: true,
 		enableResizing: false,
 		size: 32,
@@ -101,7 +104,7 @@ const columns: ColumnDef<AnimeRow>[] = [
 	{
 		id: "cover",
 		accessorKey: "coverUrl",
-		header: () => <span className='sr-only'>Cover</span>,
+		header: () => <span className='sr-only'>{t("list.cover")}</span>,
 		enableSorting: false,
 		enableResizing: false,
 		size: 48,
@@ -122,7 +125,7 @@ const columns: ColumnDef<AnimeRow>[] = [
 	},
 	{
 		accessorKey: "title",
-		header: "Anime title",
+		header: () => t("list.animeTitle"),
 		size: 280,
 		minSize: 120,
 		meta: { className: "min-w-0" },
@@ -144,7 +147,7 @@ const columns: ColumnDef<AnimeRow>[] = [
 	{
 		id: "progress",
 		accessorFn: (row) => listProgressRatio(row.episodesWatched, row.episodes),
-		header: "Progress",
+		header: () => t("list.progress"),
 		size: 180,
 		minSize: 120,
 		cell: ({ row }) => {
@@ -176,7 +179,7 @@ const columns: ColumnDef<AnimeRow>[] = [
 	{
 		id: "airingDate",
 		accessorFn: (row) => row.nextAiringAt ?? (isAiringFinished(row.airingStatus) ? row.endDate : null) ?? "",
-		header: "Airing date",
+		header: () => t("list.airingDate"),
 		size: 140,
 		minSize: 96,
 		cell: ({ row }) => {
@@ -198,35 +201,39 @@ const columns: ColumnDef<AnimeRow>[] = [
 	},
 	{
 		accessorKey: "score",
-		header: "Score",
+		header: () => t("list.score"),
 		cell: ({ row }) => (
 			<span className={cn("text-right tabular-nums", row.original.score ? undefined : "text-muted-foreground")}>{row.original.score ? `${row.original.score}%` : "-"}</span>
 		),
 	},
 	{
 		accessorKey: "averageScore",
-		header: "Average",
+		header: () => t("list.average"),
 		cell: ({ row }) => <span className={cn("text-right tabular-nums", row.original.averageScore ? undefined : "text-muted-foreground")}>{row.original.averageScore}%</span>,
 	},
-	{ accessorKey: "type", header: "Type", cell: ({ row }) => <span className={row.original.type ? undefined : "text-muted-foreground"}>{row.original.type || "-"}</span> },
+	{
+		accessorKey: "type",
+		header: () => t("list.type"),
+		cell: ({ row }) => <span className={row.original.type ? undefined : "text-muted-foreground"}>{row.original.type ? animeTypeLabel(row.original.type) : "-"}</span>,
+	},
 	{
 		accessorKey: "season",
-		header: "Season",
+		header: () => t("list.season"),
 		cell: ({ row }) => <span className={row.original.season ? undefined : "text-muted-foreground"}>{row.original.season || "-"}</span>,
 	},
 	{
 		accessorKey: "started",
-		header: "Started",
+		header: () => t("list.started"),
 		cell: ({ row }) => <span className={row.original.started ? undefined : "text-muted-foreground"}>{row.original.started ?? "-"}</span>,
 	},
 	{
 		accessorKey: "completed",
-		header: "Completed",
+		header: () => t("list.completedDate"),
 		cell: ({ row }) => <span className={row.original.completed ? undefined : "text-muted-foreground"}>{row.original.completed ?? "-"}</span>,
 	},
 	{
 		accessorKey: "lastUpdated",
-		header: "Last updated",
+		header: () => t("list.lastUpdated"),
 		cell: ({ row }) => {
 			const absolute = formatLocalDateTime(row.original.lastUpdated);
 			return (
@@ -248,17 +255,18 @@ const commandParts = {
 };
 
 function AnimeListViewToggle({ value, onValueChange }: { value: AnimeListViewAs; onValueChange: (value: AnimeListViewAs) => void }) {
+	const { t } = useTranslation();
 	return (
 		<ToggleRadio
-			aria-label='View'
+			aria-label={t("list.view")}
 			value={value}
 			onValueChange={(next) => {
 				if (next === "compact" || next === "rich") {
 					onValueChange(next);
 				}
 			}}>
-			<ToggleRadioItem value='compact'>Compact</ToggleRadioItem>
-			<ToggleRadioItem value='rich'>Rich</ToggleRadioItem>
+			<ToggleRadioItem value='compact'>{t("list.compact")}</ToggleRadioItem>
+			<ToggleRadioItem value='rich'>{t("list.rich")}</ToggleRadioItem>
 		</ToggleRadio>
 	);
 }
@@ -275,6 +283,7 @@ export function AnimeListView({
 	onOpenAnime: (id: number, infoTab?: AnimeInfoTab) => void;
 }) {
 	const listFilter = useListFilterText();
+	const { t } = useTranslation();
 	const searching = listFilter.trim().length > 0;
 	const onSearchTab = tab === ANIME_LIST_SEARCH_TAB;
 	const groupedSearch = searching && onSearchTab;
@@ -435,10 +444,35 @@ export function AnimeListView({
 	}, [statusFallback, scan, playNext, playRandom]);
 
 	const menuAnime = menuRow ? toSelected(menuRow, rowListStatus(menuRow, statusFallback)) : null;
-	const headerLabel = onSearchTab || searching ? "Search" : listStatusShortLabel(listStatus);
+	const headerLabel = onSearchTab || searching ? t("common.search") : listStatusShortText(listStatus);
 	const skeletonHeaders = rich
-		? ["", "", "Anime title", "Progress", "Airing date", "Score", "Average", "Type", "Season", "Started", "Completed", "Last updated"]
-		: ["", "Anime title", "Progress", "Airing date", "Score", "Average", "Type", "Season", "Started", "Completed", "Last updated"];
+		? [
+				"",
+				"",
+				t("list.animeTitle"),
+				t("list.progress"),
+				t("list.airingDate"),
+				t("list.score"),
+				t("list.average"),
+				t("list.type"),
+				t("list.season"),
+				t("list.started"),
+				t("list.completedDate"),
+				t("list.lastUpdated"),
+			]
+		: [
+				"",
+				t("list.animeTitle"),
+				t("list.progress"),
+				t("list.airingDate"),
+				t("list.score"),
+				t("list.average"),
+				t("list.type"),
+				t("list.season"),
+				t("list.started"),
+				t("list.completedDate"),
+				t("list.lastUpdated"),
+			];
 
 	function setViewAs(next: AnimeListViewAs): void {
 		startTransition(() => {
@@ -461,10 +495,10 @@ export function AnimeListView({
 					<ContextMenuTrigger className='block h-full min-h-0'>
 						<ScrollArea className='h-full'>
 							{listQuery.isPending && !listQuery.data ? <TableRowsSkeleton columnCount={skeletonHeaders.length} headers={skeletonHeaders} /> : null}
-							{listQuery.error ? <PlaceholderView icon={CircleAlertIcon} title='Could not load list' description={listQuery.error.message} /> : null}
-							{listQuery.data && listQuery.data.length === 0 ? <PlaceholderView icon={ListIcon} title='No anime' description='Nothing in this list yet.' /> : null}
+							{listQuery.error ? <PlaceholderView icon={CircleAlertIcon} title={t("list.couldNotLoad")} description={listQuery.error.message} /> : null}
+							{listQuery.data && listQuery.data.length === 0 ? <PlaceholderView icon={ListIcon} title={t("list.noAnime")} description={t("list.nothingInList")} /> : null}
 							{listQuery.data && listQuery.data.length > 0 && filteredRows.length === 0 ? (
-								<PlaceholderView icon={FilterIcon} title='No matches' description='Nothing matched the list filter.' />
+								<PlaceholderView icon={FilterIcon} title={t("list.noMatches")} description={t("list.nothingMatched")} />
 							) : null}
 							{filteredRows.length > 0 ? (
 								<DataTable
@@ -474,6 +508,7 @@ export function AnimeListView({
 									rowSize={rich ? 56 : undefined}
 									groupBy={groupedSearch ? (row) => rowListStatus(row.original, statusFallback) : undefined}
 									groupOrder={tabs}
+									groupLabel={(value) => listStatusLabel(String(value))}
 									renderRow={(row, cells) => (
 										<TableRow
 											data-state={selected?.id === row.original.id ? "selected" : undefined}

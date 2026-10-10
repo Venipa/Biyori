@@ -1,4 +1,5 @@
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { useTranslation } from "@biyori/translations/react";
 import { XIcon } from "lucide-react";
 import type * as React from "react";
 import { APP_TOOLBAR_HEIGHT } from "@/components/app/shell/toolbar";
@@ -43,6 +44,7 @@ function DialogContent({
 	from?: "center" | "bottom";
 	underlay?: React.ReactNode;
 }) {
+	const { t } = useTranslation();
 	return (
 		<DialogPortal>
 			<DialogOverlay className={from === "bottom" ? "duration-200" : undefined} />
@@ -61,7 +63,7 @@ function DialogContent({
 				{showCloseButton && (
 					<DialogPrimitive.Close data-slot='dialog-close' render={<Button variant='ghost' className='absolute top-2 right-2' size='icon-sm' />}>
 						<XIcon />
-						<span className='sr-only'>Close</span>
+						<span className='sr-only'>{t("common.close")}</span>
 					</DialogPrimitive.Close>
 				)}
 			</DialogPrimitive.Popup>
@@ -81,10 +83,11 @@ function DialogFooter({
 }: React.ComponentProps<"div"> & {
 	showCloseButton?: boolean;
 }) {
+	const { t } = useTranslation();
 	return (
 		<div data-slot='dialog-footer' className={cn("flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end", className)} {...props}>
 			{children}
-			{showCloseButton && <DialogPrimitive.Close render={<Button variant='outline' />}>Close</DialogPrimitive.Close>}
+			{showCloseButton && <DialogPrimitive.Close render={<Button variant='outline' />}>{t("common.close")}</DialogPrimitive.Close>}
 		</div>
 	);
 }

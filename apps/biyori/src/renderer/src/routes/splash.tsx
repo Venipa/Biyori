@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { createFileRoute } from "@tanstack/react-router";
 import Logo from "@/mainview/components/app/shell/logo";
 import { splashSegmentState } from "@/mainview/lib/splash-progress";
@@ -9,9 +10,10 @@ export const Route = createFileRoute("/splash")({
 });
 
 function SegmentedProgress({ completed, total, inner }: { completed: number; total: number; inner: number | null }) {
+	const { t } = useTranslation();
 	const segments = Math.max(1, total);
 	return (
-		<div className='flex w-56 gap-1' role='progressbar' aria-label='Startup' aria-valuemin={0} aria-valuemax={100}>
+		<div className='flex w-56 gap-1' role='progressbar' aria-label={t("shell.startup")} aria-valuemin={0} aria-valuemax={100}>
 			{Array.from({ length: segments }, (_, index) => {
 				const finished = completed >= segments || index < completed;
 				const active = !finished && index === completed;
@@ -29,6 +31,7 @@ function SegmentedProgress({ completed, total, inner }: { completed: number; tot
 }
 
 function SplashPage() {
+	const { t } = useTranslation();
 	const utils = trpc.useUtils();
 	const activityQuery = trpc.activity.snapshot.useQuery();
 	trpc.activity.onChange.useSubscription(undefined, {
@@ -44,7 +47,7 @@ function SplashPage() {
 		scanTitle: scan?.title,
 		scanBody: scan?.body,
 	});
-	const label = [boot?.title ?? "Starting", scan?.body].filter(Boolean).join(" · ");
+	const label = [boot?.title ?? t("shell.starting"), scan?.body].filter(Boolean).join(" · ");
 
 	return (
 		<div className='app-region-drag pointer-events-drag flex min-h-0 flex-1 select-none flex-col items-center justify-center gap-5 bg-background px-8'>

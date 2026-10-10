@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { ListTreeIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useWatchConfirm } from "@/mainview/components/app/confirm/watch-actions";
@@ -36,6 +37,7 @@ function ActivityFeed({
 }
 
 export function AppStatusBar() {
+	const { t } = useTranslation();
 	const utils = trpc.useUtils();
 	const lastSuccessAt = useRef<number | null>(null);
 	const listRevision = useRef(0);
@@ -128,7 +130,7 @@ export function AppStatusBar() {
 				<button
 					type='button'
 					data-activity-toggle
-					aria-label={open ? "Close activity center" : "Open activity center"}
+					aria-label={open ? t("shell.closeActivityCenter") : t("shell.openActivityCenter")}
 					aria-expanded={open}
 					className='flex min-w-0 flex-1 cursor-pointer items-center px-1.5 text-left'
 					onClick={() => {

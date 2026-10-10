@@ -1,4 +1,7 @@
+import { t } from "@biyori/translations/react";
 import type { SeasonGroupBy, SeasonItem, SeasonSortBy, SeasonViewAs } from "@/lib/schemas/seasons";
+import { airingStatusLabel } from "./anime-airing-notice";
+import { animeTypeLabel } from "./anime-list-filter";
 
 export type SeasonGroup = {
 	key: string;
@@ -36,32 +39,62 @@ export function sortSeasonItems(items: SeasonItem[], sortBy: SeasonSortBy): Seas
 function airingGroupKey(status: string): { key: string; label: string; order: number } {
 	switch (status) {
 		case "Currently airing":
-			return { key: "airing", label: "Currently airing", order: 0 };
+			return { key: "airing", label: t("anime.currentlyAiring"), order: 0 };
 		case "Not yet released":
-			return { key: "notyet", label: "Not yet released", order: 1 };
+			return { key: "notyet", label: t("anime.notYetReleased"), order: 1 };
 		default:
-			return { key: "finished", label: "Finished airing", order: 2 };
+			return { key: "finished", label: t("anime.finishedAiring"), order: 2 };
 	}
 }
 
 function listGroupKey(inList: boolean): { key: string; label: string; order: number } {
-	return inList ? { key: "inlist", label: "In list", order: 0 } : { key: "notinlist", label: "Not in list", order: 1 };
+	return inList ? { key: "inlist", label: t("seasons.inList"), order: 0 } : { key: "notinlist", label: t("seasons.notInList"), order: 1 };
 }
 
 function typeGroupKey(format: string): { key: string; label: string; order: number } {
-	return { key: format || "TV", label: format || "TV", order: 0 };
+	const name = format || "TV";
+	return { key: name, label: animeTypeLabel(name), order: 0 };
 }
 
-const RELEASE_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+function releaseMonth(index: number): string | undefined {
+	switch (index) {
+		case 0:
+			return t("seasons.monthJan");
+		case 1:
+			return t("seasons.monthFeb");
+		case 2:
+			return t("seasons.monthMar");
+		case 3:
+			return t("seasons.monthApr");
+		case 4:
+			return t("seasons.monthMay");
+		case 5:
+			return t("seasons.monthJun");
+		case 6:
+			return t("seasons.monthJul");
+		case 7:
+			return t("seasons.monthAug");
+		case 8:
+			return t("seasons.monthSep");
+		case 9:
+			return t("seasons.monthOct");
+		case 10:
+			return t("seasons.monthNov");
+		case 11:
+			return t("seasons.monthDec");
+		default:
+			return undefined;
+	}
+}
 
 function releaseDateGroupKey(startDate: string | null): { key: string; label: string; order: number } {
 	const match = startDate ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(startDate) : null;
-	const month = match ? RELEASE_MONTHS[Number(match[2]) - 1] : undefined;
+	const month = match ? releaseMonth(Number(match[2]) - 1) : undefined;
 	const day = match ? Number(match[3]) : Number.NaN;
 	if (!match || !month || day < 1 || day > 31) {
-		return { key: "unknown", label: "Unknown", order: Number.MAX_SAFE_INTEGER };
+		return { key: "unknown", label: t("common.unknown"), order: Number.MAX_SAFE_INTEGER };
 	}
-	return { key: startDate ?? "unknown", label: `${month} ${day}, ${match[1]}`, order: dateKey(startDate) };
+	return { key: startDate ?? "unknown", label: t("seasons.dateLabel", { month, day, year: match[1] }), order: dateKey(startDate) };
 }
 
 function seasonGroupMeta(item: SeasonItem, groupBy: SeasonGroupBy, inListIds: ReadonlySet<number>): { key: string; label: string; order: number } {
@@ -113,11 +146,26 @@ export function shiftSeason(season: "WINTER" | "SPRING" | "SUMMER" | "FALL", yea
 	return { season: order[nextIndex], seasonYear: year };
 }
 
+function seasonName(season: string): string {
+	switch (season.toUpperCase()) {
+		case "WINTER":
+			return t("seasons.winter");
+		case "SPRING":
+			return t("seasons.spring");
+		case "SUMMER":
+			return t("seasons.summer");
+		case "FALL":
+			return t("seasons.fall");
+		default:
+			return season ? `${season.charAt(0)}${season.slice(1).toLowerCase()}` : "";
+	}
+}
+
 export function formatSeasonLabel(season: string, year: number | null | undefined): string {
 	if (!season && !year) {
 		return "";
 	}
-	const label = season ? `${season.charAt(0)}${season.slice(1).toLowerCase()}` : "";
+	const label = season ? seasonName(season) : "";
 	if (label && year) {
 		return `${label} ${year}`;
 	}
@@ -125,28 +173,31 @@ export function formatSeasonLabel(season: string, year: number | null | undefine
 }
 
 export function formatAiredRange(item: SeasonItem): string {
-	const start = item.startDate ?? "?";
-	const end = item.endDate && item.endDate !== item.startDate ? ` to ${item.endDate}` : "";
-	return `${start}${end} (${item.status})`;
+	const start = item.startDate ?? t("seasons.unknownMark");
+	const status = airingStatusLabel(item.status);
+	if (item.endDate && item.endDate !== item.startDate) {
+		return t("seasons.airedRangeTo", { start, end: item.endDate, status });
+	}
+	return t("seasons.airedRange", { start, status });
 }
 
 export function formatPopularity(popularity: number): string {
 	if (popularity <= 0) {
-		return "?";
+		return t("seasons.unknownMark");
 	}
-	return `${popularity.toLocaleString()} users`;
+	return t("seasons.users", { amount: popularity.toLocaleString() });
 }
 
 export function formatScore(score: number): string {
-	return score > 0 ? `${score}%` : "?";
+	return score > 0 ? `${score}%` : t("seasons.unknownMark");
 }
 
 export function imageFooterText(item: SeasonItem, sortBy: SeasonSortBy): string {
 	switch (sortBy) {
 		case "date":
-			return item.startDate ?? "?";
+			return item.startDate ?? t("seasons.unknownMark");
 		case "episodes":
-			return item.episodes > 0 ? `${item.episodes} episode${item.episodes === 1 ? "" : "s"}` : "Unknown";
+			return item.episodes > 0 ? t("seasons.episodeCount", { count: item.episodes }) : t("common.unknown");
 		case "score":
 			return formatScore(item.averageScore);
 		case "title":
@@ -167,7 +218,36 @@ export function airingBarClass(status: string): string {
 	}
 }
 
-const AIR_STAMP_MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"] as const;
+function stampMonth(index: number): string | undefined {
+	switch (index) {
+		case 0:
+			return t("seasons.stampJan");
+		case 1:
+			return t("seasons.stampFeb");
+		case 2:
+			return t("seasons.stampMar");
+		case 3:
+			return t("seasons.stampApr");
+		case 4:
+			return t("seasons.stampMay");
+		case 5:
+			return t("seasons.stampJun");
+		case 6:
+			return t("seasons.stampJul");
+		case 7:
+			return t("seasons.stampAug");
+		case 8:
+			return t("seasons.stampSep");
+		case 9:
+			return t("seasons.stampOct");
+		case 10:
+			return t("seasons.stampNov");
+		case 11:
+			return t("seasons.stampDec");
+		default:
+			return undefined;
+	}
+}
 
 /** Printed-guide date stub. `startDate` is `YYYY-MM-DD` from Anilist. */
 export function airStamp(startDate: string | null): { month: string; day: string } | null {
@@ -178,7 +258,7 @@ export function airStamp(startDate: string | null): { month: string; day: string
 	if (!match) {
 		return null;
 	}
-	const month = AIR_STAMP_MONTHS[Number(match[2]) - 1];
+	const month = stampMonth(Number(match[2]) - 1);
 	const day = Number(match[3]);
 	if (!month || !Number.isFinite(day) || day < 1 || day > 31) {
 		return null;

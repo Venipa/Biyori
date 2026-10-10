@@ -1,4 +1,5 @@
 import { Popover } from "@base-ui/react/popover";
+import { useTranslation } from "@biyori/translations/react";
 import { ChevronDownIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { Button } from "@/mainview/components/ui/button";
@@ -43,17 +44,18 @@ export function AnimeScoreControl({
 	showChevron = true,
 }: AnimeScoreControlProps) {
 	const scoreId = useId();
+	const { t } = useTranslation();
 	const utils = trpc.useUtils();
 	const saveEntry = trpc.anilist.saveEntry.useMutation();
 	const current = storedScore(score);
 	const [open, setOpen] = useState(false);
 	const [draft, setDraft] = useState(current);
 	const parsedStatus = listStatusSchema.safeParse(status);
-	const label = current > 0 ? `Score ${current}` : "Score";
+	const label = current > 0 ? t("anime.scoreValue", { score: current }) : t("anime.score");
 	const scorePart = <span className='inline-flex min-w-8 items-center justify-center self-stretch bg-muted px-2 tabular-nums'>{current > 0 ? current : "-"}</span>;
 	const labelPart = (
 		<span className='inline-flex items-center gap-1 px-2.5'>
-			Score
+			{t("anime.score")}
 			{showChevron ? <ChevronDownIcon className={cn("transition-transform duration-200 ease-out motion-reduce:transition-none", open && "rotate-180")} /> : null}
 		</span>
 	);
@@ -111,7 +113,7 @@ export function AnimeScoreControl({
 					<Popover.Popup className='z-50 w-56 rounded-lg bg-popover p-3 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none transition-[opacity,translate] duration-150 ease-out motion-reduce:transition-none data-[ending-style]:-translate-y-2 data-[starting-style]:-translate-y-2 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0'>
 						<div className='flex flex-col gap-3'>
 							<label htmlFor={scoreId} className='text-sm font-medium'>
-								Score
+								{t("anime.score")}
 							</label>
 							<input
 								type='range'
@@ -119,7 +121,7 @@ export function AnimeScoreControl({
 								max={100}
 								step={1}
 								value={draft}
-								aria-label='Score'
+								aria-label={t("anime.score")}
 								className='w-full accent-primary'
 								onChange={(event) => {
 									setDraft(Number(event.target.value));
@@ -132,7 +134,7 @@ export function AnimeScoreControl({
 								max={100}
 								inputMode='numeric'
 								value={draft > 0 ? draft : ""}
-								placeholder='0'
+								placeholder={t("anime.scoreZero")}
 								onChange={(event) => {
 									const raw = event.target.value;
 									if (raw === "") {

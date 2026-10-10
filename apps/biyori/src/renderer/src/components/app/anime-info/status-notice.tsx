@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { FlameIcon, StarIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/mainview/components/ui/alert";
@@ -50,19 +51,21 @@ type NoticeSurface = NonNullable<VariantProps<typeof noticeSurface>["surface"]>;
 
 function AnimeRankNotice({ kind, rank, surface }: AnimeRankLine & { surface: NoticeSurface }) {
 	const isRated = kind === "rated";
+	const { t } = useTranslation();
 	const Icon = isRated ? StarIcon : FlameIcon;
 	return (
 		<Alert role='status' className={noticeSurface({ surface })}>
 			<span aria-hidden className={rankWatermark({ kind })}>
 				<Icon className='size-16 fill-current stroke-none' />
 			</span>
-			<AlertTitle>{isRated ? "Highest rated" : "Most popular"}</AlertTitle>
+			<AlertTitle>{isRated ? t("anime.highestRated") : t("anime.mostPopular")}</AlertTitle>
 			<AlertDescription className={rankValue({ kind })}>#{rank}</AlertDescription>
 		</Alert>
 	);
 }
 
 export function AnimeStatusNotice({ anime, surface = "default" }: { anime: AnimeAiringNoticeInput; surface?: NoticeSurface }) {
+	useTranslation();
 	const notice = animeAiringNotice(anime);
 	if (!notice) {
 		return null;

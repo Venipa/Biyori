@@ -1,3 +1,4 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, FolderOpen, PlusIcon, RefreshCwIcon, XIcon } from "lucide-react";
@@ -47,18 +48,18 @@ import { type ListStatus, listStatusSchema } from "@/shared/list";
 function posterExternalLinks(id: number, title: string): Array<{ label: string; short: string; url: string; icon?: React.ReactNode }> {
 	const q = encodeURIComponent(title);
 	return [
-		{ label: "AniList", short: "AL", url: `https://anilist.co/anime/${id}`, icon: <AnilistIcon className='size-4' /> },
+		{ label: t("anime.anilist"), short: t("anime.shortAl"), url: `https://anilist.co/anime/${id}`, icon: <AnilistIcon className='size-4' /> },
 		{
-			label: "MyAnimeList",
-			short: "MAL",
+			label: t("anime.myAnimeList"),
+			short: t("anime.shortMal"),
 			url: `https://myanimelist.net/anime.php?q=${q}`,
 			icon: <MyAnimeListIcon className='size-4' />,
 		},
 		{
-			label: "AniDB",
-			short: "ADB",
+			label: t("anime.anidb"),
+			short: t("anime.shortAdb"),
 			url: `https://anidb.net/anime/?adb.search=${q}`,
-			icon: <Image src={AniDBIcon} alt='AniDB' className='size-6' />,
+			icon: <Image src={AniDBIcon} alt={t("anime.anidb")} className='size-6' />,
 		},
 	];
 }
@@ -94,6 +95,7 @@ export function AnimeInfoDialog({
 	onBackTo?: (index: number) => void;
 	history?: AnimeInfoFrame[];
 }) {
+	const { t } = useTranslation();
 	const currentFrame: AnimeInfoFrame | undefined = anime
 		? {
 				id: anime.id,
@@ -144,7 +146,7 @@ export function AnimeInfoDialog({
 					event.stopPropagation();
 					onNavigate(nextId);
 				}}>
-				<DialogTitle className='sr-only'>{anime?.title ?? "Anime Information"}</DialogTitle>
+				<DialogTitle className='sr-only'>{anime?.title ?? t("anime.animeInformation")}</DialogTitle>
 				{anime ? (
 					<AnimeInfoBody
 						key={anime.id}
@@ -162,9 +164,9 @@ export function AnimeInfoDialog({
 				{!anime ? (
 					<DialogFooter className='mt-0 rounded-b-none p-0!'>
 						{ensureError ? <p className='mr-auto text-sm text-destructive'>{ensureError}</p> : null}
-						<DialogClose render={<Button variant='outline' />}>Cancel</DialogClose>
+						<DialogClose render={<Button variant='outline' />}>{t("common.cancel")}</DialogClose>
 						<Button type='button' onClick={() => onOpenChange(false)}>
-							OK
+							{t("common.ok")}
 						</Button>
 					</DialogFooter>
 				) : null}
@@ -203,6 +205,7 @@ function ListEditRow({
 }
 
 function AnimeFolderField({ id }: { id: string }) {
+	const { t } = useTranslation();
 	const form = useFormContext<AnimeInfoFormInput, unknown, AnimeInfoFormValues>();
 	const scanFolder = trpc.library.scanFolder.useMutation();
 	const folder = useWatch({ control: form.control, name: "folder" });
@@ -217,14 +220,14 @@ function AnimeFolderField({ id }: { id: string }) {
 	};
 
 	return (
-		<ListEditRow label='Folder' htmlFor={id} errors={[form.formState.errors.folder]}>
+		<ListEditRow label={t("anime.folder")} htmlFor={id} errors={[form.formState.errors.folder]}>
 			<InputGroup>
 				<InputGroupInput id={id} {...form.register("folder")} />
 				<InputGroupAddon align='inline-end' className='gap-1'>
-					<Hint content='Scan this folder for episode files'>
+					<Hint content={t("anime.scanFolderHint")}>
 						<InputGroupButton
 							size='icon-xs'
-							aria-label='Scan folder'
+							aria-label={t("anime.scanFolder")}
 							loading={scanFolder.isPending}
 							disabled={path.length === 0}
 							onClick={() => {
@@ -235,7 +238,7 @@ function AnimeFolderField({ id }: { id: string }) {
 					</Hint>
 					<InputGroupButton
 						size='icon-xs'
-						aria-label='Browse folder'
+						aria-label={t("anime.browseFolder")}
 						onClick={() => {
 							void pickLibraryFolderPath().then((picked) => {
 								if (!picked) {
@@ -278,6 +281,7 @@ function AnimeInfoBody({
 	const altTitlesId = useId();
 	const folderId = useId();
 	const fansubId = useId();
+	const { t } = useTranslation();
 	const parsedStatus = listStatusSchema.safeParse(anime.status);
 	const episodeMax = anime.episodes > 0 ? anime.episodes : 9999;
 	const form = useForm<AnimeInfoFormInput, unknown, AnimeInfoFormValues>({
@@ -317,7 +321,14 @@ function AnimeInfoBody({
 				<div className='relative z-10 -mt-14 flex min-h-0 flex-1 gap-4 px-4'>
 					<div className='flex w-56 shrink-0 flex-col gap-2 self-start'>
 						<div className='aspect-2/3 w-full overflow-hidden rounded-md border bg-muted shadow-md ring-1 ring-foreground/10'>
-							<AnimeCover id={anime.id} coverUrl={anime.coverUrl || undefined} alt={`Key art for ${anime.title}`} width={224} height={336} className='size-full' />
+							<AnimeCover
+								id={anime.id}
+								coverUrl={anime.coverUrl || undefined}
+								alt={t("nowPlaying.keyArt", { title: anime.title })}
+								width={224}
+								height={336}
+								className='size-full'
+							/>
 						</div>
 						<div className='grid grid-cols-2 md:grid-cols-3 gap-1'>
 							{posterExternalLinks(anime.id, anime.title).map((link) => (
@@ -343,7 +354,7 @@ function AnimeInfoBody({
 								render={({ field }) => (
 									<AnimeListStatusSelect
 										value={field.value}
-										aria-label='List status'
+										aria-label={t("anime.listStatus")}
 										onValueChange={(value) => {
 											setListStatus(field.onChange, value);
 										}}
@@ -368,8 +379,8 @@ function AnimeInfoBody({
 						</div>
 						<Tabs defaultValue={infoTab} className='flex min-h-0 flex-1 flex-col gap-2'>
 							<TabsList className='shrink-0' variant='line'>
-								<TabsTrigger value='main'>Main information</TabsTrigger>
-								<TabsTrigger value='list'>My list and settings</TabsTrigger>
+								<TabsTrigger value='main'>{t("anime.mainInformation")}</TabsTrigger>
+								<TabsTrigger value='list'>{t("anime.myList")}</TabsTrigger>
 							</TabsList>
 							<TabsContent value='main' keepMounted={false} className='mt-0 flex min-h-0 flex-1 flex-col'>
 								<ScrollArea className='h-full min-h-0 ' viewportClassName=' px-2 pt-2'>
@@ -387,7 +398,7 @@ function AnimeInfoBody({
 								<ScrollArea className='h-full min-h-0' viewportClassName='px-2 pt-2 pb-16'>
 									{readOnly ? (
 										<div className='flex flex-col gap-3 pb-3'>
-											<p className='text-sm text-muted-foreground'>Not in your list yet.</p>
+											<p className='text-sm text-muted-foreground'>{t("anime.notInList")}</p>
 										</div>
 									) : (
 										<div className='flex flex-col gap-3 pr-3 pb-3'>
@@ -395,7 +406,7 @@ function AnimeInfoBody({
 												control={form.control}
 												name='progress'
 												render={({ field, fieldState }) => (
-													<ListEditRow label='Episodes watched' htmlFor={progressId} align='start' invalid={fieldState.invalid} errors={[fieldState.error]}>
+													<ListEditRow label={t("anime.episodesWatched")} htmlFor={progressId} align='start' invalid={fieldState.invalid} errors={[fieldState.error]}>
 														<EpisodeCountInput
 															id={progressId}
 															value={typeof field.value === "number" ? field.value : 0}
@@ -412,7 +423,7 @@ function AnimeInfoBody({
 												control={form.control}
 												name='score'
 												render={({ field, fieldState }) => (
-													<ListEditRow label='Score' htmlFor={scoreId} invalid={fieldState.invalid} errors={[fieldState.error]}>
+													<ListEditRow label={t("anime.score")} htmlFor={scoreId} invalid={fieldState.invalid} errors={[fieldState.error]}>
 														<div className='flex items-center gap-2'>
 															<Slider
 																className='min-w-0 flex-1'
@@ -420,7 +431,7 @@ function AnimeInfoBody({
 																max={100}
 																step={1}
 																value={typeof field.value === "number" && field.value > 0 ? field.value : 0}
-																aria-label='Score'
+																aria-label={t("anime.score")}
 																onValueChange={(next) => {
 																	field.onChange(next > 0 ? next : null);
 																}}
@@ -432,7 +443,7 @@ function AnimeInfoBody({
 																min={0}
 																max={100}
 																inputMode='numeric'
-																placeholder='0-100'
+																placeholder={t("anime.scoreRange")}
 																value={typeof field.value === "number" && field.value > 0 ? field.value : ""}
 																onChange={(event) => {
 																	const raw = event.target.value;
@@ -461,7 +472,7 @@ function AnimeInfoBody({
 												control={form.control}
 												name='rewatching'
 												render={({ field }) => (
-													<ListEditRow label='Rewatching' htmlFor={rewatchingId}>
+													<ListEditRow label={t("anime.rewatching")} htmlFor={rewatchingId}>
 														<Checkbox
 															id={rewatchingId}
 															checked={Boolean(field.value)}
@@ -490,7 +501,7 @@ function AnimeInfoBody({
 													</ListEditRow>
 												)}
 											/>
-											<ListEditRow label='Times rewatched' htmlFor={rewatchesId} errors={[form.formState.errors.timesRewatched]}>
+											<ListEditRow label={t("anime.timesRewatched")} htmlFor={rewatchesId} errors={[form.formState.errors.timesRewatched]}>
 												<Input
 													id={rewatchesId}
 													className='w-20'
@@ -505,7 +516,7 @@ function AnimeInfoBody({
 												control={form.control}
 												name='dateStarted'
 												render={({ field, fieldState }) => (
-													<ListEditRow label='Started' htmlFor={startedId} invalid={fieldState.invalid} errors={[fieldState.error]}>
+													<ListEditRow label={t("anime.started")} htmlFor={startedId} invalid={fieldState.invalid} errors={[fieldState.error]}>
 														<DateField id={startedId} value={field.value ?? ""} invalid={fieldState.invalid} onBlur={field.onBlur} onChange={field.onChange} />
 													</ListEditRow>
 												)}
@@ -514,12 +525,12 @@ function AnimeInfoBody({
 												control={form.control}
 												name='dateCompleted'
 												render={({ field, fieldState }) => (
-													<ListEditRow label='Finished' htmlFor={completedId} invalid={fieldState.invalid} errors={[fieldState.error]}>
+													<ListEditRow label={t("anime.finished")} htmlFor={completedId} invalid={fieldState.invalid} errors={[fieldState.error]}>
 														<DateField id={completedId} value={field.value ?? ""} invalid={fieldState.invalid} onBlur={field.onBlur} onChange={field.onChange} />
 													</ListEditRow>
 												)}
 											/>
-											<ListEditRow label='Notes' htmlFor={notesId} align='start' errors={[form.formState.errors.notes]}>
+											<ListEditRow label={t("anime.notes")} htmlFor={notesId} align='start' errors={[form.formState.errors.notes]}>
 												<Textarea id={notesId} {...form.register("notes")} />
 											</ListEditRow>
 											<Separator className='my-1' />
@@ -527,7 +538,7 @@ function AnimeInfoBody({
 												name='userSynonyms'
 												control={form.control}
 												render={({ field, fieldState }) => (
-													<ListEditRow label='Alternative titles' htmlFor={altTitlesId} align='start' invalid={fieldState.invalid}>
+													<ListEditRow label={t("anime.alternativeTitles")} htmlFor={altTitlesId} align='start' invalid={fieldState.invalid}>
 														<UserSynonymsField
 															id={altTitlesId}
 															defaultTitles={titleStrings(anime.titles).filter((title) => title.toLowerCase() !== anime.title.toLowerCase())}
@@ -539,7 +550,7 @@ function AnimeInfoBody({
 												)}
 											/>
 											<AnimeFolderField id={folderId} />
-											<ListEditRow label='Fansub group' htmlFor={fansubId} errors={[form.formState.errors.fansub]}>
+											<ListEditRow label={t("anime.fansubGroup")} htmlFor={fansubId} errors={[form.formState.errors.fansub]}>
 												<Input id={fansubId} {...form.register("fansub")} />
 											</ListEditRow>
 										</div>
@@ -568,6 +579,7 @@ function UserSynonymsField({
 	onChange: (next: string) => void;
 	error?: { message?: string };
 }) {
+	const { t } = useTranslation();
 	const [draft, setDraft] = useState("");
 	const userTitles = splitTitleList(value);
 	const blocked = new Set([...defaultTitles, ...userTitles].map((title) => title.toLowerCase()));
@@ -602,7 +614,7 @@ function UserSynonymsField({
 								variant='ghost'
 								size='icon-xs'
 								className='rounded-full'
-								aria-label={`Remove ${title}`}
+								aria-label={t("anime.removeTitle", { title })}
 								onClick={() => {
 									onChange(joinTitleList(userTitles.filter((item) => item !== title)));
 								}}>
@@ -616,7 +628,7 @@ function UserSynonymsField({
 				<InputGroupInput
 					id={id}
 					value={draft}
-					placeholder='Add a matching title'
+					placeholder={t("anime.addMatchingTitle")}
 					onChange={(event) => {
 						setDraft(event.target.value);
 					}}
@@ -628,18 +640,19 @@ function UserSynonymsField({
 					}}
 				/>
 				<InputGroupAddon align='inline-end'>
-					<InputGroupButton size='icon-xs' aria-label='Add alternative title' onClick={addDraft}>
+					<InputGroupButton size='icon-xs' aria-label={t("anime.addAlternativeTitle")} onClick={addDraft}>
 						<PlusIcon />
 					</InputGroupButton>
 				</InputGroupAddon>
 			</InputGroup>
-			<FieldDescription>Add titles used to match files. Service titles cannot be edited or removed.</FieldDescription>
+			<FieldDescription>{t("anime.synonymsHint")}</FieldDescription>
 			<FieldError errors={[error]} />
 		</div>
 	);
 }
 
 function AnimeInfoSaveBar({ animeId }: { animeId: number }) {
+	const { t } = useTranslation();
 	const form = useFormContext<AnimeInfoFormInput, unknown, AnimeInfoFormValues>();
 	const { isDirty, isSubmitting, errors, dirtyFields } = useFormState({
 		control: form.control,
@@ -659,7 +672,7 @@ function AnimeInfoSaveBar({ animeId }: { animeId: number }) {
 				{changeCount}
 			</Badge>
 			<div className='flex min-w-0 flex-1 flex-col gap-0.5'>
-				<p className='truncate text-sm font-medium'>{serverError ? "Could not save" : changeCount === 1 ? "1 unsaved change" : `${changeCount} unsaved changes`}</p>
+				<p className='truncate text-sm font-medium'>{serverError ? t("anime.couldNotSave") : t("anime.unsavedChange", { count: changeCount })}</p>
 				<FieldError errors={[serverError]} />
 			</div>
 			<div className='flex shrink-0 items-center gap-2'>
@@ -671,7 +684,7 @@ function AnimeInfoSaveBar({ animeId }: { animeId: number }) {
 						form.clearErrors("root.serverError");
 						form.reset();
 					}}>
-					Discard
+					{t("common.discard")}
 				</Button>
 				<Button
 					type='button'
@@ -705,12 +718,12 @@ function AnimeInfoSaveBar({ animeId }: { animeId: number }) {
 								void invalidateAnimeQueries(utils, "entrySaved", animeId);
 							} catch (error) {
 								form.setError("root.serverError", {
-									message: error instanceof Error ? error.message : "Could not save list entry",
+									message: error instanceof Error ? error.message : t("anime.couldNotSaveEntry"),
 								});
 							}
 						})();
 					}}>
-					Save
+					{t("common.save")}
 				</Button>
 			</div>
 		</SaveBar>

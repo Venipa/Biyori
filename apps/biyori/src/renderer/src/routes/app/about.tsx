@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertCircleIcon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,7 +13,7 @@ import { Field, FieldGroup, FieldLabel } from "@/mainview/components/ui/field";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
-import { getVersionChannel, parseUpdateChannel, UPDATE_CHANNEL_LABELS, type UpdateChannel } from "@/shared/updater";
+import { getVersionChannel, parseUpdateChannel, type UpdateChannel } from "@/shared/updater";
 import hanaRender from "../../../../../resources/biyori-render.png";
 
 const AUTHOR = "Venipa";
@@ -29,6 +30,7 @@ export const Route = createFileRoute("/app/about")({
 const isTest = import.meta.env.VITE_SHOW_UPDATE_BUTTON === "true";
 
 function AboutPage() {
+	const { t } = useTranslation();
 	const status = useUpdateStatus();
 	const checking = status.phase === "checking";
 	const about = trpc.about.useQuery();
@@ -51,19 +53,19 @@ function AboutPage() {
 			<Card className='max-w-3xl shrink-0 overflow-visible gap-0'>
 				<CardContent className='flex items-end gap-6'>
 					<div className='min-w-0 flex-1 self-stretch'>
-						<h1 className='text-lg font-semibold'>Biyori</h1>
-						<p className='text-sm text-muted-foreground'>Anime list tracker powered by AniList.</p>
+						<h1 className='text-lg font-semibold'>{t("about.appName")}</h1>
+						<p className='text-sm text-muted-foreground'>{t("about.tagline")}</p>
 						<dl className='mt-4 grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2 text-sm'>
-							<dt className='text-muted-foreground'>Version</dt>
+							<dt className='text-muted-foreground'>{t("about.version")}</dt>
 							<dd className='flex flex-wrap items-center gap-2'>
-								<span>{status.localVersion || "..."}</span>
-								{buildChannel ? <Badge variant='outline'>{UPDATE_CHANNEL_LABELS[buildChannel]}</Badge> : null}
+								<span>{status.localVersion || t("about.pending")}</span>
+								{buildChannel ? <Badge variant='outline'>{t(buildChannel === "beta" ? "update.beta" : buildChannel === "alpha" ? "update.alpha" : "update.stable")}</Badge> : null}
 							</dd>
-							<dt className='text-muted-foreground'>Build</dt>
-							<dd className='truncate font-mono text-xs'>{status.localHash ? status.localHash.slice(0, 12) : "..."}</dd>
-							<dt className='text-muted-foreground'>Hana</dt>
-							<dd>{about.data?.hanaVersion || "..."}</dd>
-							<dt className='self-center text-muted-foreground'>Contributors</dt>
+							<dt className='text-muted-foreground'>{t("about.build")}</dt>
+							<dd className='truncate font-mono text-xs'>{status.localHash ? status.localHash.slice(0, 12) : t("about.pending")}</dd>
+							<dt className='text-muted-foreground'>{t("about.hana")}</dt>
+							<dd>{about.data?.hanaVersion || t("about.pending")}</dd>
+							<dt className='self-center text-muted-foreground'>{t("about.contributors")}</dt>
 							<dd className='flex flex-wrap items-center gap-1.5 self-center'>
 								{contributors.map((login) => (
 									<button
@@ -78,8 +80,8 @@ function AboutPage() {
 									</button>
 								))}
 							</dd>
-							<dt className='text-muted-foreground'>Updates</dt>
-							<dd className={cn("min-w-0 break-words", status.error ? "text-destructive" : "")}>{status.message || "Not checked yet"}</dd>
+							<dt className='text-muted-foreground'>{t("about.updates")}</dt>
+							<dd className={cn("min-w-0 break-words", status.error ? "text-destructive" : "")}>{status.message || t("about.notChecked")}</dd>
 							<div className='pb-6'></div>
 						</dl>
 					</div>
@@ -88,7 +90,7 @@ function AboutPage() {
 				<CardFooter className='flex items-end gap-3'>
 					<FieldGroup className='min-w-0 flex-1'>
 						<Field>
-							<FieldLabel>Update channel</FieldLabel>
+							<FieldLabel>{t("about.updateChannel")}</FieldLabel>
 							<UpdateChannelToggle value={channel} disabled={isSavingChannel || checking} onValueChange={(next) => void selectChannel(next)} />
 						</Field>
 					</FieldGroup>
@@ -98,7 +100,7 @@ function AboutPage() {
 							onClick={() => {
 								void desktopRpc.request.openUpdate({});
 							}}>
-							Open update
+							{t("about.openUpdate")}
 						</Button>
 					) : null}
 				</CardFooter>
@@ -106,7 +108,7 @@ function AboutPage() {
 			{status.error && status.error !== status.message ? (
 				<Alert variant='destructive' className='max-w-3xl'>
 					<AlertCircleIcon />
-					<AlertTitle>Update check failed</AlertTitle>
+					<AlertTitle>{t("about.updateCheckFailed")}</AlertTitle>
 					<AlertDescription>{status.error}</AlertDescription>
 				</Alert>
 			) : null}

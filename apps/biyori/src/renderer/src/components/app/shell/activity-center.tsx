@@ -1,3 +1,4 @@
+import { useTranslation } from "@biyori/translations/react";
 import { BellIcon, CheckIcon, CircleAlertIcon, DownloadIcon, FolderSearchIcon, ListIcon, PlayIcon, RefreshCwIcon, TvIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import type { ComponentType, ReactNode } from "react";
@@ -34,13 +35,14 @@ function SourceGlyph({ source }: { source: string }) {
 }
 
 function ActivityStatus({ status }: { status: "live" | "ok" | "error" }) {
+	const { t } = useTranslation();
 	if (status === "live") {
-		return <Spinner size='xs' color='foreground' className='shrink-0' aria-label='In progress' />;
+		return <Spinner size='xs' color='foreground' className='shrink-0' aria-label={t("shell.statusInProgress")} />;
 	}
 	if (status === "error") {
-		return <CircleAlertIcon className='size-3.5 shrink-0 text-destructive' aria-label='Failed' />;
+		return <CircleAlertIcon className='size-3.5 shrink-0 text-destructive' aria-label={t("shell.failed")} />;
 	}
-	return <CheckIcon className='size-3.5 shrink-0 text-muted-foreground' aria-label='Done' />;
+	return <CheckIcon className='size-3.5 shrink-0 text-muted-foreground' aria-label={t("shell.done")} />;
 }
 
 function ActivityRow({ source, title, body, status, trailing }: { source: string; title: string; body?: string; status: "live" | "ok" | "error"; trailing?: ReactNode }) {
@@ -79,9 +81,10 @@ export function ActivityCenterPanel({
 	onSkip: () => void;
 	onUpdate: () => void;
 }) {
+	const { t } = useTranslation();
 	const empty = live.length === 0 && items.length === 0 && !showPending;
 	const inProgress = live.length + (showPending ? 1 : 0);
-	const subtitle = inProgress > 0 ? (inProgress === 1 ? "1 in progress" : `${inProgress} in progress`) : "7-day history";
+	const subtitle = inProgress > 0 ? t("shell.inProgress", { count: inProgress }) : t("shell.sevenDayHistory");
 
 	return (
 		<div className='pointer-events-none fixed top-8 right-0 z-50 overflow-hidden'>
@@ -91,26 +94,26 @@ export function ActivityCenterPanel({
 						key='activity-center'
 						data-activity-root
 						role='dialog'
-						aria-label='Activity'
+						aria-label={t("shell.activity")}
 						className='pointer-events-auto flex max-h-[min(32rem,calc(100dvh-7rem))] w-[min(26rem,100vw)] cursor-default flex-col overflow-hidden rounded-t-none rounded-b-xl border border-t-0 bg-card/80 shadow-lg backdrop-blur-md'
 						initial={panelMotion.initial}
 						animate={panelMotion.animate}
 						exit={panelMotion.exit}
 						transition={panelMotion.transition}>
 						<div className='flex shrink-0 flex-col gap-0.5 border-b px-3 py-2'>
-							<p className='truncate text-xs font-medium'>Activity</p>
+							<p className='truncate text-xs font-medium'>{t("shell.activity")}</p>
 							<p className='truncate text-[11px] text-muted-foreground'>{subtitle}</p>
 						</div>
 						<ScrollArea className='min-h-0 max-h-96 overflow-hidden' viewportClassName='max-h-96 overflow-y-auto'>
 							{empty ? (
-								<p className='px-3 py-2 text-xs text-muted-foreground'>Nothing yet.</p>
+								<p className='px-3 py-2 text-xs text-muted-foreground'>{t("shell.nothingYet")}</p>
 							) : (
 								<div className='flex flex-col py-1'>
 									{showPending && pending ? (
 										<ActivityRow
 											source='watch-confirm'
-											title={`Update ${pending.title}`}
-											body={`Update to episode ${pending.episode}`}
+											title={t("shell.updateNamed", { name: pending.title })}
+											body={t("shell.updateToEpisode", { episode: pending.episode })}
 											status='live'
 											trailing={<WatchConfirmActions size='xs' disabled={confirmPending} onSkip={onSkip} onUpdate={onUpdate} />}
 										/>

@@ -1,4 +1,5 @@
 import { log } from "@biyori/logger";
+import { t } from "@biyori/translations/i18n";
 import { requestAniListSync } from "../sync";
 import { clearAnilistLoginError, expiresAtFromToken, normalizeAnilistToken, setAnilistLoginError } from "./oauth";
 import { parseAnilistDeepLink } from "./oauth-url";
@@ -56,7 +57,7 @@ export async function handleBiyoriDeepLink(raw: string): Promise<void> {
 	try {
 		await connectAnilistAccessToken(token);
 	} catch (error) {
-		const message = error instanceof Error ? error.message : "AniList connect failed";
+		const message = error instanceof Error ? error.message : t("main.anilist.connectFailed");
 		log.warn("anilist connect failed", message);
 		setAnilistLoginError(message);
 		for (const listener of errorListeners) {

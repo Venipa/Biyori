@@ -1,3 +1,4 @@
+import { t, useTranslation } from "@biyori/translations/react";
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { FolderIcon, FolderPlusIcon, FolderSearchIcon, HardDriveIcon } from "lucide-react";
 import { desktopRpc } from "@/desktop-rpc";
@@ -14,11 +15,16 @@ import { trpc } from "@/mainview/trpc";
 const EMPTY_FOLDERS: LibraryFolderRow[] = [];
 const libraryFolderRowModel = getCoreRowModel<LibraryFolderRow>();
 
-const STATUS_LABEL = {
-	missing: "Missing",
-	empty: "Not scanned",
-	indexed: "Indexed",
-} as const;
+function statusLabel(status: LibraryFolderRow["status"]): string {
+	switch (status) {
+		case "missing":
+			return t("library.missing");
+		case "empty":
+			return t("library.notScanned");
+		case "indexed":
+			return t("library.indexed");
+	}
+}
 
 function formatBytes(bytes: number): string {
 	const units = ["B", "KiB", "MiB", "GiB", "TiB"];
@@ -32,11 +38,12 @@ function formatBytes(bytes: number): string {
 }
 
 function LibraryFolderActions({ row }: { row: LibraryFolderRow }) {
+	const { t } = useTranslation();
 	const scanFolder = trpc.library.scanFolder.useMutation();
 	const busy = scanFolder.isPending;
 	const missing = row.missing;
-	const scanLabel = missing ? "Folder is missing" : `Scan ${row.name}`;
-	const openLabel = missing ? "Folder is missing" : `Open ${row.name}`;
+	const scanLabel = missing ? t("library.folderMissing") : t("library.scanFolder", { name: row.name });
+	const openLabel = missing ? t("library.folderMissing") : t("library.openFolder", { name: row.name });
 
 	return (
 		<div className='flex justify-end gap-1'>
@@ -84,7 +91,7 @@ function LibraryFolderActions({ row }: { row: LibraryFolderRow }) {
 const columns: ColumnDef<LibraryFolderRow>[] = [
 	{
 		accessorKey: "name",
-		header: "Name",
+		header: () => t("library.name"),
 		cell: ({ row }) => (
 			<span className='flex min-w-0 items-center gap-2'>
 				<FolderIcon className='size-4 shrink-0 text-muted-foreground' />
@@ -94,42 +101,42 @@ const columns: ColumnDef<LibraryFolderRow>[] = [
 	},
 	{
 		accessorKey: "path",
-		header: "Path",
+		header: () => t("library.path"),
 		meta: { className: "w-full max-w-0" },
 		cell: ({ getValue }) => <span className='block truncate text-muted-foreground'>{String(getValue())}</span>,
 	},
 	{
 		accessorKey: "series",
-		header: "Series",
+		header: () => t("library.series"),
 		meta: { className: "text-right" },
 		cell: ({ getValue }) => <span className='tabular-nums'>{Number(getValue())}</span>,
 	},
 	{
 		accessorKey: "episodes",
-		header: "Episodes",
+		header: () => t("library.episodes"),
 		meta: { className: "text-right" },
 		cell: ({ getValue }) => <span className='tabular-nums'>{Number(getValue())}</span>,
 	},
 	{
 		accessorKey: "files",
-		header: "Files",
+		header: () => t("library.files"),
 		meta: { className: "text-right" },
 		cell: ({ getValue }) => <span className='tabular-nums'>{Number(getValue())}</span>,
 	},
 	{
 		accessorKey: "bytes",
-		header: "Size",
+		header: () => t("library.size"),
 		meta: { className: "text-right" },
 		cell: ({ getValue }) => <span className='tabular-nums'>{formatBytes(Number(getValue()))}</span>,
 	},
 	{
 		accessorKey: "status",
-		header: "Status",
-		cell: ({ row }) => <span className={row.original.status === "missing" ? "text-destructive" : "text-muted-foreground"}>{STATUS_LABEL[row.original.status]}</span>,
+		header: () => t("library.status"),
+		cell: ({ row }) => <span className={row.original.status === "missing" ? "text-destructive" : "text-muted-foreground"}>{statusLabel(row.original.status)}</span>,
 	},
 	{
 		id: "actions",
-		header: () => <span className='sr-only'>Actions</span>,
+		header: () => <span className='sr-only'>{t("library.actions")}</span>,
 		meta: { className: "w-28" },
 		cell: ({ row }) => <LibraryFolderActions row={row.original} />,
 	},
@@ -159,6 +166,7 @@ function lastScanBody(items: Array<{ source: string; body?: string }>): string |
 }
 
 export function LibraryView() {
+	const { t } = useTranslation();
 	const addLibraryFolder = useAddLibraryFolder();
 	const summaryQuery = trpc.library.summary.useQuery();
 	const activityQuery = trpc.activity.snapshot.useQuery();
@@ -178,13 +186,19 @@ export function LibraryView() {
 		getRowId: (row) => row.path,
 		enableSorting: false,
 	});
-	const subtitle = live ? `${live.title}${live.body ? ` - ${live.body}` : ""}` : lastScan ? `Last scan: ${lastScan}` : "Folders scanned for local episodes";
+	const subtitle = live
+		? live.body
+			? t("library.liveScan", { title: live.title, body: live.body })
+			: live.title
+		: lastScan
+			? t("library.lastScan", { body: lastScan })
+			: t("library.foldersScanned");
 
 	return (
 		<ScrollArea className='h-full' viewportClassName='flex flex-col gap-4 p-4'>
 			<div className='flex flex-wrap items-start justify-between gap-3'>
 				<div className='min-w-0'>
-					<h1 className='text-lg font-semibold'>Library</h1>
+					<h1 className='text-lg font-semibold'>{t("library.title")}</h1>
 					<p className='text-sm text-muted-foreground'>{subtitle}</p>
 				</div>
 				<div className='flex flex-wrap gap-2'>
@@ -197,7 +211,7 @@ export function LibraryView() {
 							void scan.mutateAsync();
 						}}>
 						<FolderSearchIcon data-icon='inline-start' />
-						Scan available
+						{t("library.scanAvailable")}
 					</Button>
 					<Button
 						type='button'
@@ -208,7 +222,7 @@ export function LibraryView() {
 							void scanAll.mutateAsync();
 						}}>
 						<FolderSearchIcon data-icon='inline-start' />
-						Scan folders
+						{t("library.scanFolders")}
 					</Button>
 					<Button
 						type='button'
@@ -217,23 +231,21 @@ export function LibraryView() {
 						}}
 						disabled={addLibraryFolder.isPending}>
 						<FolderPlusIcon data-icon='inline-start' />
-						Add folder
+						{t("library.addFolder")}
 					</Button>
 				</div>
 			</div>
 
 			<div className='flex flex-wrap gap-2'>
-				<StatTile label='Folders' value={totals ? String(totals.folders) : "..."} />
-				<StatTile label='Series' value={totals ? String(totals.series) : "..."} />
-				<StatTile label='Episodes' value={totals ? String(totals.episodes) : "..."} />
-				<StatTile label='Files' value={totals ? String(totals.files) : "..."} />
-				<StatTile label='Size' value={totals ? formatBytes(totals.bytes) : "..."} />
+				<StatTile label={t("library.folders")} value={totals ? String(totals.folders) : t("library.pending")} />
+				<StatTile label={t("library.series")} value={totals ? String(totals.series) : t("library.pending")} />
+				<StatTile label={t("library.episodes")} value={totals ? String(totals.episodes) : t("library.pending")} />
+				<StatTile label={t("library.files")} value={totals ? String(totals.files) : t("library.pending")} />
+				<StatTile label={t("library.size")} value={totals ? formatBytes(totals.bytes) : t("library.pending")} />
 			</div>
 
 			{outside && outside.files > 0 ? (
-				<p className='text-sm text-muted-foreground'>
-					{outside.files} scanned {outside.files === 1 ? "file sits" : "files sit"} outside these folders ({formatBytes(outside.bytes)}).
-				</p>
+				<p className='text-sm text-muted-foreground'>{t("library.outsideFiles", { count: outside.files, size: formatBytes(outside.bytes) })}</p>
 			) : null}
 
 			{summaryQuery.isPending ? (
@@ -244,8 +256,8 @@ export function LibraryView() {
 						<EmptyMedia variant='icon'>
 							<FolderIcon />
 						</EmptyMedia>
-						<EmptyTitle>No library folders</EmptyTitle>
-						<EmptyDescription>Add a folder to scan and monitor for episodes.</EmptyDescription>
+						<EmptyTitle>{t("library.noFolders")}</EmptyTitle>
+						<EmptyDescription>{t("library.addFolderHint")}</EmptyDescription>
 					</EmptyHeader>
 				</Empty>
 			) : (
