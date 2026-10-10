@@ -33,7 +33,9 @@ declare module "i18next" {
 				};
 				nowPlaying: {
 					airing: string;
-					airingSoon: string;
+					airingDay: string;
+					airingToday: string;
+					airingTomorrow: string;
 					cards: string;
 					chooseOrSearch: string;
 					confirmUpdate: string;
@@ -65,6 +67,7 @@ declare module "i18next" {
 					progressOpen: string;
 					progressValue: string;
 					rewatching: string;
+					schedule: string;
 					searchList: string;
 					similarTitles: string;
 					source: string;

@@ -1,3 +1,4 @@
+import { t } from "@biyori/translations/react";
 import { addDays, format, formatDistanceToNow, isSameDay, isValid, parseISO, startOfDay } from "date-fns";
 
 function toDate(value: string): Date | null {
@@ -56,11 +57,12 @@ export function formatClock(value: string | null | undefined): string {
 export function formatAiringDayLabel(airingAt: Date, now: Date): string {
 	const day = startOfDay(airingAt);
 	const today = startOfDay(now);
+	const date = format(day, "d MMM");
 	if (isSameDay(day, today)) {
-		return "Today";
+		return t("nowPlaying.airingToday", { date });
 	}
 	if (isSameDay(day, addDays(today, 1))) {
-		return "Tomorrow";
+		return t("nowPlaying.airingTomorrow", { date });
 	}
-	return format(day, "EEE d MMM");
+	return t("nowPlaying.airingDay", { weekday: format(day, "EEE"), date });
 }

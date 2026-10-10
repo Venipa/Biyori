@@ -128,7 +128,7 @@ describe("buildAiringSoon", () => {
 			new Set(),
 			now,
 		);
-		expect(groups.map((group) => group.label)).toEqual(["Today", "Tomorrow", "Wed 9 Sep"]);
+		expect(groups.map((group) => group.label)).toEqual(["Today, 6 Sep", "Tomorrow, 7 Sep", "Wed 9 Sep"]);
 		expect(groups[0]?.items.map((item) => item.animeId)).toEqual([1]);
 		expect(groups[1]?.items.map((item) => item.animeId)).toEqual([2]);
 		expect(groups[2]?.items.map((item) => item.animeId)).toEqual([3]);

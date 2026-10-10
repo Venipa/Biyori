@@ -121,7 +121,7 @@ export function IdleTables({
 			) : null}
 			{airing.length > 0 ? (
 				<section>
-					<h2 className='mb-1 text-sm font-semibold'>{t("nowPlaying.airingSoon")}</h2>
+					<h2 className='mb-1 text-sm font-semibold'>{t("nowPlaying.schedule")}</h2>
 					<Separator className='mb-2' />
 					<Table containerClassName='overflow-visible'>
 						<TableHeader>

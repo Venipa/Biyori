@@ -1,7 +1,7 @@
 import { t } from "@biyori/translations/react";
 import { PlayIcon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { IdleColumnHeading } from "@/mainview/components/app/now-playing/column-heading";
+import { IdleColumnHeading, IdleDayLabelSpacer } from "@/mainview/components/app/now-playing/column-heading";
 import { ContinueWatchingCard, ContinueWatchingEmpty } from "@/mainview/components/app/now-playing/continue-card";
 import { IdleItemContextMenu } from "@/mainview/components/app/now-playing/item-menu";
 import { Button } from "@/mainview/components/ui/button";
@@ -61,45 +61,30 @@ function EarlierWatchingList({
 	);
 }
 
-export function OlderWatchingColumn({
-	days,
-	items,
-	disabled,
-	onOpen,
-	onPlay,
-}: {
-	days: number;
-	items: ContinueWatchingItem[];
-	disabled?: boolean;
-	onOpen: (item: ContinueWatchingItem) => void;
-	onPlay: (item: ContinueWatchingItem) => void;
-}) {
-	if (items.length === 0) {
-		return null;
-	}
-	return (
-		<section className='flex min-w-0 flex-col'>
-			<IdleColumnHeading>{t("nowPlaying.olderThan", { days, count: days })}</IdleColumnHeading>
-			<EarlierWatchingList items={items} days={days} disabled={disabled} onOpen={onOpen} onPlay={onPlay} />
-		</section>
-	);
-}
-
 export function IdlePosterStrip({
 	heading,
 	label,
 	items,
+	older,
+	olderDays,
+	reserveDayLabel,
 	disabled,
 	onActivate,
+	onOpen,
 	description,
 }: {
 	heading?: string;
 	label: string;
 	items: ContinueWatchingItem[];
+	older?: ContinueWatchingItem[];
+	olderDays?: number;
+	reserveDayLabel?: boolean;
 	disabled?: boolean;
 	onActivate: (item: ContinueWatchingItem) => void;
+	onOpen?: (item: ContinueWatchingItem) => void;
 	description?: (item: ContinueWatchingItem) => string;
 }) {
+	const olderItems = older ?? [];
 	return (
 		<ScrollArea className='h-auto min-w-0 max-w-full' viewportClassName='overflow-x-auto overflow-y-hidden'>
 			<div className='flex w-max items-start gap-3'>
@@ -118,7 +103,15 @@ export function IdlePosterStrip({
 							))
 						)}
 					</ul>
+					{reserveDayLabel ? <IdleDayLabelSpacer /> : null}
 				</section>
+				{olderDays != null && onOpen != null && olderItems.length > 0 ? (
+					<section className='flex w-40 shrink-0 flex-col md:w-50'>
+						<IdleColumnHeading sticky>{t("nowPlaying.olderThan", { days: olderDays, count: olderDays })}</IdleColumnHeading>
+						<EarlierWatchingList items={olderItems} days={olderDays} disabled={disabled} onOpen={onOpen} onPlay={onActivate} />
+						{reserveDayLabel ? <IdleDayLabelSpacer /> : null}
+					</section>
+				) : null}
 			</div>
 		</ScrollArea>
 	);

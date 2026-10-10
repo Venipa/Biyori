@@ -26,7 +26,9 @@ common:
   viewMissing: This view does not exist.
 nowPlaying:
   airing: Airing
-  airingSoon: Airing soon
+  airingDay: "{{weekday}} {{date}}"
+  airingToday: "Today, {{date}}"
+  airingTomorrow: "Tomorrow, {{date}}"
   cards: Cards
   chooseOrSearch: Biyori could not identify this episode. Choose the correct anime from the list below, or search AniList.
   confirmUpdate: Confirm update
@@ -58,6 +60,7 @@ nowPlaying:
   progressOpen: "{{watched}} / ?"
   progressValue: "{{watched}} / {{total}}"
   rewatching: Rewatching
+  schedule: Schedule
   searchList: Biyori could not identify this episode against your list. Search AniList and add it, or check the filename.
   similarTitles: Similar titles
   source: Source

@@ -7,7 +7,7 @@ import type { NowPlayingView } from "@/lib/schemas/app-settings";
 import { IdleAiringRail } from "@/mainview/components/app/now-playing/airing-rail";
 import { ContinueWatchingEmpty } from "@/mainview/components/app/now-playing/continue-card";
 import { MatchedPlayback } from "@/mainview/components/app/now-playing/matched";
-import { IdlePosterStrip, OlderWatchingColumn } from "@/mainview/components/app/now-playing/poster-strip";
+import { IdlePosterStrip } from "@/mainview/components/app/now-playing/poster-strip";
 import { NowPlayingSkeleton } from "@/mainview/components/app/now-playing/skeleton";
 import { IdleTables } from "@/mainview/components/app/now-playing/tables";
 import { UnrecognizedPlayback } from "@/mainview/components/app/now-playing/unrecognized";
@@ -145,24 +145,17 @@ function IdleNowPlaying() {
 								heading={continueLabel}
 								label={continueLabel}
 								items={[...continueWatching.recent, ...continueWatching.earlier]}
+								older={continueWatching.older}
+								olderDays={staleDays}
+								reserveDayLabel={hasAiring}
 								disabled={playNext.isPending}
 								onActivate={playContinue}
+								onOpen={(item) => {
+									animeInfo.open({ id: item.animeId, infoTab: "main" });
+								}}
 							/>
 							{watchedLastWeek > 0 ? <p className='mt-3 text-sm text-muted-foreground'>{t("nowPlaying.watchedLastWeek", { count: watchedLastWeek })}</p> : null}
 						</section>
-						{continueWatching.older.length > 0 ? (
-							<div className='w-40 shrink-0 md:w-50'>
-								<OlderWatchingColumn
-									days={staleDays}
-									items={continueWatching.older}
-									disabled={playNext.isPending}
-									onPlay={playContinue}
-									onOpen={(item) => {
-										animeInfo.open({ id: item.animeId, infoTab: "main" });
-									}}
-								/>
-							</div>
-						) : null}
 						{hasAiring ? (
 							<section className='min-w-0 flex-1'>
 								<IdleAiringRail
