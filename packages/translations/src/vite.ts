@@ -40,7 +40,7 @@ export function translationsYaml() {
 		yamlPlugin({ match: localeYml }),
 		{
 			name: "biyori-translations-types",
-			buildStart() {
+			buildStart(this: { addWatchFile(id: string): void }) {
 				this.addWatchFile(enFile);
 				syncLocaleTypes();
 			},
