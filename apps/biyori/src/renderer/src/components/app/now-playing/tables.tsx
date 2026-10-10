@@ -84,7 +84,6 @@ export function IdleWatchingTable({
 
 export function IdleTables({
 	continueWatching,
-	earlierWatching,
 	olderWatching,
 	earlierDays,
 	airing,
@@ -94,7 +93,6 @@ export function IdleTables({
 	watchedLastWeek,
 }: {
 	continueWatching: ContinueWatchingItem[];
-	earlierWatching: ContinueWatchingItem[];
 	olderWatching: ContinueWatchingItem[];
 	earlierDays: number;
 	airing: AiringSoonGroup[];
@@ -118,9 +116,6 @@ export function IdleTables({
 					<ContinueWatchingEmpty className='min-h-32' />
 				</section>
 			)}
-			{earlierWatching.length > 0 ? (
-				<IdleWatchingTable heading={t("nowPlaying.earlierThan", { days: earlierDays, count: earlierDays })} items={earlierWatching} playDisabled={playDisabled} onPlay={onPlay} />
-			) : null}
 			{olderWatching.length > 0 ? (
 				<IdleWatchingTable heading={t("nowPlaying.olderThan", { days: earlierDays, count: earlierDays })} items={olderWatching} playDisabled={playDisabled} onPlay={onPlay} />
 			) : null}

@@ -7,7 +7,7 @@ import type { NowPlayingView } from "@/lib/schemas/app-settings";
 import { IdleAiringRail } from "@/mainview/components/app/now-playing/airing-rail";
 import { ContinueWatchingEmpty } from "@/mainview/components/app/now-playing/continue-card";
 import { MatchedPlayback } from "@/mainview/components/app/now-playing/matched";
-import { IdlePosterStrip } from "@/mainview/components/app/now-playing/poster-strip";
+import { IdlePosterStrip, OlderWatchingColumn } from "@/mainview/components/app/now-playing/poster-strip";
 import { NowPlayingSkeleton } from "@/mainview/components/app/now-playing/skeleton";
 import { IdleTables } from "@/mainview/components/app/now-playing/tables";
 import { UnrecognizedPlayback } from "@/mainview/components/app/now-playing/unrecognized";
@@ -127,8 +127,7 @@ function IdleNowPlaying() {
 
 				{layout === "table" ? (
 					<IdleTables
-						continueWatching={continueWatching.recent}
-						earlierWatching={continueWatching.earlier}
+						continueWatching={[...continueWatching.recent, ...continueWatching.earlier]}
 						olderWatching={continueWatching.older}
 						earlierDays={staleDays}
 						airing={airing}
@@ -140,20 +139,32 @@ function IdleNowPlaying() {
 						watchedLastWeek={watchedLastWeek}
 					/>
 				) : (
-					<section className='flex w-full min-w-0 flex-col gap-6'>
-						<IdlePosterStrip
-							heading={continueLabel}
-							label={continueLabel}
-							items={continueWatching.recent}
-							earlier={continueWatching.earlier}
-							older={continueWatching.older}
-							earlierDays={staleDays}
-							disabled={playNext.isPending}
-							onActivate={playContinue}
-							onOpen={(item) => {
-								animeInfo.open({ id: item.animeId, infoTab: "main" });
-							}}
-							trailing={
+					<div className='flex min-w-0 items-start gap-3'>
+						<section className='min-w-0 flex-1'>
+							<IdlePosterStrip
+								heading={continueLabel}
+								label={continueLabel}
+								items={[...continueWatching.recent, ...continueWatching.earlier]}
+								disabled={playNext.isPending}
+								onActivate={playContinue}
+							/>
+							{watchedLastWeek > 0 ? <p className='mt-3 text-sm text-muted-foreground'>{t("nowPlaying.watchedLastWeek", { count: watchedLastWeek })}</p> : null}
+						</section>
+						{continueWatching.older.length > 0 ? (
+							<div className='w-40 shrink-0 md:w-50'>
+								<OlderWatchingColumn
+									days={staleDays}
+									items={continueWatching.older}
+									disabled={playNext.isPending}
+									onPlay={playContinue}
+									onOpen={(item) => {
+										animeInfo.open({ id: item.animeId, infoTab: "main" });
+									}}
+								/>
+							</div>
+						) : null}
+						{hasAiring ? (
+							<section className='min-w-0 flex-1'>
 								<IdleAiringRail
 									groups={airing.map((group) => ({
 										label: group.label,
@@ -163,10 +174,9 @@ function IdleNowPlaying() {
 										},
 									}))}
 								/>
-							}
-						/>
-						{watchedLastWeek > 0 ? <p className='text-sm text-muted-foreground'>{t("nowPlaying.watchedLastWeek", { count: watchedLastWeek })}</p> : null}
-					</section>
+							</section>
+						) : null}
+					</div>
 				)}
 
 				{upcoming.length > 0 ? (
