@@ -22,7 +22,7 @@ describe("buildContinueWatching", () => {
 	test("keeps the next episode only when the file is on disk", () => {
 		const played = [{ animeId: 1, episode: 3, playedAt: new Date(now - 1000).toISOString() }];
 		expect(buildContinueWatching(played, [listed], now).recent.map((item) => item.nextEpisode)).toEqual([4]);
-		expect(buildContinueWatching(played, [{ ...listed, episodesWatched: 4 }], now)).toEqual({ recent: [], older: [] });
+		expect(buildContinueWatching(played, [{ ...listed, episodesWatched: 4 }], now)).toEqual({ recent: [], earlier: [], older: [] });
 	});
 
 	test("sorts history, then newest aired, then soonest upcoming", () => {
@@ -40,7 +40,8 @@ describe("buildContinueWatching", () => {
 		const dropped = { ...listed, id: 5, title: "Dropped", status: "Dropped" };
 		const items = buildContinueWatching([{ animeId: 2, episode: 3, playedAt: new Date(now - 1000).toISOString() }], [upcoming, newer, older, dropped], now);
 		expect(items.recent.map((item) => item.animeId)).toEqual([2]);
-		expect(items.older.map((item) => item.animeId)).toEqual([3, 4]);
+		expect(items.earlier.map((item) => item.animeId)).toEqual([3, 4]);
+		expect(items.older).toEqual([]);
 	});
 
 	test("keeps the newest aired title when the rail is full", () => {
@@ -52,7 +53,8 @@ describe("buildContinueWatching", () => {
 		}));
 		const items = buildContinueWatching([], [...older, { ...listed, endDate: "2026-09-20" }], now);
 		expect(items.recent).toEqual([]);
-		expect(items.older[0]?.animeId).toBe(listed.id);
+		expect(items.older).toEqual([]);
+		expect(items.earlier[0]?.animeId).toBe(listed.id);
 	});
 
 	test("keeps a recent episode update in continue watching", () => {
@@ -61,16 +63,29 @@ describe("buildContinueWatching", () => {
 		const scoreOnly = { ...listed, id: 9, title: "Stale", lastUpdated: recent };
 		const groups = buildContinueWatching([{ animeId: 1, episode: 3, playedAt: recent }], [indexedLongAgo, scoreOnly, listed], now);
 		expect(groups.recent.map((item) => item.animeId)).toEqual([1]);
-		expect(groups.older.map((item) => item.animeId)).toEqual([8, 9]);
+		expect(groups.earlier.map((item) => item.animeId)).toEqual([9]);
+		expect(groups.older.map((item) => item.animeId)).toEqual([8]);
 	});
 
-	test("moves an old episode update into the earlier rows", () => {
+	test("keeps a last play in continue watching when the next episode was indexed within the window", () => {
 		const groups = buildContinueWatching(
 			[{ animeId: 1, episode: 3, playedAt: new Date(now - CONTINUE_STALE_MS - 1000).toISOString() }],
 			[{ ...listed, lastUpdated: new Date(now - 1000).toISOString() }],
 			now,
 		);
+		expect(groups.recent.map((item) => item.animeId)).toEqual([1]);
+		expect(groups.earlier).toEqual([]);
+		expect(groups.older).toEqual([]);
+	});
+
+	test("moves a stale file into older even after a recent play", () => {
+		const groups = buildContinueWatching(
+			[{ animeId: 1, episode: 3, playedAt: new Date(now - 1000).toISOString() }],
+			[{ ...listed, episodeSeenAt: { "4": new Date(now - CONTINUE_STALE_MS - 1000).toISOString() } }],
+			now,
+		);
 		expect(groups.recent).toEqual([]);
+		expect(groups.earlier).toEqual([]);
 		expect(groups.older.map((item) => item.animeId)).toEqual([1]);
 	});
 
@@ -83,7 +98,7 @@ describe("buildContinueWatching", () => {
 			nextAiringAt: new Date(now + 8 * 24 * 60 * 60 * 1000).toISOString(),
 			libraryEpisodes: [1],
 		};
-		expect(buildContinueWatching([], [early], now)).toEqual({ recent: [], older: [] });
+		expect(buildContinueWatching([], [early], now)).toEqual({ recent: [], earlier: [], older: [] });
 	});
 });
 

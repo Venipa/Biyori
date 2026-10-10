@@ -39,6 +39,8 @@ declare module "i18next" {
 					confirmUpdate: string;
 					continueWatching: string;
 					editList: string;
+					earlierThan_one: string;
+					earlierThan_other: string;
 					episode: string;
 					episodeAt: string;
 					episodeBy: string;

@@ -29,6 +29,7 @@ export type IdleListedRow = {
 
 export type ContinueWatchingGroups = {
 	recent: ContinueWatchingItem[];
+	earlier: ContinueWatchingItem[];
 	older: ContinueWatchingItem[];
 };
 
@@ -146,17 +147,34 @@ export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], li
 		}
 		return right.updated - left.updated || left.title.localeCompare(right.title);
 	});
-	const recent: ContinueWatchingItem[] = [];
+	const recent: Array<ContinueWatchingItem & { playedAt: number }> = [];
+	const earlier: ContinueWatchingItem[] = [];
 	const older: ContinueWatchingItem[] = [];
 	for (const { historyRank: _historyRank, upcoming: _upcoming, airMs: _airMs, nextAt: _nextAt, updated, fileStale, ...item } of ranked) {
-		const stale = fileStale || updated <= 0 || now - updated >= staleMs;
-		const bucket = stale ? older : recent;
-		if (bucket.length >= CONTINUE_WATCHING_LIMIT) {
+		const played = updated > 0;
+		if (!fileStale && played) {
+			if (recent.length < CONTINUE_WATCHING_LIMIT) {
+				recent.push({ ...item, playedAt: updated });
+			}
 			continue;
 		}
-		bucket.push(item);
+		if (!fileStale) {
+			if (earlier.length < CONTINUE_WATCHING_LIMIT) {
+				earlier.push(item);
+			}
+			continue;
+		}
+		const stale = fileStale || !played || now - updated >= staleMs;
+		if (stale && older.length < CONTINUE_WATCHING_LIMIT) {
+			older.push(item);
+		}
 	}
-	return { recent, older };
+	recent.sort((left, right) => right.playedAt - left.playedAt || left.title.localeCompare(right.title));
+	return {
+		recent: recent.map(({ playedAt: _playedAt, ...item }) => item),
+		earlier,
+		older,
+	};
 }
 
 function airingMs(value: string | null | undefined): number | null {

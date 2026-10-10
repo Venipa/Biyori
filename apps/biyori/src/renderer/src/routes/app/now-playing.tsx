@@ -90,7 +90,7 @@ function IdleNowPlaying() {
 		Date.now(),
 		staleDays * 24 * 60 * 60 * 1000,
 	);
-	const continueItems = [...continueWatching.recent, ...continueWatching.older];
+	const continueItems = [...continueWatching.recent, ...continueWatching.earlier, ...continueWatching.older];
 	const airingSkip = new Set([...skipStatus, ...continueItems.map((item) => item.animeId)]);
 	const airing = buildAiringSoon(listed, airingSkip, Date.now());
 	const airingIds = airing.flatMap((group) => group.items.map((item) => item.animeId));
@@ -105,7 +105,7 @@ function IdleNowPlaying() {
 		return <NowPlayingSkeleton />;
 	}
 
-	if (continueWatching.recent.length === 0 && continueWatching.older.length === 0 && !hasAiring && upcoming.length === 0) {
+	if (continueItems.length === 0 && !hasAiring && upcoming.length === 0) {
 		return (
 			<div className='flex h-full items-center justify-center p-4'>
 				<ContinueWatchingEmpty className='min-h-64 w-full max-w-2xl' description={t("nowPlaying.waitingDescription")} />
@@ -128,7 +128,8 @@ function IdleNowPlaying() {
 				{layout === "table" ? (
 					<IdleTables
 						continueWatching={continueWatching.recent}
-						earlierWatching={continueWatching.older}
+						earlierWatching={continueWatching.earlier}
+						olderWatching={continueWatching.older}
 						earlierDays={staleDays}
 						airing={airing}
 						playDisabled={playNext.isPending}
@@ -139,24 +140,20 @@ function IdleNowPlaying() {
 						watchedLastWeek={watchedLastWeek}
 					/>
 				) : (
-					<div className='flex min-w-0 flex-col gap-6 @3xl:flex-row @3xl:items-start @3xl:gap-3'>
-						<section className='flex w-full min-w-0 flex-col gap-6 @3xl:max-w-max @3xl:flex-1'>
-							<IdlePosterStrip
-								heading={continueLabel}
-								label={continueLabel}
-								items={continueWatching.recent}
-								earlier={continueWatching.older}
-								earlierDays={staleDays}
-								disabled={playNext.isPending}
-								onActivate={playContinue}
-								onOpen={(item) => {
-									animeInfo.open({ id: item.animeId, infoTab: "main" });
-								}}
-							/>
-							{watchedLastWeek > 0 ? <p className='mt-3 w-0 min-w-full text-sm text-muted-foreground'>{t("nowPlaying.watchedLastWeek", { count: watchedLastWeek })}</p> : null}
-						</section>
-						{hasAiring ? (
-							<section className='w-full min-w-0 @3xl:max-w-max @3xl:flex-1'>
+					<section className='flex w-full min-w-0 flex-col gap-6'>
+						<IdlePosterStrip
+							heading={continueLabel}
+							label={continueLabel}
+							items={continueWatching.recent}
+							earlier={continueWatching.earlier}
+							older={continueWatching.older}
+							earlierDays={staleDays}
+							disabled={playNext.isPending}
+							onActivate={playContinue}
+							onOpen={(item) => {
+								animeInfo.open({ id: item.animeId, infoTab: "main" });
+							}}
+							trailing={
 								<IdleAiringRail
 									groups={airing.map((group) => ({
 										label: group.label,
@@ -166,9 +163,10 @@ function IdleNowPlaying() {
 										},
 									}))}
 								/>
-							</section>
-						) : null}
-					</div>
+							}
+						/>
+						{watchedLastWeek > 0 ? <p className='text-sm text-muted-foreground'>{t("nowPlaying.watchedLastWeek", { count: watchedLastWeek })}</p> : null}
+					</section>
 				)}
 
 				{upcoming.length > 0 ? (

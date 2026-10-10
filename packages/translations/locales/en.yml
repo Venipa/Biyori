@@ -32,6 +32,8 @@ nowPlaying:
   confirmUpdate: Confirm update
   continueWatching: Continue watching
   editList: Edit list
+  earlierThan_one: Earlier than {{days}} day
+  earlierThan_other: Earlier than {{days}} days
   episode: Episode
   episodeAt: Episode {{episode}} at {{time}}
   episodeBy: "{{episodeLine}} by {{group}}"
@@ -408,7 +410,7 @@ settings:
     interval: Interval
     minutes: (minutes)
     continueTitle: Continue watching
-    continueDescription: A next episode indexed this long ago moves into the older cards. A list update older than this does the same.
+    continueDescription: A next episode indexed this long ago moves into the older list. A list update older than this does the same.
     age: Age
     dayPresets: Day presets
     days: days

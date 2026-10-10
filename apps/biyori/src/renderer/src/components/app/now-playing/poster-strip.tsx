@@ -1,5 +1,6 @@
 import { t } from "@biyori/translations/react";
 import { PlayIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { IdleColumnHeading } from "@/mainview/components/app/now-playing/column-heading";
 import { ContinueWatchingCard, ContinueWatchingEmpty } from "@/mainview/components/app/now-playing/continue-card";
@@ -66,23 +67,28 @@ export function IdlePosterStrip({
 	label,
 	items,
 	earlier,
+	older,
 	earlierDays,
 	disabled,
 	onActivate,
 	onOpen,
 	description,
+	trailing,
 }: {
 	heading?: string;
 	label: string;
 	items: ContinueWatchingItem[];
 	earlier?: ContinueWatchingItem[];
+	older?: ContinueWatchingItem[];
 	earlierDays?: number;
 	disabled?: boolean;
 	onActivate: (item: ContinueWatchingItem) => void;
 	onOpen?: (item: ContinueWatchingItem) => void;
 	description?: (item: ContinueWatchingItem) => string;
+	trailing?: ReactNode;
 }) {
 	const earlierItems = earlier ?? [];
+	const olderItems = older ?? [];
 	return (
 		<ScrollArea className='h-auto min-w-0 max-w-full' viewportClassName='overflow-x-auto overflow-y-hidden'>
 			<div className='flex w-max items-start gap-3'>
@@ -102,12 +108,25 @@ export function IdlePosterStrip({
 						)}
 					</ul>
 				</section>
-				{earlierDays != null && onOpen != null && earlierItems.length > 0 ? (
+				{earlierDays != null && earlierItems.length > 0 ? (
 					<section className='flex flex-col'>
-						<IdleColumnHeading sticky>{t("nowPlaying.olderThan", { days: earlierDays, count: earlierDays })}</IdleColumnHeading>
-						<EarlierWatchingList items={earlierItems} days={earlierDays} disabled={disabled} onOpen={onOpen} onPlay={onActivate} />
+						<IdleColumnHeading sticky>{t("nowPlaying.earlierThan", { days: earlierDays, count: earlierDays })}</IdleColumnHeading>
+						<ul aria-label={t("nowPlaying.earlierThan", { days: earlierDays, count: earlierDays })} className='flex snap-x snap-mandatory items-start gap-3 pb-1'>
+							{earlierItems.map((item) => (
+								<li key={item.animeId} className='w-40 shrink-0 snap-start md:w-50'>
+									<ContinueWatchingCard item={item} disabled={disabled} playNextEnabled description={description?.(item)} onActivate={() => onActivate(item)} />
+								</li>
+							))}
+						</ul>
 					</section>
 				) : null}
+				{earlierDays != null && onOpen != null && olderItems.length > 0 ? (
+					<section className='flex flex-col'>
+						<IdleColumnHeading sticky>{t("nowPlaying.olderThan", { days: earlierDays, count: earlierDays })}</IdleColumnHeading>
+						<EarlierWatchingList items={olderItems} days={earlierDays} disabled={disabled} onOpen={onOpen} onPlay={onActivate} />
+					</section>
+				) : null}
+				{trailing}
 			</div>
 		</ScrollArea>
 	);
