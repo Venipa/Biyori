@@ -1,4 +1,4 @@
-import { useTranslation } from "@biyori/translations/react";
+import { t } from "@biyori/translations/react";
 import { createFileRoute } from "@tanstack/react-router";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, RefreshCwIcon } from "lucide-react";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/update")({
 type UpdateState = inferRouterOutputs<AppRouter>["updater"]["status"];
 type PrimaryKind = "check" | "restart" | null;
 
-function statusCopy(status: UpdateState, t: ReturnType<typeof useTranslation>["t"]): { title: string; detail: string } {
+function statusCopy(status: UpdateState): { title: string; detail: string } {
 	switch (status.phase) {
 		case "checking":
 			return { title: t("update.checkingTitle"), detail: status.message || t("update.lookingForNewer") };
@@ -61,12 +61,11 @@ function primaryKind(status: UpdateState): PrimaryKind {
 }
 
 function UpdatePage() {
-	const { t } = useTranslation();
 	usePreventNavigation(true);
 	const status = useUpdateStatus();
 	const check = trpc.updater.check.useMutation();
 	const apply = trpc.updater.restartAndApply.useMutation();
-	const copy = statusCopy(status, t);
+	const copy = statusCopy(status);
 	const action = primaryKind(status);
 	const progress = status.phase === "downloading" ? status.progress : null;
 	const percent = progress && Number.isFinite(progress.percent) ? Math.max(0, Math.min(100, progress.percent)) : null;

@@ -1,4 +1,4 @@
-import { useTranslation } from "@biyori/translations/react";
+import { t, useTranslation } from "@biyori/translations/react";
 import { ArrowDownIcon, ArrowUpIcon, FilterIcon, FilterXIcon, MinusIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { AiringStatusMark } from "@/components/app/anime/airing-status";
@@ -102,9 +102,7 @@ function valueChoices(element: TorrentFilterElement): string[] | null {
 	}
 }
 
-type Translate = ReturnType<typeof useTranslation>["t"];
-
-function listStatusLabel(t: Translate, status: string): string {
+function listStatusLabel(status: string): string {
 	switch (status) {
 		case "Currently watching":
 			return t("settings.listStatus.currentlyWatching");
@@ -123,7 +121,7 @@ function listStatusLabel(t: Translate, status: string): string {
 	}
 }
 
-function filterValueLabel(t: Translate, value: string): string {
+function filterValueLabel(value: string): string {
 	switch (value) {
 		case "True":
 			return t("settings.torrents.filters.values.true");
@@ -148,11 +146,11 @@ function filterValueLabel(t: Translate, value: string): string {
 		case "OVA":
 			return t("settings.torrents.filters.values.ova");
 		default:
-			return listStatusLabel(t, value);
+			return listStatusLabel(value);
 	}
 }
 
-function elementItems(t: Translate): Record<TorrentFilterElement, string> {
+function elementItems(): Record<TorrentFilterElement, string> {
 	return {
 		meta_id: t("settings.torrents.filters.elements.metaId"),
 		meta_status: t("settings.torrents.filters.elements.metaStatus"),
@@ -177,7 +175,7 @@ function elementItems(t: Translate): Record<TorrentFilterElement, string> {
 	};
 }
 
-function operatorItems(t: Translate): Record<TorrentFilterOperator, string> {
+function operatorItems(): Record<TorrentFilterOperator, string> {
 	return {
 		equals: t("settings.torrents.filters.operators.equals"),
 		not_equals: t("settings.torrents.filters.operators.notEquals"),
@@ -192,7 +190,7 @@ function operatorItems(t: Translate): Record<TorrentFilterOperator, string> {
 	};
 }
 
-function actionItems(t: Translate): Record<TorrentFilterAction, string> {
+function actionItems(): Record<TorrentFilterAction, string> {
 	return {
 		discard: t("settings.torrents.filters.actions.discard"),
 		select: t("settings.torrents.filters.actions.select"),
@@ -200,14 +198,14 @@ function actionItems(t: Translate): Record<TorrentFilterAction, string> {
 	};
 }
 
-function matchItems(t: Translate): Record<"all" | "any", string> {
+function matchItems(): Record<"all" | "any", string> {
 	return {
 		all: t("settings.torrents.filters.matches.all"),
 		any: t("settings.torrents.filters.matches.any"),
 	};
 }
 
-function discardOptionItems(t: Translate): Record<"default" | "deactivate" | "hide", string> {
+function discardOptionItems(): Record<"default" | "deactivate" | "hide", string> {
 	return {
 		default: t("settings.torrents.filters.discardOptions.default"),
 		deactivate: t("settings.torrents.filters.discardOptions.deactivate"),
@@ -215,7 +213,7 @@ function discardOptionItems(t: Translate): Record<"default" | "deactivate" | "hi
 	};
 }
 
-function presetCopy(t: Translate, preset: { id: string; name: string; description: string }): { name: string; description: string } {
+function presetCopy(preset: { id: string; name: string; description: string }): { name: string; description: string } {
 	switch (preset.id) {
 		case "custom":
 			return {
@@ -244,11 +242,11 @@ function presetCopy(t: Translate, preset: { id: string; name: string; descriptio
 
 export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 	const { t } = useTranslation();
-	const elements = elementItems(t);
-	const operators = operatorItems(t);
-	const actions = actionItems(t);
-	const matches = matchItems(t);
-	const discardOptions = discardOptionItems(t);
+	const elements = elementItems();
+	const operators = operatorItems();
+	const actions = actionItems();
+	const matches = matchItems();
+	const discardOptions = discardOptionItems();
 	const editing = mode?.kind === "edit";
 	const [page, setPage] = useState(editing ? 1 : 0);
 	const [draft, setDraft] = useState(() => (editing ? cloneTorrentFilter(mode.filter, mode.filter.id) : blankTorrentFilter()));
@@ -312,7 +310,7 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 				{page === 0 ? (
 					<ul className='flex flex-col gap-1'>
 						{torrentFilterWizardPresets().map((preset) => {
-							const copy = presetCopy(t, preset);
+							const copy = presetCopy(preset);
 							return (
 								<li key={preset.id}>
 									<button
@@ -374,7 +372,7 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 												}}>
 												<TableCell>{elements[condition.element]}</TableCell>
 												<TableCell>{operators[condition.op]}</TableCell>
-												<TableCell className='max-w-40 truncate'>{condition.value ? filterValueLabel(t, condition.value) : t("settings.torrents.filters.empty")}</TableCell>
+												<TableCell className='max-w-40 truncate'>{condition.value ? filterValueLabel(condition.value) : t("settings.torrents.filters.empty")}</TableCell>
 											</TableRow>
 										))}
 									</TableBody>
@@ -539,7 +537,7 @@ export function TorrentFilterWizard({ mode, onClose, onSave }: Props) {
 								}
 								return (
 									<details key={status} className='border-b px-2 py-1' open={status === "Currently watching" || undefined}>
-										<summary className='cursor-pointer text-sm font-medium'>{listStatusLabel(t, status)}</summary>
+										<summary className='cursor-pointer text-sm font-medium'>{listStatusLabel(status)}</summary>
 										<ul className='flex flex-col gap-1 py-1'>
 											{rows.map((row) => (
 												<AnimeLimitRow
@@ -633,8 +631,8 @@ function ConditionDialog({
 	onSave: (condition: TorrentFilterCondition) => void;
 }) {
 	const { t } = useTranslation();
-	const elements = elementItems(t);
-	const operators = operatorItems(t);
+	const elements = elementItems();
+	const operators = operatorItems();
 	const elementId = useId();
 	const opId = useId();
 	const valueId = useId();
@@ -642,7 +640,7 @@ function ConditionDialog({
 	const [op, setOp] = useState<TorrentFilterOperator>(condition?.op ?? "contains");
 	const [value, setValue] = useState(condition?.value ?? "");
 	const choices = valueChoices(element);
-	const choiceLabels = Object.fromEntries((choices ?? []).map((row) => [row, filterValueLabel(t, row)]));
+	const choiceLabels = Object.fromEntries((choices ?? []).map((row) => [row, filterValueLabel(row)]));
 
 	return (
 		<Dialog
@@ -746,7 +744,7 @@ function ConditionDialog({
 									<SelectGroup>
 										{choices.map((row) => (
 											<SelectItem key={row} value={row}>
-												{filterValueLabel(t, row)}
+												{filterValueLabel(row)}
 											</SelectItem>
 										))}
 									</SelectGroup>

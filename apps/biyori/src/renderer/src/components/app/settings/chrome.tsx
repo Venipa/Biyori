@@ -1,4 +1,4 @@
-import { useTranslation } from "@biyori/translations/react";
+import { t } from "@biyori/translations/react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutGroup, motion } from "motion/react";
 import { type ReactNode, useRef } from "react";
@@ -6,9 +6,7 @@ import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { matchSettingsNav, settingsSectionHref, settingsSections } from "@/mainview/lib/settings-nav";
 import { cn } from "@/mainview/lib/utils";
 
-type Translate = ReturnType<typeof useTranslation>["t"];
-
-function sectionCopy(t: Translate, id: string): { label: string; description: string } {
+function sectionCopy(id: string): { label: string; description: string } {
 	switch (id) {
 		case "services":
 			return { label: t("settings.nav.services.label"), description: t("settings.nav.services.description") };
@@ -29,7 +27,7 @@ function sectionCopy(t: Translate, id: string): { label: string; description: st
 	}
 }
 
-function childCopy(t: Translate, sectionId: string, childId: string): { label: string; description: string } {
+function childCopy(sectionId: string, childId: string): { label: string; description: string } {
 	if (sectionId === "recognition" && childId === "general") {
 		return { label: t("settings.nav.recognition.general.label"), description: t("settings.nav.recognition.general.description") };
 	}
@@ -67,7 +65,6 @@ const subNavPillEnter = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const;
 const subNavPillInstant = { duration: 0 } as const;
 
 export function SettingsSubNav({ sectionId, items, pathname }: { sectionId: string; items: readonly { id: string }[]; pathname: string }) {
-	const { t } = useTranslation();
 	const groupActive = items.some((child) => pathname === settingsSectionHref(sectionId, child.id));
 	const shown = useRef(false);
 	if (!groupActive) {
@@ -100,7 +97,7 @@ export function SettingsSubNav({ sectionId, items, pathname }: { sectionId: stri
 									}}
 								/>
 							) : null}
-							<span className='truncate'>{childCopy(t, sectionId, child.id).label}</span>
+							<span className='truncate'>{childCopy(sectionId, child.id).label}</span>
 						</Link>
 					);
 				})}
@@ -113,9 +110,8 @@ export function SettingsChrome({ children, overlay }: { children: ReactNode; ove
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
 	});
-	const { t } = useTranslation();
 	const { section: active, child: activeChild } = matchSettingsNav(pathname);
-	const heading = activeChild && active ? childCopy(t, active.id, activeChild.id) : active ? sectionCopy(t, active.id) : undefined;
+	const heading = activeChild && active ? childCopy(active.id, activeChild.id) : active ? sectionCopy(active.id) : undefined;
 
 	return (
 		<div className='flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-background text-foreground'>
@@ -131,7 +127,7 @@ export function SettingsChrome({ children, overlay }: { children: ReactNode; ove
 									<div key={item.id} className='flex flex-col gap-0.5'>
 										<Link to={firstHref} className={navLinkClass(groupActive)}>
 											<item.icon className='size-4 shrink-0' />
-											<span className='truncate'>{sectionCopy(t, item.id).label}</span>
+											<span className='truncate'>{sectionCopy(item.id).label}</span>
 										</Link>
 										<SettingsSubNav sectionId={item.id} items={children} pathname={pathname} />
 									</div>
@@ -142,7 +138,7 @@ export function SettingsChrome({ children, overlay }: { children: ReactNode; ove
 							return (
 								<Link key={item.id} to={href} aria-current={isActive ? "page" : undefined} className={navLinkClass(isActive)}>
 									<item.icon className='size-4 shrink-0' />
-									<span className='truncate'>{sectionCopy(t, item.id).label}</span>
+									<span className='truncate'>{sectionCopy(item.id).label}</span>
 								</Link>
 							);
 						})}

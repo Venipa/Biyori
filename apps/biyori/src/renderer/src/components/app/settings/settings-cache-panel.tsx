@@ -1,4 +1,4 @@
-import { useTranslation } from "@biyori/translations/react";
+import { t, useTranslation } from "@biyori/translations/react";
 import { useId, useState } from "react";
 import type { CacheKind } from "@/lib/schemas/cache-kind";
 import { ConfirmDialog } from "@/mainview/components/app/confirm/dialog";
@@ -17,7 +17,7 @@ const CACHE_OPTIONS: { kind: CacheKind; hasSize: boolean }[] = [
 	{ kind: "torrentHistory", hasSize: false },
 ];
 
-function cacheLabel(t: ReturnType<typeof useTranslation>["t"], kind: CacheKind): string {
+function cacheLabel(kind: CacheKind): string {
 	switch (kind) {
 		case "history":
 			return t("settings.cache.history");
@@ -102,7 +102,7 @@ export function SettingsCachePanel() {
 									}}
 								/>
 								<FieldLabel htmlFor={ids[option.kind]} className='w-full justify-between font-normal'>
-									<span>{cacheLabel(t, option.kind)}</span>
+									<span>{cacheLabel(option.kind)}</span>
 									<span className='text-muted-foreground'>
 										{t("settings.cache.item", { count: bucket.count })}
 										{sizeLabel}
@@ -131,7 +131,7 @@ export function SettingsCachePanel() {
 				onOpenChange={setConfirmOpen}
 				title={t("settings.cache.clearTitle")}
 				description={t("settings.cache.clearDescription", {
-					items: selectedKinds.map((item) => cacheLabel(t, item.kind).toLowerCase()).join(", "),
+					items: selectedKinds.map((item) => cacheLabel(item.kind).toLowerCase()).join(", "),
 				})}
 				confirmLabel={t("settings.cache.clear")}
 				pending={clearCache.isPending}

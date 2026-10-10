@@ -1,4 +1,4 @@
-import { useTranslation } from "@biyori/translations/react";
+import { t, useTranslation } from "@biyori/translations/react";
 import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
@@ -22,7 +22,7 @@ const UI_ZOOM_OPTIONS = [
 	{ value: "150", label: "150%" },
 ] as const;
 
-function listStatusLabel(t: ReturnType<typeof useTranslation>["t"], status: string): string {
+function listStatusLabel(status: string): string {
 	switch (status) {
 		case "Currently watching":
 			return t("settings.listStatus.currentlyWatching");
@@ -48,7 +48,7 @@ export function ApplicationPanel() {
 	];
 	const listStatusOptions = listStatusSchema.options.map((status) => ({
 		value: status,
-		label: listStatusLabel(t, status),
+		label: listStatusLabel(status),
 	}));
 	const titleLanguageId = useId();
 	const uiZoomId = useId();

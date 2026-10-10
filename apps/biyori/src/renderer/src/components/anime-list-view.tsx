@@ -28,7 +28,7 @@ import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { ToggleRadio, ToggleRadioItem } from "@/mainview/components/ui/toggle-radio";
-import { animeTypeLabel } from "@/mainview/lib/anime-list-filter";
+import { animeMatchesListFilter, animeTypeLabel } from "@/mainview/lib/anime-list-filter";
 import { formatLocalDateTime, formatTimeAgo } from "@/mainview/lib/format-date";
 import { useListFilterText } from "@/mainview/lib/list-filter";
 import { libraryEpisodeTooltip, listProgressRatio } from "@/mainview/lib/list-progress";
