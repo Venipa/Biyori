@@ -210,7 +210,7 @@ export function LibraryPanel() {
 					<SettingsFieldError<AppSettingsInput> name='episodeScanIntervalMinutes' />
 				</Field>
 			</SettingsSectionCard>
-			<SettingsSectionCard title='Continue watching' description='A next episode indexed this long ago moves into the older cards. A list update older than this does the same.'>
+			<SettingsSectionCard title='Continue watching' description='A next episode indexed this long ago moves into the older list. A list update older than this does the same.'>
 				<Controller
 					control={form.control}
 					name='continueWatchingStaleDays'

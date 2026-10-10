@@ -26,6 +26,60 @@ export function TitleCellWithPoster({ item }: { item: ContinueWatchingItem }) {
 	);
 }
 
+function nextEpisodeCaption(item: ContinueWatchingItem): string {
+	return `Next episode ${item.nextEpisode}${item.episodes != null && item.episodes > 0 ? ` of ${item.episodes}` : ""}`;
+}
+
+export function IdleWatchingTable({
+	heading,
+	items,
+	playDisabled,
+	onPlay,
+}: {
+	heading: string;
+	items: ContinueWatchingItem[];
+	playDisabled: boolean;
+	onPlay: (item: ContinueWatchingItem) => void;
+}) {
+	return (
+		<section>
+			<h2 className='mb-1 text-sm font-semibold'>{heading}</h2>
+			<Separator className='mb-2' />
+			<Table containerClassName='overflow-visible'>
+				<TableHeader>
+					<TableRow>
+						<TableHead>Title</TableHead>
+						<TableHead>Episode</TableHead>
+						<TableHead>Type</TableHead>
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{items.map((item) => (
+						<IdleItemContextMenu
+							key={item.animeId}
+							item={item}
+							playNextEnabled={!playDisabled}
+							render={
+								<TableRow
+									className={playDisabled ? "opacity-50" : "cursor-pointer"}
+									onClick={() => {
+										if (!playDisabled) {
+											onPlay(item);
+										}
+									}}>
+									<TitleCellWithPoster item={item} />
+									<TableCell className='text-muted-foreground'>{nextEpisodeCaption(item)}</TableCell>
+									<TableCell className='text-muted-foreground'>{item.type ?? "-"}</TableCell>
+								</TableRow>
+							}
+						/>
+					))}
+				</TableBody>
+			</Table>
+		</section>
+	);
+}
+
 export function IdleTables({
 	continueWatching,
 	earlierWatching,
@@ -48,90 +102,20 @@ export function IdleTables({
 	const { t } = useTranslation();
 	return (
 		<div className='flex flex-col gap-6'>
-			<section>
-				<h2 className='mb-1 text-sm font-semibold'>{t("nowPlaying.continueWatching")}</h2>
-				<Separator className='mb-2' />
-				{continueWatching.length > 0 ? (
-					<>
-						<Table containerClassName='overflow-visible'>
-							<TableHeader>
-								<TableRow>
-									<TableHead>Title</TableHead>
-									<TableHead>Episode</TableHead>
-									<TableHead>Type</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{continueWatching.map((item) => (
-									<IdleItemContextMenu
-										key={item.animeId}
-										item={item}
-										playNextEnabled={!playDisabled}
-										render={
-											<TableRow
-												className={playDisabled ? "opacity-50" : "cursor-pointer"}
-												onClick={() => {
-													if (!playDisabled) {
-														onPlay(item);
-													}
-												}}>
-												<TitleCellWithPoster item={item} />
-												<TableCell className='text-muted-foreground'>
-													Next episode {item.nextEpisode}
-													{item.episodes != null && item.episodes > 0 ? ` of ${item.episodes}` : ""}
-												</TableCell>
-												<TableCell className='text-muted-foreground'>{item.type ?? "-"}</TableCell>
-											</TableRow>
-										}
-									/>
-								))}
-							</TableBody>
-						</Table>
-						{watchedLastWeek > 0 ? <p className='mt-3 text-sm text-muted-foreground'>{t("nowPlaying.watchedLastWeek", { count: watchedLastWeek })}</p> : null}
-					</>
-				) : (
-					<ContinueWatchingEmpty className='min-h-32' />
-				)}
-			</section>
-			{earlierWatching.length > 0 ? (
+			{continueWatching.length > 0 ? (
+				<div className='flex flex-col gap-3'>
+					<IdleWatchingTable heading={t("nowPlaying.continueWatching")} items={continueWatching} playDisabled={playDisabled} onPlay={onPlay} />
+					{watchedLastWeek > 0 ? <p className='text-sm text-muted-foreground'>{t("nowPlaying.watchedLastWeek", { count: watchedLastWeek })}</p> : null}
+				</div>
+			) : (
 				<section>
-					<h2 className='mb-1 text-sm font-semibold'>{t("nowPlaying.olderThan", { days: earlierDays, count: earlierDays })}</h2>
+					<h2 className='mb-1 text-sm font-semibold'>{t("nowPlaying.continueWatching")}</h2>
 					<Separator className='mb-2' />
-					<Table containerClassName='overflow-visible'>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Title</TableHead>
-								<TableHead>Episode</TableHead>
-								<TableHead>Type</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{earlierWatching.map((item) => (
-								<IdleItemContextMenu
-									key={item.animeId}
-									item={item}
-									playNextEnabled={!playDisabled}
-									render={
-										<TableRow
-											className={playDisabled ? "opacity-50" : "cursor-pointer"}
-											onClick={() => {
-												if (!playDisabled) {
-													onPlay(item);
-												}
-											}}>
-											<TitleCellWithPoster item={item} />
-											<TableCell className='text-muted-foreground'>
-												Next episode {item.nextEpisode}
-												{item.episodes != null && item.episodes > 0 ? ` of ${item.episodes}` : ""}
-											</TableCell>
-											<TableCell className='text-muted-foreground'>{item.type ?? "-"}</TableCell>
-										</TableRow>
-									}
-								/>
-							))}
-						</TableBody>
-					</Table>
+					<ContinueWatchingEmpty className='min-h-32' />
 				</section>
+			)}
+			{earlierWatching.length > 0 ? (
+				<IdleWatchingTable heading={t("nowPlaying.olderThan", { days: earlierDays, count: earlierDays })} items={earlierWatching} playDisabled={playDisabled} onPlay={onPlay} />
 			) : null}
 			{airing.length > 0 ? (
 				<section>
