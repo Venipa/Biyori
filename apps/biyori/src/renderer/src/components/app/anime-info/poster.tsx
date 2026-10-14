@@ -52,26 +52,25 @@ export function AnimeInfoPoster({ id, title, coverUrl }: { id: number; title: st
 		void desktopRpc.request.openExternal({ url: coverUrl });
 	};
 
+	const posterButton = (
+		<button
+			type='button'
+			className='aspect-2/3 w-full cursor-zoom-in overflow-hidden rounded-md border bg-muted shadow-md ring-1 ring-foreground/10 disabled:cursor-default'
+			aria-label={t("anime.viewPoster")}
+			disabled={!hasPoster}
+			onClick={() => {
+				if (hasPoster) {
+					setLightbox(true);
+				}
+			}}>
+			<AnimeCover id={id} coverUrl={coverUrl || undefined} alt={alt} width={224} height={336} className='size-full' />
+		</button>
+	);
+
 	return (
 		<>
 			<ContextMenu>
-				<ContextMenuTrigger
-					disabled={!hasPoster}
-					render={
-						<button
-							type='button'
-							className='aspect-2/3 w-full cursor-zoom-in overflow-hidden rounded-md border bg-muted shadow-md ring-1 ring-foreground/10 disabled:cursor-default'
-							aria-label={t("anime.viewPoster")}
-							disabled={!hasPoster}
-							onClick={() => {
-								if (hasPoster) {
-									setLightbox(true);
-								}
-							}}>
-							<AnimeCover id={id} coverUrl={coverUrl || undefined} alt={alt} width={224} height={336} className='size-full' />
-						</button>
-					}
-				/>
+				<ContextMenuTrigger render={posterButton} />
 				<ContextMenuContent className='min-w-48'>
 					<ContextMenuItem
 						onClick={() => {
@@ -88,6 +87,7 @@ export function AnimeInfoPoster({ id, title, coverUrl }: { id: number; title: st
 			</ContextMenu>
 			<Lightbox open={lightbox} onOpenChange={setLightbox}>
 				<LightboxContent>
+					<LightboxTitle className='sr-only'>{alt}</LightboxTitle>
 					<div className='aspect-2/3 max-h-[min(80vh,40rem)] w-[min(100%,24rem)] overflow-hidden'>
 						<AnimeCover id={id} coverUrl={coverUrl || undefined} alt={alt} className='size-full' />
 					</div>
