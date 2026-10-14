@@ -6,7 +6,7 @@ export default class AniListSyncService extends Service {
 	readonly name = "anilist-sync";
 	readonly order = 30;
 
-	onInit(): void {
+	afterInit(): void {
 		initAniListSync(getDb());
 	}
 }

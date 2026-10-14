@@ -46,8 +46,12 @@ fn collect_files(root: &Path, threshold: u64, out: &mut Vec<VideoFile>, mut on_f
 		if !entry.file_type.is_file() {
 			continue;
 		}
+		let path = entry.path();
+		if !is_video(&path) {
+			continue;
+		}
 		let size = entry.metadata.as_ref().map(|meta| meta.len()).unwrap_or(0);
-		push_video(entry.path(), size, threshold, out, &mut on_file);
+		push_video(path, size, threshold, out, &mut on_file);
 	}
 	true
 }

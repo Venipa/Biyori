@@ -160,6 +160,12 @@ function knownAnimeFolders(database: DatabaseClient): string[] {
 		if (isLibraryRoot(row.folder, library)) {
 			continue;
 		}
+		if (library.length > 0 && !library.some((root) => pathUnderRoot(row.folder ?? "", root))) {
+			continue;
+		}
+		if (library.some((root) => pathUnderRoot(root, row.folder ?? "") && !samePath(row.folder ?? "", root))) {
+			continue;
+		}
 		folders.push(row.folder);
 	}
 	return collapseRoots(folders);
