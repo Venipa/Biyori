@@ -1,10 +1,13 @@
 name: Deploy docs to GitHub Pages
 
 on:
-  # Docs/workflow changes on default branch, or manual run.
+  # Docs/workflow changes on default branch, manual run, or nightly rebuild.
+  # Nightly rebuild refreshes GitHub data baked into the static Pages export (stars, releases).
   # branches: required so tag pushes (which ignore path filters) do not run this job.
   # Release publishes use docs-on-release.yml -> workflow_dispatch on default branch
   # (github-pages env protection rejects tag refs like v1.0.2).
+  schedule:
+    - cron: "0 0 * * *"
   push:
     branches:
       - master
