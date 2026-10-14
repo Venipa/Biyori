@@ -116,6 +116,7 @@ export function AppAnimeInfoDialog() {
 			ensureError={ensureError}
 			infoTab={heldTab ?? infoTab}
 			onNavigate={nav.navigateTo}
+			onInfoTabChange={nav.setTab}
 			onBackTo={nav.backTo}
 			history={fromStore?.history}
 			onOpenChange={(nextOpen) => {

@@ -211,6 +211,7 @@ export function SettingsChrome({ children, overlay }: { children: ReactNode; ove
 								{cards?.length ? (
 									<SettingsCategoryNav
 										key={pathname}
+										layoutId='settings-category-nav'
 										aria-label={heading?.label ?? t("settings.nav.title")}
 										items={cards}
 										value={activeCard}

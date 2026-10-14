@@ -117,5 +117,12 @@ export function useAnimeInfoNav() {
 		[utils],
 	);
 
-	return useMemo(() => ({ open, push, backTo, close, navigateTo }), [open, push, backTo, close, navigateTo]);
+	const setTab = useCallback((infoTab: NonNullable<AnimeInfoFrame["infoTab"]>) => {
+		if (!current) {
+			return;
+		}
+		applyFrame({ stack, current: { ...current, infoTab } });
+	}, []);
+
+	return useMemo(() => ({ open, push, backTo, close, navigateTo, setTab }), [open, push, backTo, close, navigateTo, setTab]);
 }

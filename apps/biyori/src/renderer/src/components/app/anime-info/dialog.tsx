@@ -21,6 +21,7 @@ import { RelatedMediaSection } from "@/mainview/components/app/anime-info/relate
 import { AnimeSeriesInfo } from "@/mainview/components/app/anime-info/series-info";
 import { AnimeInfoSheetPeek } from "@/mainview/components/app/anime-info/sheet-peek";
 import { AnimeStatusNotice } from "@/mainview/components/app/anime-info/status-notice";
+import { CategoryNav } from "@/mainview/components/app/shared/category-nav";
 import { SaveBar } from "@/mainview/components/app/shared/save-bar";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
@@ -34,7 +35,6 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
 import { Slider } from "@/mainview/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { Textarea } from "@/mainview/components/ui/textarea";
 import { type AnimeInfoFrame, visibleAnimeInfoSheets } from "@/mainview/lib/anime-info-stack";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
@@ -82,6 +82,7 @@ export function AnimeInfoDialog({
 	onOpenChange,
 	onOpenChangeComplete,
 	onNavigate,
+	onInfoTabChange,
 	onBackTo,
 	history = EMPTY_HISTORY,
 }: {
@@ -92,6 +93,7 @@ export function AnimeInfoDialog({
 	onOpenChange: (open: boolean) => void;
 	onOpenChangeComplete?: (open: boolean) => void;
 	onNavigate?: (id: number) => void;
+	onInfoTabChange?: (tab: "main" | "list") => void;
 	onBackTo?: (index: number) => void;
 	history?: AnimeInfoFrame[];
 }) {
@@ -155,6 +157,7 @@ export function AnimeInfoDialog({
 						readOnly={!anime.onList}
 						history={history}
 						onBackTo={onBackTo}
+						onInfoTabChange={onInfoTabChange}
 						onAdded={(id) => {
 							onNavigate?.(id);
 						}}
@@ -262,6 +265,7 @@ function AnimeInfoBody({
 	readOnly = false,
 	onAdded,
 	onBackTo,
+	onInfoTabChange,
 	history,
 }: {
 	anime: AnimeDetail;
@@ -269,6 +273,7 @@ function AnimeInfoBody({
 	readOnly?: boolean;
 	onAdded?: (id: number) => void;
 	onBackTo?: (index: number) => void;
+	onInfoTabChange?: (tab: "main" | "list") => void;
 	history: AnimeInfoFrame[];
 }) {
 	const progressId = useId();
@@ -377,187 +382,194 @@ function AnimeInfoBody({
 						<div className='flex min-h-14 shrink-0 items-end'>
 							<h2 className='cursor-text text-balance text-lg font-semibold text-foreground select-text drop-shadow-sm'>{anime.title}</h2>
 						</div>
-						<Tabs defaultValue={infoTab} className='flex min-h-0 flex-1 flex-col gap-2'>
-							<TabsList className='shrink-0' variant='line'>
-								<TabsTrigger value='main'>{t("anime.mainInformation")}</TabsTrigger>
-								<TabsTrigger value='list'>{t("anime.myList")}</TabsTrigger>
-							</TabsList>
-							<TabsContent value='main' keepMounted={false} className='mt-0 flex min-h-0 flex-1 flex-col'>
-								<ScrollArea className='h-full min-h-0 ' viewportClassName=' px-2 pt-2'>
-									<AnimeSeriesInfo
-										anime={{
-											...anime,
-											yourScore: anime.score,
-										}}
-										className='pb-3'
-									/>
-									<RelatedMediaSection items={anime.related} from={{ title: anime.title, coverUrl: anime.coverUrl, season: anime.season }} />
-								</ScrollArea>
-							</TabsContent>
-							<TabsContent value='list' keepMounted={false} className='mt-0 flex min-h-0 flex-1 flex-col'>
-								<ScrollArea className='h-full min-h-0' viewportClassName='px-2 pt-2 pb-16'>
-									{readOnly ? (
-										<div className='flex flex-col gap-3 pb-3'>
-											<p className='text-sm text-muted-foreground'>{t("anime.notInList")}</p>
-										</div>
-									) : (
-										<div className='flex flex-col gap-3 pr-3 pb-3'>
-											<Controller
-												control={form.control}
-												name='progress'
-												render={({ field, fieldState }) => (
-													<ListEditRow label={t("anime.episodesWatched")} htmlFor={progressId} align='start' invalid={fieldState.invalid} errors={[fieldState.error]}>
-														<EpisodeCountInput
-															id={progressId}
-															value={typeof field.value === "number" ? field.value : 0}
-															max={episodeMax}
-															total={anime.episodes}
-															invalid={fieldState.invalid}
-															onBlur={field.onBlur}
-															onChange={field.onChange}
+						<CategoryNav
+							layoutId='anime-info-tabs'
+							aria-label={t("anime.animeInformation")}
+							value={infoTab}
+							onValueChange={(id) => {
+								if (id === "main" || id === "list") {
+									onInfoTabChange?.(id);
+								}
+							}}
+							items={[
+								{ id: "main", label: t("anime.mainInformation") },
+								{ id: "list", label: t("anime.myList") },
+							]}
+						/>
+						{infoTab === "main" ? (
+							<ScrollArea className='h-full min-h-0 flex-1' viewportClassName=' px-2 pt-2'>
+								<AnimeSeriesInfo
+									anime={{
+										...anime,
+										yourScore: anime.score,
+									}}
+									className='pb-3'
+								/>
+								<RelatedMediaSection items={anime.related} from={{ title: anime.title, coverUrl: anime.coverUrl, season: anime.season }} />
+							</ScrollArea>
+						) : (
+							<ScrollArea className='h-full min-h-0 flex-1' viewportClassName='px-2 pt-2 pb-16'>
+								{readOnly ? (
+									<div className='flex flex-col gap-3 pb-3'>
+										<p className='text-sm text-muted-foreground'>{t("anime.notInList")}</p>
+									</div>
+								) : (
+									<div className='flex flex-col gap-3 pr-3 pb-3'>
+										<Controller
+											control={form.control}
+											name='progress'
+											render={({ field, fieldState }) => (
+												<ListEditRow label={t("anime.episodesWatched")} htmlFor={progressId} align='start' invalid={fieldState.invalid} errors={[fieldState.error]}>
+													<EpisodeCountInput
+														id={progressId}
+														value={typeof field.value === "number" ? field.value : 0}
+														max={episodeMax}
+														total={anime.episodes}
+														invalid={fieldState.invalid}
+														onBlur={field.onBlur}
+														onChange={field.onChange}
+													/>
+												</ListEditRow>
+											)}
+										/>
+										<Controller
+											control={form.control}
+											name='score'
+											render={({ field, fieldState }) => (
+												<ListEditRow label={t("anime.score")} htmlFor={scoreId} invalid={fieldState.invalid} errors={[fieldState.error]}>
+													<div className='flex items-center gap-2'>
+														<Slider
+															className='min-w-0 flex-1'
+															min={0}
+															max={100}
+															step={1}
+															value={typeof field.value === "number" && field.value > 0 ? field.value : 0}
+															aria-label={t("anime.score")}
+															onValueChange={(next) => {
+																field.onChange(next > 0 ? next : null);
+															}}
 														/>
-													</ListEditRow>
-												)}
-											/>
-											<Controller
-												control={form.control}
-												name='score'
-												render={({ field, fieldState }) => (
-													<ListEditRow label={t("anime.score")} htmlFor={scoreId} invalid={fieldState.invalid} errors={[fieldState.error]}>
-														<div className='flex items-center gap-2'>
-															<Slider
-																className='min-w-0 flex-1'
-																min={0}
-																max={100}
-																step={1}
-																value={typeof field.value === "number" && field.value > 0 ? field.value : 0}
-																aria-label={t("anime.score")}
-																onValueChange={(next) => {
-																	field.onChange(next > 0 ? next : null);
-																}}
-															/>
-															<Input
-																id={scoreId}
-																className='w-20 tabular-nums'
-																type='number'
-																min={0}
-																max={100}
-																inputMode='numeric'
-																placeholder={t("anime.scoreRange")}
-																value={typeof field.value === "number" && field.value > 0 ? field.value : ""}
-																onChange={(event) => {
-																	const raw = event.target.value;
-																	if (raw === "") {
-																		field.onChange(null);
-																		return;
-																	}
-																	field.onChange(Number(raw));
-																}}
-															/>
-															<Button
-																type='button'
-																variant='ghost'
-																size='icon'
-																disabled={!(typeof field.value === "number" && field.value > 0)}
-																onClick={() => {
+														<Input
+															id={scoreId}
+															className='w-20 tabular-nums'
+															type='number'
+															min={0}
+															max={100}
+															inputMode='numeric'
+															placeholder={t("anime.scoreRange")}
+															value={typeof field.value === "number" && field.value > 0 ? field.value : ""}
+															onChange={(event) => {
+																const raw = event.target.value;
+																if (raw === "") {
 																	field.onChange(null);
-																}}>
-																<XIcon />
-															</Button>
-														</div>
-													</ListEditRow>
-												)}
-											/>
-											<Controller
-												control={form.control}
-												name='rewatching'
-												render={({ field }) => (
-													<ListEditRow label={t("anime.rewatching")} htmlFor={rewatchingId}>
-														<Checkbox
-															id={rewatchingId}
-															checked={Boolean(field.value)}
-															onCheckedChange={(checked) => {
-																const on = checked === true;
-																field.onChange(on);
-																if (on) {
-																	form.setValue("status", "Currently watching", { shouldDirty: true });
-																	if (parsedStatus.success && parsedStatus.data === "Completed" && anime.episodes > 0 && form.getValues("progress") === anime.episodes) {
-																		form.setValue("progress", 0, {
-																			shouldDirty: true,
-																		});
-																	}
 																	return;
 																}
-																if (parsedStatus.success) {
-																	form.setValue("status", parsedStatus.data, {
+																field.onChange(Number(raw));
+															}}
+														/>
+														<Button
+															type='button'
+															variant='ghost'
+															size='icon'
+															disabled={!(typeof field.value === "number" && field.value > 0)}
+															onClick={() => {
+																field.onChange(null);
+															}}>
+															<XIcon />
+														</Button>
+													</div>
+												</ListEditRow>
+											)}
+										/>
+										<Controller
+											control={form.control}
+											name='rewatching'
+											render={({ field }) => (
+												<ListEditRow label={t("anime.rewatching")} htmlFor={rewatchingId}>
+													<Checkbox
+														id={rewatchingId}
+														checked={Boolean(field.value)}
+														onCheckedChange={(checked) => {
+															const on = checked === true;
+															field.onChange(on);
+															if (on) {
+																form.setValue("status", "Currently watching", { shouldDirty: true });
+																if (parsedStatus.success && parsedStatus.data === "Completed" && anime.episodes > 0 && form.getValues("progress") === anime.episodes) {
+																	form.setValue("progress", 0, {
 																		shouldDirty: true,
 																	});
 																}
-																if (form.getValues("progress") === 0) {
-																	form.setValue("progress", anime.episodesWatched ?? 0, { shouldDirty: true });
-																}
-															}}
-														/>
-													</ListEditRow>
-												)}
+																return;
+															}
+															if (parsedStatus.success) {
+																form.setValue("status", parsedStatus.data, {
+																	shouldDirty: true,
+																});
+															}
+															if (form.getValues("progress") === 0) {
+																form.setValue("progress", anime.episodesWatched ?? 0, { shouldDirty: true });
+															}
+														}}
+													/>
+												</ListEditRow>
+											)}
+										/>
+										<ListEditRow label={t("anime.timesRewatched")} htmlFor={rewatchesId} errors={[form.formState.errors.timesRewatched]}>
+											<Input
+												id={rewatchesId}
+												className='w-20'
+												type='number'
+												min={0}
+												{...form.register("timesRewatched", {
+													valueAsNumber: true,
+												})}
 											/>
-											<ListEditRow label={t("anime.timesRewatched")} htmlFor={rewatchesId} errors={[form.formState.errors.timesRewatched]}>
-												<Input
-													id={rewatchesId}
-													className='w-20'
-													type='number'
-													min={0}
-													{...form.register("timesRewatched", {
-														valueAsNumber: true,
-													})}
-												/>
-											</ListEditRow>
-											<Controller
-												control={form.control}
-												name='dateStarted'
-												render={({ field, fieldState }) => (
-													<ListEditRow label={t("anime.started")} htmlFor={startedId} invalid={fieldState.invalid} errors={[fieldState.error]}>
-														<DateField id={startedId} value={field.value ?? ""} invalid={fieldState.invalid} onBlur={field.onBlur} onChange={field.onChange} />
-													</ListEditRow>
-												)}
-											/>
-											<Controller
-												control={form.control}
-												name='dateCompleted'
-												render={({ field, fieldState }) => (
-													<ListEditRow label={t("anime.finished")} htmlFor={completedId} invalid={fieldState.invalid} errors={[fieldState.error]}>
-														<DateField id={completedId} value={field.value ?? ""} invalid={fieldState.invalid} onBlur={field.onBlur} onChange={field.onChange} />
-													</ListEditRow>
-												)}
-											/>
-											<ListEditRow label={t("anime.notes")} htmlFor={notesId} align='start' errors={[form.formState.errors.notes]}>
-												<Textarea id={notesId} {...form.register("notes")} />
-											</ListEditRow>
-											<Separator className='my-1' />
-											<Controller
-												name='userSynonyms'
-												control={form.control}
-												render={({ field, fieldState }) => (
-													<ListEditRow label={t("anime.alternativeTitles")} htmlFor={altTitlesId} align='start' invalid={fieldState.invalid}>
-														<UserSynonymsField
-															id={altTitlesId}
-															defaultTitles={titleStrings(anime.titles).filter((title) => title.toLowerCase() !== anime.title.toLowerCase())}
-															value={field.value}
-															onChange={field.onChange}
-															error={fieldState.error}
-														/>
-													</ListEditRow>
-												)}
-											/>
-											<AnimeFolderField id={folderId} />
-											<ListEditRow label={t("anime.fansubGroup")} htmlFor={fansubId} errors={[form.formState.errors.fansub]}>
-												<Input id={fansubId} {...form.register("fansub")} />
-											</ListEditRow>
-										</div>
-									)}
-								</ScrollArea>
-							</TabsContent>
-						</Tabs>
+										</ListEditRow>
+										<Controller
+											control={form.control}
+											name='dateStarted'
+											render={({ field, fieldState }) => (
+												<ListEditRow label={t("anime.started")} htmlFor={startedId} invalid={fieldState.invalid} errors={[fieldState.error]}>
+													<DateField id={startedId} value={field.value ?? ""} invalid={fieldState.invalid} onBlur={field.onBlur} onChange={field.onChange} />
+												</ListEditRow>
+											)}
+										/>
+										<Controller
+											control={form.control}
+											name='dateCompleted'
+											render={({ field, fieldState }) => (
+												<ListEditRow label={t("anime.finished")} htmlFor={completedId} invalid={fieldState.invalid} errors={[fieldState.error]}>
+													<DateField id={completedId} value={field.value ?? ""} invalid={fieldState.invalid} onBlur={field.onBlur} onChange={field.onChange} />
+												</ListEditRow>
+											)}
+										/>
+										<ListEditRow label={t("anime.notes")} htmlFor={notesId} align='start' errors={[form.formState.errors.notes]}>
+											<Textarea id={notesId} {...form.register("notes")} />
+										</ListEditRow>
+										<Separator className='my-1' />
+										<Controller
+											name='userSynonyms'
+											control={form.control}
+											render={({ field, fieldState }) => (
+												<ListEditRow label={t("anime.alternativeTitles")} htmlFor={altTitlesId} align='start' invalid={fieldState.invalid}>
+													<UserSynonymsField
+														id={altTitlesId}
+														defaultTitles={titleStrings(anime.titles).filter((title) => title.toLowerCase() !== anime.title.toLowerCase())}
+														value={field.value}
+														onChange={field.onChange}
+														error={fieldState.error}
+													/>
+												</ListEditRow>
+											)}
+										/>
+										<AnimeFolderField id={folderId} />
+										<ListEditRow label={t("anime.fansubGroup")} htmlFor={fansubId} errors={[form.formState.errors.fansub]}>
+											<Input id={fansubId} {...form.register("fansub")} />
+										</ListEditRow>
+									</div>
+								)}
+							</ScrollArea>
+						)}
 					</div>
 				</div>
 			</div>
