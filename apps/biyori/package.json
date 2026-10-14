@@ -36,7 +36,6 @@
 		"@biyori/logger": "workspace:*",
 		"@biyori/recognition": "workspace:*",
 		"@biyori/translations": "workspace:*",
-		"@biyori/worker": "workspace:*",
 		"@electron-toolkit/preload": "^3.0.2",
 		"@electron-toolkit/utils": "^4.0.0",
 		"@hookform/resolvers": "^5.9.0",

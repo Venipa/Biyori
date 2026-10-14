@@ -44,7 +44,6 @@ bun run dev
 | `apps/docs` | Fumadocs site |
 | `packages/hana` | Native worker/core |
 | `packages/recognition` | Title matching |
-| `packages/worker` | Main-process worker runtime |
 | `packages/electron-trpc` | tRPC IPC bridge |
 | `packages/logger` | Shared logging |
 | `packages/parser` | Torrent/name parsing |

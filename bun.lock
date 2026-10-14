@@ -25,7 +25,6 @@
         "@biyori/logger": "workspace:*",
         "@biyori/recognition": "workspace:*",
         "@biyori/translations": "workspace:*",
-        "@biyori/worker": "workspace:*",
         "@electron-toolkit/preload": "^3.0.2",
         "@electron-toolkit/utils": "^4.0.0",
         "@hookform/resolvers": "^5.9.0",
@@ -173,13 +172,6 @@
         "react": "^19.2.1",
       },
     },
-    "packages/worker": {
-      "name": "@biyori/worker",
-      "version": "0.1.0",
-      "devDependencies": {
-        "@types/node": "^22.19.1",
-      },
-    },
   },
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.3.0", "", {}, "sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA=="],
@@ -283,8 +275,6 @@
     "@biyori/recognition": ["@biyori/recognition@workspace:packages/recognition"],
 
     "@biyori/translations": ["@biyori/translations@workspace:packages/translations"],
-
-    "@biyori/worker": ["@biyori/worker@workspace:packages/worker"],
 
     "@date-fns/tz": ["@date-fns/tz@1.5.0", "", {}, "sha512-lwYN/vDPeNRULcepoE/LO2Pgx+7/RV+S9ARfbc9lr2DtGkOD7pAiruHvbR1RX3Qyf6ja47EWJDMsNK5vK08DJg=="],
 

@@ -88,7 +88,7 @@ export default defineConfig({
 			sourcemap: sentrySourcemap,
 			externalizeDeps: {
 				include: ["encryption.js", "lodash-es", "@biyori/hana"],
-				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/translations", "@biyori/worker"],
+				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/translations"],
 			},
 		},
 	},
@@ -98,7 +98,7 @@ export default defineConfig({
 		build: {
 			sourcemap: sentrySourcemap,
 			externalizeDeps: {
-				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/translations", "@biyori/worker", "@sentry/electron"],
+				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/translations", "@sentry/electron"],
 			},
 		},
 	},
