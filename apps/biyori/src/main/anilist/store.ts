@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/electron/main";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { type AnilistScoreFormat, DEFAULT_SCORE_FORMAT, parseScoreFormat } from "../../lib/anilist-score";
 import type { DatabaseClient } from "../db";
 import { account } from "../db/schema";
 import { credentialsStore } from "../stores";
@@ -13,7 +14,9 @@ export const anilistAuthSchema = z.object({
 	avatarUrl: z.string().optional(),
 });
 
-export type AnilistAuth = z.infer<typeof anilistAuthSchema>;
+export type AnilistAuth = z.infer<typeof anilistAuthSchema> & {
+	scoreFormat: AnilistScoreFormat;
+};
 
 export type AnilistPublicStatus = {
 	connected: boolean;
@@ -21,6 +24,7 @@ export type AnilistPublicStatus = {
 	userId: number | null;
 	expiresAt: number | null;
 	avatarUrl: string | null;
+	scoreFormat: AnilistScoreFormat;
 };
 
 let db: DatabaseClient | null = null;
@@ -46,12 +50,19 @@ function readToken(accountId: number): { accessToken: string; expiresAt: number 
 	return token;
 }
 
-function readAccountRow(accountId: number): { username: string; avatarUrl: string } | null {
+function readAccountRow(accountId: number): { username: string; avatarUrl: string; scoreFormat: AnilistScoreFormat } | null {
 	if (!db) {
 		return null;
 	}
-	const row = db.select({ username: account.username, avatarUrl: account.avatarUrl }).from(account).where(eq(account.id, accountId)).get();
-	return row ?? null;
+	const row = db.select({ username: account.username, avatarUrl: account.avatarUrl, scoreFormat: account.scoreFormat }).from(account).where(eq(account.id, accountId)).get();
+	if (!row) {
+		return null;
+	}
+	return {
+		username: row.username,
+		avatarUrl: row.avatarUrl,
+		scoreFormat: parseScoreFormat(row.scoreFormat),
+	};
 }
 
 function upsertAccountRow(auth: AnilistAuth): void {
@@ -63,12 +74,14 @@ function upsertAccountRow(auth: AnilistAuth): void {
 			id: auth.userId,
 			username: auth.username,
 			avatarUrl: auth.avatarUrl?.trim() ?? "",
+			scoreFormat: auth.scoreFormat,
 		})
 		.onConflictDoUpdate({
 			target: account.id,
 			set: {
 				username: auth.username,
 				avatarUrl: auth.avatarUrl?.trim() ?? "",
+				scoreFormat: auth.scoreFormat,
 			},
 		})
 		.run();
@@ -90,6 +103,7 @@ export function readAnilistAuth(): AnilistAuth | null {
 		userId,
 		username: row?.username ?? "",
 		avatarUrl: row?.avatarUrl || undefined,
+		scoreFormat: row?.scoreFormat ?? DEFAULT_SCORE_FORMAT,
 	};
 }
 
@@ -118,6 +132,7 @@ export function clearAnilistAuth(): void {
 
 export function toPublicStatus(auth: AnilistAuth | null): AnilistPublicStatus {
 	const avatarUrl = auth?.avatarUrl?.trim() || null;
+	const scoreFormat = auth?.scoreFormat ?? DEFAULT_SCORE_FORMAT;
 	if (!auth || auth.expiresAt <= Date.now()) {
 		return {
 			connected: false,
@@ -125,6 +140,7 @@ export function toPublicStatus(auth: AnilistAuth | null): AnilistPublicStatus {
 			userId: auth?.userId ?? null,
 			expiresAt: auth?.expiresAt ?? null,
 			avatarUrl,
+			scoreFormat,
 		};
 	}
 	return {
@@ -133,5 +149,6 @@ export function toPublicStatus(auth: AnilistAuth | null): AnilistPublicStatus {
 		userId: auth.userId,
 		expiresAt: auth.expiresAt,
 		avatarUrl,
+		scoreFormat,
 	};
 }

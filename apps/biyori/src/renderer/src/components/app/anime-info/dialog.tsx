@@ -19,6 +19,7 @@ import { AnimeListAction, AnimeListStatusSelect } from "@/mainview/components/ap
 import { AnimeInfoBackHistory } from "@/mainview/components/app/anime-info/back-history";
 import { AnimeInfoPoster } from "@/mainview/components/app/anime-info/poster";
 import { RelatedMediaSection } from "@/mainview/components/app/anime-info/related-media";
+import { AnimeScoreFields } from "@/mainview/components/app/anime-info/score-control";
 import { AnimeSeriesInfo } from "@/mainview/components/app/anime-info/series-info";
 import { AnimeInfoSheetPeek } from "@/mainview/components/app/anime-info/sheet-peek";
 import { AnimeStatusNotice } from "@/mainview/components/app/anime-info/status-notice";
@@ -35,8 +36,8 @@ import { Input } from "@/mainview/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Separator } from "@/mainview/components/ui/separator";
-import { Slider } from "@/mainview/components/ui/slider";
 import { Textarea } from "@/mainview/components/ui/textarea";
+import { useAnilistScoreFormat } from "@/mainview/lib/anilist-score-format";
 import { type AnimeInfoFrame, visibleAnimeInfoSheets } from "@/mainview/lib/anime-info-stack";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { pickLibraryFolderPath } from "@/mainview/lib/library-folder";
@@ -280,6 +281,7 @@ function AnimeInfoBody({
 	const progressId = useId();
 	const rewatchesId = useId();
 	const scoreId = useId();
+	const scoreFormat = useAnilistScoreFormat();
 	const notesId = useId();
 	const rewatchingId = useId();
 	const startedId = useId();
@@ -430,34 +432,11 @@ function AnimeInfoBody({
 											render={({ field, fieldState }) => (
 												<ListEditRow label={t("anime.score")} htmlFor={scoreId} invalid={fieldState.invalid} errors={[fieldState.error]}>
 													<div className='flex items-center gap-2'>
-														<Slider
-															className='min-w-0 flex-1'
-															min={0}
-															max={100}
-															step={1}
-															value={typeof field.value === "number" && field.value > 0 ? field.value : 0}
-															aria-label={t("anime.score")}
-															onValueChange={(next) => {
-																field.onChange(next > 0 ? next : null);
-															}}
-														/>
-														<Input
+														<AnimeScoreFields
 															id={scoreId}
-															className='w-20 tabular-nums'
-															type='number'
-															min={0}
-															max={100}
-															inputMode='numeric'
-															placeholder={t("anime.scoreRange")}
-															value={typeof field.value === "number" && field.value > 0 ? field.value : ""}
-															onChange={(event) => {
-																const raw = event.target.value;
-																if (raw === "") {
-																	field.onChange(null);
-																	return;
-																}
-																field.onChange(Number(raw));
-															}}
+															raw={typeof field.value === "number" && field.value > 0 ? field.value : null}
+															format={scoreFormat}
+															onChange={field.onChange}
 														/>
 														<Button
 															type='button'

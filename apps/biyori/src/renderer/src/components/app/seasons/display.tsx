@@ -16,7 +16,7 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
-import { airingBarClass, airStamp, formatPopularityCompact, formatScore, skylinePosterHeight } from "@/mainview/lib/season-view";
+import { airingBarClass, airStamp, formatCommunityScore, formatPopularityCompact, skylinePosterHeight } from "@/mainview/lib/season-view";
 import { cn } from "@/mainview/lib/utils";
 import type { ListStatus } from "@/shared/list";
 
@@ -160,7 +160,7 @@ function GuideRow(props: { item: SeasonItem; listStatus: ListStatus | null; onAd
 			</div>
 			<ListOrAdd listStatus={listStatus} onAdd={onAdd} adding={adding} className='self-center' />
 			<div className='flex w-14 shrink-0 flex-col items-end justify-center self-center'>
-				<span className='text-sm font-medium tabular-nums'>{formatScore(item.averageScore)}</span>
+				<span className='text-sm font-medium tabular-nums'>{formatCommunityScore(item.averageScore)}</span>
 				<span className='text-[10px] tabular-nums text-muted-foreground'>{formatPopularityCompact(item.popularity)}</span>
 			</div>
 		</div>
@@ -179,7 +179,7 @@ function SkylineRow(props: { item: SeasonItem; listStatus: ListStatus | null }) 
 			</div>
 			<span className='line-clamp-2 min-h-8 text-xs leading-4'>{item.title}</span>
 			<span className='text-[10px] tabular-nums text-muted-foreground'>
-				{formatScore(item.averageScore)}
+				{formatCommunityScore(item.averageScore)}
 				{listStatus ? `, ${listStatusShortText(listStatus)}` : ""}
 			</span>
 		</div>

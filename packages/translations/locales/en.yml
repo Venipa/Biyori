@@ -1085,7 +1085,7 @@ anime:
   episodesWatched: Episodes watched
   score: Score
   scoreValue: Score {{score}}
-  scoreRange: 0-100
+  scoreRange: "{{min}}-{{max}}"
   scoreZero: "0"
   rewatching: Rewatching
   timesRewatched: Times rewatched

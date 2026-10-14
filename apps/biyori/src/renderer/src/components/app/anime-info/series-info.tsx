@@ -1,7 +1,9 @@
 import { t, useTranslation } from "@biyori/translations/react";
+import { formatScore } from "@/lib/anilist-score";
 import type { StoredAnimeTitles } from "@/lib/anime-titles";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Separator } from "@/mainview/components/ui/separator";
+import { useAnilistScoreFormat } from "@/mainview/lib/anilist-score-format";
 import { airingStatusLabel } from "@/mainview/lib/anime-airing-notice";
 import { animeTypeLabel, genreLabel } from "@/mainview/lib/anime-list-filter";
 import { cn } from "@/mainview/lib/utils";
@@ -72,6 +74,7 @@ function formatTitleBadges(anime: AnimeSeriesInfoData): Array<{ language: string
 
 export function AnimeSeriesInfo({ anime, className }: AnimeSeriesInfoProps) {
 	const { t } = useTranslation();
+	const scoreFormat = useAnilistScoreFormat();
 	const genres = anime.genres ?? [];
 	const tags = anime.tags ?? [];
 	const producers = anime.producers ?? [];
@@ -116,7 +119,7 @@ export function AnimeSeriesInfo({ anime, className }: AnimeSeriesInfoProps) {
 					{anime.yourScore !== undefined ? (
 						<>
 							<dt className='text-muted-foreground'>{t("anime.yourScore")}</dt>
-							<dd>{anime.yourScore != null ? String(anime.yourScore) : "-"}</dd>
+							<dd>{formatScore(anime.yourScore, scoreFormat)}</dd>
 						</>
 					) : null}
 				</dl>

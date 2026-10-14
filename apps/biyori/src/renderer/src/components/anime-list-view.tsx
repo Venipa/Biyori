@@ -6,6 +6,7 @@ import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon } from "lucide-react";
 import { startTransition, useEffect, useRef, useState } from "react";
 import { AiringStatusMark } from "@/components/app/anime/airing-status";
 import { desktopRpc } from "@/desktop-rpc";
+import { formatScore } from "@/lib/anilist-score";
 import type { AnimeListViewAs } from "@/lib/schemas/app-settings";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { listStatusLabel, listStatusShortText } from "@/mainview/components/app/anime/list-action";
@@ -28,6 +29,7 @@ import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
 import { ToggleRadio, ToggleRadioItem } from "@/mainview/components/ui/toggle-radio";
+import { useAnilistScoreFormat } from "@/mainview/lib/anilist-score-format";
 import { animeMatchesListFilter, animeTypeLabel } from "@/mainview/lib/anime-list-filter";
 import { formatLocalDateTime, formatTimeAgo } from "@/mainview/lib/format-date";
 import { useListFilterText } from "@/mainview/lib/list-filter";
@@ -70,6 +72,12 @@ function rowListStatus(row: AnimeRow, fallback: ListStatus): ListStatus {
 
 function isAiringFinished(status: string | null | undefined): boolean {
 	return status === "Finished airing" || status === "Finished" || status === "Cancelled";
+}
+
+function ListUserScoreCell({ score }: { score: number | null | undefined }) {
+	const format = useAnilistScoreFormat();
+	const text = formatScore(score, format);
+	return <span className={cn("text-right tabular-nums", score ? undefined : "text-muted-foreground")}>{text}</span>;
 }
 
 function PlayingOrAiringCell({ playing, status }: { playing: boolean; status: string | null | undefined }) {
@@ -202,9 +210,7 @@ const columns: ColumnDef<AnimeRow>[] = [
 	{
 		accessorKey: "score",
 		header: () => t("list.score"),
-		cell: ({ row }) => (
-			<span className={cn("text-right tabular-nums", row.original.score ? undefined : "text-muted-foreground")}>{row.original.score ? `${row.original.score}%` : "-"}</span>
-		),
+		cell: ({ row }) => <ListUserScoreCell score={row.original.score} />,
 	},
 	{
 		accessorKey: "averageScore",

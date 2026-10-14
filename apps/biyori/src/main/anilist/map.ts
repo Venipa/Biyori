@@ -167,6 +167,12 @@ export const viewerSchema = z.object({
 		})
 		.nullable()
 		.optional(),
+	mediaListOptions: z
+		.object({
+			scoreFormat: z.string().nullable().optional(),
+		})
+		.nullable()
+		.optional(),
 });
 
 export const mediaListCollectionSchema = z.object({

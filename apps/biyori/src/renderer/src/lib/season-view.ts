@@ -188,7 +188,7 @@ export function formatPopularity(popularity: number): string {
 	return t("seasons.users", { amount: popularity.toLocaleString() });
 }
 
-export function formatScore(score: number): string {
+export function formatCommunityScore(score: number): string {
 	return score > 0 ? `${score}%` : t("seasons.unknownMark");
 }
 
@@ -199,7 +199,7 @@ export function imageFooterText(item: SeasonItem, sortBy: SeasonSortBy): string 
 		case "episodes":
 			return item.episodes > 0 ? t("seasons.episodeCount", { count: item.episodes }) : t("common.unknown");
 		case "score":
-			return formatScore(item.averageScore);
+			return formatCommunityScore(item.averageScore);
 		case "title":
 			return item.title;
 		default:

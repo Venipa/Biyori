@@ -92,6 +92,13 @@
 			"when": 1790200000000,
 			"tag": "0012_history_advanced",
 			"breakpoints": true
+		},
+		{
+			"idx": 13,
+			"version": "6",
+			"when": 1790300000000,
+			"tag": "0013_account_score_format",
+			"breakpoints": true
 		}
 	]
 }

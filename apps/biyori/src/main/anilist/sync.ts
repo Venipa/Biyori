@@ -1,4 +1,5 @@
 import { eq, inArray, isNotNull, or, sql } from "drizzle-orm";
+import { DEFAULT_SCORE_FORMAT, parseScoreFormat, rawToDisplay } from "../../lib/anilist-score";
 import { isAnimeStale } from "../../lib/anime-stale";
 import { stringifyMediaTitles } from "../../lib/anime-titles";
 import type { TitleLanguage } from "../../lib/schemas/app-settings";
@@ -28,6 +29,7 @@ import {
 } from "./map";
 import { GET_ALL_ANIMES_FROM_UID, GET_CURRENT_USER, GET_MEDIA_BY_ID, GET_MEDIA_LIVE, SAVE_MEDIA_LIST_ENTRY, SEARCH_MEDIA, SEASON_MEDIA } from "./queries";
 import { readSeasonCache, writeSeasonCache } from "./season-cache";
+import { readAnilistAuth } from "./store";
 
 const INSERT_CHUNK = 40;
 
@@ -46,6 +48,7 @@ export async function fetchViewer(
 	id: number;
 	name: string;
 	avatarUrl: string | null;
+	scoreFormat: ReturnType<typeof parseScoreFormat>;
 }> {
 	const data = await anilistGraphql<{ Viewer: unknown }>({
 		query: GET_CURRENT_USER,
@@ -54,7 +57,12 @@ export async function fetchViewer(
 	});
 	const viewer = viewerSchema.parse(data.Viewer);
 	const avatarUrl = viewer.avatar?.large?.trim() || null;
-	return { id: viewer.id, name: viewer.name, avatarUrl };
+	return {
+		id: viewer.id,
+		name: viewer.name,
+		avatarUrl,
+		scoreFormat: parseScoreFormat(viewer.mediaListOptions?.scoreFormat),
+	};
 }
 
 async function forEachMediaListChunk(
@@ -194,7 +202,12 @@ export async function saveMediaListEntry(options: {
 			mediaId: options.mediaId,
 			status: options.status,
 			progress: options.progress,
-			score: options.score ?? undefined,
+			score:
+				options.score === undefined
+					? undefined
+					: options.score == null || options.score <= 0
+						? 0
+						: rawToDisplay(options.score, readAnilistAuth()?.scoreFormat ?? DEFAULT_SCORE_FORMAT),
 			repeat: options.repeat,
 			notes: options.notes,
 			startedAt: options.startedAt,

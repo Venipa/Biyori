@@ -7,6 +7,9 @@ query {
       large
     }
     createdAt
+    mediaListOptions {
+      scoreFormat
+    }
     statistics {
       anime {
         count
@@ -75,7 +78,7 @@ media {
   ${MEDIA_FIELDS}
 }
 status
-score
+score(format: POINT_100)
 progress
 repeat
 notes
@@ -256,7 +259,7 @@ mutation(
     id
     status
     progress
-    score
+    score(format: POINT_100)
     repeat
     notes
     startedAt {

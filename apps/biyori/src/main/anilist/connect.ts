@@ -76,6 +76,7 @@ export async function connectAnilistAccessToken(token: string) {
 		userId: viewer.id,
 		username: viewer.name,
 		avatarUrl: viewer.avatarUrl ?? undefined,
+		scoreFormat: viewer.scoreFormat,
 	});
 	requestAniListSync();
 	lastUsername = viewer.name;

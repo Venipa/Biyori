@@ -123,4 +123,5 @@ export const account = sqliteTable("account", {
 	id: integer("id").primaryKey(),
 	username: text("username").notNull(),
 	avatarUrl: text("avatar_url").notNull().default(""),
+	scoreFormat: text("score_format").notNull().default("POINT_100"),
 });

@@ -2,8 +2,8 @@ import { t } from "@biyori/translations/i18n";
 import { eq } from "drizzle-orm";
 import { ANIME_STALE_MS, isAnimeStale } from "../lib/anime-stale";
 import { clearActivity, completeActivity, upsertActivity } from "./activity";
-import { readAnilistAuth } from "./anilist/store";
-import { syncAniListList, syncAniListLive } from "./anilist/sync";
+import { readAnilistAuth, writeAnilistAuth } from "./anilist/store";
+import { fetchViewer, syncAniListList, syncAniListLive } from "./anilist/sync";
 import type { DatabaseClient } from "./db";
 import { appSetting } from "./db/schema";
 import { shouldBumpListRevision } from "./list-revision";
@@ -253,6 +253,14 @@ async function runSync(): Promise<void> {
 		}
 
 		emitRunning(synchronizingMessage(), null, null);
+
+		const viewer = await fetchViewer(auth.accessToken, signal);
+		writeAnilistAuth({
+			...auth,
+			username: viewer.name,
+			avatarUrl: viewer.avatarUrl ?? undefined,
+			scoreFormat: viewer.scoreFormat,
+		});
 
 		let lastListBumpAt = 0;
 		const synced = await syncAniListList(db, {

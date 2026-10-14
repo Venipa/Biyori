@@ -16,7 +16,7 @@ import {
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
 import { genreLabel } from "@/mainview/lib/anime-list-filter";
-import { airingBarClass, formatAiredRange, formatPopularity, formatScore, imageFooterText } from "@/mainview/lib/season-view";
+import { airingBarClass, formatAiredRange, formatCommunityScore, formatPopularity, imageFooterText } from "@/mainview/lib/season-view";
 import { cn } from "@/mainview/lib/utils";
 import type { ListStatus } from "@/shared/list";
 
@@ -120,7 +120,7 @@ export function SeasonCard(props: {
 								<span className={quietText}>{t("seasons.producers")}</span>
 								<span className='truncate'>{item.producers.length > 0 ? item.producers.join(", ") : t("seasons.unknownMark")}</span>
 								<span className={quietText}>{t("seasons.scoreLabel")}</span>
-								<span>{formatScore(item.averageScore)}</span>
+								<span>{formatCommunityScore(item.averageScore)}</span>
 								<span className={quietText}>{t("seasons.popularityLabel")}</span>
 								<span>{formatPopularity(item.popularity)}</span>
 							</div>

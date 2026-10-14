@@ -1,9 +1,12 @@
 import { Popover } from "@base-ui/react/popover";
 import { useTranslation } from "@biyori/translations/react";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, StarIcon } from "lucide-react";
 import { useId, useState } from "react";
+import { type AnilistScoreFormat, displayToRaw, formatScore, rawToDisplay, scoreScale } from "@/lib/anilist-score";
 import { Button } from "@/mainview/components/ui/button";
 import { Input } from "@/mainview/components/ui/input";
+import { Slider } from "@/mainview/components/ui/slider";
+import { useAnilistScoreFormat } from "@/mainview/lib/anilist-score-format";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
@@ -23,11 +26,81 @@ type AnimeScoreControlProps = {
 	showChevron?: boolean;
 };
 
-function storedScore(score: number | null): number {
-	if (score == null || score <= 0) {
-		return 0;
+type AnimeScoreFieldsProps = {
+	id: string;
+	raw: number | null;
+	format: AnilistScoreFormat;
+	onChange: (raw: number | null) => void;
+};
+
+function ScoreStars({ raw, format, onChange }: Pick<AnimeScoreFieldsProps, "raw" | "format" | "onChange">) {
+	const { t } = useTranslation();
+	const current = rawToDisplay(raw, format);
+	return (
+		<div className='flex items-center gap-0.5'>
+			{[1, 2, 3, 4, 5].map((star) => (
+				<Button
+					key={star}
+					type='button'
+					variant='ghost'
+					size='icon-sm'
+					aria-label={t("anime.scoreValue", { score: `${star}/5` })}
+					aria-pressed={star <= current}
+					onClick={() => {
+						onChange(displayToRaw(star, format));
+					}}>
+					<StarIcon className={cn(star <= current ? "fill-current" : "text-muted-foreground")} />
+				</Button>
+			))}
+		</div>
+	);
+}
+
+export function AnimeScoreFields({ id, raw, format, onChange }: AnimeScoreFieldsProps) {
+	const { t } = useTranslation();
+	const scale = scoreScale(format);
+	const display = rawToDisplay(raw, format);
+	if (format === "POINT_5") {
+		return <ScoreStars raw={raw} format={format} onChange={onChange} />;
 	}
-	return Math.min(100, Math.trunc(score));
+	return (
+		<div className='flex items-center gap-2'>
+			<Slider
+				className='min-w-0 flex-1'
+				min={0}
+				max={scale.max}
+				step={scale.step}
+				value={display}
+				aria-label={t("anime.score")}
+				onValueChange={(next) => {
+					onChange(displayToRaw(next, format));
+				}}
+			/>
+			<Input
+				id={id}
+				className='w-20 tabular-nums'
+				type='number'
+				min={0}
+				max={scale.max}
+				step={scale.step}
+				inputMode={scale.step < 1 ? "decimal" : "numeric"}
+				placeholder={t("anime.scoreRange", { min: 0, max: scale.max })}
+				value={display > 0 ? display : ""}
+				onChange={(event) => {
+					const value = event.target.value;
+					if (value === "") {
+						onChange(null);
+						return;
+					}
+					const next = Number(value);
+					if (!Number.isFinite(next)) {
+						return;
+					}
+					onChange(displayToRaw(next, format));
+				}}
+			/>
+		</div>
+	);
 }
 
 export function AnimeScoreControl({
@@ -47,12 +120,14 @@ export function AnimeScoreControl({
 	const { t } = useTranslation();
 	const utils = trpc.useUtils();
 	const saveEntry = trpc.anilist.saveEntry.useMutation();
-	const current = storedScore(score);
+	const format = useAnilistScoreFormat();
+	const currentRaw = score != null && score > 0 ? Math.min(100, Math.trunc(score)) : 0;
 	const [open, setOpen] = useState(false);
-	const [draft, setDraft] = useState(current);
+	const [draft, setDraft] = useState<number | null>(currentRaw > 0 ? currentRaw : null);
 	const parsedStatus = listStatusSchema.safeParse(status);
-	const label = current > 0 ? t("anime.scoreValue", { score: current }) : t("anime.score");
-	const scorePart = <span className='inline-flex min-w-8 items-center justify-center self-stretch bg-muted px-2 tabular-nums'>{current > 0 ? current : "-"}</span>;
+	const formatted = formatScore(currentRaw > 0 ? currentRaw : null, format);
+	const label = currentRaw > 0 ? t("anime.scoreValue", { score: formatted }) : t("anime.score");
+	const scorePart = <span className='inline-flex min-w-8 items-center justify-center self-stretch bg-muted px-2 tabular-nums'>{formatted}</span>;
 	const labelPart = (
 		<span className='inline-flex items-center gap-1 px-2.5'>
 			{t("anime.score")}
@@ -61,8 +136,10 @@ export function AnimeScoreControl({
 	);
 	const divider = <span aria-hidden className='w-px self-stretch bg-border' />;
 
-	function commit(next: number): void {
-		if (!parsedStatus.success || next === current || saveEntry.isPending) {
+	function commit(next: number | null): void {
+		const stored = next != null && next > 0 ? next : null;
+		const previous = currentRaw > 0 ? currentRaw : null;
+		if (!parsedStatus.success || stored === previous || saveEntry.isPending) {
 			return;
 		}
 		const listStatus: ListStatus = parsedStatus.data;
@@ -73,7 +150,7 @@ export function AnimeScoreControl({
 				progress,
 				notes,
 				rewatching,
-				score: next > 0 ? next : null,
+				score: stored,
 				timesRewatched,
 				dateStarted,
 				dateCompleted,
@@ -83,7 +160,7 @@ export function AnimeScoreControl({
 					if (!snapshot?.match || snapshot.match.id !== animeId) {
 						return snapshot;
 					}
-					return { ...snapshot, match: { ...snapshot.match, score: next } };
+					return { ...snapshot, match: { ...snapshot.match, score: stored } };
 				});
 				void invalidateAnimeQueries(utils, "entrySaved", animeId);
 			});
@@ -94,7 +171,7 @@ export function AnimeScoreControl({
 			open={open}
 			onOpenChange={(next) => {
 				if (next) {
-					setDraft(current);
+					setDraft(currentRaw > 0 ? currentRaw : null);
 				} else {
 					commit(draft);
 				}
@@ -110,44 +187,12 @@ export function AnimeScoreControl({
 			</Popover.Trigger>
 			<Popover.Portal>
 				<Popover.Positioner className='isolate z-50 outline-none' side='bottom' align='start' sideOffset={4}>
-					<Popover.Popup className='z-50 w-56 rounded-lg bg-popover p-3 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none transition-[opacity,translate] duration-150 ease-out motion-reduce:transition-none data-[ending-style]:-translate-y-2 data-[starting-style]:-translate-y-2 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0'>
+					<Popover.Popup className='z-50 w-72 rounded-lg bg-popover p-3 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none transition-[opacity,translate] duration-150 ease-out motion-reduce:transition-none data-[ending-style]:-translate-y-2 data-[starting-style]:-translate-y-2 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0'>
 						<div className='flex flex-col gap-3'>
 							<label htmlFor={scoreId} className='text-sm font-medium'>
 								{t("anime.score")}
 							</label>
-							<input
-								type='range'
-								min={0}
-								max={100}
-								step={1}
-								value={draft}
-								aria-label={t("anime.score")}
-								className='w-full accent-primary'
-								onChange={(event) => {
-									setDraft(Number(event.target.value));
-								}}
-							/>
-							<Input
-								id={scoreId}
-								type='number'
-								min={0}
-								max={100}
-								inputMode='numeric'
-								value={draft > 0 ? draft : ""}
-								placeholder={t("anime.scoreZero")}
-								onChange={(event) => {
-									const raw = event.target.value;
-									if (raw === "") {
-										setDraft(0);
-										return;
-									}
-									const next = Number(raw);
-									if (!Number.isFinite(next)) {
-										return;
-									}
-									setDraft(Math.min(100, Math.max(0, Math.trunc(next))));
-								}}
-							/>
+							<AnimeScoreFields id={scoreId} raw={draft} format={format} onChange={setDraft} />
 						</div>
 					</Popover.Popup>
 				</Popover.Positioner>
