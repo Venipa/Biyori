@@ -1,9 +1,11 @@
 import { t } from "@biyori/translations/react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LayoutGroup, motion } from "motion/react";
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { SettingsCategoryNav, type SettingsCategoryNavItem } from "@/mainview/components/app/settings/settings-category-nav";
+import { SettingsPageCardsHost, type SettingsPageCardsUpdate } from "@/mainview/components/app/settings/settings-page-nav";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import { matchSettingsNav, settingsSectionHref, settingsSections } from "@/mainview/lib/settings-nav";
+import { matchSettingsNav, settingsCardElementId, settingsCardFromViewport, settingsSectionHref, settingsSections } from "@/mainview/lib/settings-nav";
 import { cn } from "@/mainview/lib/utils";
 
 function sectionCopy(id: string): { label: string; description: string } {
@@ -110,51 +112,130 @@ export function SettingsChrome({ children, overlay }: { children: ReactNode; ove
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
 	});
+	const cardSearch = useRouterState({
+		select: (state) => {
+			const card = (state.location.search as { card?: unknown }).card;
+			return typeof card === "string" ? card : "";
+		},
+	});
+	const navigate = useNavigate();
 	const { section: active, child: activeChild } = matchSettingsNav(pathname);
 	const heading = activeChild && active ? childCopy(active.id, activeChild.id) : active ? sectionCopy(active.id) : undefined;
+	const pathRef = useRef(pathname);
+	pathRef.current = pathname;
+	const [pageCards, setPageCards] = useState<{ path: string; items: SettingsCategoryNavItem[] } | null>(null);
+	if (pageCards && pageCards.path !== pathname) {
+		setPageCards(null);
+	}
+	const cards = pageCards?.path === pathname ? pageCards.items : null;
+	const cardFromSearch = cards?.some((item) => item.id === cardSearch) ? cardSearch : (cards?.[0]?.id ?? "");
+	const [spyPath, setSpyPath] = useState(pathname);
+	const [spyCard, setSpyCard] = useState("");
+	if (spyPath !== pathname) {
+		setSpyPath(pathname);
+		setSpyCard("");
+	}
+	const activeCard = spyCard || cardFromSearch;
+	const cardsRef = useRef<HTMLDivElement>(null);
+
+	const applyPageCards = useCallback((update: SettingsPageCardsUpdate) => {
+		if (update.path !== pathRef.current) {
+			return;
+		}
+		setPageCards(update.items ? { path: update.path, items: update.items } : null);
+	}, []);
+
+	useLayoutEffect(() => {
+		if (!cardSearch) {
+			return;
+		}
+		document.getElementById(settingsCardElementId(cardSearch))?.scrollIntoView({ behavior: "smooth", block: "start" });
+	}, [cardSearch]);
+
+	useEffect(() => {
+		const ids = cards?.map((item) => item.id);
+		if (!ids?.length) {
+			setSpyCard("");
+			return;
+		}
+		const root = cardsRef.current?.closest("[data-slot='scroll-area-viewport']");
+		if (!(root instanceof HTMLElement)) {
+			return;
+		}
+		const onScroll = () => {
+			const next = settingsCardFromViewport(ids, root, 52);
+			setSpyCard((prev) => (prev === next ? prev : next));
+		};
+		onScroll();
+		root.addEventListener("scroll", onScroll, { passive: true });
+		return () => {
+			root.removeEventListener("scroll", onScroll);
+		};
+	}, [cards]);
 
 	return (
-		<div className='flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-background text-foreground'>
-			<div className='flex min-h-0 flex-1 gap-0 overflow-hidden'>
-				<ScrollArea className='h-full w-48 shrink-0 bg-card/20 border-r'>
-					<nav aria-label={t("settings.nav.sections")} className='flex flex-col gap-1 p-2'>
-						{settingsSections.map((item) => {
-							const children = "children" in item ? item.children : undefined;
-							if (children?.length) {
-								const firstHref = settingsSectionHref(item.id, children[0].id);
-								const groupActive = active?.id === item.id;
+		<SettingsPageCardsHost setCards={applyPageCards}>
+			<div className='flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-background text-foreground'>
+				<div className='flex min-h-0 flex-1 gap-0 overflow-hidden'>
+					<ScrollArea className='h-full w-48 shrink-0 bg-card/20 border-r'>
+						<nav aria-label={t("settings.nav.sections")} className='flex flex-col gap-1 p-2'>
+							{settingsSections.map((item) => {
+								const children = "children" in item ? item.children : undefined;
+								if (children?.length) {
+									const firstHref = settingsSectionHref(item.id, children[0].id);
+									const groupActive = active?.id === item.id;
+									return (
+										<div key={item.id} className='flex flex-col gap-0.5'>
+											<Link to={firstHref} className={navLinkClass(groupActive)}>
+												<item.icon className='size-4 shrink-0' />
+												<span className='truncate'>{sectionCopy(item.id).label}</span>
+											</Link>
+											<SettingsSubNav sectionId={item.id} items={children} pathname={pathname} />
+										</div>
+									);
+								}
+								const href = settingsSectionHref(item.id);
+								const isActive = pathname === href;
 								return (
-									<div key={item.id} className='flex flex-col gap-0.5'>
-										<Link to={firstHref} className={navLinkClass(groupActive)}>
-											<item.icon className='size-4 shrink-0' />
-											<span className='truncate'>{sectionCopy(item.id).label}</span>
-										</Link>
-										<SettingsSubNav sectionId={item.id} items={children} pathname={pathname} />
-									</div>
+									<Link key={item.id} to={href} aria-current={isActive ? "page" : undefined} className={navLinkClass(isActive)}>
+										<item.icon className='size-4 shrink-0' />
+										<span className='truncate'>{sectionCopy(item.id).label}</span>
+									</Link>
 								);
-							}
-							const href = settingsSectionHref(item.id);
-							const isActive = pathname === href;
-							return (
-								<Link key={item.id} to={href} aria-current={isActive ? "page" : undefined} className={navLinkClass(isActive)}>
-									<item.icon className='size-4 shrink-0' />
-									<span className='truncate'>{sectionCopy(item.id).label}</span>
-								</Link>
-							);
-						})}
-					</nav>
-				</ScrollArea>
-				<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-muted/30'>
-					<ScrollArea className='min-h-0 flex-1' viewportClassName='rounded-none pb-20'>
-						<div className='sticky top-0 z-10 flex flex-col gap-0.5 border-b bg-card/80 px-4 py-3 backdrop-blur-md'>
-							<h2 className='text-lg font-semibold tracking-tight'>{heading?.label ?? t("settings.nav.title")}</h2>
-							{heading?.description ? <p className='text-sm text-muted-foreground'>{heading.description}</p> : null}
-						</div>
-						<div className='flex flex-col gap-4 p-4'>{children}</div>
+							})}
+						</nav>
 					</ScrollArea>
-					{overlay}
+					<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-muted/30'>
+						<ScrollArea className='min-h-0 flex-1' viewportClassName='rounded-none pb-20'>
+							<div className='sticky top-0 z-10 border-b bg-card/80 px-2 py-1 backdrop-blur-md'>
+								{cards?.length ? (
+									<SettingsCategoryNav
+										key={pathname}
+										aria-label={heading?.label ?? t("settings.nav.title")}
+										items={cards}
+										value={activeCard}
+										onValueChange={(id) => {
+											void navigate({
+												href: `${pathname}?card=${encodeURIComponent(id)}`,
+												replace: true,
+											});
+										}}
+									/>
+								) : (
+									<div className='flex flex-col gap-0.5 px-2 py-2'>
+										<h2 className='text-lg font-semibold tracking-tight'>{heading?.label ?? t("settings.nav.title")}</h2>
+										{heading?.description ? <p className='text-sm text-muted-foreground'>{heading.description}</p> : null}
+									</div>
+								)}
+							</div>
+							<div ref={cardsRef} className='flex flex-col gap-4 p-4'>
+								{children}
+							</div>
+						</ScrollArea>
+						{overlay}
+					</div>
 				</div>
 			</div>
-		</div>
+		</SettingsPageCardsHost>
 	);
 }

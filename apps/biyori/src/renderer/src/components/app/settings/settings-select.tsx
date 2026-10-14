@@ -33,6 +33,7 @@ export function SettingsSelect({ id, value, onValueChange, options, "aria-invali
 					{options.map((option) => (
 						<SelectItem key={option.value} value={option.value} disabled={option.disabled}>
 							{option.label}
+							{option.hint ? <span className='text-muted-foreground'>{option.hint}</span> : null}
 						</SelectItem>
 					))}
 				</SelectGroup>

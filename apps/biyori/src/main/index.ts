@@ -14,6 +14,7 @@ import { isStartupLaunch, syncLoginItem } from "./startup";
 import { shouldStartInTray } from "./startup-login";
 import { hasIndexedLibrary, runStartupScan } from "./track/library";
 import { initElectronTrpc } from "./trpc-handler";
+import { startUiLocaleSync } from "./ui-locale";
 import { windowManager } from "./windows";
 
 app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");
@@ -98,6 +99,7 @@ if (!app.requestSingleInstanceLock()) {
 		});
 
 		await boot();
+		startUiLocaleSync();
 		initElectronTrpc();
 		startProtocolHandling();
 		const bootSettings = loadAppSettings();

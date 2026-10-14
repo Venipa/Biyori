@@ -4,6 +4,7 @@ export type SettingsToggleOption = {
 	value: string;
 	label: string;
 	disabled?: boolean;
+	hint?: string;
 };
 
 type SettingsToggleGroupProps = {

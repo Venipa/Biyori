@@ -95,6 +95,7 @@ function providerLabel(id: string): string {
 
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { SettingsFieldError } from "@/mainview/components/app/settings/settings-field-error";
+import { SettingsPageNav } from "@/mainview/components/app/settings/settings-page-nav";
 import { SettingsSectionCard } from "@/mainview/components/app/settings/settings-section-card";
 import { FormCheckbox } from "@/mainview/components/app/shared/form-checkbox";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
@@ -126,23 +127,23 @@ export function RecognitionGeneralPanel() {
 	const form = useFormContext<AppSettingsInput>();
 
 	return (
-		<>
-			<SettingsSectionCard title={t("settings.recognition.title")} description={t("settings.recognition.description")}>
+		<SettingsPageNav>
+			<SettingsSectionCard id='enable' title={t("settings.recognition.title")} description={t("settings.recognition.description")}>
 				<FormCheckbox control={form.control} name='enableRecognition' id={enableId} label={t("settings.recognition.enable")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.recognition.validationTitle")}>
+			<SettingsSectionCard id='validation' title={t("settings.recognition.validationTitle")}>
 				<FormCheckbox control={form.control} name='ignoreOutsideLibrary' id={ignoreId} label={t("settings.recognition.ignoreOutside")} />
 				<FormCheckbox control={form.control} name='ignoreOutOfRangeEpisode' id={rangeId} label={t("settings.recognition.ignoreRange")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.recognition.recognizedTitle")}>
+			<SettingsSectionCard id='recognized' title={t("settings.recognition.recognizedTitle")}>
 				<FormCheckbox control={form.control} name='notifyOnRecognized' id={notifyOkId} label={t("settings.recognition.notify")} />
 				<FormCheckbox control={form.control} name='goToNowPlayingOnRecognized' id={gotoOkId} label={t("settings.recognition.goToNowPlaying")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.recognition.unrecognizedTitle")}>
+			<SettingsSectionCard id='unrecognized' title={t("settings.recognition.unrecognizedTitle")}>
 				<FormCheckbox control={form.control} name='notifyOnUnrecognized' id={notifyBadId} label={t("settings.recognition.notify")} />
 				<FormCheckbox control={form.control} name='goToNowPlayingOnUnrecognized' id={gotoBadId} label={t("settings.recognition.goToNowPlaying")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.recognition.updatesTitle")} description={t("settings.recognition.updatesDescription")}>
+			<SettingsSectionCard id='updates' title={t("settings.recognition.updatesTitle")} description={t("settings.recognition.updatesDescription")}>
 				<Field>
 					<FieldLabel htmlFor={delayId}>{t("settings.recognition.delay")}</FieldLabel>
 					<div className='flex items-center gap-2'>
@@ -161,7 +162,7 @@ export function RecognitionGeneralPanel() {
 				<FormCheckbox control={form.control} name='waitUntilPlayerExits' id={waitId} label={t("settings.recognition.waitExit")} />
 				<FormCheckbox control={form.control} name='askToConfirmUpdate' id={confirmId} label={t("settings.recognition.confirm")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.recognition.ignoredTitle")} description={t("settings.recognition.ignoredDescription")}>
+			<SettingsSectionCard id='ignored' title={t("settings.recognition.ignoredTitle")} description={t("settings.recognition.ignoredDescription")}>
 				<Field>
 					<FieldLabel htmlFor={ignoredId} className='sr-only'>
 						{t("settings.recognition.ignoredLabel")}
@@ -170,16 +171,16 @@ export function RecognitionGeneralPanel() {
 					<SettingsFieldError<AppSettingsInput> name='ignoredStrings' />
 				</Field>
 			</SettingsSectionCard>
-		</>
+		</SettingsPageNav>
 	);
 }
 
 export function RecognitionSourcesPanel() {
 	return (
-		<>
+		<SettingsPageNav>
 			<MediaPlayersFields />
 			<StreamingFields />
-		</>
+		</SettingsPageNav>
 	);
 }
 
@@ -190,7 +191,7 @@ function MediaPlayersFields() {
 	const form = useFormContext<AppSettingsInput>();
 	const playersEnabled = form.watch("enableMediaPlayerDetection");
 	return (
-		<SettingsSectionCard title={t("settings.recognition.playersTitle")} description={t("settings.recognition.playersDescription")}>
+		<SettingsSectionCard id='players' title={t("settings.recognition.playersTitle")} description={t("settings.recognition.playersDescription")}>
 			<FormCheckbox control={form.control} name='enableMediaPlayerDetection' id={playersEnableId} label={t("settings.recognition.enablePlayers")} />
 			<Controller
 				control={form.control}
@@ -251,7 +252,7 @@ function StreamingFields() {
 	const form = useFormContext<AppSettingsInput>();
 	const streamingEnabled = form.watch("enableStreamingDetection");
 	return (
-		<SettingsSectionCard title={t("settings.recognition.streamingTitle")} description={t("settings.recognition.streamingDescription")}>
+		<SettingsSectionCard id='streaming' title={t("settings.recognition.streamingTitle")} description={t("settings.recognition.streamingDescription")}>
 			<FormCheckbox control={form.control} name='enableStreamingDetection' id={streamEnableId} label={t("settings.recognition.enableStreaming")} />
 			<Controller
 				control={form.control}

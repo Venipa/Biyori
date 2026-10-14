@@ -35,6 +35,36 @@ export const settingsSections = [
 
 export type SettingsSectionId = (typeof settingsSections)[number]["id"];
 
+export function settingsCardElementId(cardId: string): string {
+	return `settings-card-${cardId}`;
+}
+
+export function settingsCardFromViewport(cardIds: readonly string[], root: HTMLElement, headerPx: number): string {
+	if (cardIds.length === 0) {
+		return "";
+	}
+	if (root.scrollTop + root.clientHeight >= root.scrollHeight - 2) {
+		return cardIds[cardIds.length - 1] ?? "";
+	}
+	const line = root.getBoundingClientRect().top + headerPx;
+	let current = cardIds[0] ?? "";
+	for (const id of cardIds) {
+		const el = document.getElementById(settingsCardElementId(id));
+		if (el && el.getBoundingClientRect().top <= line + 1) {
+			current = id;
+		}
+	}
+	return current;
+}
+
+export function parseSettingsCardSearch(search: Record<string, unknown>): { card?: string } {
+	const card = search.card;
+	if (typeof card === "string" && card.length > 0) {
+		return { card };
+	}
+	return {};
+}
+
 export function settingsSectionHref(sectionId: string, childId?: string): string {
 	return childId ? `/settings/${sectionId}/${childId}` : `/settings/${sectionId}`;
 }
@@ -61,6 +91,7 @@ export const settingsFieldNav: Record<string, { section: SettingsSectionId; chil
 	defaultService: { section: "services" },
 	titleLanguage: { section: "application" },
 	uiZoom: { section: "application" },
+	uiLocale: { section: "application" },
 	defaultAddToListStatus: { section: "application" },
 	autostart: { section: "application" },
 	autostartTray: { section: "application" },

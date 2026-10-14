@@ -1,3 +1,4 @@
+import { parseUiLocale, UI_LOCALE_IDS } from "@biyori/translations/ui-locales";
 import { z } from "zod";
 import { listStatusSchema } from "../../shared/list";
 import { parseUpdateChannel } from "../../shared/updater";
@@ -86,6 +87,7 @@ export const appSettingsSchema = z.object({
 	discordApplicationId: z.preprocess((value) => (typeof value === "string" ? value : ""), z.string()),
 	uiTheme: z.preprocess((value) => (typeof value === "string" && value.length > 0 ? value : "Default"), z.string().min(1, "common.required")),
 	uiZoom: z.coerce.number().int().min(75).max(150).default(100),
+	uiLocale: z.preprocess(parseUiLocale, z.enum(UI_LOCALE_IDS)),
 	updateChannel: z.preprocess((value) => parseUpdateChannel(value), z.enum(["stable", "beta", "alpha"])),
 	fileSizeThreshold: z.coerce.number().int().min(0, "common.required"),
 	mediaDetectionInterval: z.coerce.number().int().min(0, "common.required"),
@@ -174,6 +176,7 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	discordApplicationId: "",
 	uiTheme: "Default",
 	uiZoom: 100,
+	uiLocale: "en",
 	updateChannel: "stable",
 	fileSizeThreshold: 10485760,
 	mediaDetectionInterval: 5,

@@ -60,6 +60,18 @@ describe("parseAppSettings torrent filters", () => {
 		expect(parseAppSettings({ uiZoom: 200 }).uiZoom).toBe(100);
 	});
 
+	test("defaults missing uiLocale to en", () => {
+		expect(parseAppSettings({}).uiLocale).toBe("en");
+	});
+
+	test("keeps a valid uiLocale", () => {
+		expect(parseAppSettings({ uiLocale: "ja" }).uiLocale).toBe("ja");
+	});
+
+	test("falls back when uiLocale is unknown", () => {
+		expect(parseAppSettings({ uiLocale: "xx" }).uiLocale).toBe("en");
+	});
+
 	test("fresh settings are not onboarded", () => {
 		expect(parseAppSettings(null).onboardingComplete).toBe(false);
 	});

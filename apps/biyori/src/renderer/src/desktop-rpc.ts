@@ -16,6 +16,7 @@ export const desktopRpc = {
 		minimizeWindow: (_input?: Record<string, never>) => ipcTrpc.desktop.minimizeWindow.mutate(),
 		toggleMaximizeWindow: (_input?: Record<string, never>) => ipcTrpc.desktop.toggleMaximizeWindow.mutate(),
 		closeWindow: (_input?: Record<string, never>) => ipcTrpc.desktop.closeWindow.mutate(),
+		quit: (input?: { force?: boolean }) => ipcTrpc.desktop.quit.mutate(input),
 		windowState: (_input?: Record<string, never>) => ipcTrpc.desktop.windowState.query(),
 		openPath: (input: { path: string }) => ipcTrpc.desktop.openPath.mutate(input),
 		openExternal: (input: { url: string }) => ipcTrpc.desktop.openExternal.mutate(input),

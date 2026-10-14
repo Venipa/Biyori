@@ -346,6 +346,8 @@ settings:
   nav:
     title: Settings
     sections: Settings sections
+    scrollLeft: Scroll left
+    scrollRight: Scroll right
     services:
       label: Services
       description: List providers and account login.
@@ -427,7 +429,9 @@ settings:
     english: English
     native: Native
     displayTitle: Display
-    displayDescription: Interface size. OS display scale is unchanged.
+    displayDescription: Interface language and size. OS display scale is unchanged.
+    language: Language
+    languageToBeAdded: To be added
     zoom: Zoom
     addToListTitle: Add to list
     addToListDescription: Status used when you add a title to your list.

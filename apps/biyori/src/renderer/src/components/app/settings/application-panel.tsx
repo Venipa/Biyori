@@ -1,13 +1,13 @@
 import { t, useTranslation } from "@biyori/translations/react";
+import { UI_LOCALES } from "@biyori/translations/ui-locales";
 import { useId } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import type { AppSettingsInput } from "@/lib/schemas/app-settings";
 import { SettingsFieldError } from "@/mainview/components/app/settings/settings-field-error";
+import { SettingsPageNav } from "@/mainview/components/app/settings/settings-page-nav";
 import { SettingsSectionCard } from "@/mainview/components/app/settings/settings-section-card";
 import { SettingsSelect } from "@/mainview/components/app/settings/settings-select";
-import { SettingsToggleGroup } from "@/mainview/components/app/settings/settings-toggle-group";
 import { FormCheckbox } from "@/mainview/components/app/shared/form-checkbox";
-import { UpdateChannelToggle } from "@/mainview/components/app/update/channel-toggle";
 import { Field, FieldError, FieldLabel } from "@/mainview/components/ui/field";
 import { Textarea } from "@/mainview/components/ui/textarea";
 import { listStatusSchema } from "@/shared/list";
@@ -41,6 +41,12 @@ function listStatusLabel(status: string): string {
 
 export function ApplicationPanel() {
 	const { t } = useTranslation();
+	const localeOptions = UI_LOCALES.map((item) => ({
+		value: item.id,
+		label: item.nativeLabel,
+		disabled: !item.ready,
+		hint: item.ready ? undefined : t("settings.application.languageToBeAdded"),
+	}));
 	const titleLanguageOptions = [
 		{ value: "Romaji", label: t("settings.application.romaji") },
 		{ value: "English", label: t("settings.application.english") },
@@ -51,6 +57,7 @@ export function ApplicationPanel() {
 		label: listStatusLabel(status),
 	}));
 	const titleLanguageId = useId();
+	const uiLocaleId = useId();
 	const uiZoomId = useId();
 	const defaultAddToListStatusId = useId();
 	const autostartId = useId();
@@ -61,15 +68,15 @@ export function ApplicationPanel() {
 	const form = useFormContext<AppSettingsInput>();
 
 	return (
-		<>
-			<SettingsSectionCard title={t("settings.application.titlesTitle")} description={t("settings.application.titlesDescription")}>
+		<SettingsPageNav>
+			<SettingsSectionCard id='titles' title={t("settings.application.titlesTitle")} description={t("settings.application.titlesDescription")}>
 				<Controller
 					control={form.control}
 					name='titleLanguage'
 					render={({ field, fieldState }) => (
 						<Field data-invalid={fieldState.invalid || undefined}>
 							<FieldLabel htmlFor={titleLanguageId}>{t("settings.application.titleLanguage")}</FieldLabel>
-							<SettingsToggleGroup
+							<SettingsSelect
 								id={titleLanguageId}
 								value={typeof field.value === "string" ? field.value : "Romaji"}
 								onValueChange={field.onChange}
@@ -81,7 +88,24 @@ export function ApplicationPanel() {
 					)}
 				/>
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.application.displayTitle")} description={t("settings.application.displayDescription")}>
+			<SettingsSectionCard id='display' title={t("settings.application.displayTitle")} description={t("settings.application.displayDescription")}>
+				<Controller
+					control={form.control}
+					name='uiLocale'
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid || undefined}>
+							<FieldLabel htmlFor={uiLocaleId}>{t("settings.application.language")}</FieldLabel>
+							<SettingsSelect
+								id={uiLocaleId}
+								value={typeof field.value === "string" ? field.value : "en"}
+								onValueChange={field.onChange}
+								options={localeOptions}
+								aria-invalid={fieldState.invalid}
+							/>
+							<FieldError errors={[fieldState.error]} />
+						</Field>
+					)}
+				/>
 				<Controller
 					control={form.control}
 					name='uiZoom'
@@ -100,7 +124,7 @@ export function ApplicationPanel() {
 					)}
 				/>
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.application.addToListTitle")} description={t("settings.application.addToListDescription")}>
+			<SettingsSectionCard id='addToList' title={t("settings.application.addToListTitle")} description={t("settings.application.addToListDescription")}>
 				<Controller
 					control={form.control}
 					name='defaultAddToListStatus'
@@ -119,36 +143,46 @@ export function ApplicationPanel() {
 					)}
 				/>
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.application.startupTitle")}>
+			<SettingsSectionCard id='startup' title={t("settings.application.startupTitle")}>
 				<FormCheckbox control={form.control} name='autostart' id={autostartId} label={t("settings.application.autostart")} />
 				<AutostartTrayField />
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.application.updatesTitle")} description={t("settings.application.updatesDescription")}>
+			<SettingsSectionCard id='updates' title={t("settings.application.updatesTitle")} description={t("settings.application.updatesDescription")}>
 				<Controller
 					control={form.control}
 					name='updateChannel'
 					render={({ field, fieldState }) => (
 						<Field data-invalid={fieldState.invalid || undefined}>
 							<FieldLabel htmlFor={updateChannelId}>{t("settings.application.releaseChannel")}</FieldLabel>
-							<UpdateChannelToggle id={updateChannelId} value={parseUpdateChannel(field.value)} onValueChange={field.onChange} />
+							<SettingsSelect
+								id={updateChannelId}
+								value={parseUpdateChannel(field.value)}
+								onValueChange={(value) => field.onChange(parseUpdateChannel(value))}
+								options={[
+									{ value: "stable", label: t("update.stable") },
+									{ value: "beta", label: t("update.beta") },
+									{ value: "alpha", label: t("update.alpha") },
+								]}
+								aria-invalid={fieldState.invalid}
+							/>
 							<FieldError errors={[fieldState.error]} />
 						</Field>
 					)}
 				/>
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.application.trayTitle")}>
+			<SettingsSectionCard id='tray' title={t("settings.application.trayTitle")}>
 				<FormCheckbox control={form.control} name='closeToTray' id={closeToTrayId} label={t("settings.application.closeToTray")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.application.privacyTitle")} description={t("settings.application.privacyDescription")}>
+			<SettingsSectionCard id='privacy' title={t("settings.application.privacyTitle")} description={t("settings.application.privacyDescription")}>
 				<FormCheckbox control={form.control} name='sendCrashReports' id={sendCrashReportsId} label={t("settings.application.sendCrashReports")} />
 			</SettingsSectionCard>
-			<SettingsSectionCard title={t("settings.application.externalLinksTitle")} description={t("settings.application.externalLinksDescription")}>
+			<SettingsSectionCard id='externalLinks' title={t("settings.application.externalLinksTitle")} description={t("settings.application.externalLinksDescription")}>
 				<Field>
 					<Textarea id={externalLinksId} className='min-h-28 font-mono text-xs' {...form.register("externalLinks")} />
 					<SettingsFieldError<AppSettingsInput> name='externalLinks' />
 				</Field>
 			</SettingsSectionCard>
-		</>
+		</SettingsPageNav>
 	);
 }
 

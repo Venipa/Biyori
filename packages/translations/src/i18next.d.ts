@@ -374,6 +374,8 @@ declare module "i18next" {
 					nav: {
 						title: string;
 						sections: string;
+						scrollLeft: string;
+						scrollRight: string;
 						services: {
 							label: string;
 							description: string;
@@ -473,6 +475,8 @@ declare module "i18next" {
 						native: string;
 						displayTitle: string;
 						displayDescription: string;
+						language: string;
+						languageToBeAdded: string;
 						zoom: string;
 						addToListTitle: string;
 						addToListDescription: string;

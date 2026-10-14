@@ -123,7 +123,7 @@ export function TopMenuBar() {
 						<MenubarSeparator />
 						<MenubarItem
 							onClick={() => {
-								void desktopRpc.request.closeWindow({});
+								void desktopRpc.request.quit({ force: true });
 							}}>
 							{t("shell.exit")}
 						</MenubarItem>

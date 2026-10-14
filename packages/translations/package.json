@@ -6,6 +6,7 @@
 	"exports": {
 		"./i18n": "./src/i18n.ts",
 		"./react": "./src/react.tsx",
+		"./ui-locales": "./src/ui-locales.ts",
 		"./locales/*": "./locales/*",
 		"./vite": "./src/vite.ts"
 	},

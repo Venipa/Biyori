@@ -8,6 +8,12 @@ void i18n.init({
 	interpolation: { escapeValue: false },
 });
 
+export function setUiLocale(locale: string): void {
+	if (i18n.language !== locale) {
+		void i18n.changeLanguage(locale);
+	}
+}
+
 const t = i18n.t.bind(i18n);
 
 export { i18n, t };
