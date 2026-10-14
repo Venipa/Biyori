@@ -36,6 +36,9 @@ export function createAppTray(onQuit: () => void): Tray {
 	} else {
 		created.setContextMenu(menu);
 		created.on("click", () => setTrayState("visible"));
+		created.on("right-click", () => {
+			created.popUpContextMenu(menu);
+		});
 	}
 
 	return created;

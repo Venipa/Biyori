@@ -38,5 +38,6 @@ export const windowManager = new WindowManager({
 		to: "/splash",
 		singleton: true,
 		resizable: false,
+		alwaysOnTop: true,
 	},
 });

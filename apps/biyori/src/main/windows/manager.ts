@@ -127,7 +127,7 @@ function attachOwnerFollow(child: BrowserWindow, parent: BrowserWindow): void {
 	});
 }
 
-function stealWindowFocus(win: BrowserWindow): void {
+export function stealWindowFocus(win: BrowserWindow): void {
 	if (win.isDestroyed()) {
 		return;
 	}

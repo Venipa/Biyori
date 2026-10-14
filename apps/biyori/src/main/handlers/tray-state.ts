@@ -1,5 +1,7 @@
 import { platform } from "@electron-toolkit/utils";
 import { app, type BrowserWindow } from "electron";
+import { windowManager } from "../windows";
+import { stealWindowFocus } from "../windows/manager";
 
 let mainWindowRef: BrowserWindow | null = null;
 
@@ -22,6 +24,13 @@ export function toggleTrayState(): void {
 }
 
 export function setTrayState(state: "visible" | "hidden"): void {
+	const splash = windowManager.get("splash");
+	if (splash) {
+		if (state === "visible") {
+			stealWindowFocus(splash);
+		}
+		return;
+	}
 	if (!mainWindowRef || mainWindowRef.isDestroyed()) {
 		return;
 	}
