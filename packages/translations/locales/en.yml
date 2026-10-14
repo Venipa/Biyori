@@ -1141,6 +1141,12 @@ anime:
   viewOnAnilist: View on AniList
   torrents: Torrents
   copy: Copy
+  viewPoster: View poster
+  savePosterAs: Save poster as...
+  copyPoster: Copy poster
+  copyPosterUrl: Copy poster URL
+  openPosterUrl: Open poster in browser
+  couldNotSavePoster: Could not save poster
   link: Link
   external: External
   shortcutCtrlN: Ctrl+N

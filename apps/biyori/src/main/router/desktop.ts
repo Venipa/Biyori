@@ -1,10 +1,11 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { observable } from "@trpc/server/observable";
-import { app, type BrowserWindow, dialog, Menu, shell } from "electron";
+import { app, dialog, Menu, shell } from "electron";
 import { z } from "zod";
 import { requestQuit } from "../handlers/quit-handler";
 import { setTrayState } from "../handlers/tray-state";
+import { runFileDialog } from "../lib/file";
 import { decryptPublicData, encryptPublicData } from "../lib/store/createYmlStore";
 import { t } from "../trpc";
 import { downloadAppUpdate, getUpdateState } from "../updater";
@@ -18,26 +19,6 @@ function requireWindow(getBrowserWindow: () => Electron.BrowserWindow | null) {
 		throw new Error("No browser window");
 	}
 	return win;
-}
-
-async function runFileDialog<T>(win: BrowserWindow | null, run: () => Promise<T>): Promise<T> {
-	const owner = win && !win.isDestroyed() ? win : null;
-	const nested = Boolean(owner?.getParentWindow());
-	if (nested && owner) {
-		owner.hide();
-	}
-	try {
-		// Unparented: attaching the dialog to main uses the same Windows sheet-disable
-		// as a modal child, and that dim can stick after close.
-		return await run();
-	} finally {
-		if (nested && owner && !owner.isDestroyed()) {
-			owner.show();
-			owner.focus();
-		} else if (owner && !owner.isDestroyed()) {
-			owner.focus();
-		}
-	}
 }
 
 function asPlainRecord(value: unknown): Record<string, unknown> {

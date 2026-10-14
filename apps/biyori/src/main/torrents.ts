@@ -11,6 +11,7 @@ import type { DatabaseClient } from "./db";
 import { episodeFile, torrentArchive } from "./db/schema";
 import { trackedFetch } from "./http-stats";
 import { appFeedDir } from "./lib/app-paths";
+import { safeFileStem } from "./lib/file";
 import { setAppNotice } from "./notice";
 import { loadAppSettings, loadTorrentFiltersFile, patchTorrentFiltersFile, subscribeFilters, subscribeSettings } from "./settings";
 import {
@@ -257,11 +258,6 @@ export function sortDownloadQueue(rows: TorrentItem[], settings: AppSettings): T
 	});
 }
 
-function safeFileStem(value: string): string {
-	const cleaned = value.replace(/[<>:"/\\|?*]/g, "_").trim();
-	return cleaned.slice(0, 80) || "torrent";
-}
-
 async function resolveDownloadDir(settings: AppSettings, title: string, match: MatchedAnime | null): Promise<string> {
 	let dir = "";
 	if (settings.torrentUseAnimeFolder && match?.folder.trim()) {
@@ -270,7 +266,7 @@ async function resolveDownloadDir(settings: AppSettings, title: string, match: M
 		dir = settings.torrentDownloadDir.trim();
 	}
 	if (dir && settings.torrentCreateSubfolder) {
-		dir = join(dir, safeFileStem(match?.title || title));
+		dir = join(dir, safeFileStem(match?.title || title, "torrent"));
 	}
 	const fileDir = settings.torrentFileDownloadPath.trim() || dir;
 	if (fileDir) {
@@ -302,7 +298,7 @@ async function openTorrent(link: string, title: string, settings: AppSettings, m
 	const dir = await resolveDownloadDir(settings, title, match);
 	const useMagnet = settings.torrentUseMagnet || link.startsWith("magnet:");
 	if (dir && useMagnet) {
-		await writeFile(join(dir, `${safeFileStem(title)}.magnet`), link, "utf8");
+		await writeFile(join(dir, `${safeFileStem(title, "torrent")}.magnet`), link, "utf8");
 		spawnTorrentClient(link, dir, settings);
 		return;
 	}
@@ -319,7 +315,7 @@ async function openTorrent(link: string, title: string, settings: AppSettings, m
 		}
 		const folder = appFeedDir();
 		await mkdir(folder, { recursive: true });
-		const filePath = join(folder, `${safeFileStem(title)}.torrent`);
+		const filePath = join(folder, `${safeFileStem(title, "torrent")}.torrent`);
 		await writeFile(filePath, bytes);
 		spawnTorrentClient(filePath, dir, settings);
 		return;

@@ -17,6 +17,7 @@ import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { EpisodeCountInput } from "@/mainview/components/app/anime/episode-count-input";
 import { AnimeListAction, AnimeListStatusSelect } from "@/mainview/components/app/anime/list-action";
 import { AnimeInfoBackHistory } from "@/mainview/components/app/anime-info/back-history";
+import { AnimeInfoPoster } from "@/mainview/components/app/anime-info/poster";
 import { RelatedMediaSection } from "@/mainview/components/app/anime-info/related-media";
 import { AnimeSeriesInfo } from "@/mainview/components/app/anime-info/series-info";
 import { AnimeInfoSheetPeek } from "@/mainview/components/app/anime-info/sheet-peek";
@@ -325,16 +326,7 @@ function AnimeInfoBody({
 
 				<div className='relative z-10 -mt-14 flex min-h-0 flex-1 gap-4 px-4'>
 					<div className='flex w-56 shrink-0 flex-col gap-2 self-start'>
-						<div className='aspect-2/3 w-full overflow-hidden rounded-md border bg-muted shadow-md ring-1 ring-foreground/10'>
-							<AnimeCover
-								id={anime.id}
-								coverUrl={anime.coverUrl || undefined}
-								alt={t("nowPlaying.keyArt", { title: anime.title })}
-								width={224}
-								height={336}
-								className='size-full'
-							/>
-						</div>
+						<AnimeInfoPoster id={anime.id} title={anime.title} coverUrl={anime.coverUrl} />
 						<div className='grid grid-cols-2 md:grid-cols-3 gap-1'>
 							{posterExternalLinks(anime.id, anime.title).map((link) => (
 								<Button

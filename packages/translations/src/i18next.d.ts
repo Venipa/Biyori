@@ -1216,6 +1216,12 @@ declare module "i18next" {
 					viewOnAnilist: string;
 					torrents: string;
 					copy: string;
+					viewPoster: string;
+					savePosterAs: string;
+					copyPoster: string;
+					copyPosterUrl: string;
+					openPosterUrl: string;
+					couldNotSavePoster: string;
 					link: string;
 					external: string;
 					shortcutCtrlN: string;
