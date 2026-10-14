@@ -441,6 +441,15 @@ declare module "i18next" {
 						discardTitle: string;
 						discardDescription: string;
 					};
+					services: {
+						displayTitle: string;
+						displayDescription: string;
+						scoreFormat: string;
+						scoreFormatPoint100: string;
+						scoreFormatPoint10Decimal: string;
+						scoreFormatPoint10: string;
+						scoreFormatPoint5: string;
+					};
 					library: {
 						foldersTitle: string;
 						foldersDescription: string;

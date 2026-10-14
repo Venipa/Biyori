@@ -397,6 +397,14 @@ settings:
   close:
     discardTitle: Discard changes?
     discardDescription: Unsaved settings will be lost.
+  services:
+    displayTitle: AniList display
+    displayDescription: Scoring options from your AniList account. Change them on AniList.
+    scoreFormat: Score format
+    scoreFormatPoint100: 100 point
+    scoreFormatPoint10Decimal: 10 point decimal
+    scoreFormatPoint10: 10 point
+    scoreFormatPoint5: 5 star
   library:
     foldersTitle: Library folders
     foldersDescription: These folders are scanned and monitored for new episodes.
