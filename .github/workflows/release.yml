@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 env:
-  BUN_VERSION: "1.4.1"
+  BUN_VERSION: "1.4.4"
   COMPILE_ARTIFACT: electron-compile
 
 jobs:
