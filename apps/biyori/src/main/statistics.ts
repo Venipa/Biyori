@@ -1,10 +1,11 @@
+import { stat } from "node:fs/promises";
 import { count, eq } from "drizzle-orm";
 import { parseJsonArray } from "../lib/parse-json-array";
 import { totalNamedFiles, totalTorrentFiles } from "./cache";
 import type { DatabaseClient } from "./db";
 import { anime, episodeFile, listEntry, mediaCache } from "./db/schema";
 import { appUptimeSeconds, connectionCounts } from "./http-stats";
-import { appCacheDir, appFeedDir } from "./lib/app-paths";
+import { appCacheDir, appDatabasePath, appFeedDir } from "./lib/app-paths";
 import { type StatisticsSummary, summarizeList } from "./statistics-core";
 
 export type StatisticsResult = StatisticsSummary & {
@@ -13,11 +14,27 @@ export type StatisticsResult = StatisticsSummary & {
 	imageSizeBytes: number;
 	torrentCount: number;
 	torrentSizeBytes: number;
+	episodeFileCount: number;
+	episodeFileSizeBytes: number;
+	databaseSizeBytes: number;
 	connectionsSucceeded: number;
 	connectionsFailed: number;
 	connectionCount: number;
 	uptimeSeconds: number;
 };
+
+async function sqliteFootprintBytes(dbPath: string): Promise<number> {
+	let total = 0;
+	for (const path of [dbPath, `${dbPath}-wal`, `${dbPath}-shm`]) {
+		try {
+			const info = await stat(path);
+			if (info.isFile()) {
+				total += info.size;
+			}
+		} catch {}
+	}
+	return total;
+}
 
 export async function loadStatistics(database: DatabaseClient): Promise<StatisticsResult> {
 	const [rows, localRows, images, fileRows] = await Promise.all([
@@ -40,11 +57,13 @@ export async function loadStatistics(database: DatabaseClient): Promise<Statisti
 			.innerJoin(anime, eq(listEntry.animeId, anime.id)),
 		database.select({ value: count() }).from(anime),
 		database.select({ fileName: mediaCache.fileName }).from(mediaCache),
-		database.select({ animeId: episodeFile.animeId }).from(episodeFile),
+		database.select({ animeId: episodeFile.animeId, size: episodeFile.size }).from(episodeFile),
 	]);
 	const libraryById = new Map<number, number>();
+	let episodeFileSizeBytes = 0;
 	for (const file of fileRows) {
 		libraryById.set(file.animeId, (libraryById.get(file.animeId) ?? 0) + 1);
+		episodeFileSizeBytes += file.size;
 	}
 	const entries = rows.map((row) => ({
 		title: row.title,
@@ -60,12 +79,13 @@ export async function loadStatistics(database: DatabaseClient): Promise<Statisti
 		genres: parseJsonArray(row.genres),
 		libraryEpisodeCount: libraryById.get(row.id) ?? 0,
 	}));
-	const [imageFiles, torrentFiles] = await Promise.all([
+	const [imageFiles, torrentFiles, databaseSizeBytes] = await Promise.all([
 		totalNamedFiles(
 			appCacheDir(),
 			images.map((row) => row.fileName),
 		),
 		totalTorrentFiles(appFeedDir()),
+		sqliteFootprintBytes(appDatabasePath()),
 	]);
 	const connections = connectionCounts();
 
@@ -76,6 +96,9 @@ export async function loadStatistics(database: DatabaseClient): Promise<Statisti
 		imageSizeBytes: imageFiles.sizeBytes,
 		torrentCount: torrentFiles.count,
 		torrentSizeBytes: torrentFiles.sizeBytes,
+		episodeFileCount: fileRows.length,
+		episodeFileSizeBytes,
+		databaseSizeBytes,
 		connectionsSucceeded: connections.succeeded,
 		connectionsFailed: connections.failed,
 		connectionCount: connections.succeeded + connections.failed,

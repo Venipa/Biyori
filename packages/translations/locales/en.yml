@@ -811,17 +811,17 @@ statistics:
   genres: Genres
   library: Library
   animeList: Anime list
-  animeCount: "Anime count:"
-  episodeCount: "Episode count:"
-  timeSpent: "Time spent watching:"
-  timeRemaining: "Time remaining:"
-  meanScore: "Mean score:"
-  scoreDeviation: "Score deviation:"
+  animeCount: "Anime:"
+  episodeCount: "Episodes:"
+  timeSpent: "Watched:"
+  timeRemaining: "Remaining:"
+  meanScore: "Mean:"
+  scoreDeviation: "Deviation:"
   scoreDistribution: Score distribution
   scoreBucket: "Score {{score}}: {{count}}"
   localDatabase: Local database
-  imageFiles: "Image files:"
-  torrentFiles: "Torrent files:"
+  imageFiles: "Images:"
+  torrentFiles: "Torrents:"
   fileSize: "{{count}} ({{size}})"
   biyori: Biyori
   connections: "Connections:"
@@ -833,8 +833,8 @@ statistics:
   format: Format
   topGenres: Top genres
   libraryCoverage: Library coverage
-  episodeFiles: "Episode files:"
-  airedEpisodes: "Aired episodes:"
+  episodeFiles: "Episodes:"
+  airedEpisodes: "Aired:"
   coverage: "Coverage:"
   rewatches: Rewatches
   barValue: "{{label}}: {{value}}"

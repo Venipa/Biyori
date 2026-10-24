@@ -262,7 +262,8 @@ export function StatisticsView(): ReactElement {
 								<section>
 									<h2 className='text-sm font-semibold'>{t("statistics.localDatabase")}</h2>
 									<Separator className='my-2' />
-									<StatRow label={t("statistics.animeCount")} value={data.localAnimeCount} />
+									<StatRow label={t("statistics.animeCount")} value={t("statistics.fileSize", { count: data.localAnimeCount, size: formatBytes(data.databaseSizeBytes) })} />
+									<StatRow label={t("statistics.episodeFiles")} value={t("statistics.fileSize", { count: data.episodeFileCount, size: formatBytes(data.episodeFileSizeBytes) })} />
 									<StatRow label={t("statistics.imageFiles")} value={t("statistics.fileSize", { count: data.imageCount, size: formatBytes(data.imageSizeBytes) })} />
 									<StatRow label={t("statistics.torrentFiles")} value={t("statistics.fileSize", { count: data.torrentCount, size: formatBytes(data.torrentSizeBytes) })} />
 								</section>
