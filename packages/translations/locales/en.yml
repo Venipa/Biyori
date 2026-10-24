@@ -288,16 +288,15 @@ main:
     couldNotFindEpisode: "Could not find episode #{{episode}}"
     playNext: Play next
   sync:
-    synchronizing: Synchronizing with AniList...
-    synchronizingCount: Synchronizing with AniList... ({{processed}})
     synchronizingBody: Synchronizing
     synchronizingBodyCount: Synchronizing ({{processed}})
     tagged: "[AniList] {{message}}"
     titles_one: "{{count}} title"
     titles_other: "{{count}} titles"
     notConnected: Not connected
-    finished_one: "Finished - {{count}} title"
-    finished_other: "Finished - {{count}} titles"
+    finished_one: "{{count}} title, took {{seconds}} seconds ({{size}})"
+    finished_other: "{{count}} titles, took {{seconds}} seconds ({{size}})"
+    failedWithStats: "{{message}}, took {{seconds}} seconds ({{size}})"
     requestFailed: Request failed
   torrent:
     newTorrent: "New torrent: {{title}}"

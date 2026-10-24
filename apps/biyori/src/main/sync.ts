@@ -2,10 +2,12 @@ import { t } from "@biyori/translations/i18n";
 import { eq } from "drizzle-orm";
 import { ANIME_STALE_MS, isAnimeStale } from "../lib/anime-stale";
 import { clearActivity, completeActivity, upsertActivity } from "./activity";
+import { getAnilistTransferBytes, resetAnilistTransferBytes } from "./anilist/client";
 import { readAnilistAuth, writeAnilistAuth } from "./anilist/store";
 import { fetchViewer, syncAniListList, syncAniListLive } from "./anilist/sync";
 import type { DatabaseClient } from "./db";
 import { appSetting } from "./db/schema";
+import { formatElapsedSeconds } from "./format-duration";
 import { shouldBumpListRevision } from "./list-revision";
 import { setAppNotice } from "./notice";
 
@@ -27,6 +29,8 @@ const LIST_SYNCED_AT_KEY = "anilist.listSyncedAt";
 type ListSyncStamp = {
 	at: string;
 	count: number;
+	seconds?: string;
+	size?: string;
 };
 
 function listSyncedAtKey(userId: number): string {
@@ -46,7 +50,9 @@ function readListSyncStamp(database: DatabaseClient, userId: number): ListSyncSt
 		const parsed: unknown = JSON.parse(row.value);
 		if (parsed && typeof parsed === "object" && "at" in parsed && typeof parsed.at === "string") {
 			const count = "count" in parsed && typeof parsed.count === "number" ? parsed.count : 0;
-			return { at: parsed.at, count };
+			const seconds = "seconds" in parsed && typeof parsed.seconds === "string" ? parsed.seconds : undefined;
+			const size = "size" in parsed && typeof parsed.size === "string" ? parsed.size : undefined;
+			return { at: parsed.at, count, seconds, size };
 		}
 	} catch {
 		return { at: row.value, count: 0 };
@@ -80,19 +86,27 @@ let snapshot: SyncSnapshot = IDLE;
 let running = false;
 let rerunAfter = false;
 let abortController: AbortController | null = null;
+let syncStartedAt = 0;
 let liveTimer: ReturnType<typeof setInterval> | null = null;
 const listeners = new Set<SyncListener>();
 const LIVE_SYNC_MS = ANIME_STALE_MS;
 
 function synchronizingMessage(processed?: number): string {
 	if (processed == null || processed <= 0) {
-		return t("main.sync.synchronizing");
+		return t("main.sync.synchronizingBody");
 	}
-	return t("main.sync.synchronizingCount", { processed });
+	return t("main.sync.synchronizingBodyCount", { processed });
 }
 
-function taggedMessage(message: string): string {
+function taggedStatus(message: string): string {
 	return t("main.sync.tagged", { message });
+}
+
+function stampStatus(stamp: ListSyncStamp): string {
+	if (stamp.seconds && stamp.size) {
+		return taggedStatus(t("main.sync.finished", { count: stamp.count, seconds: stamp.seconds, size: stamp.size }));
+	}
+	return taggedStatus(t("main.sync.titles", { count: stamp.count }));
 }
 
 function emit(next: SyncSnapshot): void {
@@ -105,7 +119,7 @@ function emit(next: SyncSnapshot): void {
 function emitRunning(message: string, processed: number | null, total: number | null, bumpList = false): void {
 	emit({
 		phase: "running",
-		message,
+		message: taggedStatus(message),
 		processed,
 		total,
 		lastSuccessAt: snapshot.lastSuccessAt,
@@ -114,9 +128,9 @@ function emitRunning(message: string, processed: number | null, total: number | 
 	upsertActivity({
 		source: "anilist-sync",
 		title: t("shell.anilist"),
-		body: processed != null && processed > 0 ? t("main.sync.synchronizingBodyCount", { processed }) : t("main.sync.synchronizingBody"),
+		body: message,
 	});
-	setAppNotice(message, { toast: false, busy: true });
+	setAppNotice(taggedStatus(message), { toast: false, busy: true });
 }
 
 export function getSyncSnapshot(): SyncSnapshot {
@@ -176,7 +190,7 @@ export async function startAniListSyncIfAuthed(): Promise<void> {
 		emit({
 			...IDLE,
 			lastSuccessAt: Number.isFinite(at) ? at : Date.now(),
-			message: taggedMessage(t("main.sync.titles", { count: stamp.count })),
+			message: stampStatus(stamp),
 			processed: stamp.count,
 			total: stamp.count,
 			listRevision: snapshot.listRevision,
@@ -226,12 +240,33 @@ async function runLiveSync(token: string): Promise<void> {
 	}
 }
 
+function formatTransferSize(bytes: number): string {
+	const units = ["B", "KiB", "MiB", "GiB", "TiB"];
+	let value = bytes;
+	let unit = 0;
+	while (value >= 1024 && unit < units.length - 1) {
+		value /= 1024;
+		unit += 1;
+	}
+	const digits = unit === 0 ? 0 : value >= 10 ? 1 : 2;
+	return `${value.toFixed(digits)} ${units[unit]}`;
+}
+
+function syncStats(): { seconds: string; size: string } {
+	return {
+		seconds: formatElapsedSeconds(Date.now() - syncStartedAt),
+		size: formatTransferSize(getAnilistTransferBytes()),
+	};
+}
+
 async function runSync(): Promise<void> {
 	if (!db) {
 		return;
 	}
 	running = true;
 	rerunAfter = false;
+	syncStartedAt = Date.now();
+	resetAnilistTransferBytes();
 	const controller = new AbortController();
 	abortController = controller;
 	const { signal } = controller;
@@ -239,16 +274,16 @@ async function runSync(): Promise<void> {
 	try {
 		const auth = readAnilistAuth();
 		if (!auth || auth.expiresAt <= Date.now()) {
-			const title = taggedMessage(t("main.sync.notConnected"));
+			const title = t("main.sync.notConnected");
 			emit({
 				...IDLE,
 				lastSuccessAt: snapshot.lastSuccessAt,
 				listRevision: snapshot.listRevision,
 				phase: "error",
-				message: title,
+				message: taggedStatus(title),
 			});
-			completeActivity({ source: "anilist-sync", title: t("shell.anilist"), body: t("main.sync.notConnected"), status: "error" });
-			setAppNotice(title);
+			completeActivity({ source: "anilist-sync", title: t("shell.anilist"), body: title, status: "error" });
+			setAppNotice(taggedStatus(title));
 			return;
 		}
 
@@ -281,20 +316,22 @@ async function runSync(): Promise<void> {
 			return;
 		}
 
-		writeListSyncStamp(db, auth.userId, { at: new Date().toISOString(), count: synced });
+		const stats = syncStats();
+		writeListSyncStamp(db, auth.userId, { at: new Date().toISOString(), count: synced, ...stats });
+		const done = t("main.sync.finished", { count: synced, ...stats });
 		emit({
 			phase: "idle",
-			message: taggedMessage(`${synced} titles`),
+			message: taggedStatus(done),
 			processed: synced,
 			total: synced,
 			lastSuccessAt: Date.now(),
 			listRevision: snapshot.listRevision + 1,
 		});
-		setAppNotice(taggedMessage(t("main.sync.titles", { count: synced })));
+		setAppNotice(taggedStatus(done));
 		completeActivity({
 			source: "anilist-sync",
 			title: t("shell.anilist"),
-			body: t("main.sync.finished", { count: synced }),
+			body: done,
 			status: "ok",
 		});
 	} catch (error) {
@@ -302,17 +339,22 @@ async function runSync(): Promise<void> {
 			return;
 		}
 		const message = error instanceof Error ? error.message : t("main.sync.requestFailed");
-		const title = taggedMessage(message);
+		const title = t("main.sync.failedWithStats", { message, ...syncStats() });
 		emit({
 			phase: "error",
-			message: title,
+			message: taggedStatus(title),
 			processed: snapshot.processed,
 			total: snapshot.total,
 			lastSuccessAt: snapshot.lastSuccessAt,
 			listRevision: snapshot.listRevision,
 		});
-		completeActivity({ source: "anilist-sync", title: t("shell.anilist"), body: message, status: "error" });
-		setAppNotice(title);
+		completeActivity({
+			source: "anilist-sync",
+			title: t("shell.anilist"),
+			body: title,
+			status: "error",
+		});
+		setAppNotice(taggedStatus(title));
 	} finally {
 		running = false;
 		if (abortController === controller) {

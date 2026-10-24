@@ -309,8 +309,6 @@ declare module "i18next" {
 						playNext: string;
 					};
 					sync: {
-						synchronizing: string;
-						synchronizingCount: string;
 						synchronizingBody: string;
 						synchronizingBodyCount: string;
 						tagged: string;
@@ -319,6 +317,7 @@ declare module "i18next" {
 						notConnected: string;
 						finished_one: string;
 						finished_other: string;
+						failedWithStats: string;
 						requestFailed: string;
 					};
 					torrent: {

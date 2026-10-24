@@ -5,6 +5,7 @@ import type { ComponentType, ReactNode } from "react";
 import { WatchConfirmActions } from "@/mainview/components/app/confirm/watch-actions";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Spinner } from "@/mainview/components/ui/spinner";
+import { formatLocalDateTime } from "@/mainview/lib/format-date";
 import { cn } from "@/mainview/lib/utils";
 
 const SOURCE_ICONS: Record<string, ComponentType<{ className?: string }>> = {
@@ -45,11 +46,26 @@ function ActivityStatus({ status }: { status: "live" | "ok" | "error" }) {
 	return <CheckIcon className='size-3.5 shrink-0 text-muted-foreground' aria-label={t("shell.done")} />;
 }
 
-function ActivityRow({ source, title, body, status, trailing }: { source: string; title: string; body?: string; status: "live" | "ok" | "error"; trailing?: ReactNode }) {
+function ActivityRow({
+	source,
+	title,
+	body,
+	status,
+	createdAt,
+	trailing,
+}: {
+	source: string;
+	title: string;
+	body?: string;
+	status: "live" | "ok" | "error";
+	createdAt?: string;
+	trailing?: ReactNode;
+}) {
 	const hover = status !== "live" || Boolean(trailing);
 	const subtitle = body?.trim() ? body : null;
+	const when = createdAt ? formatLocalDateTime(createdAt) : undefined;
 	return (
-		<div className={cn("mx-1 flex cursor-default items-start gap-2 rounded-md px-2 py-1.5", hover ? "hover:bg-primary/10" : null)}>
+		<div className={cn("mx-1 flex cursor-default items-start gap-2 rounded-md px-2 py-1.5", hover ? "hover:bg-primary/10" : null)} title={when}>
 			<SourceGlyph source={source} />
 			<div className='flex min-w-0 flex-1 flex-col gap-0.5'>
 				<div className='flex min-w-0 items-center gap-2'>
@@ -74,7 +90,7 @@ export function ActivityCenterPanel({
 }: {
 	open: boolean;
 	live: Array<{ source: string; title: string; body?: string }>;
-	items: Array<{ id: string; source: string; title: string; body?: string; status: "ok" | "error" }>;
+	items: Array<{ id: string; source: string; title: string; body?: string; status: "ok" | "error"; createdAt: string }>;
 	pending: { title: string; episode: number } | null;
 	showPending: boolean;
 	confirmPending: boolean;
@@ -122,7 +138,7 @@ export function ActivityCenterPanel({
 										<ActivityRow key={row.source} source={row.source} title={row.title} body={row.body} status='live' />
 									))}
 									{items.map((row) => (
-										<ActivityRow key={row.id} source={row.source} title={row.title} body={row.body} status={row.status} />
+										<ActivityRow key={row.id} source={row.source} title={row.title} body={row.body} status={row.status} createdAt={row.createdAt} />
 									))}
 								</div>
 							)}

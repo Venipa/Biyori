@@ -9,7 +9,7 @@ import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import { trpc } from "@/mainview/trpc";
 
 const EMPTY_LIVE: Array<{ source: string; title: string; body?: string }> = [];
-const EMPTY_ITEMS: Array<{ id: string; source: string; title: string; body?: string; status: "ok" | "error" }> = [];
+const EMPTY_ITEMS: Array<{ id: string; source: string; title: string; body?: string; status: "ok" | "error"; createdAt: string }> = [];
 
 function ActivityFeed({
 	open,
@@ -76,9 +76,10 @@ export function AppStatusBar() {
 	});
 	const snapshot = statusQuery.data;
 	const notice = noticeQuery.data;
-	const running = snapshot?.phase === "running" || Boolean(notice?.busy) || hasLive;
+	const syncing = snapshot?.phase === "running";
 	const failed = snapshot?.phase === "error";
-	const message = snapshot?.message || notice?.message || "";
+	const running = syncing || Boolean(notice?.busy) || hasLive;
+	const message = syncing || failed ? (snapshot?.message ?? "") : notice?.busy ? (notice.message ?? "") : snapshot?.message || notice?.message || "";
 	const showPending = Boolean(pending) && watchConfirmPromoted;
 
 	useEffect(() => {
@@ -132,7 +133,7 @@ export function AppStatusBar() {
 					data-activity-toggle
 					aria-label={open ? t("shell.closeActivityCenter") : t("shell.openActivityCenter")}
 					aria-expanded={open}
-					className='flex min-w-0 flex-1 cursor-pointer items-center px-1.5 text-left'
+					className='flex min-w-0 flex-1 cursor-pointer items-center px-1.5 text-left leading-tight'
 					onClick={() => {
 						toggleActivityPanel();
 					}}>

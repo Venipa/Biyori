@@ -24,6 +24,16 @@ export class AnilistApiError extends Error {
 	}
 }
 
+let transferBytes = 0;
+
+export function resetAnilistTransferBytes(): void {
+	transferBytes = 0;
+}
+
+export function getAnilistTransferBytes(): number {
+	return transferBytes;
+}
+
 async function sleep(ms: number): Promise<void> {
 	await new Promise((resolve) => {
 		setTimeout(resolve, ms);
@@ -45,13 +55,15 @@ export async function anilistGraphql<T>(options: { query: string; variables?: Re
 	const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
 
 	for (;;) {
+		const requestBody = JSON.stringify({
+			query: options.query,
+			variables: options.variables ?? {},
+		});
+		transferBytes += Buffer.byteLength(requestBody);
 		const response = await trackedFetch(ANILIST_GRAPHQL_URL, {
 			method: "POST",
 			headers,
-			body: JSON.stringify({
-				query: options.query,
-				variables: options.variables ?? {},
-			}),
+			body: requestBody,
 			signal,
 		});
 
@@ -62,7 +74,14 @@ export async function anilistGraphql<T>(options: { query: string; variables?: Re
 			continue;
 		}
 
-		const json: unknown = await response.json();
+		const text = await response.text();
+		transferBytes += Buffer.byteLength(text);
+		let json: unknown;
+		try {
+			json = JSON.parse(text) as unknown;
+		} catch {
+			throw new AnilistApiError("Invalid AniList response", response.status);
+		}
 		const parsed = graphqlResponseSchema.safeParse(json);
 		if (!parsed.success) {
 			throw new AnilistApiError("Invalid AniList response", response.status);
