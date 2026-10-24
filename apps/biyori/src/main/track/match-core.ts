@@ -31,6 +31,7 @@ export type Candidate = {
 	dateStarted: string | null;
 	dateCompleted: string | null;
 	names: string[];
+	seriesSeason?: number | null;
 };
 
 export function namesFrom(title: string, extraTitles: readonly string[] = [], userSynonyms = ""): string[] {

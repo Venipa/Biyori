@@ -131,9 +131,13 @@ fn season_from_names(names: &[String]) -> Option<i32> {
 	None
 }
 
+fn listed_season(candidate: &Candidate) -> Option<i32> {
+	season_from_names(&candidate.names).or(candidate.series_season.filter(|season| *season > 0))
+}
+
 fn season_compatible(parsed: &Parsed, candidate: &Candidate) -> bool {
 	let file = parsed.season.filter(|season| *season > 0);
-	let listed = season_from_names(&candidate.names);
+	let listed = listed_season(candidate);
 	match (file, listed) {
 		(Some(fs), Some(ls)) => fs == ls,
 		(Some(fs), None) => fs <= 1,
@@ -232,7 +236,7 @@ fn score_candidate(candidate: &Candidate, needle: &str, needle_key: &str, season
 	if season.unwrap_or(0) <= 1 {
 		return score;
 	}
-	match season_from_names(&candidate.names) {
+	match listed_season(candidate) {
 		Some(listed) if listed == season.unwrap_or(0) => score + 0.12,
 		Some(_) => score - 0.35,
 		None if score >= 0.7 => score - 0.2,
@@ -408,7 +412,9 @@ fn relation_hop_candidates<'a>(parsed: &Parsed, pool: &[&'a Candidate]) -> Vec<&
 		let prefix = format!("{base} ");
 		pool.iter()
 			.copied()
-			.filter(|candidate| candidate.names.iter().any(|name| name == &base || name.starts_with(&prefix)))
+			.filter(|candidate| {
+				candidate.names.iter().any(|name| name == &base || name.starts_with(&prefix) || name.starts_with(&format!("{base}:")))
+			})
 			.collect()
 	};
 	let mut seen = HashSet::new();
@@ -482,16 +488,45 @@ pub(crate) fn match_candidates_with(
 	index: Option<&NameIndex>,
 ) -> Option<(i64, i32)> {
 	let all_refs: Vec<&Candidate> = candidates.iter().collect();
-	let (scoped, folder_scoped) = if let Some(path) = path {
+	let (folder_pool, folder_scoped) = if let Some(path) = path {
 		pool_for_path(path, candidates)
 	} else {
 		(all_refs.clone(), false)
 	};
-	let hit = resolve_on_pool(parsed, &scoped, candidates, rules, index);
+	let mut pool = folder_pool.clone();
+	if parsed.season.unwrap_or(0) > 1 {
+		let family = relation_hop_candidates(parsed, &all_refs);
+		if !family.is_empty() {
+			let mut seen: HashSet<i64> = pool.iter().map(|candidate| candidate.id).collect();
+			for candidate in family {
+				if seen.insert(candidate.id) {
+					pool.push(candidate);
+				}
+			}
+		}
+	}
+	let mut hit = resolve_on_pool(parsed, &pool, candidates, rules, index);
+	let expanded = pool.len() != folder_pool.len();
+	if parsed.season.unwrap_or(0) > 1 && folder_scoped && expanded {
+		let season_ok = hit.is_some_and(|(id, _)| {
+			candidates
+				.iter()
+				.find(|candidate| candidate.id == id)
+				.is_some_and(|candidate| season_compatible(parsed, candidate))
+		});
+		if !season_ok {
+			hit = resolve_on_pool(parsed, &folder_pool, candidates, rules, index);
+			if hit.is_none() {
+				if let (true, Some(episode), Some(only)) = (folder_pool.len() == 1, parsed.episode, folder_pool.first().copied()) {
+					hit = Some(with_redirect(only, episode, candidates, rules));
+				}
+			}
+		}
+	}
 	if hit.is_some() || folder_scoped {
 		return hit;
 	}
-	if scoped.len() == all_refs.len() {
+	if pool.len() == all_refs.len() {
 		return hit;
 	}
 	resolve_on_pool(parsed, &all_refs, candidates, rules, index)
@@ -509,6 +544,7 @@ mod tests {
 			names: vec![name.to_string()],
 			episodes: 12,
 			folder: Some(folder.to_string()),
+			series_season: None,
 		}
 	}
 
@@ -555,6 +591,7 @@ mod tests {
 			names: vec![name.to_string()],
 			episodes,
 			folder: Some(folder.to_string()),
+			series_season: None,
 		}
 	}
 
@@ -584,12 +621,61 @@ mod tests {
 		assert_eq!(match_candidates(&parsed, &[s3, s4], Some(&path), &[]).map(|(id, _)| id), Some(3));
 	}
 
+	#[test]
+	fn shared_folder_s04_matches_arc_title_via_series_season() {
+		let folder = r"Z:\anime\Tokyo Revengers (2021) [tvdbid-393478]";
+		let s1 = Candidate {
+			id: 1,
+			names: vec!["tokyo revengers".into()],
+			episodes: 24,
+			folder: Some(folder.to_string()),
+			series_season: Some(1),
+		};
+		let s4 = Candidate {
+			id: 4,
+			names: vec!["tokyo revengers: santen sensou-hen".into()],
+			episodes: 13,
+			folder: None,
+			series_season: Some(4),
+		};
+		let path = format!(
+			r"{folder}\Tokyo Revengers (2021) - S04E04 - 054 - Give Me a Hand [WEBDL-1080p].mkv"
+		);
+		let parsed = parse_file_path(&path).expect("parse");
+		assert_eq!(parsed.season, Some(4));
+		assert_eq!(parsed.episode, Some(4));
+		assert_eq!(match_candidates(&parsed, &[s1, s4], Some(&path), &[]), Some((4, 4)));
+	}
+
+	#[test]
+	fn standalone_cour_folder_keeps_arc_title_when_siblings_are_ambiguous() {
+		let s1 = Candidate {
+			id: 1,
+			names: vec!["tokyo revengers".into()],
+			episodes: 24,
+			folder: Some(r"D:\Anime\Tokyo Revengers".into()),
+			series_season: Some(1),
+		};
+		let s4_folder = r"D:\Anime\Tokyo Revengers Santen Sensou-hen";
+		let s4 = Candidate {
+			id: 4,
+			names: vec!["tokyo revengers: santen sensou-hen".into()],
+			episodes: 13,
+			folder: Some(s4_folder.into()),
+			series_season: Some(1),
+		};
+		let path = format!(r"{s4_folder}\Tokyo Revengers (2021) - S04E04 - 054.mkv");
+		let parsed = parse_file_path(&path).expect("parse");
+		assert_eq!(match_candidates(&parsed, &[s1, s4], Some(&path), &[]).map(|(id, _)| id), Some(4));
+	}
+
 	fn listed(id: i64, names: &[&str], episodes: i32) -> Candidate {
 		Candidate {
 			id,
 			names: names.iter().map(|name| name.to_string()).collect(),
 			episodes,
 			folder: None,
+			series_season: None,
 		}
 	}
 

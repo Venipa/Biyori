@@ -1,9 +1,11 @@
 import { eq } from "drizzle-orm";
 import { parseStoredTitles, titleStrings, titlesFromFallback } from "../../lib/anime-titles";
 import { parseJsonArray } from "../../lib/parse-json-array";
+import { parseRelatedMedia } from "../../lib/schemas/related-media";
 import type { DatabaseClient } from "../db";
 import { anime, listEntry } from "../db/schema";
 import { type Candidate, namesFrom } from "./match-core";
+import { tvPrequelSeasonIndex } from "./series-season";
 
 export type { Candidate } from "./match-core";
 export { matchById, namesFrom, similarParsed, suggestTitles } from "./match-core";
@@ -14,6 +16,7 @@ export function toHanaCandidates(candidates: Candidate[]) {
 		names: candidate.names,
 		episodes: candidate.episodes,
 		folder: candidate.folder ?? "",
+		seriesSeason: candidate.seriesSeason ?? undefined,
 	}));
 }
 
@@ -55,10 +58,12 @@ export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 			timesRewatched: listEntry.timesRewatched,
 			dateStarted: listEntry.dateStarted,
 			dateCompleted: listEntry.dateCompleted,
+			related: anime.related,
 		})
 		.from(listEntry)
 		.innerJoin(anime, eq(listEntry.animeId, anime.id));
 
+	const listed = rows.map((row) => ({ id: row.id, type: row.type, related: parseRelatedMedia(row.related) }));
 	const mapped = rows.map((row) => ({
 		id: row.id,
 		title: row.title,
@@ -86,6 +91,7 @@ export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 		dateStarted: row.dateStarted,
 		dateCompleted: row.dateCompleted,
 		names: namesFrom(row.title, titleStrings(parseStoredTitles(row.titles) ?? titlesFromFallback(row.title)), row.userSynonyms),
+		seriesSeason: tvPrequelSeasonIndex(row.id, listed),
 	}));
 	candidateCache = { at: Date.now(), rows: mapped };
 	return mapped;

@@ -11,6 +11,8 @@ pub struct Candidate {
 	pub names: Vec<String>,
 	pub episodes: i32,
 	pub folder: Option<String>,
+	#[napi(js_name = "seriesSeason")]
+	pub series_season: Option<i32>,
 }
 
 #[napi(object, js_name = "ParseResult")]

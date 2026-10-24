@@ -421,6 +421,7 @@ mod tests {
 			names: vec!["show".into()],
 			episodes: 12,
 			folder: None,
+			series_season: None,
 		}];
 		let hits = recognize_filenames(&titles, &[], &candidates, &[]);
 		assert_eq!(hits.len(), 2);

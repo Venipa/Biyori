@@ -116,8 +116,8 @@ function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: S
 			if (assignedFolder.has(hit.animeId)) {
 				continue;
 			}
-			const parent = dirname(hit.path);
-			if (isLibraryRoot(parent, scannedRoots) || isLibraryRoot(parent, libraryRoots())) {
+			const parent = seriesFolderFromFile(hit.path);
+			if (!parent) {
 				assignedFolder.add(hit.animeId);
 				continue;
 			}
@@ -182,6 +182,30 @@ function collapseRoots(roots: string[]): string[] {
 
 function isLibraryRoot(path: string, roots: string[]): boolean {
 	return roots.some((root) => samePath(path, root));
+}
+
+function seriesFolderFromFile(filePath: string): string | null {
+	const parent = dirname(filePath);
+	const library = libraryRoots();
+	if (!parent || library.length === 0 || isLibraryRoot(parent, library)) {
+		return null;
+	}
+	if (!library.some((root) => pathUnderRoot(parent, root))) {
+		return null;
+	}
+	return parent;
+}
+
+export function assignAnimeFolderIfEmpty(database: DatabaseClient, animeId: number, filePath: string): void {
+	const parent = seriesFolderFromFile(filePath);
+	if (!parent) {
+		return;
+	}
+	database
+		.update(anime)
+		.set({ folder: parent })
+		.where(and(eq(anime.id, animeId), eq(anime.folder, "")))
+		.run();
 }
 
 function pruneGone(database: DatabaseClient, gone: string[]): void {

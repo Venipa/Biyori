@@ -278,12 +278,14 @@ mod tests {
 						names: vec!["tensei shitara slime datta ken 4th season".into()],
 						episodes: 12,
 						folder: Some(slime_dir.to_string_lossy().to_string()),
+						series_season: None,
 					},
 					Candidate {
 						id: 20,
 						names: vec!["sword art online season 4".into()],
 						episodes: 12,
 						folder: Some(sao_dir.to_string_lossy().to_string()),
+						series_season: None,
 					},
 				],
 			},
@@ -316,6 +318,7 @@ mod tests {
 					names: vec!["frieren".into()],
 					episodes: 12,
 					folder: None,
+					series_season: None,
 				}],
 			},
 			 |_| {},
@@ -364,12 +367,14 @@ mod tests {
 				names: vec!["re:zero kara hajimeru isekai seikatsu 3rd season".into()],
 				episodes: 16,
 				folder: Some(folder.to_string_lossy().into_owned()),
+				series_season: None,
 			},
 			Candidate {
 				id: 4,
 				names: vec!["re:zero kara hajimeru isekai seikatsu 4th season".into()],
 				episodes: 16,
 				folder: Some(folder.to_string_lossy().into_owned()),
+				series_season: None,
 			},
 		];
 		let found_16 = find_episode(FindEpisodeInput {
@@ -407,6 +412,7 @@ mod tests {
 					names: vec!["show".into()],
 					episodes: 12,
 					folder: None,
+					series_season: None,
 				}],
 			},
 			 |_| {},
@@ -433,6 +439,7 @@ mod tests {
 					names: vec!["other show".into()],
 					episodes: 12,
 					folder: None,
+					series_season: None,
 				}],
 			},
 			|progress| {

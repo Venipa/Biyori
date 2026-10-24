@@ -17,6 +17,7 @@ import { setNowPlayingForHttp } from "../share/http";
 import { rememberPlaybackApplied, wasPlaybackApplied } from "./applied-playback";
 import { getNowPlayingMedia } from "./detect";
 import { hana } from "./hana-client";
+import { assignAnimeFolderIfEmpty } from "./library";
 import { type Candidate, invalidateCandidateCache, loadCandidates, matchById, namesFrom, similarParsed, toHanaCandidates } from "./match";
 import { parsePlayback } from "./parse";
 import { enqueueUpdate, initQueueFlush } from "./queue";
@@ -507,9 +508,14 @@ export async function chooseNowPlayingMatch(animeId: number): Promise<void> {
 	if (!db || !lastMediaIdentity) {
 		return;
 	}
-	const playingTitle = snapshot.parsed?.rawTitle ?? snapshot.parsed?.title ?? "";
+	const playingTitle = snapshot.parsed?.title ?? snapshot.parsed?.rawTitle ?? "";
 	boundMatch = { identity: lastMediaIdentity, animeId };
 	await rememberUserSynonym(animeId, playingTitle);
+	const filePath = snapshot.media?.filePath;
+	if (filePath) {
+		assignAnimeFolderIfEmpty(db, animeId, filePath);
+		invalidateCandidateCache();
+	}
 	await flushRematch();
 }
 
