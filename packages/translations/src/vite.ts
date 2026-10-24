@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { load } from "js-yaml";
 import { yamlPlugin } from "vite-yaml-plugin";
+import { parse } from "yaml";
 
 const localeYml = /[/\\]translations[/\\]locales[/\\][^/\\]+\.yml$/i;
 const enFile = fileURLToPath(new URL("../locales/en.yml", import.meta.url));
@@ -23,7 +23,7 @@ function renderType(value: unknown, indent: string): string {
 }
 
 export function localeTypeDeclaration(): string {
-	const catalog = load(readFileSync(enFile, "utf8"));
+	const catalog = parse(readFileSync(enFile, "utf8"));
 	return `import "i18next";\n\ndeclare module "i18next" {\n\tinterface CustomTypeOptions {\n\t\tresources: {\n\t\t\ttranslation: ${renderType(catalog, "\t\t\t")};\n\t\t};\n\t}\n}\n`;
 }
 

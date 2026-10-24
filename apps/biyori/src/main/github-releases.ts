@@ -1,5 +1,5 @@
 import { t } from "@biyori/translations/i18n";
-import semver from "semver";
+import { compareReversed } from "verkit";
 import { z } from "zod";
 import { cleanSemver, isVersionAllowedOnChannel, type ReleaseNoteEntry, type UpdateChannel } from "../shared/updater";
 
@@ -60,6 +60,6 @@ export function parseGithubChangelog(payload: unknown, channel: UpdateChannel): 
 			prerelease: release.prerelease,
 		});
 	}
-	items.sort((a, b) => semver.rcompare(a.version, b.version, { loose: true }));
+	items.sort((a, b) => compareReversed(a.version, b.version, { loose: true }));
 	return { ok: true, items };
 }

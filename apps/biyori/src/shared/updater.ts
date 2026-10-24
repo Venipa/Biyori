@@ -1,4 +1,4 @@
-import semver from "semver";
+import { clean, getPrerelease } from "verkit";
 
 export type ProgressInfo = {
 	total: number;
@@ -41,7 +41,7 @@ export function cleanSemver(version: unknown): string | null {
 	if (typeof version !== "string" || version.length === 0) {
 		return null;
 	}
-	return semver.clean(version.replace(/^v/i, ""), { loose: true });
+	return clean(version.replace(/^v/i, ""), { loose: true });
 }
 
 /**
@@ -55,7 +55,7 @@ export function getVersionChannel(version: unknown): UpdateChannel | null {
 	if (!cleaned) {
 		return null;
 	}
-	const pre = semver.prerelease(cleaned, { loose: true });
+	const pre = getPrerelease(cleaned, { loose: true });
 	if (!pre?.length) {
 		return "stable";
 	}

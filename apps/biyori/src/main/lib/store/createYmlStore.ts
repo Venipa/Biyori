@@ -4,7 +4,7 @@ import { logger } from "@biyori/logger";
 import { app } from "electron";
 import { type ConfOptions as Options, Conf as Store } from "electron-conf/main";
 import { Encryption } from "encryption.js";
-import { dump, load } from "js-yaml";
+import { parse, stringify } from "yaml";
 import type { ZodType } from "zod";
 import { base64 } from "../base64";
 import { generateRandom } from "../randomString";
@@ -75,10 +75,13 @@ export const createYmlStore = <T extends Record<string, unknown> = Record<string
 		...confOptions,
 		serializer: {
 			read(raw) {
-				return load(raw) as T;
+				if (!raw.trim()) {
+					return {} as T;
+				}
+				return parse(raw) as T;
 			},
 			write(value) {
-				const yaml = dump(value);
+				const yaml = stringify(value);
 				return schemaHref ? withYamlLanguageServerSchema(yaml, schemaHref) : yaml;
 			},
 		},

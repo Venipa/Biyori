@@ -4,7 +4,7 @@ import { is } from "@electron-toolkit/utils";
 import { observable } from "@trpc/server/observable";
 import { app } from "electron";
 import { autoUpdater, type UpdateInfo as ElectronUpdateInfo } from "electron-updater";
-import semver from "semver";
+import { compareReversed, isGreaterThanRange } from "verkit";
 import {
 	channelWantsPrerelease,
 	cleanSemver,
@@ -272,7 +272,7 @@ function isUpdateInRange(ver: string, channel: UpdateChannel): boolean {
 		return false;
 	}
 	try {
-		return semver.gtr(ver, app.getVersion(), {
+		return isGreaterThanRange(ver, app.getVersion(), {
 			includePrerelease: channel !== "stable",
 			loose: true,
 		});
@@ -320,7 +320,7 @@ async function resolveBestUpdate(channel: UpdateChannel): Promise<ElectronUpdate
 		candidates.sort((a, b) => {
 			const left = cleanSemver(a.version) ?? a.version;
 			const right = cleanSemver(b.version) ?? b.version;
-			return semver.rcompare(left, right, { loose: true });
+			return compareReversed(left, right, { loose: true });
 		});
 		return candidates[0] ?? null;
 	} finally {

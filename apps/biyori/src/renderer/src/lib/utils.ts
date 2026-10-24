@@ -1,3 +1,1 @@
-import { createCn } from "cnfast";
-
-export const cn = createCn({});
+export { cn } from "cn";
