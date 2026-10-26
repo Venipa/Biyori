@@ -18,6 +18,10 @@ files:
   - '!**/@biyori/hana/target/**'
   - '!**/@biyori/hana/src/**'
   - '!**/@biyori/hana/{Cargo.toml,Cargo.lock,build.rs,.gitignore}'
+  # better-sqlite3 loads only prebuilds/<platform>-<arch>.node
+  - '!**/better-sqlite3/{deps,src,build}/**'
+  - '!**/better-sqlite3/binding.gyp'
+  - '!**/better-sqlite3/prebuilds/!(${platform}-${arch}).node'
 extraResources:
   - from: drizzle
     to: drizzle
@@ -81,7 +85,10 @@ linux:
         - x64
 appImage:
   artifactName: ${name}-${version}-linux-x64.${ext}
-npmRebuild: true
+# no node-gyp modules (better-sqlite3 uses Node-API prebuilds, hana uses napi-rs); re-enable if one is added
+npmRebuild: false
+# Chromium UI strings for the app's UI locales
+electronLanguages: [en-US, de, ja, ko, zh-CN, zh-TW, pt-BR, pt-PT, es, es-419, pl, ru]
 protocols:
   name: Biyori
   schemes:
