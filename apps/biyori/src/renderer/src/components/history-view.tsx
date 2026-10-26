@@ -158,8 +158,7 @@ export function HistoryView() {
 			labels.set(day.key, dayLabel(day.time));
 			all.push(...day.rows.map((row) => ({ ...row, group: day.key })));
 		}
-		return { rows: all.filter((row) => matchesHistoryTypes(row, types)), groupLabels: labels, queuedCount: queued.length, hasHistory: days.length > 0 };
-		// biome-ignore lint/correctness/useExhaustiveDependencies: types is derived from search.types
+		return { rows: all.filter((row) => matchesHistoryTypes(row, parseHistoryTypes(search.types))), groupLabels: labels, queuedCount: queued.length, hasHistory: days.length > 0 };
 	}, [pages, search.types, t]);
 
 	const table = useReactTable({
