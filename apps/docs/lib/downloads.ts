@@ -408,3 +408,8 @@ export function getReleaseNotes(body: string | null, maxItems: number | null = 6
 
 	return maxItems == null ? notes : notes.slice(0, maxItems);
 }
+
+/** Release titles repeat the tag ("v0.10.1 - ..."); drop it where the tag is already shown. */
+export function releaseTitle(release: { name?: string | null; tag_name: string }): string {
+	return (release.name ?? "").replace(release.tag_name, "").replace(/^\s*[-–:]\s*/, "") || release.tag_name;
+}

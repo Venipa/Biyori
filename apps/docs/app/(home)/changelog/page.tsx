@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { ChangelogList } from "@/components/changelog-list";
 import { JsonLd } from "@/components/json-ld";
 import { cn } from "@/lib/cn";
+import { releaseTitle } from "@/lib/downloads";
 import { formatReleaseDate, getReleaseNotes, getReleasesUrl, listReleases } from "@/lib/github";
 import { absolutePageUrl, changelogJsonLd } from "@/lib/seo";
 import { appName } from "@/lib/shared";
@@ -49,8 +50,7 @@ export default async function ChangelogPage() {
 				<ChangelogList
 					releases={releases.map((release) => ({
 						tag: release.tag_name,
-						// Release titles repeat the tag ("v0.10.1 - ..."); the rail already shows it.
-						name: (release.name ?? "").replace(release.tag_name, "").replace(/^\s*[-–:]\s*/, "") || release.tag_name,
+						name: releaseTitle(release),
 						url: release.html_url,
 						date: formatReleaseDate(release.published_at),
 						prerelease: release.prerelease === true,

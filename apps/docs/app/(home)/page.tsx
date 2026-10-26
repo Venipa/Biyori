@@ -182,7 +182,7 @@ export default async function HomePage() {
 				</RevealBlock>
 			</div>
 
-			<section className='grid items-start gap-10 border-t border-fd-border pt-16 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16'>
+			<section id='download' className='scroll-mt-24 grid items-start gap-10 border-t border-fd-border pt-16 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16'>
 				<RevealBlock className='max-w-md'>
 					<h2 className='text-3xl font-semibold tracking-tight text-balance md:text-4xl'>Free, on every desktop</h2>
 					<p className='mt-3 text-pretty leading-relaxed text-fd-muted-foreground'>Windows, macOS, and Linux builds for every release channel, straight from GitHub.</p>
