@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { desc, lt } from "drizzle-orm";
+import { and, desc, eq, lt, or } from "drizzle-orm";
 import type { DatabaseClient } from "./db";
 import { activity } from "./db/schema";
 
@@ -66,12 +66,7 @@ function persistRow(row: PersistedActivity): void {
 	if (!database) {
 		return;
 	}
-	void (async () => {
-		await database.insert(activity).values(row);
-		await purgeExpired();
-		items = await loadPersisted();
-		emit();
-	})();
+	void database.insert(activity).values(row);
 }
 
 async function loadPersisted(): Promise<PersistedActivity[]> {
@@ -97,7 +92,8 @@ async function purgeExpired(): Promise<void> {
 		items = filterFreshActivities(items);
 		return;
 	}
-	await db.delete(activity).where(lt(activity.createdAt, activityCutoffIso()));
+	// also drops routine ok runs persisted before they stopped being recorded
+	await db.delete(activity).where(or(lt(activity.createdAt, activityCutoffIso()), and(eq(activity.kind, "activity"), eq(activity.status, "ok"))));
 }
 
 export async function initActivityCenter(database: DatabaseClient): Promise<void> {
@@ -134,8 +130,13 @@ export function clearActivity(source: string): void {
 	emit();
 }
 
+// routine successes only clear the live row; history keeps errors and notices
 export function completeActivity(input: { source: string; title: string; body?: string; status: ActivityStatus }): void {
 	live.delete(input.source);
+	if (input.status === "ok") {
+		emit();
+		return;
+	}
 	persistRow({
 		id: randomUUID(),
 		kind: "activity",
@@ -157,6 +158,14 @@ export function pushNotice(input: { source: string; title: string; body?: string
 		status: "ok",
 		createdAt: new Date().toISOString(),
 	});
+}
+
+export function dismissActivity(id?: string): void {
+	items = id ? items.filter((item) => item.id !== id) : [];
+	emit();
+	if (db) {
+		void (id ? db.delete(activity).where(eq(activity.id, id)) : db.delete(activity));
+	}
 }
 
 export function resetActivityCenterForTests(): void {

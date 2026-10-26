@@ -13,7 +13,7 @@ import { cacheKindsSchema } from "../../lib/schemas/cache-kind";
 import { parseHistoryChanges } from "../../lib/schemas/history-changes";
 import { parseRelatedMedia, type RelatedMedia } from "../../lib/schemas/related-media";
 import { listStatusSchema } from "../../shared/list";
-import { getActivitySnapshot, subscribeActivity } from "../activity";
+import { dismissActivity, getActivitySnapshot, subscribeActivity } from "../activity";
 import { displayTitleFromRow } from "../anilist/map";
 import { readAnilistAuth } from "../anilist/store";
 import { ensureAnimeCached } from "../anilist/sync";
@@ -693,6 +693,9 @@ export const appRouter = trpc.router({
 	}),
 	activity: trpc.router({
 		snapshot: trpc.procedure.query(() => getActivitySnapshot()),
+		dismiss: trpc.procedure.input(z.object({ id: z.string().optional() })).mutation(({ input }) => {
+			dismissActivity(input.id);
+		}),
 		onChange: trpc.procedure.subscription(() => {
 			return observable<ReturnType<typeof getActivitySnapshot>>((emit) => {
 				emit.next(getActivitySnapshot());

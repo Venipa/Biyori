@@ -18,6 +18,7 @@ function ActivityFeed({
 	confirmPending,
 	onSkip,
 	onUpdate,
+	onDismiss,
 }: {
 	open: boolean;
 	pending: { title: string; episode: number } | null;
@@ -25,6 +26,7 @@ function ActivityFeed({
 	confirmPending: boolean;
 	onSkip: () => void;
 	onUpdate: () => void;
+	onDismiss: (id?: string) => void;
 }) {
 	const activityQuery = trpc.activity.snapshot.useQuery(undefined, {
 		select: (snapshot) => (open ? snapshot : null),
@@ -32,7 +34,17 @@ function ActivityFeed({
 	const live = activityQuery.data?.live ?? EMPTY_LIVE;
 	const items = activityQuery.data?.items ?? EMPTY_ITEMS;
 	return (
-		<ActivityCenterPanel open={open} live={live} items={items} pending={pending} showPending={showPending} confirmPending={confirmPending} onSkip={onSkip} onUpdate={onUpdate} />
+		<ActivityCenterPanel
+			open={open}
+			live={live}
+			items={items}
+			pending={pending}
+			showPending={showPending}
+			confirmPending={confirmPending}
+			onSkip={onSkip}
+			onUpdate={onUpdate}
+			onDismiss={onDismiss}
+		/>
 	);
 }
 
@@ -43,6 +55,7 @@ export function AppStatusBar() {
 	const listRevision = useRef(0);
 	const { open, watchConfirmPromoted } = useActivityPanelState();
 	const { pending, confirm, skip } = useWatchConfirm();
+	const dismiss = trpc.activity.dismiss.useMutation();
 	const statusQuery = trpc.anilist.syncStatus.useQuery();
 	const noticeQuery = trpc.notice.current.useQuery();
 	const hasLive =
@@ -122,6 +135,9 @@ export function AppStatusBar() {
 				}}
 				onUpdate={() => {
 					void confirm.mutateAsync();
+				}}
+				onDismiss={(id) => {
+					dismiss.mutate({ id });
 				}}
 			/>
 			<div className='flex h-6 shrink-0 items-stretch border-t bg-muted/40 text-[11px] leading-none'>

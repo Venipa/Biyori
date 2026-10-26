@@ -97,12 +97,14 @@ declare module "i18next" {
 					anilist: string;
 					biyori: string;
 					checkForUpdates: string;
+					clearAll: string;
 					closeActivity: string;
 					closeActivityCenter: string;
 					connectAnilist: string;
 					connectToUseList: string;
 					dark: string;
-					done: string;
+					dismiss: string;
+					earlier: string;
 					enableAnimeRecognition: string;
 					enableAutoSharing: string;
 					exit: string;
@@ -121,6 +123,7 @@ declare module "i18next" {
 					logOut: string;
 					nothingYet: string;
 					notSignedIn: string;
+					now: string;
 					openActivityCenter: string;
 					playNextEpisode: string;
 					playRandomEpisode: string;
@@ -142,10 +145,12 @@ declare module "i18next" {
 					synchronizeList: string;
 					system: string;
 					themes: string;
+					today: string;
 					tools: string;
 					update: string;
 					updateNamed: string;
 					updateToEpisode: string;
+					yesterday: string;
 					view: string;
 					viewOnAnilist: string;
 				};

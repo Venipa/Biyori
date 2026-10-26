@@ -1,11 +1,13 @@
 import { useTranslation } from "@biyori/translations/react";
-import { BellIcon, CheckIcon, CircleAlertIcon, DownloadIcon, FolderSearchIcon, ListIcon, PlayIcon, RefreshCwIcon, TvIcon } from "lucide-react";
+import { isToday, isYesterday, parseISO } from "date-fns";
+import { BellIcon, CircleAlertIcon, DownloadIcon, FolderSearchIcon, ListIcon, PlayIcon, RefreshCwIcon, TvIcon, XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import type { ComponentType, ReactNode } from "react";
 import { WatchConfirmActions } from "@/mainview/components/app/confirm/watch-actions";
+import { Button } from "@/mainview/components/ui/button";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Spinner } from "@/mainview/components/ui/spinner";
-import { formatLocalDateTime } from "@/mainview/lib/format-date";
+import { formatLocalDateTime, formatTimeAgo } from "@/mainview/lib/format-date";
 import { cn } from "@/mainview/lib/utils";
 
 const SOURCE_ICONS: Record<string, ComponentType<{ className?: string }>> = {
@@ -43,7 +45,18 @@ function ActivityStatus({ status }: { status: "live" | "ok" | "error" }) {
 	if (status === "error") {
 		return <CircleAlertIcon className='size-3.5 shrink-0 text-destructive' aria-label={t("shell.failed")} />;
 	}
-	return <CheckIcon className='size-3.5 shrink-0 text-muted-foreground' aria-label={t("shell.done")} />;
+	return null;
+}
+
+type HistoryRow = { id: string; source: string; title: string; body?: string; status: "ok" | "error"; createdAt: string };
+
+function dayGroup(createdAt: string): "today" | "yesterday" | "earlier" {
+	const date = parseISO(createdAt);
+	return isToday(date) ? "today" : isYesterday(date) ? "yesterday" : "earlier";
+}
+
+function SectionLabel({ children }: { children: ReactNode }) {
+	return <p className='px-3 pt-2 pb-1 text-[10px] font-medium tracking-wide text-muted-foreground uppercase'>{children}</p>;
 }
 
 function ActivityRow({
@@ -53,6 +66,7 @@ function ActivityRow({
 	status,
 	createdAt,
 	trailing,
+	onDismiss,
 }: {
 	source: string;
 	title: string;
@@ -60,17 +74,35 @@ function ActivityRow({
 	status: "live" | "ok" | "error";
 	createdAt?: string;
 	trailing?: ReactNode;
+	onDismiss?: () => void;
 }) {
+	const { t } = useTranslation();
 	const hover = status !== "live" || Boolean(trailing);
 	const subtitle = body?.trim() ? body : null;
 	const when = createdAt ? formatLocalDateTime(createdAt) : undefined;
 	return (
-		<div className={cn("mx-1 flex cursor-default items-start gap-2 rounded-md px-2 py-1.5", hover ? "hover:bg-primary/10" : null)} title={when}>
+		<div className={cn("group mx-1 flex cursor-default items-start gap-2 rounded-md px-2 py-1.5", hover ? "hover:bg-primary/10" : null)} title={when}>
 			<SourceGlyph source={source} />
 			<div className='flex min-w-0 flex-1 flex-col gap-0.5'>
 				<div className='flex min-w-0 items-center gap-2'>
 					<p className={cn("min-w-0 flex-1 truncate text-xs", status === "error" ? "text-destructive" : "text-foreground")}>{title}</p>
 					{trailing ? trailing : <ActivityStatus status={status} />}
+					{createdAt ? (
+						<span className='relative shrink-0 text-[11px] text-muted-foreground'>
+							<span className={onDismiss ? "group-hover:invisible" : undefined}>{formatTimeAgo(createdAt)}</span>
+							{/* overlaid so hover never changes row height */}
+							{onDismiss ? (
+								<Button
+									variant='ghost'
+									size='icon-xs'
+									className='absolute top-1/2 right-0 hidden size-5 -translate-y-1/2 group-hover:inline-flex'
+									aria-label={t("shell.dismiss")}
+									onClick={onDismiss}>
+									<XIcon />
+								</Button>
+							) : null}
+						</span>
+					) : null}
 				</div>
 				{subtitle ? <p className='truncate text-[11px] text-muted-foreground'>{subtitle}</p> : null}
 			</div>
@@ -87,17 +119,20 @@ export function ActivityCenterPanel({
 	confirmPending,
 	onSkip,
 	onUpdate,
+	onDismiss,
 }: {
 	open: boolean;
 	live: Array<{ source: string; title: string; body?: string }>;
-	items: Array<{ id: string; source: string; title: string; body?: string; status: "ok" | "error"; createdAt: string }>;
+	items: HistoryRow[];
 	pending: { title: string; episode: number } | null;
 	showPending: boolean;
 	confirmPending: boolean;
 	onSkip: () => void;
 	onUpdate: () => void;
+	onDismiss: (id?: string) => void;
 }) {
 	const { t } = useTranslation();
+	const groups = Map.groupBy(items, (row) => dayGroup(row.createdAt));
 	const empty = live.length === 0 && items.length === 0 && !showPending;
 	const inProgress = live.length + (showPending ? 1 : 0);
 	const subtitle = inProgress > 0 ? t("shell.inProgress", { count: inProgress }) : t("shell.sevenDayHistory");
@@ -116,15 +151,23 @@ export function ActivityCenterPanel({
 						animate={panelMotion.animate}
 						exit={panelMotion.exit}
 						transition={panelMotion.transition}>
-						<div className='flex shrink-0 flex-col gap-0.5 border-b px-3 py-2'>
-							<p className='truncate text-xs font-medium'>{t("shell.activity")}</p>
-							<p className='truncate text-[11px] text-muted-foreground'>{subtitle}</p>
+						<div className='flex shrink-0 items-center gap-2 border-b px-3 py-2'>
+							<div className='flex min-w-0 flex-1 flex-col gap-0.5'>
+								<p className='truncate text-xs font-medium'>{t("shell.activity")}</p>
+								<p className='truncate text-[11px] text-muted-foreground'>{subtitle}</p>
+							</div>
+							{items.length > 0 ? (
+								<Button variant='ghost' size='xs' onClick={() => onDismiss()}>
+									{t("shell.clearAll")}
+								</Button>
+							) : null}
 						</div>
 						<ScrollArea className='min-h-0 max-h-96 overflow-hidden' viewportClassName='max-h-96 overflow-y-auto'>
 							{empty ? (
 								<p className='px-3 py-2 text-xs text-muted-foreground'>{t("shell.nothingYet")}</p>
 							) : (
-								<div className='flex flex-col py-1'>
+								<div className='flex flex-col pb-1'>
+									{inProgress > 0 ? <SectionLabel>{t("shell.now")}</SectionLabel> : null}
 									{showPending && pending ? (
 										<ActivityRow
 											source='watch-confirm'
@@ -137,9 +180,28 @@ export function ActivityCenterPanel({
 									{live.map((row) => (
 										<ActivityRow key={row.source} source={row.source} title={row.title} body={row.body} status='live' />
 									))}
-									{items.map((row) => (
-										<ActivityRow key={row.id} source={row.source} title={row.title} body={row.body} status={row.status} createdAt={row.createdAt} />
-									))}
+									{(["today", "yesterday", "earlier"] as const).map((group) => {
+										const rows = groups.get(group);
+										if (!rows) {
+											return null;
+										}
+										return (
+											<div key={group} className='flex flex-col'>
+												<SectionLabel>{t(`shell.${group}`)}</SectionLabel>
+												{rows.map((row) => (
+													<ActivityRow
+														key={row.id}
+														source={row.source}
+														title={row.title}
+														body={row.body}
+														status={row.status}
+														createdAt={row.createdAt}
+														onDismiss={() => onDismiss(row.id)}
+													/>
+												))}
+											</div>
+										);
+									})}
 								</div>
 							)}
 						</ScrollArea>

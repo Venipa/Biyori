@@ -89,12 +89,14 @@ shell:
   anilist: AniList
   biyori: Biyori
   checkForUpdates: Check for updates
+  clearAll: Clear all
   closeActivity: Close activity
   closeActivityCenter: Close activity center
   connectAnilist: Connect AniList
   connectToUseList: Connect to use your list
   dark: Dark
-  done: Done
+  dismiss: Dismiss
+  earlier: Earlier
   enableAnimeRecognition: Enable anime recognition
   enableAutoSharing: Enable auto sharing
   exit: Exit
@@ -113,6 +115,7 @@ shell:
   logOut: Log out
   nothingYet: Nothing yet.
   notSignedIn: Not signed in
+  now: Now
   openActivityCenter: Open activity center
   playNextEpisode: Play next episode
   playRandomEpisode: Play random episode
@@ -134,10 +137,12 @@ shell:
   synchronizeList: Synchronize list
   system: System
   themes: Themes
+  today: Today
   tools: Tools
   update: Update
   updateNamed: Update {{name}}
   updateToEpisode: Update to episode {{episode}}
+  yesterday: Yesterday
   view: View
   viewOnAnilist: View on AniList
 nav:

@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { ACTIVITY_MAX_AGE_MS, completeActivity, filterFreshActivities, getActivitySnapshot, resetActivityCenterForTests, upsertActivity } from "./activity";
+import {
+	ACTIVITY_MAX_AGE_MS,
+	completeActivity,
+	dismissActivity,
+	filterFreshActivities,
+	getActivitySnapshot,
+	pushNotice,
+	resetActivityCenterForTests,
+	upsertActivity,
+} from "./activity";
 
 describe("activity center", () => {
 	afterEach(() => {
@@ -17,16 +26,31 @@ describe("activity center", () => {
 		expect(getActivitySnapshot().live).toEqual([{ source: "list-update", title: "Update One Piece", body: "Update to episode 1125" }]);
 	});
 
-	test("complete persists one row and clears live", () => {
+	test("ok completion clears live without persisting", () => {
 		upsertActivity({ source: "library-scan", title: "Scanning..." });
 		completeActivity({ source: "library-scan", title: "Library scan", body: "3 files, 2 matched", status: "ok" });
+		expect(getActivitySnapshot()).toEqual({ live: [], items: [] });
+	});
+
+	test("error completion persists one row and clears live", () => {
+		upsertActivity({ source: "library-scan", title: "Scanning..." });
+		completeActivity({ source: "library-scan", title: "Library scan", body: "Failed", status: "error" });
 		const next = getActivitySnapshot();
 		expect(next.live).toEqual([]);
 		expect(next.items).toHaveLength(1);
 		expect(next.items[0]?.kind).toBe("activity");
-		expect(next.items[0]?.status).toBe("ok");
-		expect(next.items[0]?.title).toBe("Library scan");
-		expect(next.items[0]?.body).toBe("3 files, 2 matched");
+		expect(next.items[0]?.status).toBe("error");
+		expect(next.items[0]?.body).toBe("Failed");
+	});
+
+	test("dismiss removes one row or all", () => {
+		pushNotice({ source: "torrent", title: "a" });
+		pushNotice({ source: "torrent", title: "b" });
+		const [first] = getActivitySnapshot().items;
+		dismissActivity(first?.id);
+		expect(getActivitySnapshot().items.map((row) => row.title)).toEqual(["a"]);
+		dismissActivity();
+		expect(getActivitySnapshot().items).toEqual([]);
 	});
 
 	test("drops rows older than 7 days", () => {
