@@ -69,6 +69,7 @@ export function HeroShot() {
 export function SurfaceWalkthrough() {
 	const [active, setActive] = useState(0);
 	const reduce = useReducedMotion() === true;
+	const items = useRef<Array<HTMLLIElement | null>>([]);
 
 	return (
 		<div className='grid gap-12 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] lg:gap-16'>
@@ -104,12 +105,22 @@ export function SurfaceWalkthrough() {
 							</motion.div>
 						))}
 					</div>
-					<div className='mt-4 flex gap-1.5' aria-hidden>
+					<div className='mt-3 -ml-2 flex' role='group' aria-label='App screens'>
 						{APP_SHOTS.map((shot, index) => (
-							<span
+							<button
 								key={shot.src}
-								className={cn("h-1 rounded-full transition-[width,background-color] duration-300", index === active ? "w-6 bg-fd-primary" : "w-1.5 bg-fd-border")}
-							/>
+								type='button'
+								aria-label={shot.title}
+								aria-current={index === active ? "true" : undefined}
+								onClick={() => items.current[index]?.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" })}
+								className='group grid h-8 cursor-pointer place-items-center px-1'>
+								<span
+									className={cn(
+										"h-1 rounded-full transition-[width,background-color] duration-300",
+										index === active ? "w-6 bg-fd-primary" : "w-1.5 bg-fd-border group-hover:w-3 group-hover:bg-fd-muted-foreground",
+									)}
+								/>
+							</button>
 						))}
 					</div>
 				</div>
