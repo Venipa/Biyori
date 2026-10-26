@@ -87,7 +87,7 @@ export default defineConfig({
 		build: {
 			sourcemap: sentrySourcemap,
 			externalizeDeps: {
-				include: ["encryption.js", "@biyori/hana"],
+				include: ["@biyori/hana"],
 				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/translations"],
 			},
 		},
