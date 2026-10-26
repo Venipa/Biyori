@@ -2,7 +2,7 @@ import { t, useTranslation } from "@biyori/translations/react";
 import { getRouteApi } from "@tanstack/react-router";
 import { type ColumnDef, flexRender, getCoreRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
-import { groupHistory, HISTORY_CHANGE_TYPES, type HistoryChangeType, type HistoryGroupRow, matchesHistoryTypes, parseHistoryTypes } from "@/lib/history-timeline";
+import { groupHistory, HISTORY_CHANGE_TYPES, type HistoryChangeType, type HistoryGroupRow, parseHistoryTypes } from "@/lib/history-timeline";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
 import { DataTable, resizableTableOptions } from "@/mainview/components/app/shared/data-table";
@@ -130,7 +130,7 @@ export function HistoryView() {
 	const search = route.useSearch();
 	const navigate = route.useNavigate();
 	const types = parseHistoryTypes(search.types);
-	const query = trpc.history.page.useInfiniteQuery({ limit: PAGE_SIZE }, { getNextPageParam: (page) => page.nextCursor });
+	const query = trpc.history.page.useInfiniteQuery({ limit: PAGE_SIZE, types: types.length > 0 ? types : undefined }, { getNextPageParam: (page) => page.nextCursor });
 	const utils = trpc.useUtils();
 	const animeInfo = useAnimeInfoNav();
 	const sizing = usePersistedColumnSizing("history");
@@ -158,8 +158,8 @@ export function HistoryView() {
 			labels.set(day.key, dayLabel(day.time));
 			all.push(...day.rows.map((row) => ({ ...row, group: day.key })));
 		}
-		return { rows: all.filter((row) => matchesHistoryTypes(row, parseHistoryTypes(search.types))), groupLabels: labels, queuedCount: queued.length, hasHistory: days.length > 0 };
-	}, [pages, search.types, t]);
+		return { rows: all, groupLabels: labels, queuedCount: queued.length, hasHistory: days.length > 0 };
+	}, [pages, t]);
 
 	const table = useReactTable({
 		data: rows,
@@ -184,7 +184,7 @@ export function HistoryView() {
 		}
 	}
 
-	if (!query.isPending && !hasHistory && queuedCount === 0) {
+	if (!query.isPending && types.length === 0 && rows.length === 0) {
 		return (
 			<Empty>
 				<EmptyTitle>{t("history.noHistory")}</EmptyTitle>
@@ -215,6 +215,11 @@ export function HistoryView() {
 						<ScrollArea className='h-full'>
 							{query.isPending ? (
 								<TableRowsSkeleton columnCount={columns.length} headers={table.getFlatHeaders().map((header) => flexRender(header.column.columnDef.header, header.getContext()))} />
+							) : rows.length === 0 ? (
+								<Empty>
+									<EmptyTitle>{t("history.noMatches")}</EmptyTitle>
+									<EmptyDescription>{t("history.noMatchesDescription")}</EmptyDescription>
+								</Empty>
 							) : (
 								<DataTable
 									table={table}

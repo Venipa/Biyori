@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { groupHistory, type HistoryEntry, type HistoryGroupRow, matchesHistoryTypes, parseHistoryTypes } from "./history-timeline";
+import { groupHistory, type HistoryEntry, parseHistoryTypes } from "./history-timeline";
 
 function entry(id: string, animeId: number, stamp: string, changes: HistoryEntry["changes"], episode = changes.episode ?? 0): HistoryEntry {
 	return { id, animeId, title: `A${animeId}`, episode, lastModified: stamp, changes, coverUrl: "" };
@@ -29,25 +29,8 @@ describe("history timeline", () => {
 });
 
 describe("history type filter", () => {
-	const row = (changes: HistoryGroupRow["changes"], episodes?: HistoryGroupRow["episodes"]): HistoryGroupRow => ({
-		ids: ["1"],
-		animeId: 1,
-		title: "",
-		coverUrl: "",
-		time: 0,
-		changes,
-		episodes,
-	});
-
 	test("parses and drops unknown types", () => {
 		expect(parseHistoryTypes("score,bogus,episode")).toEqual(["episode", "score"]);
 		expect(parseHistoryTypes(undefined)).toEqual([]);
-	});
-
-	test("matches any active type, all when none", () => {
-		expect(matchesHistoryTypes(row({ score: null }), ["score"])).toBe(true);
-		expect(matchesHistoryTypes(row({ status: "Completed" }), ["score", "episode"])).toBe(false);
-		expect(matchesHistoryTypes(row({}, { from: 1, to: 2, count: 2 }), ["episode"])).toBe(true);
-		expect(matchesHistoryTypes(row({ notes: true }), [])).toBe(true);
 	});
 });

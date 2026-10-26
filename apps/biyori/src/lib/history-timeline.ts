@@ -79,8 +79,3 @@ export function parseHistoryTypes(raw: string | undefined): HistoryChangeType[] 
 	const parts = new Set((raw ?? "").split(","));
 	return HISTORY_CHANGE_TYPES.filter((type) => parts.has(type));
 }
-
-/** No active types shows everything; otherwise the row needs any active type. */
-export function matchesHistoryTypes(row: HistoryGroupRow, types: readonly HistoryChangeType[]): boolean {
-	return types.length === 0 || types.some((type) => (type === "episode" ? row.episodes != null : row.changes[type] !== undefined));
-}

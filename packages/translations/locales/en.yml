@@ -798,6 +798,8 @@ history:
   columnTitle: Title
   columnChange: Change
   columnEpisodes: Eps
+  noMatches: No matching updates
+  noMatchesDescription: Nothing in your history matches these filters.
 library:
   missing: Missing
   notScanned: Not scanned

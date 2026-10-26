@@ -865,6 +865,8 @@ declare module "i18next" {
 					columnTitle: string;
 					columnChange: string;
 					columnEpisodes: string;
+					noMatches: string;
+					noMatchesDescription: string;
 				};
 				library: {
 					missing: string;

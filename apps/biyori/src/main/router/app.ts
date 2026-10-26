@@ -6,6 +6,7 @@ import { z } from "zod";
 import { parseStoredTitles, type StoredAnimeTitles, titlesFromFallback } from "../../lib/anime-titles";
 import { folderPathExists, normalizeFolderPath } from "../../lib/folder-path";
 import { parseHistoryStamp } from "../../lib/history-stamp";
+import { HISTORY_CHANGE_TYPES, type HistoryChangeType } from "../../lib/history-timeline";
 import { parseJsonArray } from "../../lib/parse-json-array";
 import { settingsFormPatchSchema } from "../../lib/schemas/app-settings";
 import { cacheKindsSchema } from "../../lib/schemas/cache-kind";
@@ -175,6 +176,20 @@ async function episodeSeenAtByAnime(db: SelectDatabase): Promise<Map<number, Rec
 		seenById.set(file.animeId, seen);
 	}
 	return seenById;
+}
+
+/** Rows having any of `types` (none = all). Rows from before `changes` existed (`{}`) count as episode updates. */
+function historyTypeFilter(types: readonly HistoryChangeType[]) {
+	if (types.length === 0) {
+		return undefined;
+	}
+	return or(
+		...types.map((type) => {
+			// json_type is NULL only for a missing key, so "score removed" (null) still matches
+			const has = sql`json_type(${history.changes}, ${`$.${type}`}) is not null`;
+			return type === "episode" ? or(has, eq(history.changes, "{}")) : has;
+		}),
+	);
 }
 
 export const appRouter = trpc.router({
@@ -391,48 +406,60 @@ export const appRouter = trpc.router({
 			};
 		}),
 		/** History page: queued rows (first page only) + history newest first, `limit` per page, cursor = "lastModified|id" of the last row. */
-		page: trpc.procedure.input(z.object({ cursor: z.string().nullish(), limit: z.number().int().min(1).max(500).default(200) })).query(async ({ ctx, input }) => {
-			const language = loadAppSettings().titleLanguage;
-			const fields = {
-				id: history.id,
-				animeId: history.animeId,
-				title: history.title,
-				episode: history.episode,
-				lastModified: history.lastModified,
-				kind: history.kind,
-				changes: history.changes,
-				animeTitle: anime.title,
-				titles: anime.titles,
-				coverUrl: anime.coverUrl,
-			};
-			const [stamp, id] = input.cursor ? [input.cursor.slice(0, input.cursor.lastIndexOf("|")), input.cursor.slice(input.cursor.lastIndexOf("|") + 1)] : [null, null];
-			const rows = await ctx.db
-				.select(fields)
-				.from(history)
-				.leftJoin(anime, eq(anime.id, history.animeId))
-				.where(
-					and(eq(history.kind, "history"), stamp != null && id != null ? or(lt(history.lastModified, stamp), and(eq(history.lastModified, stamp), lt(history.id, id))) : undefined),
-				)
-				.orderBy(desc(history.lastModified), desc(history.id))
-				.limit(input.limit + 1);
-			const shape = (row: (typeof rows)[number]) => ({
-				id: row.id,
-				animeId: row.animeId,
-				title: row.animeTitle ? displayTitleFromRow(row.animeTitle, row.titles, language) : row.title,
-				episode: row.episode,
-				lastModified: row.lastModified,
-				changes: parseHistoryChanges(row.changes),
-				coverUrl: row.coverUrl ?? "",
-			});
-			const items = rows.slice(0, input.limit).map(shape);
-			const last = items.at(-1);
-			const queued = input.cursor
-				? []
-				: (await ctx.db.select(fields).from(history).leftJoin(anime, eq(anime.id, history.animeId)).where(eq(history.kind, "queued")).orderBy(desc(history.lastModified))).map(
-						shape,
-					);
-			return { queued, items, nextCursor: rows.length > input.limit && last ? `${last.lastModified}|${last.id}` : null };
-		}),
+		page: trpc.procedure
+			.input(z.object({ cursor: z.string().nullish(), limit: z.number().int().min(1).max(500).default(200), types: z.array(z.enum(HISTORY_CHANGE_TYPES)).optional() }))
+			.query(async ({ ctx, input }) => {
+				const language = loadAppSettings().titleLanguage;
+				const fields = {
+					id: history.id,
+					animeId: history.animeId,
+					title: history.title,
+					episode: history.episode,
+					lastModified: history.lastModified,
+					kind: history.kind,
+					changes: history.changes,
+					animeTitle: anime.title,
+					titles: anime.titles,
+					coverUrl: anime.coverUrl,
+				};
+				const typeFilter = historyTypeFilter(input.types ?? []);
+				const [stamp, id] = input.cursor ? [input.cursor.slice(0, input.cursor.lastIndexOf("|")), input.cursor.slice(input.cursor.lastIndexOf("|") + 1)] : [null, null];
+				const rows = await ctx.db
+					.select(fields)
+					.from(history)
+					.leftJoin(anime, eq(anime.id, history.animeId))
+					.where(
+						and(
+							eq(history.kind, "history"),
+							typeFilter,
+							stamp != null && id != null ? or(lt(history.lastModified, stamp), and(eq(history.lastModified, stamp), lt(history.id, id))) : undefined,
+						),
+					)
+					.orderBy(desc(history.lastModified), desc(history.id))
+					.limit(input.limit + 1);
+				const shape = (row: (typeof rows)[number]) => ({
+					id: row.id,
+					animeId: row.animeId,
+					title: row.animeTitle ? displayTitleFromRow(row.animeTitle, row.titles, language) : row.title,
+					episode: row.episode,
+					lastModified: row.lastModified,
+					changes: parseHistoryChanges(row.changes),
+					coverUrl: row.coverUrl ?? "",
+				});
+				const items = rows.slice(0, input.limit).map(shape);
+				const last = items.at(-1);
+				const queued = input.cursor
+					? []
+					: (
+							await ctx.db
+								.select(fields)
+								.from(history)
+								.leftJoin(anime, eq(anime.id, history.animeId))
+								.where(and(eq(history.kind, "queued"), typeFilter))
+								.orderBy(desc(history.lastModified))
+						).map(shape);
+				return { queued, items, nextCursor: rows.length > input.limit && last ? `${last.lastModified}|${last.id}` : null };
+			}),
 		queuedCount: trpc.procedure.query(async ({ ctx }) => {
 			return countQueued(ctx.db);
 		}),
