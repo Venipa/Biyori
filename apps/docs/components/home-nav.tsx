@@ -76,8 +76,8 @@ export function HomeNav({ release, downloadUrl, repositoryUrl, stars, discordUrl
 				</div>
 
 				<div className='ml-auto flex items-center gap-1'>
-					<FullSearchTrigger className='hidden w-44 rounded-full md:flex' />
-					<SearchTrigger className='rounded-full md:hidden' hideIfDisabled />
+					<FullSearchTrigger className={cn("hidden w-44 rounded-full", !scrolled && "md:flex")} />
+					<SearchTrigger className={cn("rounded-full text-fd-muted-foreground hover:text-fd-foreground", !scrolled && "md:hidden")} hideIfDisabled />
 					<ThemeSwitch className='hidden sm:flex' />
 					{discordUrl ? (
 						<a href={discordUrl} target='_blank' rel='noreferrer' aria-label='Discord' className={cn(link, "hidden px-2 sm:inline-flex")}>
