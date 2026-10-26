@@ -2,7 +2,7 @@
 
 import { buttonVariants } from "fumadocs-ui/components/ui/button";
 import { ArrowUpRightIcon, ChevronDownIcon, DownloadIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ComponentProps, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import {
 	type CpuArch,
@@ -333,7 +333,7 @@ function DownloadRow({ asset }: { asset: ReleaseAsset }) {
 }
 
 /** Hero CTA: server renders the generic link, the client swaps in the visitor's platform build. */
-export function HeroDownloadButton({ release, fallbackUrl, className }: { release: LatestRelease | null; fallbackUrl: string; className?: string }) {
+export function HeroDownloadButton({ release, fallbackUrl, short, ...props }: { release: LatestRelease | null; fallbackUrl: string; short?: boolean } & ComponentProps<"a">) {
 	const [pick, setPick] = useState<{ url: string; label: string } | null>(null);
 
 	useEffect(() => {
@@ -345,9 +345,9 @@ export function HeroDownloadButton({ release, fallbackUrl, className }: { releas
 	}, [release]);
 
 	return (
-		<a href={pick?.url ?? fallbackUrl} className={className}>
-			<DownloadIcon className='size-4' />
-			{pick ? `Download for ${pick.label}` : release ? `Download ${release.tag_name}` : "Download latest"}
+		<a {...props} href={pick?.url ?? fallbackUrl}>
+			<DownloadIcon className={short ? "size-3.5" : "size-4"} />
+			{short ? "Download" : pick ? `Download for ${pick.label}` : release ? `Download ${release.tag_name}` : "Download latest"}
 		</a>
 	);
 }

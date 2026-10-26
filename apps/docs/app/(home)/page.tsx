@@ -12,7 +12,7 @@ import { cn } from "@/lib/cn";
 import { getLatestReleasesByChannel, getLatestReleaseUrl, getRepositoryUrl, groupDownloadsByPlatform, pickPrimaryDownload } from "@/lib/github";
 import { assetPath } from "@/lib/paths";
 import { absolutePageUrl, homeJsonLd } from "@/lib/seo";
-import { appDescription, appName, appTagline, changelogRoute, docsRoute, formatStarCount, repoStars } from "@/lib/shared";
+import { appDescription, appName, appTagline, changelogRoute, docsRoute, formatStarCount, HERO_DOWNLOAD_ID, repoStars } from "@/lib/shared";
 
 const homeTitle = `${appName} - desktop anime list tracker`;
 
@@ -93,7 +93,12 @@ export default async function HomePage() {
 					<p className='mt-6 max-w-xl text-base text-pretty text-fd-muted-foreground md:text-lg'>{appDescription}</p>
 				</Settle>
 				<Settle delay={0.1} className='mt-10 flex flex-wrap items-center justify-center gap-2'>
-					<HeroDownloadButton release={release ?? null} fallbackUrl={downloadUrl} className={cn(buttonVariants({ variant: "primary" }), "gap-2 px-5 py-2.5")} />
+					<HeroDownloadButton
+						id={HERO_DOWNLOAD_ID}
+						release={release ?? null}
+						fallbackUrl={downloadUrl}
+						className={cn(buttonVariants({ variant: "primary" }), "gap-2 px-5 py-2.5")}
+					/>
 					<Link href={docsRoute} className={secondary}>
 						<BookOpenIcon className='size-4' />
 						Read the docs

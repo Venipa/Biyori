@@ -86,3 +86,4 @@ export const socials = {
 		url: `https://github.com/${repoOwner}`,
 	},
 } as const;
+export const HERO_DOWNLOAD_ID = "hero-download";
