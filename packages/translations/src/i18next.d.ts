@@ -32,6 +32,8 @@ declare module "i18next" {
 					viewMissing: string;
 				};
 				nowPlaying: {
+					link: string;
+					linkTitle: string;
 					airing: string;
 					airingDay: string;
 					airingToday: string;

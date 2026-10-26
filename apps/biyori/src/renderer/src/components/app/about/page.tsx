@@ -13,7 +13,7 @@ import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 import { getVersionChannel, parseUpdateChannel, type UpdateChannel } from "@/shared/updater";
-import hanaRender from "../../../../../resources/biyori-render.png";
+import hanaRender from "../../../../../../resources/biyori-render.png";
 
 const AUTHOR = "Venipa";
 const CONTRIBUTORS = [AUTHOR];

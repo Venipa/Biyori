@@ -57,13 +57,11 @@ export function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) 
 				{detail?.bannerUrl || match.bannerUrl ? (
 					<AnimeCover id={match.id} kind='banner' sourceUrl={detail?.bannerUrl || match.bannerUrl} alt='' className='size-full object-cover' />
 				) : null}
-				{/* Scrim + fades: keep title readable on light/dark banners */}
-				<div aria-hidden className='pointer-events-none absolute inset-0 bg-background/45' />
-				<div aria-hidden className='pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-background/75 to-background/20' />
-				<div aria-hidden className='pointer-events-none absolute inset-y-0 right-0 w-2/3 bg-gradient-to-l from-background/50 to-transparent' />
+				{/* one fade keeps the title readable on light and dark banners */}
+				<div aria-hidden className='pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/30' />
 			</div>
 
-			<div className='relative z-10 -mt-16 grid grid-cols-[14rem_1fr] items-start gap-x-4 gap-y-3 px-4'>
+			<div className='relative z-10 -mt-16 grid max-w-6xl grid-cols-[14rem_1fr] items-start gap-x-4 gap-y-3 px-6'>
 				<div className='row-span-2 flex min-w-0 flex-col gap-2'>
 					<div className='aspect-2/3 w-full overflow-hidden rounded-md border bg-muted shadow-md ring-1 ring-foreground/10'>
 						<AnimeCover

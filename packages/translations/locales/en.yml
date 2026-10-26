@@ -25,6 +25,8 @@ common:
   viewFailed: This view failed to open.
   viewMissing: This view does not exist.
 nowPlaying:
+  link: Link
+  linkTitle: "Link this file to {{title}}"
   airing: Airing
   airingDay: "{{weekday}} {{date}}"
   airingToday: "Today, {{date}}"
