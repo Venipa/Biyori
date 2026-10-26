@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 
@@ -6,7 +7,7 @@ const DEFAULT_ROW_COUNT = 12;
 type TableRowsSkeletonProps = {
 	columnCount: number;
 	rowCount?: number;
-	headers?: readonly string[];
+	headers?: readonly ReactNode[];
 };
 
 export function TableRowsSkeleton({ columnCount, rowCount = DEFAULT_ROW_COUNT, headers }: TableRowsSkeletonProps) {

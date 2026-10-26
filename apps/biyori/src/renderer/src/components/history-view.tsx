@@ -1,8 +1,11 @@
 import { t, useTranslation } from "@biyori/translations/react";
+import { getRouteApi } from "@tanstack/react-router";
+import { type ColumnDef, flexRender, getCoreRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
-import { groupHistory, type HistoryGroupRow } from "@/lib/history-timeline";
+import { groupHistory, HISTORY_CHANGE_TYPES, type HistoryChangeType, type HistoryGroupRow, matchesHistoryTypes, parseHistoryTypes } from "@/lib/history-timeline";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
+import { DataTable, resizableTableOptions } from "@/mainview/components/app/shared/data-table";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -17,14 +20,30 @@ import { Button } from "@/mainview/components/ui/button";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/mainview/components/ui/context-menu";
 import { Empty, EmptyDescription, EmptyTitle } from "@/mainview/components/ui/empty";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
-import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Spinner } from "@/mainview/components/ui/spinner";
+import { TableRow } from "@/mainview/components/ui/table";
+import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
+import { Toggle } from "@/mainview/components/ui/toggle";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
+import { usePersistedColumnSizing } from "@/mainview/lib/table-column-sizing";
 import { trpc } from "@/mainview/trpc";
 
+const route = getRouteApi("/app/history");
+
 type HistoryKind = "history" | "queued";
+type HistoryTableRow = HistoryGroupRow & { group: string };
 
 const PAGE_SIZE = 200;
+const QUEUED_GROUP = "queued";
+
+const typeLabelKey = {
+	episode: "history.filterEpisodes",
+	status: "history.filterStatus",
+	score: "history.filterScore",
+	notes: "history.notes",
+	rewatch: "history.rewatch",
+	dates: "history.dates",
+} as const satisfies Record<HistoryChangeType, string>;
 
 function dayLabel(time: number): string {
 	const day = new Date(time);
@@ -55,41 +74,67 @@ function changeSummary(row: HistoryGroupRow): string {
 	return parts.join(" · ");
 }
 
-function HistoryRowItem({ row, onOpen, onMenu }: { row: HistoryGroupRow; onOpen: () => void; onMenu: () => void }) {
-	const { t } = useTranslation();
-	return (
-		<li>
-			<button
-				type='button'
-				disabled={row.animeId <= 0}
-				onClick={onOpen}
-				onContextMenu={onMenu}
-				className='flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted focus-visible:bg-muted disabled:cursor-default disabled:hover:bg-transparent'>
+const columns: ColumnDef<HistoryTableRow>[] = [
+	{
+		id: "time",
+		accessorKey: "time",
+		header: () => t("history.columnTime"),
+		size: 80,
+		minSize: 72,
+		cell: ({ row }) => (
+			<span className='text-muted-foreground tabular-nums'>{new Date(row.original.time).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</span>
+		),
+	},
+	{
+		id: "title",
+		accessorKey: "title",
+		header: () => t("history.columnTitle"),
+		size: 320,
+		minSize: 160,
+		meta: { className: "min-w-0" },
+		cell: ({ row }) => (
+			<span className='flex min-w-0 items-center gap-2'>
 				<AnimeCover
-					id={row.animeId > 0 ? row.animeId : null}
-					coverUrl={row.coverUrl || undefined}
+					id={row.original.animeId > 0 ? row.original.animeId : null}
+					coverUrl={row.original.coverUrl || undefined}
 					alt=''
-					className='aspect-2/3 w-8 shrink-0 overflow-hidden rounded-sm bg-muted'
 					lazy
+					className='aspect-2/3 w-4 shrink-0 overflow-hidden rounded-xs bg-muted'
 				/>
-				<span className='flex min-w-0 flex-1 flex-col'>
-					<span className='truncate'>{row.title}</span>
-					<span className='truncate text-xs text-muted-foreground tabular-nums'>
-						{changeSummary(row)}
-						{row.episodes && row.episodes.count > 1 ? ` · ${t("history.episodes", { count: row.episodes.count })}` : ""}
-					</span>
+				<span className='truncate' title={row.original.title}>
+					{row.original.title}
 				</span>
-				<span className='shrink-0 text-xs text-muted-foreground tabular-nums'>{new Date(row.time).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</span>
-			</button>
-		</li>
-	);
-}
+			</span>
+		),
+	},
+	{
+		id: "change",
+		accessorFn: changeSummary,
+		header: () => t("history.columnChange"),
+		size: 240,
+		minSize: 120,
+		cell: ({ getValue }) => <span className='block truncate text-muted-foreground tabular-nums'>{getValue<string>()}</span>,
+	},
+	{
+		id: "episodes",
+		accessorFn: (row) => row.episodes?.count ?? 0,
+		header: () => t("history.columnEpisodes"),
+		size: 72,
+		minSize: 72,
+		cell: ({ row }) => <span className='text-muted-foreground tabular-nums'>{row.original.episodes?.count ?? "-"}</span>,
+	},
+];
 
 export function HistoryView() {
 	const { t } = useTranslation();
+	const search = route.useSearch();
+	const navigate = route.useNavigate();
+	const types = parseHistoryTypes(search.types);
 	const query = trpc.history.page.useInfiniteQuery({ limit: PAGE_SIZE }, { getNextPageParam: (page) => page.nextCursor });
 	const utils = trpc.useUtils();
 	const animeInfo = useAnimeInfoNav();
+	const sizing = usePersistedColumnSizing("history");
+	const [sorting, setSorting] = useState<SortingState>([]);
 	const [menuRow, setMenuRow] = useState<HistoryGroupRow | null>(null);
 	const [clearKind, setClearKind] = useState<HistoryKind | null>(null);
 
@@ -103,9 +148,36 @@ export function HistoryView() {
 	const remove = trpc.history.remove.useMutation({ onSuccess: refresh });
 	const clear = trpc.history.clear.useMutation({ onSuccess: refresh });
 	const pages = query.data?.pages;
-	const queued = useMemo(() => groupHistory(pages?.[0]?.queued ?? []).flatMap((day) => day.rows), [pages]);
-	const days = useMemo(() => groupHistory(pages?.flatMap((page) => page.items) ?? []), [pages]);
-	const hasHistory = days.length > 0;
+	const { rows, groupLabels, queuedCount, hasHistory } = useMemo(() => {
+		const labels = new Map<string, string>();
+		const queued = groupHistory(pages?.[0]?.queued ?? []).flatMap((day) => day.rows);
+		labels.set(QUEUED_GROUP, t("history.queuedSummary", { count: queued.length }));
+		const days = groupHistory(pages?.flatMap((page) => page.items) ?? []);
+		const all: HistoryTableRow[] = queued.map((row) => ({ ...row, group: QUEUED_GROUP }));
+		for (const day of days) {
+			labels.set(day.key, dayLabel(day.time));
+			all.push(...day.rows.map((row) => ({ ...row, group: day.key })));
+		}
+		return { rows: all.filter((row) => matchesHistoryTypes(row, types)), groupLabels: labels, queuedCount: queued.length, hasHistory: days.length > 0 };
+		// biome-ignore lint/correctness/useExhaustiveDependencies: types is derived from search.types
+	}, [pages, search.types, t]);
+
+	const table = useReactTable({
+		data: rows,
+		columns,
+		...resizableTableOptions,
+		getCoreRowModel: getCoreRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+		getRowId: (row) => `${row.group}:${row.ids[0]}`,
+		onSortingChange: setSorting,
+		onColumnSizingChange: sizing.onColumnSizingChange,
+		state: { sorting, columnSizing: sizing.columnSizing },
+	});
+
+	function toggleType(type: HistoryChangeType, pressed: boolean): void {
+		const next = HISTORY_CHANGE_TYPES.filter((item) => (item === type ? pressed : types.includes(item)));
+		void navigate({ search: (prev) => ({ ...prev, types: next.length > 0 ? next.join(",") : undefined }), replace: true });
+	}
 
 	function openInfo(row: HistoryGroupRow): void {
 		if (row.animeId > 0) {
@@ -113,32 +185,7 @@ export function HistoryView() {
 		}
 	}
 
-	function renderRow(row: HistoryGroupRow) {
-		return (
-			<HistoryRowItem
-				key={row.ids[0]}
-				row={row}
-				onOpen={() => {
-					openInfo(row);
-				}}
-				onMenu={() => {
-					setMenuRow(row);
-				}}
-			/>
-		);
-	}
-
-	if (query.isPending) {
-		return (
-			<div className='flex max-w-3xl flex-col gap-2 px-6 py-5'>
-				{["s0", "s1", "s2", "s3", "s4", "s5"].map((id) => (
-					<Skeleton key={id} className='h-12 rounded-md' />
-				))}
-			</div>
-		);
-	}
-
-	if (!hasHistory && queued.length === 0) {
+	if (!query.isPending && !hasHistory && queuedCount === 0) {
 		return (
 			<Empty>
 				<EmptyTitle>{t("history.noHistory")}</EmptyTitle>
@@ -148,28 +195,53 @@ export function HistoryView() {
 	}
 
 	return (
-		<>
-			<ContextMenu>
-				<ContextMenuTrigger className='block h-full min-h-0'>
-					<ScrollArea className='h-full' viewportClassName='px-6 py-5'>
-						<div className='flex max-w-3xl flex-col gap-5'>
-							{queued.length > 0 ? (
-								<section className='flex flex-col gap-2 rounded-lg border bg-card p-3'>
-									<h2 className='px-2 text-xs font-medium text-muted-foreground'>{t("history.queuedSummary", { count: queued.length })}</h2>
-									<ul className='flex flex-col'>{queued.map(renderRow)}</ul>
-								</section>
-							) : null}
-							{days.map((day) => (
-								<section key={day.key} className='flex flex-col gap-1'>
-									<h2 className='px-2 text-xs font-medium text-muted-foreground'>{dayLabel(day.time)}</h2>
-									<ul className='flex flex-col'>{day.rows.map(renderRow)}</ul>
-								</section>
-							))}
+		<div className='flex h-full min-h-0 flex-col'>
+			<div role='group' aria-label={t("history.filterLabel")} className='flex shrink-0 flex-wrap items-center gap-1 border-b bg-card px-3 py-1.5'>
+				{HISTORY_CHANGE_TYPES.map((type) => (
+					<Toggle
+						key={type}
+						size='sm'
+						variant='outline'
+						pressed={types.includes(type)}
+						onPressedChange={(pressed) => {
+							toggleType(type, pressed);
+						}}>
+						{t(typeLabelKey[type])}
+					</Toggle>
+				))}
+			</div>
+			<div className='min-h-0 flex-1'>
+				<ContextMenu>
+					<ContextMenuTrigger className='block h-full min-h-0'>
+						<ScrollArea className='h-full'>
+							{query.isPending ? (
+								<TableRowsSkeleton columnCount={columns.length} headers={table.getFlatHeaders().map((header) => flexRender(header.column.columnDef.header, header.getContext()))} />
+							) : (
+								<DataTable
+									table={table}
+									compact
+									rowSize={32}
+									groupBy={(row) => row.original.group}
+									groupLabel={(value) => groupLabels.get(String(value)) ?? String(value)}
+									renderRow={(row, cells) => (
+										<TableRow
+											className='cursor-pointer data-stripe:bg-muted/25'
+											onClick={() => {
+												openInfo(row.original);
+											}}
+											onContextMenu={() => {
+												setMenuRow(row.original);
+											}}>
+											{cells}
+										</TableRow>
+									)}
+								/>
+							)}
 							{query.hasNextPage ? (
 								<Button
 									variant='ghost'
 									size='sm'
-									className='self-start text-muted-foreground'
+									className='m-2 text-muted-foreground'
 									disabled={query.isFetchingNextPage}
 									onClick={() => {
 										void query.fetchNextPage();
@@ -178,46 +250,46 @@ export function HistoryView() {
 									{t("history.loadOlder")}
 								</Button>
 							) : null}
-						</div>
-					</ScrollArea>
-				</ContextMenuTrigger>
-				<ContextMenuContent className='min-w-48'>
-					<ContextMenuItem
-						disabled={!menuRow || menuRow.animeId <= 0}
-						onClick={() => {
-							if (menuRow) {
-								openInfo(menuRow);
-							}
-						}}>
-						{t("history.information")}
-					</ContextMenuItem>
-					<ContextMenuItem
-						disabled={!menuRow || remove.isPending}
-						variant='destructive'
-						onClick={() => {
-							if (menuRow) {
-								void remove.mutateAsync({ ids: menuRow.ids });
-							}
-						}}>
-						{t("common.delete")}
-					</ContextMenuItem>
-					<ContextMenuSeparator />
-					<ContextMenuItem
-						disabled={!hasHistory}
-						onClick={() => {
-							setClearKind("history");
-						}}>
-						{t("history.clearHistoryMenu")}
-					</ContextMenuItem>
-					<ContextMenuItem
-						disabled={queued.length === 0}
-						onClick={() => {
-							setClearKind("queued");
-						}}>
-						{t("history.clearQueueMenu")}
-					</ContextMenuItem>
-				</ContextMenuContent>
-			</ContextMenu>
+						</ScrollArea>
+					</ContextMenuTrigger>
+					<ContextMenuContent className='min-w-48'>
+						<ContextMenuItem
+							disabled={!menuRow || menuRow.animeId <= 0}
+							onClick={() => {
+								if (menuRow) {
+									openInfo(menuRow);
+								}
+							}}>
+							{t("history.information")}
+						</ContextMenuItem>
+						<ContextMenuItem
+							disabled={!menuRow || remove.isPending}
+							variant='destructive'
+							onClick={() => {
+								if (menuRow) {
+									void remove.mutateAsync({ ids: menuRow.ids });
+								}
+							}}>
+							{t("common.delete")}
+						</ContextMenuItem>
+						<ContextMenuSeparator />
+						<ContextMenuItem
+							disabled={!hasHistory}
+							onClick={() => {
+								setClearKind("history");
+							}}>
+							{t("history.clearHistoryMenu")}
+						</ContextMenuItem>
+						<ContextMenuItem
+							disabled={queuedCount === 0}
+							onClick={() => {
+								setClearKind("queued");
+							}}>
+							{t("history.clearQueueMenu")}
+						</ContextMenuItem>
+					</ContextMenuContent>
+				</ContextMenu>
+			</div>
 			<AlertDialog
 				open={clearKind != null}
 				onOpenChange={(open) => {
@@ -248,6 +320,6 @@ export function HistoryView() {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-		</>
+		</div>
 	);
 }

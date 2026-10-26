@@ -857,6 +857,14 @@ declare module "i18next" {
 					discardQueued: string;
 					removeHistory: string;
 					clear: string;
+					filterEpisodes: string;
+					filterStatus: string;
+					filterScore: string;
+					filterLabel: string;
+					columnTime: string;
+					columnTitle: string;
+					columnChange: string;
+					columnEpisodes: string;
 				};
 				library: {
 					missing: string;

@@ -790,6 +790,14 @@ history:
   discardQueued: Discard all pending list updates? They will not be sent to AniList.
   removeHistory: Remove all history entries?
   clear: Clear
+  filterEpisodes: Episodes
+  filterStatus: Status
+  filterScore: Score
+  filterLabel: Filter by change
+  columnTime: Time
+  columnTitle: Title
+  columnChange: Change
+  columnEpisodes: Eps
 library:
   missing: Missing
   notScanned: Not scanned

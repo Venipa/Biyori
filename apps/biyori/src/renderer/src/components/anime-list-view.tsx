@@ -1,9 +1,9 @@
 import { log } from "@biyori/logger";
 import { t, useTranslation } from "@biyori/translations/react";
-import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
+import { type ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon } from "lucide-react";
-import { startTransition, useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { AiringStatusMark } from "@/components/app/anime/airing-status";
 import { desktopRpc } from "@/desktop-rpc";
 import { formatScore } from "@/lib/anilist-score";
@@ -353,14 +353,26 @@ export function AnimeListView({
 	selectedRef.current = selected;
 
 	const filteredRows = table.getFilteredRowModel().rows;
-	const visualIds = groupedSearch
-		? tabs.flatMap((status) => filteredRows.filter((row) => row.original.status === status).map((row) => row.original.id))
-		: filteredRows.map((row) => row.original.id);
-	const visualIdsKey = visualIds.join("\0");
+	const visualIdsKey = useMemo(() => {
+		if (!groupedSearch) {
+			return filteredRows.map((row) => row.original.id).join("\0");
+		}
+		const byStatus = new Map<string, number[]>();
+		for (const row of filteredRows) {
+			const key = row.original.status ?? "";
+			const ids = byStatus.get(key) ?? [];
+			ids.push(row.original.id);
+			byStatus.set(key, ids);
+		}
+		return tabs.flatMap((status) => byStatus.get(status) ?? []).join("\0");
+	}, [filteredRows, groupedSearch]);
 
 	function selectRow(row: AnimeRow) {
 		setSelectedAnime(toSelected(row, rowListStatus(row, statusFallback)));
 	}
+	// memoized rows keep their first handlers; route them through a ref so they never go stale
+	const rowHandlers = useRef({ selectRow, onOpenAnime });
+	rowHandlers.current = { selectRow, onOpenAnime };
 
 	useEffect(() => {
 		const started = searching && !wasSearching.current;
@@ -451,34 +463,7 @@ export function AnimeListView({
 
 	const menuAnime = menuRow ? toSelected(menuRow, rowListStatus(menuRow, statusFallback)) : null;
 	const headerLabel = onSearchTab || searching ? t("common.search") : listStatusShortText(listStatus);
-	const skeletonHeaders = rich
-		? [
-				"",
-				"",
-				t("list.animeTitle"),
-				t("list.progress"),
-				t("list.airingDate"),
-				t("list.score"),
-				t("list.average"),
-				t("list.type"),
-				t("list.season"),
-				t("list.started"),
-				t("list.completedDate"),
-				t("list.lastUpdated"),
-			]
-		: [
-				"",
-				t("list.animeTitle"),
-				t("list.progress"),
-				t("list.airingDate"),
-				t("list.score"),
-				t("list.average"),
-				t("list.type"),
-				t("list.season"),
-				t("list.started"),
-				t("list.completedDate"),
-				t("list.lastUpdated"),
-			];
+	const skeletonHeaders = table.getFlatHeaders().map((header) => flexRender(header.column.columnDef.header, header.getContext()));
 
 	function setViewAs(next: AnimeListViewAs): void {
 		startTransition(() => {
@@ -508,10 +493,10 @@ export function AnimeListView({
 							) : null}
 							{filteredRows.length > 0 ? (
 								<DataTable
-									key={viewAs}
 									table={table}
 									compact={!rich}
-									rowSize={rich ? 56 : undefined}
+									rowSize={rich ? 56 : 32}
+									rowVersion={(row) => `${row.original.id === selected?.id ? 1 : 0}${row.original.id === playingId ? 1 : 0}`}
 									groupBy={groupedSearch ? (row) => rowListStatus(row.original, statusFallback) : undefined}
 									groupOrder={tabs}
 									groupLabel={(value) => listStatusLabel(String(value))}
@@ -520,14 +505,14 @@ export function AnimeListView({
 											data-state={selected?.id === row.original.id ? "selected" : undefined}
 											data-playing={row.original.id === playingId ? "true" : undefined}
 											className={cn(
-												"cursor-pointer even:bg-muted/25",
+												"cursor-pointer data-stripe:bg-muted/25",
 												row.original.id === playingId
-													? "bg-list-playing text-list-playing-foreground even:bg-list-playing hover:bg-list-playing data-[state=selected]:bg-list-playing"
+													? "bg-list-playing text-list-playing-foreground data-stripe:bg-list-playing hover:bg-list-playing data-[state=selected]:bg-list-playing"
 													: null,
 											)}
 											onClick={() => {
-												selectRow(row.original);
-												onOpenAnime(row.original.id, "main");
+												rowHandlers.current.selectRow(row.original);
+												rowHandlers.current.onOpenAnime(row.original.id, "main");
 											}}
 											onPointerEnter={() => {
 												void utils.anime.byId.prefetch({ id: row.original.id }, { staleTime: 30_000 }).then(() => {
@@ -535,7 +520,7 @@ export function AnimeListView({
 												});
 											}}
 											onContextMenu={() => {
-												selectRow(row.original);
+												rowHandlers.current.selectRow(row.original);
 												setMenuRow(row.original);
 											}}>
 											{cells}

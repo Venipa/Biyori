@@ -2,7 +2,7 @@ import { useTranslation } from "@biyori/translations/react";
 import { flexRender, type Header, type Row, type Table as TanstackTable } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDownIcon, ChevronsUpDownIcon, ChevronUpIcon } from "lucide-react";
-import { type ComponentProps, cloneElement, Fragment, isValidElement, type ReactElement, type ReactNode, useRef } from "react";
+import { type ComponentProps, type CSSProperties, cloneElement, isValidElement, memo, type ReactElement, type ReactNode, useEffect, useRef } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/mainview/components/ui/table";
 import { cn } from "@/mainview/lib/utils";
 
@@ -23,9 +23,17 @@ declare module "@tanstack/react-table" {
 
 type FlatItem<TData> = { type: "group"; key: string; label: ReactNode } | { type: "row"; key: string; row: Row<TData>; indent: boolean };
 
+/** Widths live in CSS variables on the table so resizing does not re-render memoized rows. */
+function columnWidth(id: string): string {
+	return `var(--col-${id}-size)`;
+}
+
 function rowCells<TData>(row: Row<TData>, indent: boolean): ReactNode {
 	return row.getVisibleCells().map((cell, index) => (
-		<TableCell key={cell.id} className={cn("overflow-hidden", cell.column.columnDef.meta?.className, indent && index === 0 && "pl-8")} style={{ width: cell.column.getSize() }}>
+		<TableCell
+			key={cell.id}
+			className={cn("overflow-hidden", cell.column.columnDef.meta?.className, indent && index === 0 && "pl-8")}
+			style={{ width: columnWidth(cell.column.id) }}>
 			{flexRender(cell.column.columnDef.cell, cell.getContext())}
 		</TableCell>
 	));
@@ -46,12 +54,12 @@ function DefaultRow<TData>({ row, cells, onRowClick }: { row: Row<TData>; cells:
 
 function SortGlyph({ sorted }: { sorted: false | "asc" | "desc" }) {
 	if (sorted === "asc") {
-		return <ChevronUpIcon className='size-3.5' />;
+		return <ChevronUpIcon className='size-3.5 shrink-0' />;
 	}
 	if (sorted === "desc") {
-		return <ChevronDownIcon className='size-3.5' />;
+		return <ChevronDownIcon className='size-3.5 shrink-0' />;
 	}
-	return <ChevronsUpDownIcon className='size-3.5 opacity-40' />;
+	return <ChevronsUpDownIcon className='size-3.5 shrink-0 opacity-40' />;
 }
 
 function SortableHead<TData>({ header }: { header: Header<TData, unknown> }) {
@@ -91,7 +99,8 @@ function orderedGroupKeys(keys: Iterable<string>, groupOrder: readonly string[] 
 			}
 		}
 	}
-	for (const key of keys) {
+	// keys may be a one-shot iterator (Map.keys), already consumed by the Set
+	for (const key of seen) {
 		if (!ordered.includes(key)) {
 			ordered.push(key);
 		}
@@ -141,15 +150,37 @@ function flattenTableItems<TData>(
 	return items;
 }
 
-function attachVirtualMeasure(node: ReactNode, index: number, measure: (element: Element | null) => void): ReactNode {
+type LeafRowProps<TData> = {
+	row: Row<TData>;
+	indent: boolean;
+	index: number;
+	height: number | undefined;
+	version: string;
+	columnsKey: string;
+	render: (row: Row<TData>, cells: ReactNode) => ReactNode;
+	measure: ((element: Element | null) => void) | undefined;
+};
+
+function LeafRowImpl<TData>({ row, indent, index, height, render, measure }: LeafRowProps<TData>) {
+	const node = render(row, rowCells(row, indent));
 	if (!isValidElement(node)) {
 		return node;
 	}
-	return cloneElement(node as ReactElement<{ "data-index"?: number; ref?: (element: Element | null) => void }>, {
+	const element = node as ReactElement<{ "data-index"?: number; "data-stripe"?: string; ref?: (element: Element | null) => void; style?: CSSProperties }>;
+	return cloneElement(element, {
 		"data-index": index,
+		// stripe by virtual index: :nth-child would count the virtual spacer row
+		"data-stripe": index % 2 === 1 ? "" : undefined,
 		ref: measure,
+		style: height ? { ...element.props.style, height } : element.props.style,
 	});
 }
+
+// render is read fresh each call; rows only re-render when their identity, version or visible columns change
+const LeafRow = memo(
+	LeafRowImpl,
+	(a, b) => a.row === b.row && a.indent === b.indent && a.index === b.index && a.version === b.version && a.columnsKey === b.columnsKey && a.height === b.height,
+) as typeof LeafRowImpl;
 
 export function DataTable<TData>({
 	table,
@@ -160,6 +191,7 @@ export function DataTable<TData>({
 	groupLabel,
 	compact = false,
 	rowSize: rowSizeProp,
+	rowVersion,
 }: {
 	table: TanstackTable<TData>;
 	onRowClick?: (row: Row<TData>) => void;
@@ -168,31 +200,41 @@ export function DataTable<TData>({
 	groupOrder?: readonly string[];
 	groupLabel?: (groupingValue: unknown) => ReactNode;
 	compact?: boolean;
+	/** Fixed row height: skips per-row measuring. */
 	rowSize?: number;
+	/** Enables row memoization: rows re-render only when this value changes (or the row/columns do). */
+	rowVersion?: (row: Row<TData>) => string;
 }) {
 	const { t } = useTranslation();
 	const rootRef = useRef<HTMLDivElement>(null);
-	const colSpan = table.getVisibleLeafColumns().length;
 	const leaves = table.getRowModel().rows.filter((row) => row.depth === 0);
 	const items = flattenTableItems(leaves, groupBy, groupOrder, groupLabel);
 	const rowSize = rowSizeProp ?? (compact ? 32 : 40);
+	const renderTick = useRef(0);
+	renderTick.current += 1;
+	const visibleColumns = table.getVisibleLeafColumns();
+	const columnsKey = visibleColumns.map((column) => column.id).join(",");
+	const columnVars: Record<string, string> = { width: `${table.getTotalSize()}px` };
+	for (const column of visibleColumns) {
+		columnVars[`--col-${column.id}-size`] = `${column.getSize()}px`;
+	}
 	const virtualizer = useVirtualizer({
 		count: items.length,
 		getScrollElement: () => rootRef.current?.closest("[data-slot=scroll-area-viewport]") ?? null,
 		estimateSize: (index) => (items[index]?.type === "group" ? 32 : rowSize),
 		overscan: 8,
-		measureElement: (element) => element.getBoundingClientRect().height,
+		measureElement: rowSizeProp ? undefined : (element) => element.getBoundingClientRect().height,
 	});
+	// biome-ignore lint/correctness/useExhaustiveDependencies: re-measure cached sizes when the fixed row height changes
+	useEffect(() => {
+		virtualizer.measure();
+	}, [virtualizer, rowSize]);
 	const virtualItems = virtualizer.getVirtualItems();
 	const paddingTop = virtualItems[0]?.start ?? 0;
 	const paddingBottom = virtualizer.getTotalSize() - (virtualItems.at(-1)?.end ?? 0);
 
-	function renderLeaf(row: Row<TData>, indent: boolean): ReactNode {
-		const cells = rowCells(row, indent);
-		if (renderRow) {
-			return renderRow(row, cells);
-		}
-		return <DefaultRow row={row} cells={cells} onRowClick={onRowClick} />;
+	function renderLeaf(row: Row<TData>, cells: ReactNode): ReactNode {
+		return renderRow ? renderRow(row, cells) : <DefaultRow row={row} cells={cells} onRowClick={onRowClick} />;
 	}
 
 	return (
@@ -200,7 +242,7 @@ export function DataTable<TData>({
 			<Table
 				containerClassName='overflow-visible'
 				className={cn("table-fixed", compact ? "[&_th]:h-8 [&_td]:py-1" : rowSize >= 56 ? "[&_th]:h-10 [&_td]:py-2" : undefined)}
-				style={{ width: table.getTotalSize() }}>
+				style={columnVars as CSSProperties}>
 				<TableHeader className='sticky top-0 z-20 bg-card'>
 					{table.getHeaderGroups().map((headerGroup) => (
 						<TableRow key={headerGroup.id} className='hover:bg-transparent'>
@@ -216,7 +258,7 @@ export function DataTable<TData>({
 											sorted && "bg-muted/70 hover:bg-muted",
 											header.column.columnDef.meta?.className,
 										)}
-										style={{ width: header.getSize() }}>
+										style={{ width: columnWidth(header.column.id) }}>
 										<SortableHead header={header} />
 										{header.column.getCanResize() ? (
 											<button
@@ -244,7 +286,7 @@ export function DataTable<TData>({
 				<TableBody>
 					{paddingTop > 0 ? (
 						<tr aria-hidden>
-							<td colSpan={colSpan} style={{ height: paddingTop, padding: 0, border: 0 }} />
+							<td colSpan={visibleColumns.length} style={{ height: paddingTop, padding: 0, border: 0 }} />
 						</tr>
 					) : null}
 					{virtualItems.map((virtualRow) => {
@@ -254,16 +296,28 @@ export function DataTable<TData>({
 						}
 						if (item.type === "group") {
 							return (
-								<GroupHeader key={item.key} colSpan={colSpan} data-index={virtualRow.index} ref={virtualizer.measureElement}>
+								<GroupHeader key={item.key} colSpan={visibleColumns.length} data-index={virtualRow.index} ref={rowSizeProp ? undefined : virtualizer.measureElement}>
 									{item.label}
 								</GroupHeader>
 							);
 						}
-						return <Fragment key={item.key}>{attachVirtualMeasure(renderLeaf(item.row, item.indent), virtualRow.index, virtualizer.measureElement)}</Fragment>;
+						return (
+							<LeafRow
+								key={item.key}
+								row={item.row}
+								indent={item.indent}
+								index={virtualRow.index}
+								height={rowSizeProp}
+								version={rowVersion ? rowVersion(item.row) : String(renderTick.current)}
+								columnsKey={columnsKey}
+								render={renderLeaf}
+								measure={rowSizeProp ? undefined : virtualizer.measureElement}
+							/>
+						);
 					})}
 					{paddingBottom > 0 ? (
 						<tr aria-hidden>
-							<td colSpan={colSpan} style={{ height: paddingBottom, padding: 0, border: 0 }} />
+							<td colSpan={visibleColumns.length} style={{ height: paddingBottom, padding: 0, border: 0 }} />
 						</tr>
 					) : null}
 				</TableBody>
