@@ -1,3 +1,4 @@
+import "./user-data";
 import "./sentry";
 import { logger } from "@biyori/logger";
 import { t } from "@biyori/translations/i18n";
