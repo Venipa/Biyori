@@ -15,7 +15,7 @@
 		"build": "bun run typecheck && electron-vite build",
 		"build:hana": "bun run --bun --cwd ../../packages/hana build",
 		"build:hana:release": "bun run --bun --cwd ../../packages/hana build:release",
-		"postinstall": "electron-builder install-app-deps",
+		"postinstall": "install-electron && electron-builder install-app-deps",
 		"db:generate": "drizzle-kit generate",
 		"build:unpack": "bun run build && bun run build:hana:release && electron-builder --dir",
 		"build:win": "bun run build && bun run build:hana:release && electron-builder --win --x64",
