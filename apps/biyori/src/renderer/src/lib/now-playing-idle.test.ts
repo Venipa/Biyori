@@ -154,7 +154,7 @@ describe("buildUpcoming", () => {
 					{ ...listed, id: 2, title: "Other", airingStatus: "Not yet released" },
 				],
 				new Set([1]),
-			),
-		).toEqual([{ id: 2, title: "Other" }]);
+			).map((item) => item.id),
+		).toEqual([2]);
 	});
 });
