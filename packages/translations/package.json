@@ -11,7 +11,8 @@
 		"./vite": "./src/vite.ts"
 	},
 	"scripts": {
-		"test": "bun test src"
+		"test": "bun test src",
+		"typecheck": "tsc --noEmit -p ."
 	},
 	"dependencies": {
 		"i18next": "26.4.2",

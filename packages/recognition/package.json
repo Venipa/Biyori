@@ -7,7 +7,8 @@
 		".": "./src/index.ts"
 	},
 	"scripts": {
-		"test": "bun test src"
+		"test": "bun test src",
+		"typecheck": "tsc --noEmit -p ."
 	},
 	"dependencies": {
 		"@biyori/parser": "workspace:*"

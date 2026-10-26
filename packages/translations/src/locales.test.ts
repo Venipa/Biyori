@@ -12,9 +12,9 @@ function yamlTransform() {
 }
 
 describe("locale yml", () => {
-	test("plugin inlines yml as a js module", () => {
+	test("plugin inlines yml as a js module", async () => {
 		const transform = yamlTransform();
-		const transformed = transform.handler("hello: world\n", "/pkg/translations/locales/en.yml");
+		const transformed = await transform.handler.call({} as never, "hello: world\n", "/pkg/translations/locales/en.yml");
 		if (!transformed || typeof transformed === "string") {
 			throw new Error("expected a yml module");
 		}
@@ -23,12 +23,12 @@ describe("locale yml", () => {
 
 	test("leaves other files alone", () => {
 		const transform = yamlTransform();
-		if (!(transform.filter.id instanceof RegExp)) {
+		if (!(transform.filter?.id instanceof RegExp)) {
 			throw new Error("expected a path filter");
 		}
-		expect(transform.filter.id.test("/pkg/translations/locales/en.yml")).toBe(true);
-		expect(transform.filter.id.test("/pkg/translations/src/react.tsx")).toBe(false);
-		expect(transform.filter.id.test("/pkg/translations/locales/en.yaml")).toBe(false);
+		expect(transform.filter?.id.test("/pkg/translations/locales/en.yml")).toBe(true);
+		expect(transform.filter?.id.test("/pkg/translations/src/react.tsx")).toBe(false);
+		expect(transform.filter?.id.test("/pkg/translations/locales/en.yaml")).toBe(false);
 	});
 
 	test("committed declaration matches en.yml", () => {

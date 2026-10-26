@@ -41,3 +41,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # tmp
 tmp
+# local only
+tmp/
+packages/hana/false
+*.gen.ts

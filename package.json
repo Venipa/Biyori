@@ -9,10 +9,13 @@
     "release": "bun run --bun --cwd apps/biyori build:win",
     "release:compile": "bun run --bun --cwd apps/biyori release:compile",
     "release:pack:win": "bun run --bun --cwd apps/biyori release:pack:win",
-    "typecheck": "bun --bun --filter \"biyori\" typecheck",
+    "typecheck": "bun --filter \"biyori\" --filter \"@biyori/*\" typecheck",
     "docs:dev": "bun run --cwd apps/docs dev",
     "docs:build": "bun run --cwd apps/docs build",
-    "docs:build:pages": "bun run --cwd apps/docs build:pages"
+    "docs:build:pages": "bun run --cwd apps/docs build:pages",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
@@ -28,7 +31,7 @@
     "packages/*"
   ],
   "engines": {
-    "node": ">=24.14.0",
+    "node": ">=24.22.1",
     "bun": ">=1.4.4"
   },
   "packageManager": "bun@1.4.4"

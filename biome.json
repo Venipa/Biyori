@@ -58,7 +58,12 @@
 		"includes": ["**", "!**/components/ui/**"],
 		"rules": {
 			"preset": "recommended",
-			"a11y": "off"
+			"a11y": "off",
+			"correctness": {
+				"useHookAtTopLevel": "error",
+				"useExhaustiveDependencies": "warn",
+				"noUnusedImports": "warn"
+			}
 		}
 	}
 }
