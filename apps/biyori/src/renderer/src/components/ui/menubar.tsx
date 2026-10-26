@@ -20,6 +20,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/mainview/components/ui/dropdown-menu";
 import { cn } from "@/mainview/lib/utils";
+import { popupMotion } from "./motion";
 
 function Menubar({ className, ...props }: MenubarPrimitive.Props) {
 	return <MenubarPrimitive data-slot='menubar' className={cn("flex h-8 items-center gap-0.5 rounded-lg border p-[3px]", className)} {...props} />;
@@ -54,10 +55,7 @@ function MenubarContent({ className, align = "start", alignOffset = -4, sideOffs
 			align={align}
 			alignOffset={alignOffset}
 			sideOffset={sideOffset}
-			className={cn(
-				"min-w-32 w-full rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
-				className,
-			)}
+			className={cn(popupMotion, "min-w-32 w-full rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10", className)}
 			{...props}
 		/>
 	);
@@ -190,10 +188,7 @@ function MenubarSubContent({ className, ...props }: React.ComponentProps<typeof 
 	return (
 		<DropdownMenuSubContent
 			data-slot='menubar-sub-content'
-			className={cn(
-				"min-w-32 rounded-lg bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-				className,
-			)}
+			className={cn(popupMotion, "min-w-32 rounded-lg bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10", className)}
 			{...props}
 		/>
 	);

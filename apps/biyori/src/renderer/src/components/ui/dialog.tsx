@@ -5,6 +5,7 @@ import type * as React from "react";
 import { APP_TOOLBAR_HEIGHT } from "@/components/app/shell/toolbar";
 import { Button } from "@/mainview/components/ui/button";
 import { cn } from "@/mainview/lib/utils";
+import { backdropMotion, dialogMotion } from "./motion";
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
 	return <DialogPrimitive.Root data-slot='dialog' {...props} />;
@@ -25,7 +26,7 @@ function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) 
 	return (
 		<DialogPrimitive.Backdrop
 			data-slot='dialog-overlay'
-			className={cn("fixed inset-0 isolate z-50 bg-black/60 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0", className)}
+			className={cn(backdropMotion, "fixed inset-0 isolate z-50 bg-black/60", className)}
 			style={{ top: `${APP_TOOLBAR_HEIGHT}px` }}
 			{...props}
 		/>
@@ -53,9 +54,7 @@ function DialogContent({
 				data-slot='dialog-content'
 				className={cn(
 					"fixed z-50 grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-sm",
-					from === "bottom"
-						? "dialog-from-bottom top-8 right-0 bottom-0 left-0 mx-auto h-auto max-h-none"
-						: "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+					from === "bottom" ? "dialog-from-bottom top-8 right-0 bottom-0 left-0 mx-auto h-auto max-h-none" : `top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${dialogMotion}`,
 					className,
 				)}
 				{...props}>
