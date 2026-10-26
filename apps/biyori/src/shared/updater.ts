@@ -35,7 +35,8 @@ export type UpdateChannel = "stable" | "beta" | "alpha";
 
 export const UPDATE_CHANNELS: readonly UpdateChannel[] = ["stable", "beta", "alpha"] as const;
 
-const allowedChannels: readonly UpdateChannel[] = UPDATE_CHANNELS;
+// a channel accepts its own releases and every more stable one
+const channelRank: Record<UpdateChannel, number> = { stable: 0, beta: 1, alpha: 2 };
 
 export function cleanSemver(version: unknown): string | null {
 	if (typeof version !== "string" || version.length === 0) {
@@ -71,38 +72,15 @@ export function getVersionChannel(version: unknown): UpdateChannel | null {
 
 export function isVersionAllowedOnChannel(version: string, channel: UpdateChannel): boolean {
 	const kind = getVersionChannel(version);
-	if (!kind) {
-		return false;
-	}
-	if (channel === "stable") {
-		return kind === "stable";
-	}
-	if (channel === "beta") {
-		return kind === "beta" || kind === "stable";
-	}
-	return allowedChannels.includes(kind);
+	return kind !== null && channelRank[kind] <= channelRank[channel];
 }
 
 export function parseUpdateChannel(value: unknown): UpdateChannel {
 	if (value === "rc" || value === "canary") {
 		return "beta";
 	}
-	if (allowedChannels.includes(value as UpdateChannel)) {
+	if (UPDATE_CHANNELS.includes(value as UpdateChannel)) {
 		return value as UpdateChannel;
 	}
 	return "stable";
-}
-
-export function electronUpdaterChannelFor(channel: UpdateChannel): string {
-	if (channel === "beta") {
-		return "rc";
-	}
-	if (channel === "alpha") {
-		return "alpha";
-	}
-	return "latest";
-}
-
-export function channelWantsPrerelease(channel: UpdateChannel): boolean {
-	return channel !== "stable";
 }

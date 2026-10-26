@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { channelWantsPrerelease } from "../shared/updater";
-import { parseGithubChangelog, preprocessReleaseNotes, sanitizeUpdateError } from "./github-releases";
+import { parseGithubChangelog, pickUpdateRelease, preprocessReleaseNotes, sanitizeUpdateError } from "./github-releases";
 
 const stable = {
 	tag_name: "v1.0.0",
@@ -78,9 +77,13 @@ describe("github changelog", () => {
 		expect(sanitizeUpdateError(dump)).not.toMatch(/set-cookie|Headers|<feed>/i);
 	});
 
-	test("channelWantsPrerelease", () => {
-		expect(channelWantsPrerelease("stable")).toBe(false);
-		expect(channelWantsPrerelease("beta")).toBe(true);
-		expect(channelWantsPrerelease("alpha")).toBe(true);
+	test("picks newest release allowed on channel above current version", () => {
+		const all = [stable, rc, alpha, draft];
+		expect(pickUpdateRelease(all, "stable", "0.9.0")?.tag_name).toBe("v1.0.0");
+		expect(pickUpdateRelease(all, "stable", "1.0.0")).toBe(null);
+		expect(pickUpdateRelease(all, "beta", "1.0.0")?.tag_name).toBe("v1.1.0-rc.1");
+		expect(pickUpdateRelease(all, "alpha", "1.0.0")?.tag_name).toBe("v1.2.0-a.1");
+		expect(pickUpdateRelease(all, "beta", "1.2.0-a.1")).toBe(null);
+		expect(pickUpdateRelease({ message: "Not Found" }, "stable", "0.1.0")).toBe(null);
 	});
 });

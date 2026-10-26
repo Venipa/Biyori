@@ -21,7 +21,17 @@ export function formatReleaseDate(iso: string | null): string {
 	return date.toISOString().slice(0, 10);
 }
 
-export function Changelog({ changelog, isLoading, queryError }: { changelog: ChangelogData | undefined; isLoading: boolean; queryError: boolean }) {
+export function Changelog({
+	changelog,
+	isLoading,
+	queryError,
+	installedVersion,
+}: {
+	changelog: ChangelogData | undefined;
+	isLoading: boolean;
+	queryError: boolean;
+	installedVersion?: string;
+}) {
 	const { t } = useTranslation();
 	return (
 		<div className='flex max-w-3xl flex-col gap-3'>
@@ -55,24 +65,28 @@ export function Changelog({ changelog, isLoading, queryError }: { changelog: Cha
 				</div>
 			) : changelog?.ok && changelog.items ? (
 				<div className='divide-y rounded-xl ring-1 ring-foreground/10'>
-					{changelog.items.map((item) => {
+					{changelog.items.map((item, index) => {
 						const kind = getVersionChannel(item.version);
 						const published = formatReleaseDate(item.publishedAt);
+						const installed = item.version === installedVersion;
+						// items are newest first: keep the latest and anything newer than the installed build open
+						const open = index === 0 || index < changelog.items.findIndex((entry) => entry.version === installedVersion);
 						return (
-							<section key={item.version} className='grid grid-cols-[7rem_minmax(0,1fr)] gap-4 px-4 py-3'>
-								<time className='pt-0.5 text-sm text-muted-foreground' dateTime={item.publishedAt ?? undefined}>
-									{published || "-"}
-								</time>
-								<div className='min-w-0'>
-									<div className='flex flex-wrap items-center gap-2'>
-										<h3 className='text-sm font-medium'>{item.name || `v${item.version}`}</h3>
-										{kind ? (
-											<Badge variant={kind === "stable" ? "default" : "outline"}>{t(kind === "beta" ? "update.beta" : kind === "alpha" ? "update.alpha" : "update.stable")}</Badge>
-										) : null}
+							<details key={item.version} open={open} className='px-4 py-3'>
+								<summary className='flex cursor-pointer list-none items-center gap-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50'>
+									<div className='flex w-28 shrink-0 flex-col self-start text-sm text-muted-foreground'>
+										<time dateTime={item.publishedAt ?? undefined}>{published || "-"}</time>
+										{kind === "beta" || kind === "alpha" ? <span className='text-xs'>{t(kind === "beta" ? "update.beta" : "update.alpha")}</span> : null}
 									</div>
+									<div className='flex min-w-0 flex-wrap items-center gap-2'>
+										<h3 className='text-sm font-medium'>{item.name || `v${item.version}`}</h3>
+										{installed ? <Badge variant='secondary'>{t("about.installed")}</Badge> : null}
+									</div>
+								</summary>
+								<div className='mt-2 min-w-0 pl-32'>
 									{item.body?.trim() ? <MarkdownBody markdown={item.body} /> : <p className='text-sm text-muted-foreground'>{t("about.noNotes")}</p>}
 								</div>
-							</section>
+							</details>
 						);
 					})}
 				</div>

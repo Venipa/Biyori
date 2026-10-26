@@ -191,6 +191,12 @@ update:
   stable: Stable
   beta: Beta
   alpha: Alpha
+  availableTitle: Update available
+  readyToDownload: Biyori {{version}} is ready to download.
+  installOnQuit: Install on quit
+  restartNow: Restart now
+  whatsNew: What's new in {{version}}
+  channel: Channel
   versionUnknown: "..."
 recognition:
   players:
@@ -1046,6 +1052,13 @@ about:
   noReleases: No releases for this channel.
   switchChannel: Switch channel or publish a matching GitHub release.
   noNotes: No notes
+  github: GitHub
+  reportIssue: Report issue
+  licenses: Licenses
+  copyDebugInfo: Copy debug info
+  copied: Copied
+  installed: Installed
+  checkForUpdates: Check for updates
 onboarding:
   system: System
   light: Light

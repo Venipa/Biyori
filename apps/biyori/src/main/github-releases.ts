@@ -1,5 +1,5 @@
 import { t } from "@biyori/translations/i18n";
-import { compareReversed } from "verkit";
+import { compareReversed, isGreaterThanRange } from "verkit";
 import { z } from "zod";
 import { cleanSemver, isVersionAllowedOnChannel, type ReleaseNoteEntry, type UpdateChannel } from "../shared/updater";
 
@@ -35,31 +35,44 @@ export function sanitizeUpdateError(error: unknown, fallback = t("main.update.ch
 	return firstLine;
 }
 
-export function parseGithubChangelog(payload: unknown, channel: UpdateChannel): { ok: true; items: ReleaseNoteEntry[] } | { ok: false; error: string } {
+/** Published releases allowed on `channel`, newest first; null when the payload is not a release list. */
+function channelReleases(payload: unknown, channel: UpdateChannel): Array<GithubRelease & { version: string }> | null {
 	const parsed = z.array(githubReleaseSchema).safeParse(payload);
 	if (!parsed.success) {
-		return { ok: false, error: t("main.update.changelogFailed") };
+		return null;
 	}
-	const items: ReleaseNoteEntry[] = [];
+	const releases: Array<GithubRelease & { version: string }> = [];
 	for (const release of parsed.data) {
-		if (release.draft) {
-			continue;
-		}
-		if (channel === "stable" && release.prerelease) {
+		if (release.draft || (channel === "stable" && release.prerelease)) {
 			continue;
 		}
 		const version = cleanSemver(release.tag_name);
-		if (!version || !isVersionAllowedOnChannel(version, channel)) {
-			continue;
+		if (version && isVersionAllowedOnChannel(version, channel)) {
+			releases.push({ ...release, version });
 		}
-		items.push({
-			version,
+	}
+	return releases.sort((a, b) => compareReversed(a.version, b.version, { loose: true }));
+}
+
+export function parseGithubChangelog(payload: unknown, channel: UpdateChannel): { ok: true; items: ReleaseNoteEntry[] } | { ok: false; error: string } {
+	const releases = channelReleases(payload, channel);
+	if (!releases) {
+		return { ok: false, error: t("main.update.changelogFailed") };
+	}
+	return {
+		ok: true,
+		items: releases.map((release) => ({
+			version: release.version,
 			name: release.name,
 			body: release.body ? preprocessReleaseNotes(release.body) : release.body,
 			publishedAt: release.published_at,
 			prerelease: release.prerelease,
-		});
-	}
-	items.sort((a, b) => compareReversed(a.version, b.version, { loose: true }));
-	return { ok: true, items };
+		})),
+	};
+}
+
+/** Newest release on `channel` that is newer than `currentVersion`. */
+export function pickUpdateRelease(payload: unknown, channel: UpdateChannel, currentVersion: string): GithubRelease | null {
+	const latest = channelReleases(payload, channel)?.[0];
+	return latest && isGreaterThanRange(latest.version, currentVersion, { includePrerelease: true, loose: true }) ? latest : null;
 }

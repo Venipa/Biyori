@@ -201,6 +201,12 @@ declare module "i18next" {
 					stable: string;
 					beta: string;
 					alpha: string;
+					availableTitle: string;
+					readyToDownload: string;
+					installOnQuit: string;
+					restartNow: string;
+					whatsNew: string;
+					channel: string;
 					versionUnknown: string;
 				};
 				recognition: {
@@ -1119,6 +1125,13 @@ declare module "i18next" {
 					noReleases: string;
 					switchChannel: string;
 					noNotes: string;
+					github: string;
+					reportIssue: string;
+					licenses: string;
+					copyDebugInfo: string;
+					copied: string;
+					installed: string;
+					checkForUpdates: string;
 				};
 				onboarding: {
 					system: string;

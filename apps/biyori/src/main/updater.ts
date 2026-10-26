@@ -3,20 +3,9 @@ import { t } from "@biyori/translations/i18n";
 import { is } from "@electron-toolkit/utils";
 import { observable } from "@trpc/server/observable";
 import { app } from "electron";
-import { autoUpdater, type UpdateInfo as ElectronUpdateInfo } from "electron-updater";
-import { compareReversed, isGreaterThanRange } from "verkit";
-import {
-	channelWantsPrerelease,
-	cleanSemver,
-	electronUpdaterChannelFor,
-	getVersionChannel,
-	isVersionAllowedOnChannel,
-	type ProgressInfo,
-	parseUpdateChannel,
-	type ReleaseNoteEntry,
-	type UpdateChannel,
-} from "../shared/updater";
-import { parseGithubChangelog, sanitizeUpdateError } from "./github-releases";
+import { autoUpdater } from "electron-updater";
+import { getVersionChannel, type ProgressInfo, parseUpdateChannel, type ReleaseNoteEntry, type UpdateChannel } from "../shared/updater";
+import { parseGithubChangelog, pickUpdateRelease, sanitizeUpdateError } from "./github-releases";
 import { requestQuitAndInstall } from "./handlers/quit-handler";
 import { trackedFetch } from "./http-stats";
 import { loadAppSettings, subscribeSettings } from "./settings";
@@ -64,7 +53,6 @@ let state: AppUpdateState = {
 let checking = false;
 let downloading = false;
 let statusHooked = false;
-let ignoreUpdaterEvents = false;
 let lastUserChannel: UpdateChannel | null = null;
 let channelWatchBound = false;
 
@@ -101,12 +89,29 @@ async function resolveUserChannel(): Promise<UpdateChannel> {
 	}
 }
 
-function applyUpdaterFeed(channel: UpdateChannel): void {
+// Channel selection happens on our side; electron-updater only reads the picked release's latest*.yml
+// (electron-builder's github publisher writes latest*.yml for every release, prerelease or not).
+function applyUpdaterFeed(tag: string): void {
 	const { owner, repo } = githubRepo();
-	autoUpdater.setFeedURL({ provider: "github", owner, repo });
+	autoUpdater.setFeedURL({ provider: "generic", url: `https://github.com/${owner}/${repo}/releases/download/${tag}` });
 	autoUpdater.autoDownload = false;
-	autoUpdater.allowPrerelease = channelWantsPrerelease(channel);
-	autoUpdater.channel = electronUpdaterChannelFor(channel);
+	autoUpdater.allowDowngrade = false;
+	// a downloaded update installs on the next real quit unless the user restarts now
+	autoUpdater.autoInstallOnAppQuit = true;
+}
+
+async function fetchReleases(): Promise<unknown> {
+	const { owner, repo } = githubRepo();
+	const response = await trackedFetch(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=30`, {
+		headers: {
+			Accept: "application/vnd.github+json",
+			"User-Agent": "biyori",
+		},
+	});
+	if (!response.ok) {
+		throw new Error(`GitHub releases request failed: ${response.status}`);
+	}
+	return response.json();
 }
 
 function bindChannelWatch(): void {
@@ -125,9 +130,6 @@ function bindChannelWatch(): void {
 }
 
 function applyUpdateError(error: unknown, fallback: string): void {
-	if (ignoreUpdaterEvents) {
-		return;
-	}
 	log.error("updater", error);
 	const message = sanitizeUpdateError(error, fallback);
 	patch({
@@ -166,15 +168,9 @@ function hookStatus(): void {
 	}
 	statusHooked = true;
 	autoUpdater.on("checking-for-update", () => {
-		if (ignoreUpdaterEvents) {
-			return;
-		}
 		patch({ phase: "checking", message: t("main.update.checking"), error: null });
 	});
 	autoUpdater.on("update-available", (info) => {
-		if (ignoreUpdaterEvents) {
-			return;
-		}
 		patch({
 			phase: "available",
 			updateAvailable: true,
@@ -185,9 +181,6 @@ function hookStatus(): void {
 		});
 	});
 	autoUpdater.on("update-not-available", (info) => {
-		if (ignoreUpdaterEvents) {
-			return;
-		}
 		patch({
 			phase: "up-to-date",
 			updateAvailable: false,
@@ -198,9 +191,6 @@ function hookStatus(): void {
 		});
 	});
 	autoUpdater.on("download-progress", (info) => {
-		if (ignoreUpdaterEvents) {
-			return;
-		}
 		patch({
 			phase: "downloading",
 			progress: {
@@ -215,9 +205,6 @@ function hookStatus(): void {
 		});
 	});
 	autoUpdater.on("update-downloaded", (info) => {
-		if (ignoreUpdaterEvents) {
-			return;
-		}
 		patch({
 			phase: "ready",
 			updateAvailable: true,
@@ -248,84 +235,11 @@ export async function refreshLocalUpdateInfo(): Promise<AppUpdateState> {
 
 export async function loadChangelog(): Promise<ChangelogResult> {
 	bindChannelWatch();
-	const { owner, repo } = githubRepo();
 	const channel = await resolveUserChannel();
 	try {
-		const response = await trackedFetch(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=20`, {
-			headers: {
-				Accept: "application/vnd.github+json",
-				"User-Agent": "biyori",
-			},
-		});
-		const payload: unknown = await response.json();
-		if (!response.ok) {
-			return { ok: false, error: t("main.update.changelogFailed") };
-		}
-		return parseGithubChangelog(payload, channel);
+		return parseGithubChangelog(await fetchReleases(), channel);
 	} catch {
 		return { ok: false, error: t("main.update.changelogFailed") };
-	}
-}
-
-function isUpdateInRange(ver: string, channel: UpdateChannel): boolean {
-	if (!isVersionAllowedOnChannel(ver, channel)) {
-		return false;
-	}
-	try {
-		return isGreaterThanRange(ver, app.getVersion(), {
-			includePrerelease: channel !== "stable",
-			loose: true,
-		});
-	} catch {
-		return false;
-	}
-}
-
-async function probeFeed(feed: UpdateChannel, allowedOn: UpdateChannel): Promise<ElectronUpdateInfo | null> {
-	applyUpdaterFeed(feed);
-	try {
-		const result = await autoUpdater.checkForUpdates();
-		const info = result?.updateInfo;
-		if (!info) {
-			return null;
-		}
-		if (!isUpdateInRange(info.version, allowedOn)) {
-			return null;
-		}
-		return info;
-	} catch (error) {
-		log.error("updater probe failed", feed, error);
-		return null;
-	}
-}
-
-async function resolveBestUpdate(channel: UpdateChannel): Promise<ElectronUpdateInfo | null> {
-	ignoreUpdaterEvents = true;
-	try {
-		const candidates: ElectronUpdateInfo[] = [];
-		const selected = await probeFeed(channel, channel);
-		if (selected) {
-			candidates.push(selected);
-		}
-		if (channel !== "stable") {
-			const stable = await probeFeed("stable", channel);
-			if (stable) {
-				candidates.push(stable);
-			}
-		}
-		applyUpdaterFeed(channel);
-		if (!candidates.length) {
-			return null;
-		}
-		candidates.sort((a, b) => {
-			const left = cleanSemver(a.version) ?? a.version;
-			const right = cleanSemver(b.version) ?? b.version;
-			return compareReversed(left, right, { loose: true });
-		});
-		return candidates[0] ?? null;
-	} finally {
-		ignoreUpdaterEvents = false;
-		applyUpdaterFeed(channel);
 	}
 }
 
@@ -339,7 +253,6 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 	try {
 		await refreshLocalUpdateInfo();
 		const channel = lastUserChannel ?? (await resolveUserChannel());
-		applyUpdaterFeed(channel);
 		if (is.dev) {
 			patch({
 				phase: "dev",
@@ -354,8 +267,8 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 			return state;
 		}
 		patch({ phase: "checking", message: t("main.update.checking"), progress: null, error: null });
-		const best = await resolveBestUpdate(channel);
-		if (!best) {
+		const release = pickUpdateRelease(await fetchReleases(), channel, app.getVersion());
+		if (!release) {
 			patch({
 				phase: "up-to-date",
 				updateAvailable: false,
@@ -367,18 +280,8 @@ export async function checkForAppUpdate(): Promise<AppUpdateState> {
 			});
 			return state;
 		}
-		patch({
-			phase: "available",
-			updateAvailable: true,
-			updateReady: false,
-			remoteVersion: best.version,
-			progress: null,
-			message: t("main.update.available", { version: best.version }),
-			error: null,
-		});
-		if (!state.updateReady) {
-			await downloadAppUpdate();
-		}
+		applyUpdaterFeed(release.tag_name);
+		await autoUpdater.checkForUpdates();
 		return state;
 	} catch (error) {
 		applyUpdateError(error, t("main.update.checkFailed"));
@@ -402,7 +305,6 @@ export async function downloadAppUpdate(): Promise<AppUpdateState> {
 			});
 			return state;
 		}
-		applyUpdaterFeed(lastUserChannel ?? (await resolveUserChannel()));
 		patch({
 			phase: "downloading",
 			progress: null,

@@ -195,6 +195,8 @@ function historyTypeFilter(types: readonly HistoryChangeType[]) {
 export const appRouter = trpc.router({
 	about: trpc.procedure.query(() => ({
 		hanaVersion,
+		electronVersion: process.versions.electron,
+		os: `${process.platform} ${process.arch} ${process.getSystemVersion()}`,
 	})),
 	anime: trpc.router({
 		list: trpc.procedure.input(z.object({ status: listStatusSchema.optional() })).query(async ({ ctx, input }) => {
