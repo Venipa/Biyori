@@ -14,6 +14,7 @@ import type { AppRouter } from "@/shared/app-router";
 import { formatTransferRate } from "@/shared/updater";
 
 export const Route = createFileRoute("/update")({
+	staticData: { chrome: "child" },
 	component: UpdatePage,
 });
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { anilistMediaTitlesSchema } from "./schemas/anilist-media-card";
+import type { TitleLanguage } from "./schemas/app-settings";
 
 export const storedAnimeTitlesSchema = anilistMediaTitlesSchema.extend({
 	synonyms: z.array(z.string()).default([]),
@@ -60,4 +61,26 @@ export function titlesFromFallback(title: string): StoredAnimeTitles {
 		...emptyStoredTitles,
 		romaji: title,
 	};
+}
+
+export function pickTitle(
+	title: {
+		romaji?: string | null;
+		english?: string | null;
+		native?: string | null;
+		userPreferred?: string | null;
+	},
+	language: TitleLanguage = "Romaji",
+): string {
+	const romaji = title.romaji || "";
+	const english = title.english || "";
+	const native = title.native || "";
+	const fallback = title.userPreferred || romaji || english || native || "Untitled";
+	if (language === "English") {
+		return english || fallback;
+	}
+	if (language === "Native") {
+		return native || fallback;
+	}
+	return romaji || fallback;
 }

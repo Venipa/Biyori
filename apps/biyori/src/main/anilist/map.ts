@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { parseStoredTitles, stringifyMediaTitles } from "../../lib/anime-titles";
+import { parseStoredTitles, pickTitle, stringifyMediaTitles } from "../../lib/anime-titles";
 import type { AnilistMediaCard, AnilistMediaCardCached } from "../../lib/schemas/anilist-media-card";
 import type { TitleLanguage } from "../../lib/schemas/app-settings";
 import type { RelatedMedia } from "../../lib/schemas/related-media";
@@ -301,29 +301,7 @@ export function mapAiringStatus(status: string | null | undefined): string {
 	}
 }
 
-export function pickTitle(
-	title: {
-		romaji?: string | null;
-		english?: string | null;
-		native?: string | null;
-		userPreferred?: string | null;
-	},
-	language: TitleLanguage = "Romaji",
-): string {
-	const romaji = title.romaji || "";
-	const english = title.english || "";
-	const native = title.native || "";
-	const fallback = title.userPreferred || romaji || english || native || "Untitled";
-	if (language === "English") {
-		return english || fallback;
-	}
-	if (language === "Native") {
-		return native || fallback;
-	}
-	return romaji || fallback;
-}
-
-export { parseStoredTitles, stringifyMediaTitles } from "../../lib/anime-titles";
+export { parseStoredTitles, pickTitle, stringifyMediaTitles } from "../../lib/anime-titles";
 
 export function displayTitleFromRow(title: string, titlesJson: string | null | undefined, language: TitleLanguage): string {
 	const parsed = parseStoredTitles(titlesJson);

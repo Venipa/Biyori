@@ -3,6 +3,7 @@ import { createHashHistory, createRouter } from "@tanstack/react-router";
 import { RouterFallback } from "@/mainview/components/app/shared/router-fallback";
 import { seedRendererHash } from "./lib/start-path";
 import { routeTree } from "./routeTree.gen";
+import { trpcUtils } from "./trpc";
 
 declare global {
 	interface Window {
@@ -17,8 +18,9 @@ const hashHistory = createHashHistory();
 export const router = createRouter({
 	routeTree,
 	history: hashHistory,
-	defaultPendingMs: 0,
-	defaultPendingMinMs: 0,
+	context: { utils: trpcUtils },
+	// loaders only prefetch, so hovering a link warms its data without blocking navigation
+	defaultPreload: "intent",
 	defaultErrorComponent: RouterError,
 	defaultNotFoundComponent: RouterNotFound,
 });
@@ -36,5 +38,9 @@ function RouterNotFound() {
 declare module "@tanstack/react-router" {
 	interface Register {
 		router: typeof router;
+	}
+	interface StaticDataRouteOption {
+		/** "none": no title bar or scrim (splash); "child": title bar, no parent scrim (settings, update). Inherited by child routes. */
+		chrome?: "none" | "child";
 	}
 }

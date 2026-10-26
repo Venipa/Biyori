@@ -1,26 +1,18 @@
 import { useTranslation } from "@biyori/translations/react";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { rendererRoutePath } from "@/mainview/lib/start-path";
 import { trpc } from "@/mainview/trpc";
-
-function isAuxiliaryWindow(): boolean {
-	const path = rendererRoutePath();
-	return path.includes("/settings") || path.includes("/update");
-}
 
 export function ParentWindowScrim() {
 	const { t } = useTranslation();
-	const auxiliary = isAuxiliaryWindow();
 	const [dimmed, setDimmed] = useState(false);
 	const focusChild = trpc.desktop.focusModalChild.useMutation();
 	trpc.desktop.onParentDimmed.useSubscription(undefined, {
-		enabled: !auxiliary,
 		onData: (open) => {
 			setDimmed(open === true);
 		},
 	});
-	if (auxiliary || !dimmed) {
+	if (!dimmed) {
 		return null;
 	}
 	return createPortal(

@@ -1,5 +1,4 @@
 import { useTranslation } from "@biyori/translations/react";
-import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import Logo from "@/mainview/components/app/shell/logo";
 import { trpc } from "@/mainview/trpc";
@@ -8,7 +7,6 @@ const HIDE_MS = 1800;
 
 export function AnilistAuthSplash() {
 	const { t } = useTranslation();
-	const pathname = useRouterState({ select: (state) => state.location.pathname });
 	const [username, setUsername] = useState<string | null>(null);
 	const utils = trpc.useUtils();
 	trpc.anilist.onAuthSuccess.useSubscription(undefined, {
@@ -35,7 +33,7 @@ export function AnilistAuthSplash() {
 		};
 	}, [username]);
 
-	if (!username || pathname === "/splash" || pathname.startsWith("/settings") || pathname === "/update") {
+	if (!username) {
 		return null;
 	}
 

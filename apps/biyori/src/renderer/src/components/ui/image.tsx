@@ -21,11 +21,20 @@ type ImageProps = Omit<ComponentProps<"img">, "src"> &
 		imageClassName?: string;
 	};
 
+// srcs that already loaded once this session: remounts render them immediately instead of replaying the skeleton fade
+const loadedSrcs = new Set<string>();
+function rememberLoaded(src: string): void {
+	// blob urls are single-use, keeping them would only grow the set
+	if (!src.startsWith("blob:")) {
+		loadedSrcs.add(src);
+	}
+}
+
 function Image({ src, alt, className, skeletonClassName, imageClassName, variant, width, height, onLoad, onError, ...props }: ImageProps) {
 	const imgRef = useRef<HTMLImageElement>(null);
 	const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
 	const [failedSrc, setFailedSrc] = useState<string | null>(null);
-	const loaded = Boolean(src) && loadedSrc === src;
+	const loaded = Boolean(src) && (loadedSrc === src || loadedSrcs.has(src as string));
 	const failed = Boolean(src) && failedSrc === src;
 
 	useEffect(() => {
@@ -34,6 +43,7 @@ function Image({ src, alt, className, skeletonClassName, imageClassName, variant
 			return;
 		}
 		if (node.complete && node.naturalWidth > 0) {
+			rememberLoaded(src);
 			setLoadedSrc(src);
 			setFailedSrc((current) => (current === src ? null : current));
 		}
@@ -67,6 +77,7 @@ function Image({ src, alt, className, skeletonClassName, imageClassName, variant
 						imageClassName,
 					)}
 					onLoad={(event) => {
+						rememberLoaded(src);
 						setLoadedSrc(src);
 						setFailedSrc((current) => (current === src ? null : current));
 						onLoad?.(event);

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { animeInfoSearchSchema, parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
-import { AnimeListView } from "@/mainview/components/anime-list-view";
+import { AnimeListView, listStatusFallback } from "@/mainview/components/anime-list-view";
 import { useAnimeInfoNav, useAnimeInfoOpen } from "@/mainview/lib/anime-info-nav";
 import { animeListTabSchema } from "@/shared/list";
 
@@ -10,6 +10,12 @@ const searchSchema = animeInfoSearchSchema.extend({
 
 export const Route = createFileRoute("/app/anime-list")({
 	validateSearch: searchSchema,
+	loaderDeps: ({ search }) => ({ tab: search.tab ?? "Currently watching" }),
+	// prefetch only (no await) so navigation never waits on IPC
+	loader: ({ context, deps }) => {
+		void context.utils.anime.list.prefetch({ status: listStatusFallback(deps.tab) });
+		void context.utils.settings.get.prefetch();
+	},
 	component: AnimeListPage,
 });
 

@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { SeasonCacheFile, SeasonItemCached } from "../../lib/schemas/seasons";
 import { type AnilistSeasonName, seasonCacheFileSchema } from "../../lib/schemas/seasons";
@@ -27,25 +28,36 @@ function encryptSeasonCache(payload: SeasonCacheFile): Buffer {
 	return encryptWithSafeStorage(JSON.stringify(payload));
 }
 
-export function readSeasonCache(season: AnilistSeasonName, seasonYear: number): SeasonCacheFile | null {
+// decrypted copies per season file; the encrypted file stays the tamper-proof source of truth
+const memory = new Map<string, SeasonCacheFile>();
+
+export async function readSeasonCache(season: AnilistSeasonName, seasonYear: number): Promise<SeasonCacheFile | null> {
 	const path = seasonCachePath(season, seasonYear);
-	if (!existsSync(path)) {
-		return null;
+	const remembered = memory.get(path);
+	if (remembered) {
+		return remembered;
 	}
 	try {
-		return parseSeasonCache(JSON.parse(decryptWithSafeStorage(readFileSync(path))) as unknown);
+		const parsed = parseSeasonCache(JSON.parse(decryptWithSafeStorage(await readFile(path))) as unknown);
+		if (parsed) {
+			memory.set(path, parsed);
+		}
+		return parsed;
 	} catch {
+		// missing, tampered or unreadable: treat as a miss and refetch
 		return null;
 	}
 }
 
-export function writeSeasonCache(options: { season: AnilistSeasonName; seasonYear: number; items: SeasonItemCached[] }): SeasonCacheFile {
+export async function writeSeasonCache(options: { season: AnilistSeasonName; seasonYear: number; items: SeasonItemCached[] }): Promise<SeasonCacheFile> {
 	const payload: SeasonCacheFile = {
 		season: options.season,
 		seasonYear: options.seasonYear,
 		fetchedAt: new Date().toISOString(),
 		items: options.items,
 	};
-	writeFileSync(seasonCachePath(options.season, options.seasonYear), encryptSeasonCache(payload));
+	const path = seasonCachePath(options.season, options.seasonYear);
+	await writeFile(path, encryptSeasonCache(payload));
+	memory.set(path, payload);
 	return payload;
 }

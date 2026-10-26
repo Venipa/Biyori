@@ -5,6 +5,7 @@ import { stringifyMediaTitles } from "../../lib/anime-titles";
 import type { TitleLanguage } from "../../lib/schemas/app-settings";
 import type { RelatedMedia } from "../../lib/schemas/related-media";
 import type { AnilistSeasonName, SeasonItem } from "../../lib/schemas/seasons";
+import { isSeasonCacheFresh } from "../../lib/season-cache-fresh";
 import type { DatabaseClient } from "../db";
 import { anime, listEntry } from "../db/schema";
 import type { Anime, AnimeInsert, ListEntryInsert } from "../db/types";
@@ -134,8 +135,8 @@ export async function fetchSeasonMedia(options: {
 	const resolve = (items: Parameters<typeof withMediaCardTitle>[0][]) => items.map((item) => withMediaCardTitle(item, options.titleLanguage));
 
 	if (!options.forceRefresh) {
-		const cached = readSeasonCache(options.season, options.seasonYear);
-		if (cached) {
+		const cached = await readSeasonCache(options.season, options.seasonYear);
+		if (cached && isSeasonCacheFresh(cached)) {
 			return {
 				items: resolve(cached.items),
 				fromCache: true,
@@ -173,7 +174,7 @@ export async function fetchSeasonMedia(options: {
 		page += 1;
 	}
 
-	const written = writeSeasonCache({
+	const written = await writeSeasonCache({
 		season: options.season,
 		seasonYear: options.seasonYear,
 		items,

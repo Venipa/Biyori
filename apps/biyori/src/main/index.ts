@@ -3,6 +3,7 @@ import { logger } from "@biyori/logger";
 import { t } from "@biyori/translations/i18n";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { app, type BrowserWindow, dialog } from "electron";
+import { handleMediaProtocol, registerMediaScheme } from "./covers/protocol";
 import { attachQuitHandler, isAppQuitting, requestQuit } from "./handlers/quit-handler";
 import { createAppTray } from "./handlers/tray";
 import { attachTrayState, setTrayState } from "./handlers/tray-state";
@@ -18,6 +19,7 @@ import { startUiLocaleSync } from "./ui-locale";
 import { windowManager } from "./windows";
 
 app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");
+registerMediaScheme();
 
 const PAINT_TIMEOUT_MS = 15_000;
 
@@ -100,6 +102,7 @@ async function start(): Promise<void> {
 	}
 
 	await boot();
+	handleMediaProtocol();
 	startUiLocaleSync();
 	startProtocolHandling();
 	syncLoginItem(settings);

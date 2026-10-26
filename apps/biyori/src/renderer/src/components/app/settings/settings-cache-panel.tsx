@@ -57,13 +57,7 @@ export function SettingsCachePanel() {
 		onSuccess: async () => {
 			setSelected(new Set());
 			setConfirmOpen(false);
-			await Promise.all([
-				utils.settings.cacheSummary.invalidate(),
-				utils.history.list.invalidate(),
-				utils.statistics.summary.invalidate(),
-				utils.covers.get.invalidate(),
-				utils.torrents.list.invalidate(),
-			]);
+			await Promise.all([utils.settings.cacheSummary.invalidate(), utils.history.list.invalidate(), utils.statistics.summary.invalidate(), utils.torrents.list.invalidate()]);
 		},
 	});
 

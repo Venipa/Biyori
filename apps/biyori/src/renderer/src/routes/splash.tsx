@@ -7,6 +7,7 @@ import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 
 export const Route = createFileRoute("/splash")({
+	staticData: { chrome: "none" },
 	component: SplashPage,
 });
 

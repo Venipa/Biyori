@@ -61,7 +61,7 @@ function toSelected(row: AnimeRow, status: ListStatus): SelectedAnime {
 	};
 }
 
-function listStatusFallback(tab: AnimeListTab): ListStatus {
+export function listStatusFallback(tab: AnimeListTab): ListStatus {
 	return tab === ANIME_LIST_SEARCH_TAB ? "Currently watching" : tab;
 }
 

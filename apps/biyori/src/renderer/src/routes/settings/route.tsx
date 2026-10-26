@@ -4,6 +4,7 @@ import { PageLoad } from "@/mainview/components/app/shell/page-load";
 import { trpc } from "@/mainview/trpc";
 
 export const Route = createFileRoute("/settings")({
+	staticData: { chrome: "child" },
 	component: SettingsLayout,
 });
 

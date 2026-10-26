@@ -1,5 +1,5 @@
-import { createFileRoute, Navigate, Outlet, useBlocker, useNavigate } from "@tanstack/react-router";
-import { type ReactElement, useRef } from "react";
+import { createFileRoute, Navigate, Outlet, useBlocker } from "@tanstack/react-router";
+import type { ReactElement } from "react";
 import { AnimeDeleteDialog } from "@/mainview/components/app/anime-info/delete-dialog";
 import { AppAnimeInfoDialog } from "@/mainview/components/app/anime-info/host";
 import { WatchConfirmDialog } from "@/mainview/components/app/confirm/watch-dialog";
@@ -7,7 +7,7 @@ import { PageLoad } from "@/mainview/components/app/shell/page-load";
 import { AppSidebar } from "@/mainview/components/app/shell/sidebar";
 import { AppStatusBar } from "@/mainview/components/app/shell/status-bar";
 import { TooltipProvider } from "@/mainview/components/ui/tooltip";
-import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
+import { useAppLiveSync } from "@/mainview/lib/hooks/use-app-live-sync";
 import { trpc } from "@/mainview/trpc";
 
 export const Route = createFileRoute("/app")({
@@ -19,70 +19,15 @@ function MainLayout(): ReactElement {
 		shouldBlockFn: ({ next }) => next.fullPath === "/update",
 		enableBeforeUnload: false,
 	});
-	const utils = trpc.useUtils();
-	const navigate = useNavigate();
+	useAppLiveSync();
 	const settingsQuery = trpc.settings.get.useQuery();
-	const sawSettings = useRef(false);
-	if (settingsQuery.data) {
-		sawSettings.current = true;
-	}
-	const lastPlayKey = useRef("");
-	const lastProgressRevision = useRef(0);
-	trpc.settings.onChange.useSubscription(undefined, {
-		onData: (settings) => {
-			const prev = utils.settings.get.getData();
-			utils.settings.get.setData(undefined, settings);
-			void utils.library.summary.invalidate();
-			if (prev?.titleLanguage !== settings.titleLanguage) {
-				void utils.anime.list.invalidate();
-				void utils.anime.listed.invalidate();
-				void utils.anime.byId.invalidate();
-				void utils.anilist.season.invalidate();
-				void utils.anilist.search.invalidate();
-			}
-		},
-	});
-	trpc.media.onNowPlaying.useSubscription(undefined, {
-		onData: (snapshot) => {
-			utils.media.nowPlaying.setData(undefined, snapshot);
-			if (snapshot.progressRevision > lastProgressRevision.current) {
-				lastProgressRevision.current = snapshot.progressRevision;
-				void invalidateAnimeQueries(utils, "watched", snapshot.match?.id);
-			}
-			const settings = utils.settings.get.getData();
-			if (!settings || !snapshot.media) {
-				lastPlayKey.current = "";
-				return;
-			}
-			const key = `${snapshot.media.player}|${snapshot.media.title}|${snapshot.match?.id ?? "none"}|${snapshot.unrecognized}`;
-			if (key === lastPlayKey.current) {
-				return;
-			}
-			lastPlayKey.current = key;
-			const goRecognized = Boolean(snapshot.match) && settings.goToNowPlayingOnRecognized;
-			const goUnrecognized = snapshot.unrecognized && settings.goToNowPlayingOnUnrecognized;
-			if (goRecognized || goUnrecognized) {
-				void navigate({ to: "/app/now-playing" });
-			}
-		},
-	});
-	trpc.library.onIndex.useSubscription(undefined, {
-		onData: () => {
-			void Promise.all([utils.anime.listed.invalidate(), utils.anime.list.invalidate(), utils.library.summary.invalidate(), utils.library.episodes.invalidate()]);
-		},
-	});
-	trpc.history.onFlush.useSubscription(undefined, {
-		onData: () => {
-			void Promise.all([invalidateAnimeQueries(utils, "watched"), utils.anime.byId.invalidate()]);
-		},
-	});
 
 	if (settingsQuery.data?.onboardingComplete === false) {
 		return <Navigate to='/onboarding' />;
 	}
 
 	return (
-		<PageLoad loading={!sawSettings.current && settingsQuery.data === undefined}>
+		<PageLoad loading={settingsQuery.isPending}>
 			<TooltipProvider delay={400}>
 				<div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'>
 					<div className='flex min-h-0 flex-1 overflow-hidden'>
