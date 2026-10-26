@@ -57,7 +57,8 @@ function IdleNowPlaying() {
 	const staleDays = settingsQuery.data?.continueWatchingStaleDays ?? 30;
 	const continueLabel = t("nowPlaying.continueWatching");
 	const continueWatching = buildContinueWatching(playsQuery.data?.plays ?? [], listed, Date.now(), staleDays * 24 * 60 * 60 * 1000);
-	const continueItems = [...continueWatching.recent, ...continueWatching.earlier, ...continueWatching.older];
+	const activeContinue = [...continueWatching.recent, ...continueWatching.earlier];
+	const continueItems = [...activeContinue, ...continueWatching.older];
 	const airingSkip = new Set([...skipStatus, ...continueItems.map((item) => item.animeId)]);
 	const airing = buildAiringSoon(listed, airingSkip, Date.now());
 	const airingIds = airing.flatMap((group) => group.items.map((item) => item.animeId));
@@ -86,59 +87,64 @@ function IdleNowPlaying() {
 						{watchedLastWeek > 0 ? ` · ${t("nowPlaying.watchedLastWeek", { count: watchedLastWeek })}` : ""}
 					</p>
 				</header>
-				{continueItems.length > 0 ? (
-					<IdleSection title={continueLabel}>
-						<ul aria-label={continueLabel} className='grid grid-cols-[repeat(auto-fill,12rem)] gap-3'>
-							{[...continueWatching.recent, ...continueWatching.earlier].map((item) => (
-								<li key={item.animeId}>
-									<ContinueWatchingCard item={item} disabled={playNext.isPending} playNextEnabled onActivate={() => playContinue(item)} />
-								</li>
-							))}
-						</ul>
+				<div className='grid items-start gap-x-10 gap-y-6 lg:grid-cols-[minmax(0,1fr)_20rem]'>
+					<div className='flex flex-col gap-6'>
+						{activeContinue.length > 0 ? (
+							<IdleSection title={continueLabel}>
+								<ul aria-label={continueLabel} className='grid grid-cols-[repeat(auto-fill,11rem)] gap-3'>
+									{activeContinue.map((item) => (
+										<li key={item.animeId}>
+											<ContinueWatchingCard item={item} disabled={playNext.isPending} playNextEnabled onActivate={() => playContinue(item)} />
+										</li>
+									))}
+								</ul>
+							</IdleSection>
+						) : null}
 						{continueWatching.older.length > 0 ? (
-							<>
-								<h3 className='mt-2 text-xs text-muted-foreground'>{t("nowPlaying.olderThan", { days: staleDays, count: staleDays })}</h3>
-								<ul className='grid gap-x-4 sm:grid-cols-2'>
+							<IdleSection title={t("nowPlaying.olderThan", { days: staleDays, count: staleDays })}>
+								<ul className='flex flex-col'>
 									{continueWatching.older.map((item) => (
 										<IdleRow key={item.animeId} id={item.animeId} title={item.title} coverUrl={item.coverUrl} detail={episodeLine(item)} onClick={() => openItem(item)} />
 									))}
 								</ul>
-							</>
+							</IdleSection>
 						) : null}
-					</IdleSection>
-				) : null}
-				{airing.length > 0 ? (
-					<IdleSection title={t("nowPlaying.schedule")}>
-						{airing.map((group) => (
-							<div key={group.label} className='flex flex-col'>
-								<h3 className='px-1 pb-1 text-xs text-muted-foreground'>{group.label}</h3>
-								<ul className='grid gap-x-4 sm:grid-cols-2'>
-									{group.items.map((item) => (
-										<IdleRow key={item.animeId} id={item.animeId} title={item.title} coverUrl={item.coverUrl} detail={airingCaption(item)} onClick={() => openItem(item)} />
+					</div>
+					<aside className='flex flex-col gap-6 lg:sticky lg:top-0'>
+						{airing.length > 0 ? (
+							<IdleSection title={t("nowPlaying.schedule")}>
+								{airing.map((group) => (
+									<div key={group.label} className='flex flex-col'>
+										<h3 className='px-1 pb-1 text-xs text-muted-foreground'>{group.label}</h3>
+										<ul className='flex flex-col'>
+											{group.items.map((item) => (
+												<IdleRow key={item.animeId} id={item.animeId} title={item.title} coverUrl={item.coverUrl} detail={airingCaption(item)} onClick={() => openItem(item)} />
+											))}
+										</ul>
+									</div>
+								))}
+							</IdleSection>
+						) : null}
+						{upcoming.length > 0 ? (
+							<IdleSection title={t("nowPlaying.upcoming")}>
+								<ul className='flex flex-col'>
+									{upcoming.map((item) => (
+										<IdleRow
+											key={item.id}
+											id={item.id}
+											title={item.title}
+											coverUrl={item.coverUrl}
+											detail={item.startsAt ? new Date(item.startsAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : (item.season ?? "")}
+											onClick={() => {
+												animeInfo.open({ id: item.id, infoTab: "main", title: item.title, coverUrl: item.coverUrl });
+											}}
+										/>
 									))}
 								</ul>
-							</div>
-						))}
-					</IdleSection>
-				) : null}
-				{upcoming.length > 0 ? (
-					<IdleSection title={t("nowPlaying.upcoming")}>
-						<ul className='grid gap-x-4 sm:grid-cols-2'>
-							{upcoming.map((item) => (
-								<IdleRow
-									key={item.id}
-									id={item.id}
-									title={item.title}
-									coverUrl={item.coverUrl}
-									detail={item.startsAt ? new Date(item.startsAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : (item.season ?? "")}
-									onClick={() => {
-										animeInfo.open({ id: item.id, infoTab: "main", title: item.title, coverUrl: item.coverUrl });
-									}}
-								/>
-							))}
-						</ul>
-					</IdleSection>
-				) : null}
+							</IdleSection>
+						) : null}
+					</aside>
+				</div>
 			</div>
 		</ScrollArea>
 	);
