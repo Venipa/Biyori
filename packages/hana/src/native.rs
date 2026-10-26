@@ -231,3 +231,41 @@ pub fn version() -> String {
 pub fn player_markers_js() -> Vec<String> {
 	player_markers().map(str::to_string).collect()
 }
+
+#[napi(object)]
+pub struct LibraryWatchEvent {
+	/// `change` or `polling`.
+	pub kind: String,
+	pub root: String,
+	pub paths: Vec<String>,
+	pub reason: Option<String>,
+}
+
+type WatchFn = ThreadsafeFunction<LibraryWatchEvent, ErrorStrategy::CalleeHandled>;
+
+/// Recursive watch over library roots; network drives and failed native watchers are polled.
+#[napi]
+pub struct LibraryWatcher {
+	inner: Option<crate::watch::LibraryWatch>,
+}
+
+#[napi]
+impl LibraryWatcher {
+	#[napi(constructor)]
+	pub fn new(roots: Vec<String>, poll_interval_ms: u32, on_event: WatchFn) -> Self {
+		let interval = std::time::Duration::from_millis(u64::from(poll_interval_ms.max(1000)));
+		let inner = crate::watch::LibraryWatch::start(roots, interval, move |event| {
+			let event = match event {
+				crate::watch::WatchEvent::Change { root, paths } => LibraryWatchEvent { kind: "change".into(), root, paths, reason: None },
+				crate::watch::WatchEvent::Polling { root, reason } => LibraryWatchEvent { kind: "polling".into(), root, paths: Vec::new(), reason: Some(reason) },
+			};
+			on_event.call(Ok(event), ThreadsafeFunctionCallMode::NonBlocking);
+		});
+		Self { inner: Some(inner) }
+	}
+
+	#[napi]
+	pub fn close(&mut self) {
+		self.inner.take();
+	}
+}

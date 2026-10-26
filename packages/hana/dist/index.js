@@ -105,6 +105,16 @@ class Hana {
 		}
 	}
 
+	/** Recursive watch; network drives and failed native watchers fall back to polling. */
+	watch(roots, pollIntervalMs, onEvent) {
+		const watcher = new (binding().LibraryWatcher)(roots, pollIntervalMs, (err, event) => {
+			if (!err) {
+				onEvent(event);
+			}
+		});
+		return { close: () => watcher.close() };
+	}
+
 	async dispose() {}
 }
 

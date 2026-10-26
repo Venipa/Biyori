@@ -6,6 +6,7 @@ pub mod native;
 pub mod parse;
 pub mod scan;
 pub mod types;
+pub mod watch;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

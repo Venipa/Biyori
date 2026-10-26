@@ -1,5 +1,6 @@
 export type {
 	Candidate as HanaCandidate,
+	LibraryWatchHandle,
 	MatchHit,
 	MatchInput,
 	NowPlaying as HanaNowPlaying,

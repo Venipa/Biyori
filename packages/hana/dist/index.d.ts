@@ -123,6 +123,19 @@ export type RecognizeHit = {
 	episode: number | null;
 };
 
+export type LibraryWatchEvent = {
+	kind: "change" | "polling";
+	root: string;
+	/** Absolute paths; empty for `polling`. */
+	paths: string[];
+	/** Why native watching was replaced by polling. */
+	reason?: string | null;
+};
+
+export type LibraryWatchHandle = {
+	close(): void;
+};
+
 export declare class Hana {
 	parse(input: ParseInput): Promise<ParseResult | null>;
 	parseTogether(input: ParseTogetherInput): Promise<(ParseResult | null)[]>;
@@ -131,6 +144,7 @@ export declare class Hana {
 	nowPlaying(input: NowPlayingInput): Promise<NowPlaying | null>;
 	match(input: MatchInput): Promise<MatchHit | null>;
 	recognize(input: RecognizeInput): Promise<RecognizeHit[]>;
+	watch(roots: string[], pollIntervalMs: number, onEvent: (event: LibraryWatchEvent) => void): LibraryWatchHandle;
 	dispose(): Promise<void>;
 }
 

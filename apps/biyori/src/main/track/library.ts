@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, type FSWatcher, statSync, watch } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, statSync } from "node:fs";
+import { dirname } from "node:path";
 import { logger as log } from "@biyori/logger";
 import { pathUnderRoot, VIDEO_EXT } from "@biyori/recognition";
 import { t } from "@biyori/translations/i18n";
@@ -15,12 +15,15 @@ import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
 import { updateStep } from "../startup-status";
 import { continueReadyEpisodes } from "./continue-ready";
-import { hana, type ScanHit, type ScanProgress } from "./hana-client";
+import { hana, type LibraryWatchHandle, type ScanHit, type ScanProgress } from "./hana-client";
 import { invalidateCandidateCache, loadCandidates, toHanaCandidates } from "./match";
 import { refreshRelations, toHanaRelations } from "./relations";
 
 let db: DatabaseClient | null = null;
-const watchers: FSWatcher[] = [];
+// network drives are polled; a full walk over SMB is costly, so keep it slow
+const LIBRARY_POLL_MS = 60_000;
+const IGNORED_WATCH_FILES = /\.(jpe?g|png|webp|nfo|txt|srt|ass|ssa|idx|sub|part|tmp)$/i;
+let libraryWatch: LibraryWatchHandle | null = null;
 const dirtyPaths = new Set<string>();
 let watchTimer: ReturnType<typeof setTimeout> | null = null;
 let episodeScanTimer: ReturnType<typeof setInterval> | null = null;
@@ -511,33 +514,30 @@ export async function restartLibraryWatch(): Promise<void> {
 	if (!settings.realtimeMonitor) {
 		return;
 	}
-	for (const folder of settings.libraryFolders) {
-		if (!existsSync(folder.path)) {
-			continue;
-		}
-		try {
-			const root = folder.path;
-			const watcher = watch(root, { recursive: true }, (_event, filename) => {
-				if (!filename) {
-					return;
-				}
-				if (/\.(jpe?g|png|webp|nfo|txt|srt|ass|ssa|idx|sub|part|tmp)$/i.test(filename)) {
-					return;
-				}
-				dirtyPaths.add(join(root, filename));
-				if (watchTimer) {
-					clearTimeout(watchTimer);
-				}
-				watchTimer = setTimeout(() => {
-					watchTimer = null;
-					void flushWatch();
-				}, 2000);
-			});
-			watchers.push(watcher);
-		} catch {
-			/* skip unwatchable roots */
-		}
+	const roots = settings.libraryFolders.map((folder) => folder.path).filter((path) => existsSync(path));
+	if (roots.length === 0) {
+		return;
 	}
+	libraryWatch = hana.watch(roots, LIBRARY_POLL_MS, (event) => {
+		if (event.kind === "polling") {
+			log.warn("library watch polling", event.root, event.reason);
+			return;
+		}
+		const changed = event.paths.filter((path) => !IGNORED_WATCH_FILES.test(path));
+		if (changed.length === 0) {
+			return;
+		}
+		for (const path of changed) {
+			dirtyPaths.add(path);
+		}
+		if (watchTimer) {
+			clearTimeout(watchTimer);
+		}
+		watchTimer = setTimeout(() => {
+			watchTimer = null;
+			void flushWatch();
+		}, 2000);
+	});
 }
 
 function classifyWatchPath(full: string, roots: string[]): { gone?: string; scan?: string } {
@@ -670,10 +670,8 @@ function restartEpisodeScan(): void {
 }
 
 export function stopLibraryWatch(): void {
-	for (const watcher of watchers) {
-		watcher.close();
-	}
-	watchers.length = 0;
+	libraryWatch?.close();
+	libraryWatch = null;
 	dirtyPaths.clear();
 	if (watchTimer) {
 		clearTimeout(watchTimer);
