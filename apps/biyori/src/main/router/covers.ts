@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { TRPCError } from "@trpc/server";
-import { app, clipboard, dialog, nativeImage } from "electron";
+import { app, ClipboardItem, clipboard, dialog, nativeImage } from "electron";
 import { z } from "zod";
 import { mediaImageKindSchema } from "../../lib/schemas/media-image";
 import { MediaCacheError, resolveMediaImage } from "../covers/cache";
@@ -49,7 +49,8 @@ export const coversRouter = t.router({
 	}),
 	copy: t.procedure.input(mediaInput).mutation(async ({ ctx, input }) => {
 		const image = await resolveOrThrow(ctx, input);
-		clipboard.writeImage(nativeImage.createFromBuffer(image.bytes));
+		const png = nativeImage.createFromBuffer(image.bytes).toPNG();
+		await clipboard.write([new ClipboardItem({ "image/png": new Blob([new Uint8Array(png)], { type: "image/png" }) })]);
 		return { ok: true as const };
 	}),
 });

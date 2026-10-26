@@ -5,14 +5,13 @@ export const STARTUP_FLAG = "--startup";
 
 export type LoginLaunchInfo = {
 	wasOpenedAtLogin?: boolean;
-	wasOpenedAsHidden?: boolean;
 };
 
 export function argvIsStartupLaunch(argv: readonly string[], login: LoginLaunchInfo = {}): boolean {
 	if (argv.includes(STARTUP_FLAG)) {
 		return true;
 	}
-	return Boolean(login.wasOpenedAtLogin || login.wasOpenedAsHidden);
+	return Boolean(login.wasOpenedAtLogin);
 }
 
 export function shouldStartInTray(startupLaunch: boolean, autostartTray: boolean): boolean {

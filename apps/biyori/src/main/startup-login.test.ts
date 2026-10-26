@@ -6,7 +6,6 @@ describe("startup login helpers", () => {
 		expect(argvIsStartupLaunch(["biyori"])).toBe(false);
 		expect(argvIsStartupLaunch(["biyori", STARTUP_FLAG])).toBe(true);
 		expect(argvIsStartupLaunch(["biyori"], { wasOpenedAtLogin: true })).toBe(true);
-		expect(argvIsStartupLaunch(["biyori"], { wasOpenedAsHidden: true })).toBe(true);
 	});
 
 	test("starts in tray only when both flags are set", () => {

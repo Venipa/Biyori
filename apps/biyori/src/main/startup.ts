@@ -59,7 +59,6 @@ export function syncLoginItem(settings: Pick<AppSettings, "autostart" | "autosta
 	if (process.platform === "darwin") {
 		app.setLoginItemSettings({
 			openAtLogin: settings.autostart,
-			openAsHidden: settings.autostart && settings.autostartTray,
 		});
 		return;
 	}
@@ -68,7 +67,6 @@ export function syncLoginItem(settings: Pick<AppSettings, "autostart" | "autosta
 	if (settings.autostart) {
 		app.setLoginItemSettings({
 			openAtLogin: true,
-			openAsHidden: settings.autostartTray,
 			path: process.execPath,
 			args,
 			enabled: true,
@@ -77,7 +75,6 @@ export function syncLoginItem(settings: Pick<AppSettings, "autostart" | "autosta
 	}
 	app.setLoginItemSettings({
 		openAtLogin: false,
-		openAsHidden: false,
 		path: process.execPath,
 		args,
 		enabled: false,
