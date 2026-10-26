@@ -1,12 +1,11 @@
 import { useTranslation } from "@biyori/translations/react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3Icon, CalendarDaysIcon, FolderIcon, HistoryIcon, HomeIcon, PlayIcon, RssIcon } from "lucide-react";
+import { BarChart3Icon, CalendarDaysIcon, DownloadIcon, FolderIcon, HistoryIcon, HomeIcon, PlayIcon, RssIcon } from "lucide-react";
 import { LayoutGroup, motion } from "motion/react";
 import { type ReactNode, useRef } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { SidebarSearch } from "@/mainview/components/app/shell/sidebar-search";
-import { Button } from "@/mainview/components/ui/button";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { clearListFilterText, useListFilterText } from "@/mainview/lib/list-filter";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
@@ -27,60 +26,49 @@ const toolItems = [
 
 const otherListStatuses = listStatusSchema.options.filter((status) => status !== "Currently watching");
 
-const chipLabelKey: Record<(typeof otherListStatuses)[number], "nav.done" | "nav.hold" | "nav.drop" | "nav.plan"> = {
-	Completed: "nav.done",
-	"On hold": "nav.hold",
-	Dropped: "nav.drop",
-	"Plan to watch": "nav.plan",
-};
-
-const statusLabelKey: Record<(typeof otherListStatuses)[number], "nav.completed" | "nav.onHold" | "nav.dropped" | "nav.planToWatch"> = {
-	Completed: "nav.completed",
-	"On hold": "nav.onHold",
-	Dropped: "nav.dropped",
-	"Plan to watch": "nav.planToWatch",
-};
-
-const chipTone: Record<(typeof otherListStatuses)[number], string> = {
-	Completed: "hover:bg-list-completed hover:text-list-completed-foreground aria-[current=page]:bg-list-completed aria-[current=page]:text-list-completed-foreground",
-	"On hold": "hover:bg-list-hold hover:text-list-hold-foreground aria-[current=page]:bg-list-hold aria-[current=page]:text-list-hold-foreground",
-	Dropped: "hover:bg-list-dropped hover:text-list-dropped-foreground aria-[current=page]:bg-list-dropped aria-[current=page]:text-list-dropped-foreground",
-	"Plan to watch": "hover:bg-list-planned hover:text-list-planned-foreground aria-[current=page]:bg-list-planned aria-[current=page]:text-list-planned-foreground",
-};
+const otherStatusNav = {
+	Completed: { labelKey: "nav.completed", dot: "bg-list-completed-foreground" },
+	"On hold": { labelKey: "nav.onHold", dot: "bg-list-hold-foreground" },
+	Dropped: { labelKey: "nav.dropped", dot: "bg-list-dropped-foreground" },
+	"Plan to watch": { labelKey: "nav.planToWatch", dot: "bg-list-planned-foreground" },
+} as const satisfies Record<(typeof otherListStatuses)[number], { labelKey: string; dot: string }>;
 
 const navDestinations: string[] = ["/app/now-playing", "/app/anime-list", "/app/search", ...listItems.map((item) => item.to), ...toolItems.map((item) => item.to)];
 
 const navPillSpring = { type: "spring", stiffness: 500, damping: 40 } as const;
 
 function navItemClass(active: boolean): string {
-	return cn("relative flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm hover:bg-muted", active ? "text-foreground" : "text-foreground/80");
+	return cn(
+		"relative isolate flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted/60 hover:text-foreground focus-visible:bg-muted/60",
+		active ? "text-foreground" : "text-muted-foreground",
+	);
 }
 
 function NavGroup({ label, children }: { label: string; children: ReactNode }) {
 	return (
-		<div className='flex flex-col gap-0.5'>
-			<p className='px-2 py-1 text-xs text-muted-foreground'>{label}</p>
+		<div className='flex flex-col gap-px'>
+			<p className='px-2.5 pt-3 pb-1 text-[11px] text-muted-foreground/80'>{label}</p>
 			{children}
 		</div>
 	);
 }
 
-function NavIconSlot({ active, isEnter, children }: { active: boolean; isEnter: boolean; children: ReactNode }) {
-	return (
-		<span className='relative grid size-6 shrink-0 place-items-center'>
-			{active ? (
-				<motion.span
-					layoutId='app-nav-pill'
-					aria-hidden
-					className='pointer-events-none absolute inset-0 rounded-md bg-primary/15'
-					initial={isEnter ? { opacity: 0 } : false}
-					animate={{ opacity: 1 }}
-					transition={navPillSpring}
-				/>
-			) : null}
-			<span className='relative'>{children}</span>
-		</span>
-	);
+/** Full-row active background that slides between items. */
+function NavPill({ active, isEnter }: { active: boolean; isEnter: boolean }) {
+	return active ? (
+		<motion.span
+			layoutId='app-nav-pill'
+			aria-hidden
+			className='pointer-events-none absolute inset-0 -z-10 rounded-md bg-muted'
+			initial={isEnter ? { opacity: 0 } : false}
+			animate={{ opacity: 1 }}
+			transition={navPillSpring}
+		/>
+	) : null;
+}
+
+function NavCount({ value }: { value: number | undefined }) {
+	return value ? <span className='text-xs text-muted-foreground tabular-nums'>{value}</span> : null;
 }
 
 export function AppSidebar() {
@@ -104,11 +92,9 @@ export function AppSidebar() {
 	}
 
 	return (
-		<nav aria-label={t("nav.main")} className='relative z-30 flex h-full min-h-0 w-56 shrink-0 flex-col gap-2 overflow-visible border-r bg-sidebar p-2'>
-			<div className='relative z-10'>
-				<SidebarSearch />
-			</div>
-			<div className='relative z-10 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto'>
+		<nav aria-label={t("nav.main")} className='relative z-30 flex h-full min-h-0 w-56 shrink-0 flex-col gap-2 border-r bg-sidebar p-2'>
+			<SidebarSearch />
+			<div className='flex min-h-0 flex-1 flex-col overflow-y-auto'>
 				<LayoutGroup id='app-sidebar-nav'>
 					<NowPlayingNavLink active={pathname === "/app/now-playing"} isEnter={isEnter} />
 					<NavGroup label={t("nav.library")}>
@@ -124,22 +110,17 @@ export function AppSidebar() {
 					</NavGroup>
 				</LayoutGroup>
 				{update.updateAvailable ? (
-					<div className='mt-auto rounded-md border border-primary/30 bg-primary/10 p-2'>
-						<p className='text-sm font-medium text-foreground'>{t("nav.updateAvailable")}</p>
-						<p className='mt-0.5 text-xs text-muted-foreground'>
-							{update.remoteVersion ? t("nav.version", { version: update.remoteVersion }) : t("nav.newBuildReady")}
-							{update.updateReady ? ` ${t("nav.downloaded")}` : null}
-						</p>
-						<Button
-							type='button'
-							size='sm'
-							className='mt-2 w-full'
-							onClick={() => {
-								void desktopRpc.request.openUpdate({});
-							}}>
-							{t("shell.update")}
-						</Button>
-					</div>
+					<button
+						type='button'
+						className={cn(navItemClass(false), "mt-auto")}
+						title={update.updateReady ? t("nav.downloaded") : undefined}
+						onClick={() => {
+							void desktopRpc.request.openUpdate({});
+						}}>
+						<DownloadIcon className='size-4 shrink-0' />
+						<span className='flex-1 truncate'>{update.remoteVersion ? t("nav.version", { version: update.remoteVersion }) : t("nav.updateAvailable")}</span>
+						<span aria-hidden className='size-1.5 rounded-full bg-primary' />
+					</button>
 				) : null}
 			</div>
 		</nav>
@@ -187,7 +168,7 @@ function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: bool
 			: [latest.data?.title];
 	const coverId = playing ? snapshot?.match?.id : latest.data?.animeId;
 	const coverUrl = playing ? snapshot?.match?.coverUrl : latest.data?.coverUrl;
-	const rowClass = "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted";
+	const rowClass = "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-muted/60 focus-visible:bg-muted/60";
 	const media = title ? (
 		<>
 			<AnimeCover id={coverId ?? null} coverUrl={coverUrl || undefined} alt='' className='aspect-2/3 w-10 shrink-0 overflow-hidden rounded-sm bg-muted' />
@@ -204,9 +185,8 @@ function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: bool
 	return (
 		<div className='flex flex-col gap-0.5'>
 			<Link to='/app/now-playing' aria-current={active ? "page" : undefined} className={navItemClass(active)}>
-				<NavIconSlot active={active} isEnter={isEnter}>
-					<HomeIcon className='size-4 shrink-0 text-current' />
-				</NavIconSlot>
+				<NavPill active={active} isEnter={isEnter} />
+				<HomeIcon className='size-4 shrink-0' />
 				<span className='flex-1 truncate'>{t("nav.home")}</span>
 			</Link>
 			{media && playing ? (
@@ -260,46 +240,37 @@ function AnimeListNavSection({ pathname, isEnter }: { pathname: string; isEnter:
 	const watchingActive = childTab === "Currently watching";
 
 	return (
-		<div className='flex flex-col gap-1'>
+		<>
 			<Link
 				to='/app/anime-list'
 				search={{ tab: "Currently watching" }}
 				aria-current={watchingActive ? "page" : undefined}
 				aria-label={t("nav.currentlyWatching")}
 				onClick={goToStatus}
-				className={cn(
-					"relative flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm hover:bg-list-playing hover:text-list-playing-foreground",
-					watchingActive ? "bg-list-playing text-list-playing-foreground" : "text-foreground/80",
-				)}>
-				<NavIconSlot active={watchingActive} isEnter={isEnter}>
-					<PlayIcon className='size-4 shrink-0' />
-				</NavIconSlot>
+				className={navItemClass(watchingActive)}>
+				<NavPill active={watchingActive} isEnter={isEnter} />
+				<PlayIcon className='size-4 shrink-0' />
 				<span className='flex-1 truncate'>{t("nav.watching")}</span>
-				<span className='text-xs tabular-nums opacity-70'>{countsQuery.data?.["Currently watching"] ?? 0}</span>
+				<NavCount value={countsQuery.data?.["Currently watching"]} />
 			</Link>
-			<div className='grid grid-cols-4 gap-1' role='group' aria-label={t("nav.otherLists")}>
-				{otherListStatuses.map((status) => {
-					const childActive = childTab === status;
-					return (
-						<Link
-							key={status}
-							to='/app/anime-list'
-							search={{ tab: status }}
-							aria-current={childActive ? "page" : undefined}
-							aria-label={t(statusLabelKey[status])}
-							title={t(statusLabelKey[status])}
-							onClick={goToStatus}
-							className={cn(
-								"relative flex min-h-8 flex-col items-center justify-center rounded-md px-0.5 py-1 text-center text-xs leading-tight text-muted-foreground",
-								chipTone[status],
-							)}>
-							<span className='text-xs tabular-nums'>{countsQuery.data?.[status] ?? 0}</span>
-							<span>{t(chipLabelKey[status])}</span>
-						</Link>
-					);
-				})}
-			</div>
-		</div>
+			{otherListStatuses.map((status) => {
+				const childActive = childTab === status;
+				return (
+					<Link
+						key={status}
+						to='/app/anime-list'
+						search={{ tab: status }}
+						aria-current={childActive ? "page" : undefined}
+						onClick={goToStatus}
+						className={cn(navItemClass(childActive), "py-1 pl-8.5 text-[13px]")}>
+						<NavPill active={childActive} isEnter={isEnter} />
+						<span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", otherStatusNav[status].dot)} />
+						<span className='flex-1 truncate'>{t(otherStatusNav[status].labelKey)}</span>
+						<NavCount value={countsQuery.data?.[status]} />
+					</Link>
+				);
+			})}
+		</>
 	);
 }
 
@@ -321,11 +292,10 @@ function NavLink({
 	const { t } = useTranslation();
 	return (
 		<Link to={to} aria-current={active ? "page" : undefined} className={navItemClass(active)}>
-			<NavIconSlot active={active} isEnter={isEnter}>
-				<Icon className='size-4 shrink-0 text-current' />
-			</NavIconSlot>
+			<NavPill active={active} isEnter={isEnter} />
+			<Icon className='size-4 shrink-0' />
 			<span className='flex-1 truncate'>{t(labelKey)}</span>
-			{typeof badge === "number" && badge > 0 ? <span className='text-xs text-muted-foreground'>({badge})</span> : null}
+			<NavCount value={badge} />
 		</Link>
 	);
 }

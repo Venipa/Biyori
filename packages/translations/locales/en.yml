@@ -144,12 +144,9 @@ nav:
   completed: Completed
   currentlyWatching: Currently watching
   discover: Discover
-  done: Done
   downloaded: (downloaded)
-  drop: Drop
   dropped: Dropped
   history: History
-  hold: Hold
   home: Home
   lastPlayed: Last played
   library: Library
@@ -157,7 +154,6 @@ nav:
   newBuildReady: New build ready
   onHold: On hold
   otherLists: Other lists
-  plan: Plan
   planToWatch: Plan to watch
   seasons: Seasons
   statistics: Statistics

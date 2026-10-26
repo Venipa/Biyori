@@ -153,12 +153,9 @@ declare module "i18next" {
 					completed: string;
 					currentlyWatching: string;
 					discover: string;
-					done: string;
 					downloaded: string;
-					drop: string;
 					dropped: string;
 					history: string;
-					hold: string;
 					home: string;
 					lastPlayed: string;
 					library: string;
@@ -166,7 +163,6 @@ declare module "i18next" {
 					newBuildReady: string;
 					onHold: string;
 					otherLists: string;
-					plan: string;
 					planToWatch: string;
 					seasons: string;
 					statistics: string;
