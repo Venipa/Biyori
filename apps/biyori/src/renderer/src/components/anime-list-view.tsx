@@ -1,5 +1,6 @@
 import { log } from "@biyori/logger";
 import { t, useTranslation } from "@biyori/translations/react";
+import { getRouteApi } from "@tanstack/react-router";
 import { type ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
 import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon } from "lucide-react";
@@ -12,6 +13,7 @@ import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { listStatusLabel, listStatusShortText } from "@/mainview/components/app/anime/list-action";
 import { AnimeListProgress } from "@/mainview/components/app/anime/list-progress";
 import { AnimeItemCommands } from "@/mainview/components/app/anime-info/item-commands";
+import { ListClauseFilter } from "@/mainview/components/app/anime-list/clause-filter";
 import { DataTable, resizableTableOptions } from "@/mainview/components/app/shared/data-table";
 import { PlaceholderView } from "@/mainview/components/app/shared/placeholder-view";
 import {
@@ -28,6 +30,7 @@ import {
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
+import { Toggle } from "@/mainview/components/ui/toggle";
 import { ToggleRadio, ToggleRadioItem } from "@/mainview/components/ui/toggle-radio";
 import { useAnilistScoreFormat } from "@/mainview/lib/anilist-score-format";
 import { animeMatchesListFilter, animeTypeLabel } from "@/mainview/lib/anime-list-filter";
@@ -42,6 +45,11 @@ import type { AppRouter } from "@/shared/app-router";
 import { ANIME_LIST_SEARCH_TAB, type AnimeListTab, type ListStatus, listStatusSchema } from "@/shared/list";
 
 const tabs = listStatusSchema.options;
+const route = getRouteApi("/app/anime-list");
+
+const QUICK_FILTERS = ["airing", "next"] as const;
+type QuickFilter = (typeof QUICK_FILTERS)[number];
+type ListGlobalFilter = { text: string; quick: QuickFilter[] };
 
 type AnimeRow = inferRouterOutputs<AppRouter>["anime"]["list"][number];
 export type AnimeInfoTab = "main" | "list";
@@ -68,6 +76,14 @@ export function listStatusFallback(tab: AnimeListTab): ListStatus {
 function rowListStatus(row: AnimeRow, fallback: ListStatus): ListStatus {
 	const parsed = listStatusSchema.safeParse(row.status);
 	return parsed.success ? parsed.data : fallback;
+}
+
+function hasNextEpisode(row: AnimeRow): boolean {
+	return !!row.libraryEpisodes?.includes(row.episodesWatched + 1);
+}
+
+function matchesQuick(row: AnimeRow, quick: readonly QuickFilter[]): boolean {
+	return quick.every((filter) => (filter === "airing" ? row.airingStatus === "Currently airing" : hasNextEpisode(row)));
 }
 
 function isAiringFinished(status: string | null | undefined): boolean {
@@ -138,7 +154,7 @@ const columns: ColumnDef<AnimeRow>[] = [
 		minSize: 120,
 		meta: { className: "min-w-0" },
 		cell: ({ row }) => {
-			const nextAvailable = !!row.original.libraryEpisodes?.includes(row.original.episodesWatched + 1);
+			const nextAvailable = hasNextEpisode(row.original);
 			return (
 				<span
 					title={row.original.title}
@@ -290,6 +306,11 @@ export function AnimeListView({
 }) {
 	const listFilter = useListFilterText();
 	const { t } = useTranslation();
+	const quickRaw = route.useSearch({ select: (search) => search.quick });
+	const navigate = route.useNavigate();
+	const quick = useMemo(() => QUICK_FILTERS.filter((filter) => (quickRaw ?? "").split(",").includes(filter)), [quickRaw]);
+	// must be referentially stable: a new object each render re-runs filtering, whose auto page reset re-renders again (freeze)
+	const globalFilter = useMemo<ListGlobalFilter | undefined>(() => (listFilter.trim() || quick.length > 0 ? { text: listFilter, quick } : undefined), [listFilter, quick]);
 	const searching = listFilter.trim().length > 0;
 	const onSearchTab = tab === ANIME_LIST_SEARCH_TAB;
 	const groupedSearch = searching && onSearchTab;
@@ -341,10 +362,10 @@ export function AnimeListView({
 		getFilteredRowModel: getFilteredRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getRowId: (row) => String(row.id),
-		globalFilterFn: (row, _columnId, filterValue) => animeMatchesListFilter(row.original, String(filterValue ?? "")),
+		globalFilterFn: (row, _columnId, filterValue: ListGlobalFilter) => matchesQuick(row.original, filterValue.quick) && animeMatchesListFilter(row.original, filterValue.text),
 		onSortingChange: setSorting,
 		onColumnSizingChange,
-		state: { sorting, globalFilter: listFilter, columnSizing, columnVisibility: rich ? COVER_VISIBLE : COVER_HIDDEN },
+		state: { sorting, globalFilter, columnSizing, columnVisibility: rich ? COVER_VISIBLE : COVER_HIDDEN },
 		meta: { playingId },
 	});
 	const tableRef = useRef(table);
@@ -478,7 +499,23 @@ export function AnimeListView({
 	return (
 		<div className='flex h-full min-h-0 flex-col'>
 			<div className='flex shrink-0 items-center justify-between gap-2 border-b bg-card px-3 py-1.5'>
-				<h1 className='min-w-0 truncate text-sm font-medium'>{headerLabel}</h1>
+				<h1 className='shrink-0 truncate text-sm font-medium'>{headerLabel}</h1>
+				<div className='min-w-0 flex-1'>
+					<ListClauseFilter />
+				</div>
+				{QUICK_FILTERS.map((filter) => (
+					<Toggle
+						key={filter}
+						size='sm'
+						variant='outline'
+						pressed={quick.includes(filter)}
+						onPressedChange={(pressed) => {
+							const next = QUICK_FILTERS.filter((item) => (item === filter ? pressed : quick.includes(item)));
+							void navigate({ search: (prev) => ({ ...prev, quick: next.length > 0 ? next.join(",") : undefined }), replace: true });
+						}}>
+						{filter === "airing" ? t("list.quickAiring") : t("list.quickNext")}
+					</Toggle>
+				))}
 				<AnimeListViewToggle value={viewAs} onValueChange={setViewAs} />
 			</div>
 			<div className='min-h-0 flex-1'>

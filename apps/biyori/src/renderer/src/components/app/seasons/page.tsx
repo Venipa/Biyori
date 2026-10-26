@@ -3,6 +3,7 @@ import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon, CircleAlertIcon, F
 import { useEffect, useMemo, useState } from "react";
 import { pickTitle } from "@/lib/anime-titles";
 import type { AnilistSeasonName, SeasonGroupBy, SeasonItem, SeasonSortBy, SeasonViewAs } from "@/lib/schemas/seasons";
+import { ListClauseFilter } from "@/mainview/components/app/anime-list/clause-filter";
 import { SeasonGridSkeleton } from "@/mainview/components/app/seasons/grid-skeleton";
 import { SeasonVirtualGrid } from "@/mainview/components/app/seasons/virtual-grid";
 import { PlaceholderView } from "@/mainview/components/app/shared/placeholder-view";
@@ -369,6 +370,9 @@ export function SeasonsPage() {
 					{t("seasons.titleCount", { count: filtered.length })}
 					{query.data?.fromCache ? t("seasons.cachedSuffix") : ""}
 				</p>
+				<div className='min-w-0 basis-full'>
+					<ListClauseFilter />
+				</div>
 			</div>
 			<div className='min-h-0 flex-1'>
 				<ScrollArea className='h-full'>

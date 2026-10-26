@@ -42,9 +42,6 @@ function displayStatLabel(label: string): string {
 	}
 }
 
-const tabTriggerClass =
-	"rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none";
-
 type StatsTab = "list" | "app";
 
 // only the status donut is categorical; bar lists use one tone so the page stays quiet
@@ -321,12 +318,16 @@ export function StatisticsView(): ReactElement {
 					setTab(value as StatsTab);
 				}}
 				className='flex h-full min-h-0 flex-col gap-0'>
-				<div className='shrink-0 border-b bg-card px-2 pt-2'>
-					<TabsList className='h-auto bg-transparent p-0'>
-						<TabsTrigger value='list' className={tabTriggerClass}>
+				<div className='flex h-10 shrink-0 items-center border-b bg-card px-4'>
+					<TabsList className='h-auto gap-4 bg-transparent p-0'>
+						<TabsTrigger
+							value='list'
+							className='h-auto flex-none border-0 px-0 py-0 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-active:bg-transparent data-active:text-foreground data-active:shadow-none dark:data-active:bg-transparent dark:data-active:border-transparent'>
 							{t("statistics.yourList")}
 						</TabsTrigger>
-						<TabsTrigger value='app' className={tabTriggerClass}>
+						<TabsTrigger
+							value='app'
+							className='h-auto flex-none border-0 px-0 py-0 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-active:bg-transparent data-active:text-foreground data-active:shadow-none dark:data-active:bg-transparent dark:data-active:border-transparent'>
 							{t("statistics.app")}
 						</TabsTrigger>
 					</TabsList>

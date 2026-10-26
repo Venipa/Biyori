@@ -1,24 +1,23 @@
 import { useTranslation } from "@biyori/translations/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { SearchIcon } from "lucide-react";
+import { HistoryIcon, SearchIcon } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { type AnilistSearchForm, type AnilistSearchFormInput, anilistSearchFormSchema } from "@/lib/schemas/anilist-search";
-import { ListFilterBar } from "@/mainview/components/app/anime-list/filter-bar";
-import { handleSuggestKeyDown, SearchOverlayCard, SearchSuggestPanel, suggestionOptionCount } from "@/mainview/components/app/search/suggest";
+import { handleSuggestKeyDown, SearchSuggestPanel, suggestionOptionCount } from "@/mainview/components/app/search/suggest";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/mainview/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/mainview/components/ui/tooltip";
-import { rememberAnilistSearch } from "@/mainview/lib/anilist-search-history";
+import { rememberAnilistSearch, useAnilistSearches } from "@/mainview/lib/anilist-search-history";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { appendFilterClauses, parseFilterQuery, serializeFilterQuery } from "@/mainview/lib/anime-list-filter";
-import { getListFilterText, setListFilterText, useListFilterResetToken, useListFilterText } from "@/mainview/lib/list-filter";
-import { cn } from "@/mainview/lib/utils";
+import { getListFilterText, setListFilterText, useListFilterResetToken } from "@/mainview/lib/list-filter";
 import { trpc } from "@/mainview/trpc";
 
 const LIST_FILTER_DEBOUNCE_MS = 250;
-const searchPanelClass = "top-[-0.5rem] right-auto left-[calc(100%+0.5rem)] w-80 origin-left";
+const searchPanelClass = "top-[calc(100%+0.375rem)] right-0 left-0 origin-top";
 
 function routeQuery(search: unknown): string {
 	if (search != null && typeof search === "object" && "q" in search && typeof search.q === "string") {
@@ -27,7 +26,8 @@ function routeQuery(search: unknown): string {
 	return "";
 }
 
-export function SidebarSearch() {
+/** Title-bar search: AniList search with suggestions, or the live text filter on list pages (chips live in the page header). */
+export function TitleSearch() {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const animeInfo = useAnimeInfoNav();
@@ -49,13 +49,6 @@ export function SidebarSearch() {
 	const listId = `${searchId}-suggest`;
 	const filterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const filterResetToken = useListFilterResetToken();
-	const listFilter = useListFilterText();
-	const parsedFilter = parseFilterQuery(listFilter);
-	const [searchHover, setSearchHover] = useState(false);
-	const [searchFocus, setSearchFocus] = useState(false);
-	const [filterMenuOpen, setFilterMenuOpen] = useState(false);
-	const hasListFilter = parsedFilter.clauses.length > 0;
-	const showFilterCard = isLiveFilterPage && (searchFocus || filterMenuOpen || (hasListFilter && searchHover));
 	const qValue = form.watch("q");
 	const trimmedQ = (typeof qValue === "string" ? qValue : "").trim();
 	const canSubmit = trimmedQ.length > 0;
@@ -65,8 +58,6 @@ export function SidebarSearch() {
 	const [active, setActive] = useState({ q: "", index: 0 });
 	const [previewTitle, setPreviewTitle] = useState<string | null>(null);
 	const suggestQuery = trpc.anime.suggest.useQuery({ q: debouncedQ }, { enabled: !isLiveFilterPage && debouncedQ.length >= 2 });
-	const tagNamesQuery = trpc.anime.tagNames.useQuery(undefined, { enabled: isLiveFilterPage, staleTime: Number.POSITIVE_INFINITY });
-	const tagNames = tagNamesQuery.data ?? [];
 	const items = !isLiveFilterPage && debouncedQ === trimmedQ ? (suggestQuery.data ?? []) : [];
 	const optionCount = suggestionOptionCount(items);
 	const showPanel = suggestReady && panelOpen;
@@ -166,22 +157,9 @@ export function SidebarSearch() {
 	}, [trimmedQ, isLiveFilterPage]);
 
 	return (
-		<div className='relative flex flex-col gap-1'>
+		<div className='flex w-full items-center gap-1'>
 			<form
-				onPointerEnter={() => {
-					setSearchHover(true);
-				}}
-				onPointerLeave={() => {
-					setSearchHover(false);
-				}}
-				onFocusCapture={() => {
-					setSearchFocus(true);
-				}}
-				onBlurCapture={(event) => {
-					if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-						setSearchFocus(false);
-					}
-				}}
+				className='relative min-w-0 flex-1'
 				onSubmit={form.handleSubmit((data) => {
 					goToAnilistSearch(data.q.trim());
 				})}>
@@ -192,7 +170,7 @@ export function SidebarSearch() {
 					control={form.control}
 					name='q'
 					render={({ field }) => (
-						<InputGroup>
+						<InputGroup className='h-6 bg-background/60'>
 							<InputGroupInput
 								id={searchId}
 								placeholder={placeholder}
@@ -250,23 +228,6 @@ export function SidebarSearch() {
 					)}
 				/>
 				<AnimatePresence>
-					{showFilterCard ? (
-						<SearchOverlayCard key='list-filter' className={cn(searchPanelClass, "p-2")}>
-							<ListFilterBar
-								clauses={parsedFilter.clauses}
-								tagNames={tagNames}
-								onMenuOpenChange={setFilterMenuOpen}
-								onClausesChange={(clauses) => {
-									setListFilterText(
-										serializeFilterQuery({
-											freeText: parsedFilter.freeText,
-											clauses,
-										}),
-									);
-								}}
-							/>
-						</SearchOverlayCard>
-					) : null}
 					{showPanel ? (
 						<SearchSuggestPanel
 							key='anilist-suggest'
@@ -290,6 +251,46 @@ export function SidebarSearch() {
 					) : null}
 				</AnimatePresence>
 			</form>
+			<RecentSearches onPick={goToAnilistSearch} />
 		</div>
+	);
+}
+
+/** Past AniList searches; hidden until one was made. */
+function RecentSearches({ onPick }: { onPick: (q: string) => void }) {
+	const { t } = useTranslation();
+	const recent = useAnilistSearches();
+	if (recent.length === 0) {
+		return null;
+	}
+	return (
+		<DropdownMenu>
+			<Tooltip>
+				<TooltipTrigger
+					render={
+						<DropdownMenuTrigger
+							className='grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
+							aria-label={t("search.recent")}
+						/>
+					}>
+					<HistoryIcon className='size-3.5' />
+				</TooltipTrigger>
+				<TooltipContent>{t("search.recent")}</TooltipContent>
+			</Tooltip>
+			<DropdownMenuContent align='end' className='w-56'>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel>{t("search.recent")}</DropdownMenuLabel>
+					{recent.map((q) => (
+						<DropdownMenuItem
+							key={q}
+							onClick={() => {
+								onPick(q);
+							}}>
+							<span className='truncate'>{q}</span>
+						</DropdownMenuItem>
+					))}
+				</DropdownMenuGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }

@@ -1,6 +1,6 @@
 import { t, useTranslation } from "@biyori/translations/react";
-import { PlusIcon } from "lucide-react";
-import { useId, useState } from "react";
+import { CheckIcon, PlusIcon } from "lucide-react";
+import { type KeyboardEvent, useId, useState } from "react";
 import { ListFilterChip } from "@/mainview/components/app/anime-list/filter-chip";
 import { ButtonToggle } from "@/mainview/components/ui/button-toggle";
 import {
@@ -18,6 +18,7 @@ import {
 import { Input } from "@/mainview/components/ui/input";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { animeTypeLabel, appendFilterClauses, type FilterClause, formatSearchOperator, genreLabel, type SearchOperator } from "@/mainview/lib/anime-list-filter";
+import { cn } from "@/mainview/lib/utils";
 
 const ANIME_GENRES = [
 	"Action",
@@ -134,7 +135,7 @@ function defaultClause(field: FilterClause["field"]): FilterClause {
 	}
 }
 
-function groupLetter(name: string): string {
+function _groupLetter(name: string): string {
 	const ch = [...name.trim()][0];
 	if (!ch) {
 		return "#";
@@ -142,20 +143,7 @@ function groupLetter(name: string): string {
 	return /\p{L}/u.test(ch) ? ch.toLocaleUpperCase() : "#";
 }
 
-function groupByFirstLetter(names: readonly string[]): Array<{ letter: string; items: string[] }> {
-	const buckets = new Map<string, string[]>();
-	for (const name of names) {
-		const letter = groupLetter(name);
-		const items = buckets.get(letter);
-		if (items) {
-			items.push(name);
-		} else {
-			buckets.set(letter, [name]);
-		}
-	}
-	return [...buckets.entries()].sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })).map(([letter, items]) => ({ letter, items }));
-}
-
+/** Searchable checklist (popover content): selected names pinned on top, arrow keys move between rows. */
 function NamedListEditor({
 	label,
 	names,
@@ -175,59 +163,89 @@ function NamedListEditor({
 	const searchId = useId();
 	const [query, setQuery] = useState("");
 	const needle = query.trim().toLowerCase();
-	const filtered = needle ? names.filter((name) => name.toLowerCase().includes(needle)) : names;
-	const groups = groupByFirstLetter(filtered);
-	const selected = new Set(splitCsv(value).map((item) => item.toLowerCase()));
+	const current = splitCsv(value);
+	const selected = new Set(current.map((item) => item.toLowerCase()));
+	const display = (name: string) => (nameLabel ? nameLabel(name) : name);
+	const matches = (name: string) => !needle || name.toLowerCase().includes(needle) || display(name).toLowerCase().includes(needle);
+	const sorted = [...names].sort((a, b) => display(a).localeCompare(display(b), undefined, { sensitivity: "base" }));
+	const pinned = sorted.filter((name) => selected.has(name.toLowerCase()) && matches(name));
+	const rest = sorted.filter((name) => !selected.has(name.toLowerCase()) && matches(name));
+
+	function toggle(name: string, on: boolean): void {
+		onChange(on ? [...current, name].join(",") : current.filter((item) => item.toLowerCase() !== name.toLowerCase()).join(","));
+	}
+
+	function moveFocus(event: KeyboardEvent<HTMLElement>): void {
+		if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
+			return;
+		}
+		event.preventDefault();
+		const rows = [...event.currentTarget.querySelectorAll<HTMLElement>("[data-check-row]")];
+		const index = rows.indexOf(document.activeElement as HTMLElement);
+		const next = event.key === "ArrowDown" ? (index + 1) % rows.length : index <= 0 ? rows.length - 1 : index - 1;
+		rows[next]?.focus();
+	}
+
+	function row(name: string) {
+		const checked = selected.has(name.toLowerCase());
+		return (
+			<li key={name}>
+				<button
+					type='button'
+					role='checkbox'
+					aria-checked={checked}
+					data-check-row
+					className='flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted'
+					onClick={() => {
+						toggle(name, !checked);
+					}}>
+					<span
+						aria-hidden
+						className={cn("grid size-3.5 shrink-0 place-items-center rounded-[4px] border", checked ? "border-primary bg-primary text-primary-foreground" : "border-input")}>
+						{checked ? <CheckIcon className='size-3' /> : null}
+					</span>
+					<span className='truncate'>{display(name)}</span>
+				</button>
+			</li>
+		);
+	}
 
 	return (
-		<div className='flex max-h-80 min-h-0 flex-col'>
-			<div className='shrink-0 border-b p-1 mb-0'>
+		<div className='flex min-h-0 flex-col' onKeyDown={moveFocus}>
+			<div className='flex shrink-0 items-center justify-between gap-2 px-3 pt-2 text-xs text-muted-foreground'>
+				<span>{current.length > 0 ? `${label} · ${t("list.selectedCount", { count: current.length })}` : label}</span>
+				{current.length > 0 ? (
+					<button
+						type='button'
+						className='rounded px-1 hover:text-foreground focus-visible:text-foreground'
+						onClick={() => {
+							onChange("");
+						}}>
+						{t("list.clearSelection")}
+					</button>
+				) : null}
+			</div>
+			<div className='shrink-0 p-2'>
 				<label className='sr-only' htmlFor={searchId}>
 					{t("list.searchField", { field: label.toLowerCase() })}
 				</label>
 				<Input
 					id={searchId}
 					autoFocus
+					className='h-7'
 					value={query}
 					placeholder={t("list.searchField", { field: label.toLowerCase() })}
-					onKeyDown={(event) => {
-						if (event.key !== "Escape") {
-							event.stopPropagation();
-						}
-					}}
 					onChange={(event) => {
 						setQuery(event.target.value);
 					}}
 				/>
 			</div>
-			<ScrollArea className='min-h-0 max-h-72' viewportClassName='min-h-0 max-h-72 w-full outline-none focus-visible:ring-0'>
-				<div className='px-1 pb-2'>
-					{names.length === 0 ? <p className='px-1.5 py-1 text-xs text-muted-foreground'>{empty}</p> : null}
-					{names.length > 0 && filtered.length === 0 ? <p className='px-1.5 py-1 text-xs text-muted-foreground'>{t("list.noMatches")}</p> : null}
-					{groups.map((group) => (
-						<DropdownMenuGroup key={group.letter}>
-							<DropdownMenuLabel className='sticky top-0 z-10 flex h-7 bg-popover leading-6'>{group.letter}</DropdownMenuLabel>
-							{group.items.map((name) => {
-								const checked = selected.has(name.toLowerCase());
-								return (
-									<DropdownMenuCheckboxItem
-										key={name}
-										checked={checked}
-										onCheckedChange={(next) => {
-											const current = splitCsv(value);
-											if (next) {
-												onChange([...current, name].join(","));
-												return;
-											}
-											onChange(current.filter((item) => item.toLowerCase() !== name.toLowerCase()).join(","));
-										}}>
-										{nameLabel ? nameLabel(name) : name}
-									</DropdownMenuCheckboxItem>
-								);
-							})}
-						</DropdownMenuGroup>
-					))}
-				</div>
+			<ScrollArea className='max-h-[min(20rem,calc(var(--available-height)-6rem))] min-h-0' viewportClassName='max-h-[min(20rem,calc(var(--available-height)-6rem))] px-1 pb-1'>
+				{names.length === 0 ? <p className='px-2 py-1 text-xs text-muted-foreground'>{empty}</p> : null}
+				{names.length > 0 && pinned.length + rest.length === 0 ? <p className='px-2 py-1 text-xs text-muted-foreground'>{t("list.noMatches")}</p> : null}
+				<ul>{pinned.map(row)}</ul>
+				{pinned.length > 0 && rest.length > 0 ? <div aria-hidden className='mx-1 my-1 h-px bg-border' /> : null}
+				<ul>{rest.map(row)}</ul>
 			</ScrollArea>
 		</div>
 	);
@@ -391,24 +409,15 @@ function ClauseEditor({ clause, tagNames, onChange }: { clause: FilterClause; ta
 function withClauseKeys(clauses: FilterClause[]): Array<{ clause: FilterClause; index: number; key: string }> {
 	const seen = new Map<string, number>();
 	return clauses.map((clause, index) => {
-		const base = `${clause.field}:${clause.op}:${clause.value}`;
+		// field only: a value in the key would remount the chip (closing its editor) on every change
+		const base = clause.field;
 		const n = (seen.get(base) ?? 0) + 1;
 		seen.set(base, n);
 		return { clause, index, key: `${base}#${n}` };
 	});
 }
 
-export function ListFilterBar({
-	clauses,
-	tagNames,
-	onClausesChange,
-	onMenuOpenChange,
-}: {
-	clauses: FilterClause[];
-	tagNames: string[];
-	onClausesChange: (next: FilterClause[]) => void;
-	onMenuOpenChange?: (open: boolean) => void;
-}) {
+export function ListFilterBar({ clauses, tagNames, onClausesChange }: { clauses: FilterClause[]; tagNames: string[]; onClausesChange: (next: FilterClause[]) => void }) {
 	const { t } = useTranslation();
 	function patch(index: number, next: FilterClause): void {
 		onClausesChange(clauses.map((clause, i) => (i === index ? next : clause)));
@@ -427,8 +436,8 @@ export function ListFilterBar({
 				<ListFilterChip
 					key={chip.key}
 					label={clauseLabel(chip.clause.field)}
+					popover={chip.clause.field === "genre" || chip.clause.field === "tags"}
 					value={clauseValue(chip.clause)}
-					onMenuOpenChange={onMenuOpenChange}
 					onRemove={() => {
 						remove(chip.index);
 					}}>
@@ -441,7 +450,7 @@ export function ListFilterBar({
 					/>
 				</ListFilterChip>
 			))}
-			<DropdownMenu onOpenChange={onMenuOpenChange}>
+			<DropdownMenu>
 				<DropdownMenuTrigger render={<ButtonToggle pressed={false} onPressedChange={() => undefined} size='xs' />}>
 					<PlusIcon />
 					{t("list.addFilter")}

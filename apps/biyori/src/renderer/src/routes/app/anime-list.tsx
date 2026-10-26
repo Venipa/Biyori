@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import { animeInfoSearchSchema, parseAnimeInfoId } from "@/lib/schemas/anime-info-search";
 import { AnimeListView, listStatusFallback } from "@/mainview/components/anime-list-view";
 import { useAnimeInfoNav, useAnimeInfoOpen } from "@/mainview/lib/anime-info-nav";
@@ -6,6 +7,8 @@ import { animeListTabSchema } from "@/shared/list";
 
 const searchSchema = animeInfoSearchSchema.extend({
 	tab: animeListTabSchema.optional(),
+	// quick filters, comma-separated ("airing,next"); plain string like the other search params
+	quick: z.string().optional(),
 });
 
 export const Route = createFileRoute("/app/anime-list")({

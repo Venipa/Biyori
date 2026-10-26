@@ -5,7 +5,6 @@ import { LayoutGroup, motion } from "motion/react";
 import { type ReactNode, useRef } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
-import { SidebarSearch } from "@/mainview/components/app/shell/sidebar-search";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { clearListFilterText, useListFilterText } from "@/mainview/lib/list-filter";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
@@ -93,7 +92,6 @@ export function AppSidebar() {
 
 	return (
 		<nav aria-label={t("nav.main")} className='relative z-30 flex h-full min-h-0 w-56 shrink-0 flex-col gap-2 border-r bg-sidebar p-2'>
-			<SidebarSearch />
 			<div className='flex min-h-0 flex-1 flex-col overflow-y-auto'>
 				<LayoutGroup id='app-sidebar-nav'>
 					<NowPlayingNavLink active={pathname === "/app/now-playing"} isEnter={isEnter} />

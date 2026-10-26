@@ -753,6 +753,10 @@ declare module "i18next" {
 					};
 				};
 				list: {
+					quickAiring: string;
+					quickNext: string;
+					selectedCount: string;
+					clearSelection: string;
 					airedEstimated: string;
 					episodesInLibrary: string;
 					episodesMissing: string;

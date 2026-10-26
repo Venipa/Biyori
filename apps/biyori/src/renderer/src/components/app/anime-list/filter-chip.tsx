@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { type ReactNode, useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
 import { FilterPillButton } from "@/mainview/components/ui/filter-pill-button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/mainview/components/ui/popover";
 
 const removeTransition = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const;
 
@@ -11,16 +12,17 @@ export function ListFilterChip({
 	label,
 	value,
 	onRemove,
-	onMenuOpenChange,
 	children,
 	size = "xs",
+	popover = false,
 }: {
 	label: string;
 	value: string;
 	onRemove: () => void;
-	onMenuOpenChange?: (open: boolean) => void;
 	children: ReactNode;
 	size?: "xs" | "sm";
+	/** Editors with their own inputs/lists use a popover: menus steal typeahead and arrow keys. */
+	popover?: boolean;
 }) {
 	const [hovered, setHovered] = useState(false);
 	const { t } = useTranslation();
@@ -29,11 +31,12 @@ export function ListFilterChip({
 	const iconSize = size === "sm" ? "icon-sm" : "icon-xs";
 	const slotPx = size === "sm" ? 30 : 26;
 
+	const [Root, Trigger, Content] = popover ? [Popover, PopoverTrigger, PopoverContent] : [DropdownMenu, DropdownMenuTrigger, DropdownMenuContent];
+
 	return (
-		<DropdownMenu
+		<Root
 			onOpenChange={(open) => {
 				setMenuOpen(open);
-				onMenuOpenChange?.(open);
 			}}>
 			<div
 				className='relative inline-flex items-center'
@@ -51,10 +54,10 @@ export function ListFilterChip({
 						setHovered(false);
 					}
 				}}>
-				<DropdownMenuTrigger render={<FilterPillButton size={size} className='relative z-10' />}>
+				<Trigger render={<FilterPillButton size={size} className='relative z-10' />}>
 					<span className='text-muted-foreground'>{label}</span>
 					<span className='min-w-0 truncate'>{value}</span>
-				</DropdownMenuTrigger>
+				</Trigger>
 				<AnimatePresence>
 					{showRemove ? (
 						<motion.div
@@ -78,9 +81,9 @@ export function ListFilterChip({
 					) : null}
 				</AnimatePresence>
 			</div>
-			<DropdownMenuContent align='start' className='min-w-52 overflow-hidden p-0'>
+			<Content align='start' className={popover ? "flex w-64 flex-col overflow-hidden" : "min-w-52 overflow-hidden p-0"}>
 				{children}
-			</DropdownMenuContent>
-		</DropdownMenu>
+			</Content>
+		</Root>
 	);
 }

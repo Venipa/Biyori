@@ -4,6 +4,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 import { requestWindowClose } from "@/mainview/components/app/shell/confirm-escape";
 import Logo from "@/mainview/components/app/shell/logo";
+import { TitleSearch } from "@/mainview/components/app/shell/title-search";
 import { AppToolbar } from "@/mainview/components/app/shell/toolbar";
 import { TopMenuBar } from "@/mainview/components/app/shell/top-menu-bar";
 import { ControlButton } from "@/mainview/components/ui/control-button";
@@ -41,7 +42,7 @@ export function AppTitleBar() {
 	}
 
 	return (
-		<header className={cn("flex h-8 shrink-0 select-none items-stretch border-b bg-card", isOnboarding && "border-transparent bg-transparent")}>
+		<header className={cn("relative flex h-8 shrink-0 select-none items-stretch border-b bg-card", isOnboarding && "border-transparent bg-transparent")}>
 			<div className='app-region-drag flex h-full items-center' onDoubleClick={maximizeFromDrag}>
 				<Logo className='ml-3 size-4 shrink-0' />
 			</div>
@@ -50,6 +51,9 @@ export function AppTitleBar() {
 					<TopMenuBar />
 					<div className='app-region-drag min-w-0 flex-1 self-stretch' onDoubleClick={maximizeFromDrag} />
 					<AppToolbar />
+					<div className='app-region-no-drag absolute top-1/2 left-1/2 z-40 w-96 max-w-[40vw] -translate-x-1/2 -translate-y-1/2'>
+						<TitleSearch />
+					</div>
 				</>
 			) : (
 				<p className='app-region-drag min-w-0 flex-1 self-center truncate px-2 text-xs font-medium text-foreground' onDoubleClick={maximizeFromDrag}>

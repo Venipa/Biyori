@@ -1,10 +1,10 @@
 import { useTranslation } from "@biyori/translations/react";
 import type { inferRouterOutputs } from "@trpc/server";
-import { motion } from "motion/react";
+import { SearchIcon } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { type KeyboardEvent, type ReactNode, useLayoutEffect } from "react";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
-import { Badge } from "@/mainview/components/ui/badge";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { animeTypeLabel } from "@/mainview/lib/anime-list-filter";
 import { listProgressLabel } from "@/mainview/lib/list-progress";
@@ -53,25 +53,24 @@ export function handleSuggestKeyDown(input: {
 	}
 }
 
-const searchOverlayCardClass =
-	"absolute z-30 overflow-hidden rounded-br-lg border-r border-b border-border bg-popover text-popover-foreground shadow-[4px_8px_24px_-12px_oklch(0_0_0/0.35)]";
+const searchOverlayCardClass = "absolute z-30 origin-top overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-[0_12px_32px_-12px_oklch(0_0_0/0.35)]";
 
+// ease-out, small scale from the anchor edge; exit is quicker than enter
+const easeOut = [0.23, 1, 0.32, 1] as const;
 const overlayMotion = {
-	initial: { opacity: 0, x: -8 },
-	animate: { opacity: 1, x: 0 },
-	exit: { opacity: 0, x: -8 },
+	initial: { opacity: 0, scale: 0.97, y: -4 },
+	animate: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.16, ease: easeOut } },
+	exit: { opacity: 0, scale: 0.97, y: -4, transition: { duration: 0.12, ease: easeOut } },
 } as const;
 
-const overlayTransition = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const;
-
 export function SearchOverlayCard({ className, children }: { className?: string; children: ReactNode }) {
+	const reduce = useReducedMotion();
 	return (
 		<motion.div
 			className={cn(searchOverlayCardClass, className)}
-			initial={overlayMotion.initial}
+			initial={reduce ? { opacity: 0 } : overlayMotion.initial}
 			animate={overlayMotion.animate}
-			exit={overlayMotion.exit}
-			transition={overlayTransition}>
+			exit={reduce ? { opacity: 0 } : overlayMotion.exit}>
 			{children}
 		</motion.div>
 	);
@@ -104,7 +103,7 @@ export function SearchSuggestPanel({
 	return (
 		<SearchOverlayCard className={className}>
 			<ScrollArea className='h-auto max-h-80 overflow-hidden' viewportClassName='h-auto max-h-80 w-full outline-none focus-visible:ring-0'>
-				<div id={listId} role='listbox' aria-label={t("search.suggestions")} className='py-1'>
+				<div id={listId} role='listbox' aria-label={t("search.suggestions")} className='flex flex-col p-1'>
 					{items.map((item, index) => {
 						const progress = listProgressLabel(item.episodesWatched, item.episodes);
 						const optionId = `${listId}-${index}`;
@@ -117,7 +116,7 @@ export function SearchSuggestPanel({
 								id={optionId}
 								aria-selected={active}
 								className={cn(
-									"flex w-full min-w-0 items-center gap-2 px-2 py-1.5 text-left text-sm shadow-none outline-none focus-visible:ring-0",
+									"flex w-full min-w-0 items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm shadow-none outline-none focus-visible:ring-0",
 									active ? "bg-muted" : "hover:bg-muted/60",
 								)}
 								onMouseDown={(event) => {
@@ -134,37 +133,27 @@ export function SearchSuggestPanel({
 									coverUrl={item.coverUrl || undefined}
 									alt=''
 									lazy
-									width={32}
-									height={48}
-									className='aspect-2/3 w-8 shrink-0 overflow-hidden rounded-sm bg-muted'
+									width={28}
+									height={42}
+									className='aspect-2/3 w-7 shrink-0 overflow-hidden rounded-sm bg-muted'
 								/>
-								<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
-									<span className='truncate font-medium'>{item.title}</span>
-									<span className='flex min-w-0 flex-wrap items-center gap-1'>
-										{item.type ? (
-											<Badge variant='outline' size='xs'>
-												{animeTypeLabel(item.type)}
-											</Badge>
-										) : null}
-										<Badge variant='secondary' size='xs'>
-											{listStatusLabel(item.status)}
-										</Badge>
-										<span className='text-xs tabular-nums text-muted-foreground'>
-											{progress.watched}/{progress.total}
-										</span>
+								<span className='flex min-w-0 flex-1 flex-col'>
+									<span className='truncate'>{item.title}</span>
+									<span className='truncate text-xs text-muted-foreground tabular-nums'>
+										{[item.type ? animeTypeLabel(item.type) : null, listStatusLabel(item.status), `${progress.watched}/${progress.total}`].filter(Boolean).join(" · ")}
 									</span>
 								</span>
-								<span className='shrink-0 text-xs tabular-nums text-muted-foreground'>{Math.round(item.score * 100)}%</span>
 							</button>
 						);
 					})}
+					{items.length > 0 ? <div aria-hidden className='-mx-1 my-1 h-px bg-border' /> : null}
 					<button
 						type='button'
 						role='option'
 						id={`${listId}-${footerIndex}`}
 						aria-selected={activeIndex === footerIndex}
 						className={cn(
-							"flex w-full min-w-0 px-2 py-1.5 text-left text-sm shadow-none outline-none focus-visible:ring-0",
+							"flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground shadow-none outline-none focus-visible:ring-0",
 							activeIndex === footerIndex ? "bg-muted" : "hover:bg-muted/60",
 						)}
 						onMouseDown={(event) => {
@@ -176,7 +165,9 @@ export function SearchSuggestPanel({
 						onClick={() => {
 							onSearchAnilist();
 						}}>
-						<span className='truncate'>{t("search.searchFor", { query: q })}</span>
+						<SearchIcon aria-hidden className='size-3.5 shrink-0' />
+						<span className='min-w-0 flex-1 truncate'>{t("search.searchFor", { query: q })}</span>
+						<kbd className='shrink-0 rounded border px-1 font-sans text-[10px] text-muted-foreground'>↵</kbd>
 					</button>
 				</div>
 			</ScrollArea>

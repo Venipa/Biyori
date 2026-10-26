@@ -687,6 +687,10 @@ settings:
     clearDescription: "Delete {{items}}? This cannot be undone."
     clear: Clear
 list:
+  quickAiring: Airing now
+  quickNext: Next ep available
+  selectedCount: "{{count}} selected"
+  clearSelection: Clear
   airedEstimated: "Aired: #{{episode}} (estimated)"
   episodesInLibrary: All episodes are in library folders
   episodesMissing: All episodes are missing
