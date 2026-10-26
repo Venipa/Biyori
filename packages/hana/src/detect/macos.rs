@@ -1,5 +1,5 @@
 use super::shared::{
-	browser_title_ok, classify_player, extract_file_path, file_path_from_cmd, pick_hit, query_unix_mpv,
+	browser_title_ok, classify_player, extract_file_path, file_path_from_cmd, open_media_file, pick_hit, query_unix_mpv,
 };
 use crate::types::{NowPlaying, NowPlayingInput};
 use core_foundation::base::{CFType, TCFType};
@@ -99,6 +99,7 @@ pub fn now_playing(input: NowPlayingInput) -> Option<NowPlaying> {
 		} else {
 			ipc.or_else(|| extract_file_path(&row.title))
 				.or_else(|| file_path_from_cmd(proc.cmd()))
+				.or_else(|| open_media_file(row.pid))
 		};
 		hits.push(NowPlaying {
 			player: key,
@@ -127,7 +128,9 @@ pub fn now_playing(input: NowPlayingInput) -> Option<NowPlaying> {
 		} else {
 			None
 		};
-		let file_path = ipc.or_else(|| file_path_from_cmd(proc.cmd()));
+		let file_path = ipc
+			.or_else(|| file_path_from_cmd(proc.cmd()))
+			.or_else(|| open_media_file(pid_u32));
 		hits.push(NowPlaying {
 			player: key,
 			window_id: pid_u32.to_string(),

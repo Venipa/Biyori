@@ -322,6 +322,11 @@ where
 		.map(normalize_media_path)
 }
 
+fn is_video_path(path: &str) -> bool {
+	let lower = path.to_ascii_lowercase();
+	VIDEO_EXT.iter().any(|ext| lower.ends_with(&format!(".{ext}")))
+}
+
 #[cfg_attr(not(unix), allow(dead_code))]
 pub fn file_path_from_cmd(cmd: &[impl AsRef<std::ffi::OsStr>]) -> Option<String> {
 	for arg in cmd.iter().skip(1) {
@@ -329,8 +334,7 @@ pub fn file_path_from_cmd(cmd: &[impl AsRef<std::ffi::OsStr>]) -> Option<String>
 		if s.starts_with('-') {
 			continue;
 		}
-		let lower = s.to_ascii_lowercase();
-		if VIDEO_EXT.iter().any(|ext| lower.ends_with(&format!(".{ext}"))) {
+		if is_video_path(&s) {
 			return Some(normalize_media_path(&s));
 		}
 	}
@@ -374,6 +378,25 @@ pub fn extract_file_path(title: &str) -> Option<String> {
 		}
 	}
 	None
+}
+
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub fn media_from_lsof(output: &str) -> Option<String> {
+	output
+		.lines()
+		.filter_map(|line| line.strip_prefix('n'))
+		.find(|path| is_video_path(path))
+		.map(normalize_media_path)
+}
+
+// Finder-launched mpv has no file in argv, no IPC socket, and window titles need Screen Recording.
+#[cfg(target_os = "macos")]
+pub fn open_media_file(pid: u32) -> Option<String> {
+	let out = std::process::Command::new("lsof")
+		.args(["-p", &pid.to_string(), "-Fn"])
+		.output()
+		.ok()?;
+	media_from_lsof(&String::from_utf8_lossy(&out.stdout))
 }
 
 #[cfg(unix)]
@@ -459,6 +482,16 @@ mod tests {
 	fn file_path_from_cmd_skips_flags() {
 		let cmd = ["mpv", "--force-window", "/home/user/show.mkv"];
 		assert_eq!(file_path_from_cmd(&cmd).as_deref(), Some("/home/user/show.mkv"));
+	}
+
+	#[test]
+	fn media_from_lsof_picks_video() {
+		use super::media_from_lsof;
+		let out = "p42
+n/usr/lib/libmpv.dylib
+n/Users/a/Show 05.mkv
+";
+		assert_eq!(media_from_lsof(out).as_deref(), Some("/Users/a/Show 05.mkv"));
 	}
 
 	#[cfg(unix)]
