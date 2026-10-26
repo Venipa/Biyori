@@ -765,10 +765,21 @@ list:
   typeOva: OVA
   typeOna: ONA
 history:
-  animeTitle: Anime title
-  details: Details
-  lastModified: Last modified
   episode: "Episode: {{episode}}"
+  today: Today
+  yesterday: Yesterday
+  episodeShort: "Ep {{episode}}"
+  episodeRange: "Ep {{from}}–{{to}}"
+  episodes_one: "{{count}} episode"
+  episodes_other: "{{count}} episodes"
+  score: "Score {{score}}"
+  noScore: Score removed
+  notes: Notes
+  rewatch: Rewatch
+  dates: Dates
+  queuedSummary_one: "{{count}} update waiting to sync to AniList"
+  queuedSummary_other: "{{count}} updates waiting to sync to AniList"
+  loadOlder: Load older
   noHistory: No history
   emptyDescription: Watched episodes show up here.
   queuedForUpdate: Queued for update

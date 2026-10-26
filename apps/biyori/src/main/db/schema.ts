@@ -57,6 +57,8 @@ export const history = sqliteTable("history", {
 	lastModified: text("last_modified").notNull(),
 	kind: text("kind").notNull(),
 	advanced: integer("advanced").notNull().default(0),
+	/** JSON `HistoryChanges`: what this update changed; "{}" for rows written before it existed */
+	changes: text("changes").notNull().default("{}"),
 });
 
 export const appSetting = sqliteTable("app_setting", {

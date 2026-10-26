@@ -1,4 +1,5 @@
 import { t } from "@biyori/translations/i18n";
+import { parseHistoryStamp } from "../lib/history-stamp";
 
 export type StatisticsEntry = {
 	title: string;
@@ -225,11 +226,6 @@ export type WatchActivity = {
 	weeks: Array<{ start: string; count: number; ratio: number }>;
 	lastSevenDays: { episodes: number; minutes: number };
 };
-
-/** History stamps are UTC written as "YYYY-MM-DD HH:mm" (see track/queue.ts). */
-function parseHistoryStamp(stamp: string): number {
-	return Date.parse(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(stamp) ? `${stamp.replace(" ", "T")}:00Z` : stamp);
-}
 
 /** Rolling 7-day windows ending now, so the last column is always "this week". */
 export function summarizeActivity(

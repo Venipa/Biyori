@@ -1,13 +1,14 @@
 import { t } from "@biyori/translations/i18n";
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, or } from "drizzle-orm";
 import { z } from "zod";
 import { parseStoredTitles, type StoredAnimeTitles, titlesFromFallback } from "../../lib/anime-titles";
 import { folderPathExists, normalizeFolderPath } from "../../lib/folder-path";
 import { parseJsonArray } from "../../lib/parse-json-array";
 import { settingsFormPatchSchema } from "../../lib/schemas/app-settings";
 import { cacheKindsSchema } from "../../lib/schemas/cache-kind";
+import { parseHistoryChanges } from "../../lib/schemas/history-changes";
 import { parseRelatedMedia, type RelatedMedia } from "../../lib/schemas/related-media";
 import { listStatusSchema } from "../../shared/list";
 import { getActivitySnapshot, subscribeActivity } from "../activity";
@@ -372,6 +373,49 @@ export const appRouter = trpc.router({
 				history: rows.filter((row) => row.kind === "history"),
 			};
 		}),
+		/** History page: queued rows (first page only) + history newest first, `limit` per page, cursor = "lastModified|id" of the last row. */
+		page: trpc.procedure.input(z.object({ cursor: z.string().nullish(), limit: z.number().int().min(1).max(500).default(200) })).query(async ({ ctx, input }) => {
+			const language = loadAppSettings().titleLanguage;
+			const fields = {
+				id: history.id,
+				animeId: history.animeId,
+				title: history.title,
+				episode: history.episode,
+				lastModified: history.lastModified,
+				kind: history.kind,
+				changes: history.changes,
+				animeTitle: anime.title,
+				titles: anime.titles,
+				coverUrl: anime.coverUrl,
+			};
+			const [stamp, id] = input.cursor ? [input.cursor.slice(0, input.cursor.lastIndexOf("|")), input.cursor.slice(input.cursor.lastIndexOf("|") + 1)] : [null, null];
+			const rows = await ctx.db
+				.select(fields)
+				.from(history)
+				.leftJoin(anime, eq(anime.id, history.animeId))
+				.where(
+					and(eq(history.kind, "history"), stamp != null && id != null ? or(lt(history.lastModified, stamp), and(eq(history.lastModified, stamp), lt(history.id, id))) : undefined),
+				)
+				.orderBy(desc(history.lastModified), desc(history.id))
+				.limit(input.limit + 1);
+			const shape = (row: (typeof rows)[number]) => ({
+				id: row.id,
+				animeId: row.animeId,
+				title: row.animeTitle ? displayTitleFromRow(row.animeTitle, row.titles, language) : row.title,
+				episode: row.episode,
+				lastModified: row.lastModified,
+				changes: parseHistoryChanges(row.changes),
+				coverUrl: row.coverUrl ?? "",
+			});
+			const items = rows.slice(0, input.limit).map(shape);
+			const last = items.at(-1);
+			const queued = input.cursor
+				? []
+				: (await ctx.db.select(fields).from(history).leftJoin(anime, eq(anime.id, history.animeId)).where(eq(history.kind, "queued")).orderBy(desc(history.lastModified))).map(
+						shape,
+					);
+			return { queued, items, nextCursor: rows.length > input.limit && last ? `${last.lastModified}|${last.id}` : null };
+		}),
 		queuedCount: trpc.procedure.query(async ({ ctx }) => {
 			return countQueued(ctx.db);
 		}),
@@ -408,16 +452,15 @@ export const appRouter = trpc.router({
 				bannerUrl: row.bannerUrl || null,
 			};
 		}),
-		remove: trpc.procedure.input(z.object({ id: z.string().min(1) })).mutation(async ({ ctx, input }) => {
-			const rows = await ctx.db.select().from(history).where(eq(history.id, input.id)).limit(1);
-			const row = rows[0];
-			if (!row) {
-				return { ok: true as const };
+		// several ids: the history page merges episode runs into one row
+		remove: trpc.procedure.input(z.object({ ids: z.array(z.string().min(1)).min(1).max(500) })).mutation(async ({ ctx, input }) => {
+			const rows = await ctx.db.select().from(history).where(inArray(history.id, input.ids));
+			for (const row of rows) {
+				if (row.kind === "queued") {
+					await ctx.db.delete(syncQueue).where(eq(syncQueue.animeId, row.animeId));
+				}
 			}
-			if (row.kind === "queued") {
-				await ctx.db.delete(syncQueue).where(eq(syncQueue.animeId, row.animeId));
-			}
-			await ctx.db.delete(history).where(eq(history.id, input.id));
+			await ctx.db.delete(history).where(inArray(history.id, input.ids));
 			return { ok: true as const };
 		}),
 		clear: trpc.procedure.input(z.object({ kind: z.enum(["history", "queued"]) })).mutation(async ({ ctx, input }) => {

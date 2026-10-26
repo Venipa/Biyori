@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { t } from "@biyori/translations/i18n";
 import { and, asc, count, eq } from "drizzle-orm";
 import { z } from "zod";
+import { parseHistoryChanges } from "../../lib/schemas/history-changes";
 import { type ListStatus, listStatusSchema } from "../../shared/list";
 import { clearActivity, completeActivity, upsertActivity } from "../activity";
 import { toAnilistStatus, toFuzzyDateInput, toListEntryRow } from "../anilist/map";
@@ -10,7 +11,7 @@ import { saveMediaListEntry } from "../anilist/sync";
 import type { DatabaseClient } from "../db";
 import { anime, history, listEntry, syncQueue } from "../db/schema";
 import { setAppNotice } from "../notice";
-import { marksEpisodeAdvanced } from "./tracker-progress";
+import { historyChanges, marksEpisodeAdvanced } from "./tracker-progress";
 
 export const queuePayloadSchema = z.object({
 	status: listStatusSchema.optional(),
@@ -108,13 +109,23 @@ export async function enqueueUpdate(
 	},
 ): Promise<void> {
 	const currentRows = await db
-		.select({ episodesWatched: listEntry.episodesWatched, rewatching: listEntry.rewatching })
+		.select({
+			status: listEntry.status,
+			episodesWatched: listEntry.episodesWatched,
+			score: listEntry.score,
+			notes: listEntry.notes,
+			rewatching: listEntry.rewatching,
+			timesRewatched: listEntry.timesRewatched,
+			dateStarted: listEntry.dateStarted,
+			dateCompleted: listEntry.dateCompleted,
+		})
 		.from(listEntry)
 		.where(eq(listEntry.animeId, options.animeId))
 		.limit(1);
 	const current = currentRows[0];
 	const advancedNow = marksEpisodeAdvanced(current ? { episodesWatched: current.episodesWatched, rewatching: current.rewatching === 1 } : undefined, options.payload);
 	const replay = current?.rewatching === 1 || options.payload.rewatching === true;
+	const changes = historyChanges(current ? { ...current, notes: current.notes ?? "", rewatching: current.rewatching === 1 } : undefined, options.payload);
 	await applyLocalUpdate(db, options.animeId, options.payload);
 	const existing = await db.select().from(syncQueue).where(eq(syncQueue.animeId, options.animeId)).limit(1);
 	const merged: QueuePayload = {
@@ -149,6 +160,7 @@ export async function enqueueUpdate(
 				episode: options.episode,
 				lastModified: nowStamp(),
 				advanced: replay ? 0 : advancedNow || queued[0].advanced === 1 ? 1 : 0,
+				changes: JSON.stringify({ ...parseHistoryChanges(queued[0].changes), ...changes }),
 			})
 			.where(eq(history.id, queued[0].id));
 	} else {
@@ -160,6 +172,7 @@ export async function enqueueUpdate(
 			lastModified: nowStamp(),
 			kind: "queued",
 			advanced: replay || !advancedNow ? 0 : 1,
+			changes: JSON.stringify(changes),
 		});
 	}
 	scheduleFlush(db);

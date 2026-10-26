@@ -1,4 +1,5 @@
 import type { AppSettings } from "../../lib/schemas/app-settings";
+import type { HistoryChanges } from "../../lib/schemas/history-changes";
 import type { QueuePayload } from "./queue";
 import type { MatchedAnime } from "./types";
 
@@ -55,4 +56,45 @@ export function withAppliedProgress<T extends ProgressMatch>(match: T, episode: 
 		dateStarted: payload.dateStarted !== undefined ? payload.dateStarted : match.dateStarted,
 		dateCompleted: payload.dateCompleted !== undefined ? payload.dateCompleted : match.dateCompleted,
 	};
+}
+
+type ListState = {
+	status: string;
+	episodesWatched: number;
+	score: number | null;
+	notes: string;
+	rewatching: boolean;
+	timesRewatched: number;
+	dateStarted: string | null;
+	dateCompleted: string | null;
+};
+
+/** Diff a queued payload against the current list entry; a missing entry counts every provided field as changed. */
+export function historyChanges(current: ListState | undefined, payload: QueuePayload): HistoryChanges {
+	const changes: HistoryChanges = {};
+	if (payload.progress != null && payload.progress !== current?.episodesWatched) {
+		changes.episode = payload.progress;
+	}
+	if (payload.status !== undefined && payload.status !== current?.status) {
+		changes.status = payload.status;
+	}
+	if (payload.score !== undefined && payload.score !== current?.score) {
+		changes.score = payload.score;
+	}
+	if (payload.notes !== undefined && payload.notes !== (current?.notes ?? "")) {
+		changes.notes = true;
+	}
+	if (
+		(payload.rewatching !== undefined && payload.rewatching !== current?.rewatching) ||
+		(payload.timesRewatched !== undefined && payload.timesRewatched !== current?.timesRewatched)
+	) {
+		changes.rewatch = true;
+	}
+	if (
+		(payload.dateStarted !== undefined && payload.dateStarted !== current?.dateStarted) ||
+		(payload.dateCompleted !== undefined && payload.dateCompleted !== current?.dateCompleted)
+	) {
+		changes.dates = true;
+	}
+	return changes;
 }

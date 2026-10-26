@@ -99,6 +99,13 @@
 			"when": 1790300000000,
 			"tag": "0013_account_score_format",
 			"breakpoints": true
+		},
+		{
+			"idx": 14,
+			"version": "6",
+			"when": 1790400000000,
+			"tag": "0014_history_changes",
+			"breakpoints": true
 		}
 	]
 }

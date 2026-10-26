@@ -832,10 +832,21 @@ declare module "i18next" {
 					typeOna: string;
 				};
 				history: {
-					animeTitle: string;
-					details: string;
-					lastModified: string;
 					episode: string;
+					today: string;
+					yesterday: string;
+					episodeShort: string;
+					episodeRange: string;
+					episodes_one: string;
+					episodes_other: string;
+					score: string;
+					noScore: string;
+					notes: string;
+					rewatch: string;
+					dates: string;
+					queuedSummary_one: string;
+					queuedSummary_other: string;
+					loadOlder: string;
 					noHistory: string;
 					emptyDescription: string;
 					queuedForUpdate: string;
