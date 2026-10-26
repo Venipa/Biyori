@@ -1,7 +1,8 @@
 import { useTranslation } from "@biyori/translations/react";
 import { createFileRoute } from "@tanstack/react-router";
+import { CheckIcon, CircleAlertIcon } from "lucide-react";
 import Logo from "@/mainview/components/app/shell/logo";
-import { splashSegmentState } from "@/mainview/lib/splash-progress";
+import { Spinner } from "@/mainview/components/ui/spinner";
 import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 
@@ -9,51 +10,53 @@ export const Route = createFileRoute("/splash")({
 	component: SplashPage,
 });
 
-function SegmentedProgress({ completed, total, inner }: { completed: number; total: number; inner: number | null }) {
-	const { t } = useTranslation();
-	const segments = Math.max(1, total);
-	return (
-		<div className='flex w-56 gap-1' role='progressbar' aria-label={t("shell.startup")} aria-valuemin={0} aria-valuemax={100}>
-			{Array.from({ length: segments }, (_, index) => {
-				const finished = completed >= segments || index < completed;
-				const active = !finished && index === completed;
-				const pulse = active && inner == null;
-				const fill = finished ? 100 : active ? (inner ?? (pulse ? 100 : 0)) : 0;
-				return (
-					// biome-ignore lint/suspicious/noArrayIndexKey: fixed-order progress segments
-					<div key={index} className='relative h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-muted'>
-						<div data-slot='progress-indicator' className={cn("h-full bg-primary transition-[width]", pulse && "animate-pulse")} style={{ width: `${fill}%` }} />
-					</div>
-				);
-			})}
-		</div>
-	);
-}
+const STEP_ICON = {
+	active: <Spinner size='xs' color='foreground' aria-hidden />,
+	done: <CheckIcon className='size-3 text-primary' />,
+	error: <CircleAlertIcon className='size-3 text-destructive' />,
+} as const;
 
 function SplashPage() {
 	const { t } = useTranslation();
 	const utils = trpc.useUtils();
-	const activityQuery = trpc.activity.snapshot.useQuery();
-	trpc.activity.onChange.useSubscription(undefined, {
-		onData: (snapshot) => {
-			utils.activity.snapshot.setData(undefined, snapshot);
+	const steps = trpc.startup.snapshot.useQuery().data ?? [];
+	trpc.startup.onChange.useSubscription(undefined, {
+		onData: (next) => {
+			utils.startup.snapshot.setData(undefined, next);
 		},
 	});
-	const live = activityQuery.data?.live ?? [];
-	const boot = live.find((item) => item.source === "startup");
-	const scan = live.find((item) => item.source === "library-scan");
-	const { completed, total, inner } = splashSegmentState({
-		bootBody: boot?.body,
-		scanTitle: scan?.title,
-		scanBody: scan?.body,
-	});
-	const label = [boot?.title ?? t("shell.starting"), scan?.body].filter(Boolean).join(" · ");
+	// the window step is last; until it exists the bar can only reach half
+	const total = Math.max(2, steps.length);
+	const progress = steps.reduce((sum, step) => sum + (step.state === "active" ? (step.progress ?? 0) : 1), 0) / total;
 
 	return (
 		<div className='app-region-drag pointer-events-drag flex min-h-0 flex-1 select-none flex-col items-center justify-center gap-5 bg-background px-8'>
 			<Logo className='size-14' />
-			<SegmentedProgress completed={completed} total={total} inner={inner} />
-			<p className='text-center text-xs text-muted-foreground'>{label}</p>
+			<div
+				className='h-1 w-full max-w-xs overflow-hidden rounded-full bg-muted'
+				role='progressbar'
+				aria-label={t("shell.startup")}
+				aria-valuemin={0}
+				aria-valuemax={100}
+				aria-valuenow={Math.round(progress * 100)}>
+				<div data-slot='progress-indicator' className='h-full bg-primary transition-[width]' style={{ width: `${progress * 100}%` }} />
+			</div>
+			<ul className='grid w-full max-w-xs grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1 text-xs' aria-live='polite'>
+				{steps.length === 0 && <li className='col-span-3 text-center text-muted-foreground'>{t("shell.starting")}</li>}
+				{steps.map((step) => (
+					<li
+						key={step.id}
+						className={cn("col-span-3 grid grid-cols-subgrid items-center", step.state === "error" ? "text-destructive" : step.state === "done" && "text-muted-foreground")}>
+						{STEP_ICON[step.state]}
+						<span className='truncate' title={step.label}>
+							{step.label}
+						</span>
+						<span className='max-w-36 truncate text-right text-muted-foreground tabular-nums' title={step.detail}>
+							{step.detail}
+						</span>
+					</li>
+				))}
+			</ul>
 		</div>
 	);
 }

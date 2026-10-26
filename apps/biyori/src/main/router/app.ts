@@ -20,6 +20,7 @@ import { anime, episodeFile, history, listEntry, syncQueue } from "../db/schema"
 import type { Anime } from "../db/types";
 import { getAppNotice, subscribeAppNotice } from "../notice";
 import { loadAppSettings, loadSettingsFormValues, patchAppSettings, patchSettingsForm, subscribeFilters, subscribeSettings } from "../settings";
+import { startupSnapshot, subscribeStartup } from "../startup-status";
 import { loadStatistics } from "../statistics";
 import { requestAniListSync } from "../sync";
 import {
@@ -609,6 +610,17 @@ export const appRouter = trpc.router({
 			return observable<ReturnType<typeof getActivitySnapshot>>((emit) => {
 				emit.next(getActivitySnapshot());
 				return subscribeActivity((next) => {
+					emit.next(next);
+				});
+			});
+		}),
+	}),
+	startup: trpc.router({
+		snapshot: trpc.procedure.query(() => startupSnapshot()),
+		onChange: trpc.procedure.subscription(() => {
+			return observable<ReturnType<typeof startupSnapshot>>((emit) => {
+				emit.next(startupSnapshot());
+				return subscribeStartup((next) => {
 					emit.next(next);
 				});
 			});

@@ -1,3 +1,5 @@
+import { t } from "@biyori/translations/i18n";
+import { beginStep, endStep, updateStep } from "../startup-status";
 import AniListSyncService from "./anilist-sync.service";
 import DatabaseService from "./database.service";
 import HttpService from "./http.service";
@@ -51,11 +53,19 @@ function registerAppServices(): void {
 		throw new Error("No services loaded");
 	}
 
-	for (const service of services) {
+	for (const [index, service] of services.entries()) {
 		for (const phase of PHASES) {
 			const hook = serviceHook(service, phase);
-			if (hook) {
+			if (!hook) {
+				continue;
+			}
+			if (phase === "afterInit") {
 				lifecycle[phase](hook);
+			} else {
+				lifecycle[phase](() => {
+					updateStep("services", { detail: service.name, progress: index / services.length });
+					return hook();
+				});
 			}
 		}
 	}
@@ -63,8 +73,10 @@ function registerAppServices(): void {
 
 export async function boot(): Promise<void> {
 	registerAppServices();
+	beginStep("services", t("main.startup.services"));
 	await lifecycle.run("beforeLoad");
 	await lifecycle.run("onInit");
+	endStep("services");
 }
 
 export function scheduleAfterInit(): void {

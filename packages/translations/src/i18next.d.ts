@@ -262,6 +262,10 @@ declare module "i18next" {
 					};
 					startup: {
 						checkingLibrary: string;
+						services: string;
+						window: string;
+						matching: string;
+						failed: string;
 						ready: string;
 						comment: string;
 					};

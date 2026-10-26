@@ -11,7 +11,10 @@ export function initElectronTrpc(): void {
 	handler = createIPCHandler({
 		router: appRouter,
 		createContext: ({ event }) => ({
-			db: getDb(),
+			// lazy: the splash queries before services (and the db) are up
+			get db() {
+				return getDb();
+			},
 			getBrowserWindow: () => BrowserWindow.fromWebContents(event.sender),
 		}),
 	});

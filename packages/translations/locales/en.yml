@@ -245,6 +245,10 @@ main:
     update: Update
   startup:
     checkingLibrary: Checking library
+    services: Starting services
+    window: Opening window
+    matching: matching
+    failed: Biyori failed to start
     ready: Ready
     comment: Anime library tracker
   playback:

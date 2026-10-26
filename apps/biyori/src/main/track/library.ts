@@ -13,6 +13,7 @@ import type { DatabaseClient } from "../db";
 import { anime, episodeFile, listEntry } from "../db/schema";
 import { setAppNotice } from "../notice";
 import { loadAppSettings } from "../settings";
+import { updateStep } from "../startup-status";
 import { continueReadyEpisodes } from "./continue-ready";
 import { hana, type ScanHit, type ScanProgress } from "./hana-client";
 import { invalidateCandidateCache, loadCandidates, toHanaCandidates } from "./match";
@@ -290,6 +291,7 @@ function onScanProgress(kind: "full" | "quick", progress: ScanProgress): void {
 		const title = t(kind === "quick" ? "main.library.checkingFoldersProgress" : "main.library.scanningLibraryProgress", { count: progress.files });
 		setAppNotice(title, { toast: false, busy: true });
 		upsertActivity({ source: "library-scan", title: prefix, body: t("main.library.files", { count: progress.files }) });
+		updateStep("library", { detail: t("main.library.files", { count: progress.files }) });
 		return;
 	}
 	if (progress.phase === "match") {
@@ -301,6 +303,11 @@ function onScanProgress(kind: "full" | "quick", progress: ScanProgress): void {
 			source: "library-scan",
 			title: t("main.library.matchingTitles"),
 			body: t("main.library.matchBody", { seen, total, hits: progress.hits }),
+		});
+		updateStep("library", {
+			label: `${t("main.startup.checkingLibrary")} · ${t("main.startup.matching")}`,
+			detail: `${seen} / ${total}`,
+			progress: total > 0 ? seen / total : undefined,
 		});
 	}
 }
