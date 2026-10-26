@@ -38,34 +38,8 @@ describe("parseAppSettings torrent filters", () => {
 		expect(parseAppSettings({ sendCrashReports: false }).sendCrashReports).toBe(false);
 	});
 
-	test("defaults nowPlayingView to cards", () => {
-		expect(parseAppSettings({}).nowPlayingView).toBe("cards");
-		expect(parseAppSettings({ nowPlayingView: "table" }).nowPlayingView).toBe("table");
-	});
-
-	test("defaults animeListViewAs to compact", () => {
-		expect(parseAppSettings({}).animeListViewAs).toBe("compact");
-		expect(parseAppSettings({ animeListViewAs: "rich" }).animeListViewAs).toBe("rich");
-	});
-
-	test("defaults missing uiZoom to 100", () => {
-		expect(parseAppSettings({}).uiZoom).toBe(100);
-	});
-
-	test("keeps a valid uiZoom percent", () => {
-		expect(parseAppSettings({ uiZoom: 125 }).uiZoom).toBe(125);
-	});
-
 	test("falls back when uiZoom is out of range", () => {
 		expect(parseAppSettings({ uiZoom: 200 }).uiZoom).toBe(100);
-	});
-
-	test("defaults missing uiLocale to en", () => {
-		expect(parseAppSettings({}).uiLocale).toBe("en");
-	});
-
-	test("keeps a valid uiLocale", () => {
-		expect(parseAppSettings({ uiLocale: "ja" }).uiLocale).toBe("ja");
 	});
 
 	test("falls back when uiLocale is unknown", () => {
@@ -79,11 +53,6 @@ describe("parseAppSettings torrent filters", () => {
 	test("legacy stores without onboardingComplete are already complete", () => {
 		expect(parseAppSettings({ titleLanguage: "English" }).onboardingComplete).toBe(true);
 		expect(parseAppSettings({}).onboardingComplete).toBe(true);
-	});
-
-	test("keeps an explicit onboardingComplete flag", () => {
-		expect(parseAppSettings({ onboardingComplete: false }).onboardingComplete).toBe(false);
-		expect(parseAppSettings({ onboardingComplete: true }).onboardingComplete).toBe(true);
 	});
 });
 

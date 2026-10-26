@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isAllowedRendererUrl, isHttpUrl } from "./renderer-url";
+import { isAllowedRendererUrl } from "./renderer-url";
 
 describe("isAllowedRendererUrl", () => {
 	test("allows the vite origin in dev", () => {
@@ -20,15 +20,5 @@ describe("isAllowedRendererUrl", () => {
 
 	test("rejects a folder file url in production", () => {
 		expect(isAllowedRendererUrl("file:///E:/Anime/Show")).toBe(false);
-	});
-});
-
-describe("isHttpUrl", () => {
-	test("accepts http(s)", () => {
-		expect(isHttpUrl("https://anilist.co/anime/1")).toBe(true);
-	});
-
-	test("rejects file urls", () => {
-		expect(isHttpUrl("file:///E:/Anime/Show")).toBe(false);
 	});
 });

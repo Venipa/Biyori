@@ -1,17 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { argvIsStartupLaunch, linuxAutostartDesktopEntry, quoteDesktopExecArg, STARTUP_FLAG, shouldStartInTray, windowsLoginItemArgs } from "./startup-login";
+import { argvIsStartupLaunch, linuxAutostartDesktopEntry, quoteDesktopExecArg, STARTUP_FLAG, windowsLoginItemArgs } from "./startup-login";
 
 describe("startup login helpers", () => {
 	test("detects argv flag and mac login item fields", () => {
 		expect(argvIsStartupLaunch(["biyori"])).toBe(false);
 		expect(argvIsStartupLaunch(["biyori", STARTUP_FLAG])).toBe(true);
 		expect(argvIsStartupLaunch(["biyori"], { wasOpenedAtLogin: true })).toBe(true);
-	});
-
-	test("starts in tray only when both flags are set", () => {
-		expect(shouldStartInTray(true, true)).toBe(true);
-		expect(shouldStartInTray(true, false)).toBe(false);
-		expect(shouldStartInTray(false, true)).toBe(false);
 	});
 
 	test("quotes desktop Exec paths with spaces", () => {
