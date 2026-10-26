@@ -1,6 +1,5 @@
 import { t } from "@biyori/translations/react";
 import type { SeasonGroupBy, SeasonItem, SeasonSortBy, SeasonViewAs } from "@/lib/schemas/seasons";
-import { airingStatusLabel } from "./anime-airing-notice";
 import { animeTypeLabel } from "./anime-list-filter";
 
 export type SeasonGroup = {
@@ -172,15 +171,6 @@ export function formatSeasonLabel(season: string, year: number | null | undefine
 	return label || String(year ?? "");
 }
 
-export function formatAiredRange(item: SeasonItem): string {
-	const start = item.startDate ?? t("seasons.unknownMark");
-	const status = airingStatusLabel(item.status);
-	if (item.endDate && item.endDate !== item.startDate) {
-		return t("seasons.airedRangeTo", { start, end: item.endDate, status });
-	}
-	return t("seasons.airedRange", { start, status });
-}
-
 export function formatPopularity(popularity: number): string {
 	if (popularity <= 0) {
 		return t("seasons.unknownMark");
@@ -205,6 +195,11 @@ export function imageFooterText(item: SeasonItem, sortBy: SeasonSortBy): string 
 		default:
 			return formatPopularity(item.popularity);
 	}
+}
+
+/** Airing state as a thin accent line (no text on it). */
+export function airingLineClass(status: string): string {
+	return airingBarClass(status).split(" ")[0] ?? "";
 }
 
 export function airingBarClass(status: string): string {
@@ -266,15 +261,6 @@ export function airStamp(startDate: string | null): { month: string; day: string
 	return { month, day: String(day) };
 }
 
-/** Poster height for the skyline view. Unrated titles stay short so rated ones tower. */
-export function skylinePosterHeight(score: number): number {
-	if (score <= 0) {
-		return 72;
-	}
-	const clamped = Math.min(100, score);
-	return 88 + Math.round((clamped / 100) * 96);
-}
-
 export function formatPopularityCompact(popularity: number): string {
 	if (popularity <= 0) {
 		return "?";
@@ -291,47 +277,23 @@ export function formatPopularityCompact(popularity: number): string {
 	return String(popularity);
 }
 
+/** Fixed card widths (px) so cards keep their size on resize; guide is a single column. */
+export const SEASON_CARD_WIDTH = { images: 160, tiles: 416 } as const;
+export const SEASON_GRID_GAP = 12;
+/** Fixed virtual row heights (rows are clipped to these): row padding (p-4 / p-3) + card; guide = 64px row + 1px border. */
+export const SEASON_ROW_HEIGHT = { images: 32 + 240 + 8 + 52, tiles: 24 + 170, guide: 65 } as const;
+export const SEASON_HEADER_HEIGHT = 40;
+
+export function seasonGridPadding(viewAs: SeasonViewAs): number {
+	return viewAs === "images" ? 16 : 12;
+}
+
 export function seasonGridColumns(viewAs: SeasonViewAs, width: number): number {
 	if (viewAs === "guide") {
 		return 1;
 	}
-	if (viewAs === "skyline") {
-		if (width >= 1280) {
-			return 10;
-		}
-		if (width >= 1024) {
-			return 8;
-		}
-		if (width >= 768) {
-			return 6;
-		}
-		if (width >= 640) {
-			return 5;
-		}
-		return 4;
-	}
-	if (viewAs === "images") {
-		if (width >= 1280) {
-			return 6;
-		}
-		if (width >= 1024) {
-			return 5;
-		}
-		if (width >= 768) {
-			return 4;
-		}
-		if (width >= 640) {
-			return 3;
-		}
-		return 2;
-	}
-	if (width >= 1280) {
-		return 3;
-	}
-	if (width >= 768) {
-		return 2;
-	}
-	return 1;
+	const card = SEASON_CARD_WIDTH[viewAs];
+	return Math.max(1, Math.floor((width - seasonGridPadding(viewAs) * 2 + SEASON_GRID_GAP) / (card + SEASON_GRID_GAP)));
 }
 
 export type SeasonVirtualItem<T> = { type: "header"; key: string; label: string; count: number } | { type: "row"; key: string; items: T[] };

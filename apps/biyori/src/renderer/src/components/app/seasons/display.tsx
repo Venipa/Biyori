@@ -1,5 +1,5 @@
 import { t, useTranslation } from "@biyori/translations/react";
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import type { SeasonItem } from "@/lib/schemas/seasons";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { listStatusShortText } from "@/mainview/components/app/anime/list-action";
@@ -16,7 +16,7 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
-import { airingBarClass, airStamp, formatCommunityScore, formatPopularityCompact, skylinePosterHeight } from "@/mainview/lib/season-view";
+import { airingBarClass, airStamp, formatCommunityScore, formatPopularityCompact } from "@/mainview/lib/season-view";
 import { cn } from "@/mainview/lib/utils";
 import type { ListStatus } from "@/shared/list";
 
@@ -29,7 +29,7 @@ const commandParts = {
 	Shortcut: ContextMenuShortcut,
 };
 
-export type SeasonAltView = "guide" | "skyline";
+export type SeasonAltView = "guide";
 
 type SeasonDisplayProps = {
 	item: SeasonItem;
@@ -46,16 +46,17 @@ export function seasonGridClass(viewAs: SeasonAltView | "tiles" | "images"): str
 			return "grid gap-3 p-4";
 		case "guide":
 			return "grid divide-y border-b";
-		case "skyline":
-			return "grid items-end gap-x-1.5 border-b px-3 pt-4 pb-2";
 		default:
 			return "grid gap-3 p-3";
 	}
 }
 
-export function SeasonDisplay(props: SeasonDisplayProps) {
+// same contract as SeasonCard: handler props are ref-backed closures from the grid
+export const SeasonDisplay = memo(SeasonDisplayImpl, (a, b) => a.item === b.item && a.viewAs === b.viewAs && a.listStatus === b.listStatus && a.adding === b.adding);
+
+function SeasonDisplayImpl(props: SeasonDisplayProps) {
 	const { item, viewAs, listStatus, onOpen, onAdd, adding } = props;
-	const body = viewAs === "guide" ? <GuideRow item={item} listStatus={listStatus} onAdd={onAdd} adding={adding} /> : <SkylineRow item={item} listStatus={listStatus} />;
+	const body = <GuideRow item={item} listStatus={listStatus} onAdd={onAdd} adding={adding} />;
 
 	return (
 		<ContextMenu>
@@ -138,7 +139,7 @@ function GuideRow(props: { item: SeasonItem; listStatus: ListStatus | null; onAd
 	const stamp = airStamp(item.startDate);
 	const alt = otherTitle(item);
 	return (
-		<div className='flex min-h-16 items-stretch gap-3 pr-3'>
+		<div className='flex h-16 items-stretch gap-3 pr-3'>
 			<div className={cn("w-1 shrink-0", airingBarClass(item.status))} />
 			<div className='flex w-14 shrink-0 flex-col items-center justify-center border-r border-dashed'>
 				{stamp ? (
@@ -167,39 +168,11 @@ function GuideRow(props: { item: SeasonItem; listStatus: ListStatus | null; onAd
 	);
 }
 
-function SkylineRow(props: { item: SeasonItem; listStatus: ListStatus | null }) {
-	const { item, listStatus } = props;
-	useTranslation();
-	const unrated = item.averageScore <= 0;
+export function SeasonAltSkeleton(_props: { viewAs: SeasonAltView }): ReactNode {
 	return (
-		<div className='flex min-w-0 flex-col justify-end gap-1'>
-			<div className='flex flex-col overflow-hidden rounded-t-sm bg-muted' style={{ height: skylinePosterHeight(item.averageScore) }}>
-				<div className={cn("h-0.5 shrink-0", airingBarClass(item.status))} />
-				<AnimeCover id={item.id} coverUrl={item.coverUrl || undefined} alt='' className={cn("min-h-0 w-full flex-1", unrated ? "opacity-60" : undefined)} lazy />
-			</div>
-			<span className='line-clamp-2 min-h-8 text-xs leading-4'>{item.title}</span>
-			<span className='text-[10px] tabular-nums text-muted-foreground'>
-				{formatCommunityScore(item.averageScore)}
-				{listStatus ? `, ${listStatusShortText(listStatus)}` : ""}
-			</span>
-		</div>
-	);
-}
-
-export function SeasonAltSkeleton({ viewAs }: { viewAs: SeasonAltView }): ReactNode {
-	if (viewAs === "guide") {
-		return (
-			<ul className='divide-y border-b'>
-				{["g0", "g1", "g2", "g3", "g4", "g5", "g6", "g7"].map((id) => (
-					<li key={id} className='h-16 bg-muted/40' />
-				))}
-			</ul>
-		);
-	}
-	return (
-		<ul className='grid grid-cols-4 items-end gap-2 px-3 pt-4 sm:grid-cols-6 lg:grid-cols-8'>
-			{["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7"].map((id, index) => (
-				<li key={id} className='rounded-t-sm bg-muted/40' style={{ height: 72 + (index % 4) * 28 }} />
+		<ul className='divide-y border-b'>
+			{["g0", "g1", "g2", "g3", "g4", "g5", "g6", "g7"].map((id) => (
+				<li key={id} className='h-16 bg-muted/40' />
 			))}
 		</ul>
 	);

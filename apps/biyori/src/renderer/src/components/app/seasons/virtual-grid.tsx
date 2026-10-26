@@ -1,10 +1,10 @@
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SeasonItem, SeasonSortBy, SeasonViewAs } from "@/lib/schemas/seasons";
 import { SeasonCard } from "@/mainview/components/app/seasons/card";
 import { SeasonDisplay, seasonGridClass } from "@/mainview/components/app/seasons/display";
 import { isAltView } from "@/mainview/components/app/seasons/grid-skeleton";
-import { flattenSeasonVirtualItems, type SeasonGroup, seasonGridColumns } from "@/mainview/lib/season-view";
+import { flattenSeasonVirtualItems, SEASON_CARD_WIDTH, SEASON_HEADER_HEIGHT, SEASON_ROW_HEIGHT, type SeasonGroup, seasonGridColumns } from "@/mainview/lib/season-view";
 import type { ListStatus } from "@/shared/list";
 
 export function stickyHeaderIndex(indexes: number[], startIndex: number): number {
@@ -37,46 +37,38 @@ export function SeasonVirtualGrid({
 	const rootRef = useRef<HTMLDivElement>(null);
 	const activeStickyRef = useRef(0);
 	const [width, setWidth] = useState(0);
+	const viewAsRef = useRef(viewAs);
+	viewAsRef.current = viewAs;
 	useEffect(() => {
 		const node = rootRef.current;
 		if (!node) {
 			return;
 		}
+		// only re-render when the column count changes, not on every resized pixel
+		const update = (next: number) => {
+			setWidth((prev) => (prev && seasonGridColumns(viewAsRef.current, prev) === seasonGridColumns(viewAsRef.current, next) ? prev : next));
+		};
 		const observer = new ResizeObserver((entries) => {
-			setWidth(entries[0]?.contentRect.width ?? 0);
+			update(entries[0]?.contentRect.width ?? 0);
 		});
 		observer.observe(node);
-		setWidth(node.clientWidth);
+		update(node.clientWidth);
 		return () => {
 			observer.disconnect();
 		};
 	}, []);
 	const columns = seasonGridColumns(viewAs, width || 640);
+	const handlers = useRef({ onOpen, onAdd });
+	handlers.current = { onOpen, onAdd };
+	const stable = useMemo(() => ({ open: (item: SeasonItem) => handlers.current.onOpen(item), add: (item: SeasonItem) => handlers.current.onAdd(item) }), []);
 	const items = flattenSeasonVirtualItems(groups, columns);
 	const stickyIndexes = items.flatMap((item, index) => (item.type === "header" ? [index] : []));
-	const gap = 12;
-	const rowPad = viewAs === "images" ? 16 : 12;
 	const virtualizer = useVirtualizer({
 		count: items.length,
 		getScrollElement: () => rootRef.current?.closest("[data-slot=scroll-area-viewport]") ?? null,
-		estimateSize: (index) => {
-			const item = items[index];
-			if (!item || item.type === "header") {
-				return 40;
-			}
-			if (viewAs === "images") {
-				const colWidth = Math.max(80, ((width || 640) - rowPad * 2 - gap * (columns - 1)) / columns);
-				return colWidth * 1.5 + gap;
-			}
-			if (viewAs === "guide") {
-				return 68;
-			}
-			if (viewAs === "skyline") {
-				return 248;
-			}
-			return 220;
-		},
-		overscan: 4,
+		// every row has a fixed height, so positions are exact and nothing is measured (fast scrolls can't overlap)
+		estimateSize: (index) => (items[index]?.type === "header" ? SEASON_HEADER_HEIGHT : SEASON_ROW_HEIGHT[viewAs]),
+		overscan: 2,
 		getItemKey: (index) => items[index]?.key ?? index,
 		rangeExtractor: (range) => {
 			const active = stickyHeaderIndex(stickyIndexes, range.startIndex);
@@ -99,16 +91,19 @@ export function SeasonVirtualGrid({
 					<div
 						key={item.key}
 						data-index={virtualRow.index}
-						ref={virtualizer.measureElement}
-						className={isStuck ? "sticky top-0 z-10 w-full" : "absolute top-0 left-0 w-full"}
-						style={isStuck ? undefined : { transform: `translateY(${virtualRow.start}px)` }}>
+						className={isStuck ? "sticky top-0 z-10 w-full overflow-hidden" : "absolute top-0 left-0 w-full overflow-hidden"}
+						style={isStuck ? { height: virtualRow.size } : { height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}>
 						{item.type === "header" ? (
-							<h2 className='border-b bg-muted px-4 py-2 text-sm font-medium'>
+							<h2 className='flex h-full items-center border-b bg-muted px-4 text-sm font-medium'>
 								{item.label}
 								<span className='ml-2 text-muted-foreground'>({item.count})</span>
 							</h2>
 						) : (
-							<ul className={seasonGridClass(viewAs)} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+							<ul
+								className={seasonGridClass(viewAs)}
+								style={{
+									gridTemplateColumns: viewAs === "images" || viewAs === "tiles" ? `repeat(${columns}, ${SEASON_CARD_WIDTH[viewAs]}px)` : `repeat(${columns}, minmax(0, 1fr))`,
+								}}>
 								{item.items.map((card) => (
 									<li key={card.id}>
 										{isAltView(viewAs) ? (
@@ -116,8 +111,8 @@ export function SeasonVirtualGrid({
 												item={card}
 												viewAs={viewAs}
 												listStatus={localById.get(card.id) ?? null}
-												onOpen={() => onOpen(card)}
-												onAdd={() => onAdd(card)}
+												onOpen={() => stable.open(card)}
+												onAdd={() => stable.add(card)}
 												adding={adding}
 											/>
 										) : (
@@ -126,8 +121,8 @@ export function SeasonVirtualGrid({
 												viewAs={viewAs}
 												sortBy={sortBy}
 												listStatus={localById.get(card.id) ?? null}
-												onOpen={() => onOpen(card)}
-												onAdd={() => onAdd(card)}
+												onOpen={() => stable.open(card)}
+												onAdd={() => stable.add(card)}
 												adding={adding}
 											/>
 										)}

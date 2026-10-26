@@ -901,7 +901,6 @@ seasons:
   tiles: Tiles
   images: Images
   guide: Guide
-  skyline: Skyline
   previousSeason: Previous season
   season: Season
   year: Year

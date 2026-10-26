@@ -971,7 +971,6 @@ declare module "i18next" {
 					tiles: string;
 					images: string;
 					guide: string;
-					skyline: string;
 					previousSeason: string;
 					season: string;
 					year: string;

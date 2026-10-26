@@ -196,7 +196,6 @@ export function SeasonsPage() {
 		tiles: t("seasons.tiles"),
 		images: t("seasons.images"),
 		guide: t("seasons.guide"),
-		skyline: t("seasons.skyline"),
 	} as const;
 	const busy = query.isFetching || refreshing;
 	const activeFilterCount = showAdult ? 1 : 0;
