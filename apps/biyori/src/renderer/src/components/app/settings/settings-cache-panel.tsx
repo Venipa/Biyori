@@ -59,7 +59,7 @@ export function SettingsCachePanel() {
 			setConfirmOpen(false);
 			await Promise.all([
 				utils.settings.cacheSummary.invalidate(),
-				utils.history.list.invalidate(),
+				utils.history.recentPlays.invalidate(),
 				utils.history.page.invalidate(),
 				utils.statistics.summary.invalidate(),
 				utils.torrents.list.invalidate(),

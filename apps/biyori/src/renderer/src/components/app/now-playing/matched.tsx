@@ -2,6 +2,7 @@ import { useTranslation } from "@biyori/translations/react";
 import { ExternalLinkIcon } from "lucide-react";
 import { desktopRpc } from "@/desktop-rpc";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
+import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
 import { AnimeScoreControl } from "@/mainview/components/app/anime-info/score-control";
 import { AnimeSeriesInfo } from "@/mainview/components/app/anime-info/series-info";
 import { AnimeStatusNotice } from "@/mainview/components/app/anime-info/status-notice";
@@ -44,12 +45,11 @@ export function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) 
 			lastAiredEpisode,
 			libraryEpisodes: libraryQuery.data?.map((row) => row.episode),
 		});
-	const progressValue = total != null && total > 0 ? Math.min(100, Math.round((watched / total) * 100)) : 80;
+	const progressValue = total != null && total > 0 ? Math.min(100, Math.round((watched / total) * 100)) : null;
 	const nowPlayingLine = formatNowPlayingLine(episode, group, isMovie);
 	const title = detail?.title ?? match.title;
 	const status = match.status;
 	const rewatching = match.rewatching;
-	const airingStatus = detail?.airingStatus ?? match.airingStatus;
 
 	return (
 		<div className='pb-10'>
@@ -91,20 +91,19 @@ export function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) 
 				</div>
 
 				<div className='flex min-h-16 min-w-0 flex-col justify-end gap-1 py-2'>
-					<p className='text-xs font-medium tracking-wide text-muted-foreground uppercase'>{t("nowPlaying.kicker")}</p>
 					<h1 className='text-balance text-lg font-semibold text-foreground sm:text-xl'>{title}</h1>
-					<p className='text-sm text-muted-foreground'>{nowPlayingLine}</p>
+					<p className='text-sm text-muted-foreground'>
+						{[nowPlayingLine, media.player, status ? listStatusLabel(status) : null, rewatching ? t("nowPlaying.rewatching") : null].filter(Boolean).join(" · ")}
+					</p>
 				</div>
 
 				<div className='flex min-w-0 flex-col gap-4'>
-					<div className='flex flex-wrap items-center gap-1.5'>
-						{status ? <Badge variant='secondary'>{status}</Badge> : null}
-						{rewatching ? <Badge variant='outline'>{t("nowPlaying.rewatching")}</Badge> : null}
-						<Badge variant='outline'>{media.player}</Badge>
-						{airingStatus ? <Badge variant='outline'>{airingStatus}</Badge> : null}
-						{snapshot.delayRemainingSeconds > 0 ? <Badge variant='outline'>{t("nowPlaying.updatingIn", { seconds: snapshot.delayRemainingSeconds })}</Badge> : null}
-						{snapshot.pendingConfirm ? <Badge>{t("nowPlaying.confirmUpdate")}</Badge> : null}
-					</div>
+					{snapshot.delayRemainingSeconds > 0 || snapshot.pendingConfirm ? (
+						<div className='flex flex-wrap items-center gap-1.5'>
+							{snapshot.delayRemainingSeconds > 0 ? <Badge variant='outline'>{t("nowPlaying.updatingIn", { seconds: snapshot.delayRemainingSeconds })}</Badge> : null}
+							{snapshot.pendingConfirm ? <Badge>{t("nowPlaying.confirmUpdate")}</Badge> : null}
+						</div>
+					) : null}
 
 					{progressValue != null ? (
 						<Progress value={progressValue} className='w-full max-w-48'>

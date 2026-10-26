@@ -46,6 +46,10 @@ export type ContinueWatchingItem = {
 export type UpcomingItem = {
 	id: number;
 	title: string;
+	coverUrl?: string;
+	/** first episode air time when AniList knows it */
+	startsAt?: string;
+	season?: string;
 };
 
 export type AiringSoonGroup = {
@@ -224,13 +228,14 @@ export function buildAiringSoon(listed: IdleListedRow[], skipAnimeIds: ReadonlyS
 	return groups;
 }
 
-export function buildUpcoming(listed: Array<IdleListedRow & { airingStatus: string }>, skipAnimeIds: ReadonlySet<number>): UpcomingItem[] {
+export function buildUpcoming(listed: Array<IdleListedRow & { airingStatus: string; season?: string | null }>, skipAnimeIds: ReadonlySet<number>): UpcomingItem[] {
 	const items: UpcomingItem[] = [];
 	for (const row of listed) {
 		if (row.airingStatus !== "Not yet released" || skipAnimeIds.has(row.id)) {
 			continue;
 		}
-		items.push({ id: row.id, title: row.title });
+		items.push({ id: row.id, title: row.title, coverUrl: row.coverUrl ?? undefined, startsAt: row.nextAiringAt ?? undefined, season: row.season || undefined });
 	}
-	return items.toSorted((a, b) => a.title.localeCompare(b.title));
+	// dated first (soonest), then the rest by title
+	return items.toSorted((a, b) => (timeMs(a.startsAt) ?? Number.POSITIVE_INFINITY) - (timeMs(b.startsAt) ?? Number.POSITIVE_INFINITY) || a.title.localeCompare(b.title));
 }

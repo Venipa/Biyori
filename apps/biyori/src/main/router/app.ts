@@ -1,10 +1,11 @@
 import { t } from "@biyori/translations/i18n";
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
-import { and, desc, eq, inArray, lt, or } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte, inArray, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { parseStoredTitles, type StoredAnimeTitles, titlesFromFallback } from "../../lib/anime-titles";
 import { folderPathExists, normalizeFolderPath } from "../../lib/folder-path";
+import { parseHistoryStamp } from "../../lib/history-stamp";
 import { parseJsonArray } from "../../lib/parse-json-array";
 import { settingsFormPatchSchema } from "../../lib/schemas/app-settings";
 import { cacheKindsSchema } from "../../lib/schemas/cache-kind";
@@ -366,11 +367,27 @@ export const appRouter = trpc.router({
 		}),
 	}),
 	history: trpc.router({
-		list: trpc.procedure.query(async ({ ctx }) => {
-			const rows = await ctx.db.select().from(history).orderBy(desc(history.lastModified));
+		/** Now playing idle: latest advancing play per anime (newest first) + advancing plays in the last 7 days. */
+		recentPlays: trpc.procedure.query(async ({ ctx }) => {
+			const playedAt = sql<string>`max(${history.lastModified})`;
+			// sqlite returns the bare episode column from the max() row
+			const rows = await ctx.db
+				.select({ animeId: history.animeId, episode: history.episode, playedAt })
+				.from(history)
+				.where(and(eq(history.kind, "history"), eq(history.advanced, 1), gt(history.animeId, 0)))
+				.groupBy(history.animeId)
+				.orderBy(desc(playedAt));
+			const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().replace("T", " ").slice(0, 16);
+			const [week] = await ctx.db
+				.select({ value: count() })
+				.from(history)
+				.where(and(eq(history.kind, "history"), eq(history.advanced, 1), gt(history.episode, 0), gte(history.lastModified, weekAgo)));
 			return {
-				queued: rows.filter((row) => row.kind === "queued"),
-				history: rows.filter((row) => row.kind === "history"),
+				plays: rows.map((row) => {
+					const time = parseHistoryStamp(row.playedAt);
+					return { ...row, playedAt: Number.isNaN(time) ? row.playedAt : new Date(time).toISOString() };
+				}),
+				watchedLastWeek: week?.value ?? 0,
 			};
 		}),
 		/** History page: queued rows (first page only) + history newest first, `limit` per page, cursor = "lastModified|id" of the last row. */

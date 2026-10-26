@@ -1,12 +1,11 @@
 import { t } from "@biyori/translations/react";
 import type { inferRouterOutputs } from "@trpc/server";
 import { formatClock } from "@/mainview/lib/format-date";
-import { type ContinueWatchingItem, SEVEN_DAYS_MS } from "@/mainview/lib/now-playing-idle";
+import type { ContinueWatchingItem } from "@/mainview/lib/now-playing-idle";
 import type { SelectedAnime } from "@/mainview/lib/selected-anime";
 import type { AppRouter } from "@/shared/app-router";
 
 export type NowPlayingSnapshot = NonNullable<inferRouterOutputs<AppRouter>["media"]["nowPlaying"]>;
-export type HistoryRow = inferRouterOutputs<AppRouter>["history"]["list"]["history"][number];
 
 export function lastPlayedArt(
 	row: { animeId: number | null; bannerUrl: string | null; coverUrl: string | null } | null,
@@ -42,21 +41,6 @@ export function airingCaption(item: ContinueWatchingItem): string {
 export function episodeLine(item: ContinueWatchingItem): string {
 	const total = item.episodes != null && item.episodes > 0 ? item.episodes : null;
 	return total != null ? t("nowPlaying.episodeOf", { episode: item.nextEpisode, total }) : t("nowPlaying.episodeNumber", { episode: item.nextEpisode });
-}
-
-export function countWatchedLastWeek(rows: HistoryRow[]): number {
-	const cutoff = Date.now() - SEVEN_DAYS_MS;
-	let count = 0;
-	for (const row of rows) {
-		if (row.episode <= 0) {
-			continue;
-		}
-		const time = Date.parse(row.lastModified);
-		if (!Number.isNaN(time) && time >= cutoff) {
-			count += 1;
-		}
-	}
-	return count;
 }
 
 export function formatNowPlayingLine(episode: number | null | undefined, group: string | null | undefined, isMovie: boolean = false): string {

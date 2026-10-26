@@ -4,6 +4,7 @@ import { type ReactElement, type ReactNode, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
+import { Panel } from "@/mainview/components/app/shared/panel";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { airingStatusLabel } from "@/mainview/lib/anime-airing-notice";
@@ -116,15 +117,6 @@ function pieBackground(items: StatBar[]): string {
 		start += span;
 	}
 	return `conic-gradient(${stops.join(", ")})`;
-}
-
-function Panel({ title, className, children }: { title: string; className?: string; children: ReactNode }): ReactElement {
-	return (
-		<section className={`flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-4 ${className ?? ""}`}>
-			<h2 className='text-xs font-medium text-muted-foreground'>{title}</h2>
-			{children}
-		</section>
-	);
 }
 
 function StatTile({ label, value, hint, title }: { label: string; value: string | number; hint?: string; title?: string }): ReactElement {

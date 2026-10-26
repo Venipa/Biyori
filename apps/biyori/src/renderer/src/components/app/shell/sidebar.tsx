@@ -80,7 +80,7 @@ function SidebarAmbient() {
 				sourceUrl={banner ? art.bannerUrl : art.coverUrl}
 				coverUrl={art.coverUrl || undefined}
 				alt=''
-				className='absolute top-0 left-1/2 h-32 w-lg max-w-none -translate-x-1/2 scale-150 opacity-60 blur-2xl'
+				className='absolute top-0 left-1/2 h-32 w-lg max-w-none -translate-x-1/2 scale-150 opacity-35 blur-2xl'
 			/>
 			<div className='absolute inset-0 bg-[radial-gradient(ellipse_at_top,transparent_0%,var(--sidebar)_72%)]' />
 		</div>

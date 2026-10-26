@@ -124,7 +124,7 @@ export function ContinueWatchingCard({
 					}}
 					onClick={onActivate}>
 					<Card size='sm' className='isolate w-full overflow-clip py-0'>
-						<span className='relative block aspect-square h-60 w-full overflow-clip rounded-xl bg-muted transform-gpu [-webkit-mask-image:-webkit-radial-gradient(#fff,#000)] md:h-75'>
+						<span className='relative block aspect-2/3 w-full overflow-clip rounded-xl bg-muted transform-gpu [-webkit-mask-image:-webkit-radial-gradient(#fff,#000)]'>
 							<AnimeCover
 								id={item.animeId}
 								kind='cover'
@@ -141,7 +141,9 @@ export function ContinueWatchingCard({
 								transition={reduceMotion ? { duration: 0 } : playCardSwap}
 							/>
 							<span className='pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/85 via-black/55 to-transparent p-2 pt-8'>
-								<span className='block text-sm font-medium leading-snug wrap-break-word text-white'>{item.title}</span>
+								<span className='line-clamp-5 text-sm font-medium leading-snug wrap-break-word text-white' title={item.title}>
+									{item.title}
+								</span>
 								<PlayCardDetail caption={caption} playLabel={playLabel} showPlay={showPlay} />
 							</span>
 							{item.type ? (

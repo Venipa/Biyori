@@ -17,7 +17,7 @@ export function invalidateAnimeQueries(utils: TrpcUtils, event: AnimeCacheEvent,
 
 	if (event === "watched" || event === "synced") {
 		tasks.push(utils.anime.listed.invalidate());
-		tasks.push(utils.history.list.invalidate(), utils.history.page.invalidate());
+		tasks.push(utils.history.recentPlays.invalidate(), utils.history.page.invalidate());
 		tasks.push(utils.history.latest.invalidate());
 		tasks.push(utils.history.queuedCount.invalidate());
 		tasks.push(utils.statistics.summary.invalidate());

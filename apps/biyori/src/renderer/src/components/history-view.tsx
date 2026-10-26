@@ -95,7 +95,7 @@ export function HistoryView() {
 
 	function refresh(): void {
 		void utils.history.page.invalidate();
-		void utils.history.list.invalidate();
+		void utils.history.recentPlays.invalidate();
 		void utils.history.latest.invalidate();
 		void utils.history.queuedCount.invalidate();
 	}
