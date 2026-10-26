@@ -87,7 +87,7 @@ export default defineConfig({
 		build: {
 			sourcemap: sentrySourcemap,
 			externalizeDeps: {
-				include: ["encryption.js", "lodash-es", "@biyori/hana"],
+				include: ["encryption.js", "@biyori/hana"],
 				exclude: ["@biyori/electron-trpc", "@biyori/logger", "@biyori/parser", "@biyori/recognition", "@biyori/translations"],
 			},
 		},
