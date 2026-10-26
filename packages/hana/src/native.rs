@@ -243,7 +243,7 @@ pub struct LibraryWatchEvent {
 
 type WatchFn = ThreadsafeFunction<LibraryWatchEvent, ErrorStrategy::CalleeHandled>;
 
-/// Recursive watch over library roots; network drives and failed native watchers are polled.
+/// Recursive watch over library roots; roots whose native watcher fails get a shallow poll.
 #[napi]
 pub struct LibraryWatcher {
 	inner: Option<crate::watch::LibraryWatch>,

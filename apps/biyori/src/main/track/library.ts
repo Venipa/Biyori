@@ -20,8 +20,8 @@ import { invalidateCandidateCache, loadCandidates, toHanaCandidates } from "./ma
 import { refreshRelations, toHanaRelations } from "./relations";
 
 let db: DatabaseClient | null = null;
-// network drives are polled; a full walk over SMB is costly, so keep it slow
-const LIBRARY_POLL_MS = 60_000;
+// fallback poll is top-level only; deeper changes are caught by episode/manual scans
+const LIBRARY_POLL_MS = 10 * 60_000;
 const IGNORED_WATCH_FILES = /\.(jpe?g|png|webp|nfo|txt|srt|ass|ssa|idx|sub|part|tmp)$/i;
 let libraryWatch: LibraryWatchHandle | null = null;
 const dirtyPaths = new Set<string>();

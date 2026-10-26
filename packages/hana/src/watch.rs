@@ -1,5 +1,5 @@
 use notify::{Config, Event, EventKind, PollWatcher, RecommendedWatcher, RecursiveMode, Watcher};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::mpsc::{channel, Sender};
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -32,12 +32,7 @@ impl LibraryWatch {
 			let mut watchers: Vec<Option<Box<dyn Watcher>>> = Vec::with_capacity(roots.len());
 			let mut polled = vec![false; roots.len()];
 			for (index, root) in roots.iter().enumerate() {
-				let native = if is_remote(Path::new(root)) {
-					Err("network drive".to_string())
-				} else {
-					native_watcher(index, root, &worker_tx)
-				};
-				match native {
+				match native_watcher(index, root, &worker_tx) {
 					Ok(watcher) => watchers.push(Some(watcher)),
 					Err(reason) => {
 						polled[index] = true;
@@ -101,7 +96,8 @@ fn native_watcher(index: usize, root: &str, tx: &Sender<Msg>) -> Result<Box<dyn 
 
 fn poll_watcher(index: usize, root: &str, interval: Duration, tx: &Sender<Msg>) -> Option<Box<dyn Watcher>> {
 	let mut watcher = PollWatcher::new(handler(index, tx), Config::default().with_poll_interval(interval)).ok()?;
-	watcher.watch(Path::new(root), RecursiveMode::Recursive).ok()?;
+	// top level only: recursive walks over SMB flood the share
+	watcher.watch(Path::new(root), RecursiveMode::NonRecursive).ok()?;
 	Some(Box::new(watcher))
 }
 
@@ -110,28 +106,6 @@ fn changed_paths(event: &Event) -> Option<Vec<String>> {
 		return None;
 	}
 	Some(event.paths.iter().map(|path| path.to_string_lossy().into_owned()).collect())
-}
-
-#[cfg(windows)]
-fn is_remote(root: &Path) -> bool {
-	use windows::core::HSTRING;
-	use windows::Win32::Storage::FileSystem::GetDriveTypeW;
-	const DRIVE_REMOTE: u32 = 4;
-	let text = root.to_string_lossy();
-	if text.starts_with(r"\\") || text.starts_with("//") {
-		return true;
-	}
-	let Some(drive) = root.components().next() else {
-		return false;
-	};
-	let mut volume = PathBuf::from(drive.as_os_str());
-	volume.push(r"\");
-	unsafe { GetDriveTypeW(&HSTRING::from(volume.as_os_str())) == DRIVE_REMOTE }
-}
-
-#[cfg(not(windows))]
-fn is_remote(_root: &Path) -> bool {
-	false
 }
 
 #[cfg(test)]
