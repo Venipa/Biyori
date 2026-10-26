@@ -1,12 +1,12 @@
 import { buttonVariants } from "fumadocs-ui/components/ui/button";
-import { BookOpenIcon, DownloadIcon, ScrollTextIcon, StarIcon } from "lucide-react";
+import { BookOpenIcon, ScrollTextIcon, StarIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { HeroShot, Parallax, SurfaceWalkthrough } from "@/components/app-preview";
 import { JsonLd } from "@/components/json-ld";
 import { RevealBlock, Settle } from "@/components/landing-motion";
-import { ReleaseDownloadPanel } from "@/components/release-download-panel";
+import { HeroDownloadButton, ReleaseDownloadPanel } from "@/components/release-download-panel";
 import { bentoPlacementCss, loadBentoTiles } from "@/lib/bento";
 import { cn } from "@/lib/cn";
 import { getLatestReleasesByChannel, getLatestReleaseUrl, getRepositoryUrl, groupDownloadsByPlatform, pickPrimaryDownload } from "@/lib/github";
@@ -93,10 +93,7 @@ export default async function HomePage() {
 					<p className='mt-6 max-w-xl text-base text-pretty text-fd-muted-foreground md:text-lg'>{appDescription}</p>
 				</Settle>
 				<Settle delay={0.1} className='mt-10 flex flex-wrap items-center justify-center gap-2'>
-					<a href={downloadUrl} className={cn(buttonVariants({ variant: "primary" }), "gap-2 px-5 py-2.5")}>
-						<DownloadIcon className='size-4' />
-						{release ? `Download ${release.tag_name}` : "Download latest"}
-					</a>
+					<HeroDownloadButton release={release ?? null} fallbackUrl={downloadUrl} className={cn(buttonVariants({ variant: "primary" }), "gap-2 px-5 py-2.5")} />
 					<Link href={docsRoute} className={secondary}>
 						<BookOpenIcon className='size-4' />
 						Read the docs

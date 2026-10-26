@@ -58,3 +58,18 @@ html > body[data-scroll-locked] {
 	margin-right: 0px;
 	--removed-body-scroll-bar-size: 0px;
 }
+
+::selection {
+	background: oklch(0.6029 0.2038 29.234 / 0.28);
+}
+
+html {
+	accent-color: var(--color-fd-primary);
+	caret-color: var(--color-fd-primary);
+	scrollbar-color: var(--color-fd-border) transparent;
+}
+
+:focus-visible {
+	outline: 2px solid var(--color-fd-primary);
+	outline-offset: 2px;
+}

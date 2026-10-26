@@ -22,7 +22,7 @@ import {
 	type ReleaseChannel,
 } from "@/lib/downloads";
 
-function detectPlatform(): DownloadPlatform {
+export function detectPlatform(): DownloadPlatform {
 	if (typeof navigator === "undefined") {
 		return "windows";
 	}
@@ -45,7 +45,7 @@ function detectPlatform(): DownloadPlatform {
 	return "windows";
 }
 
-function detectCpuArch(): CpuArch {
+export function detectCpuArch(): CpuArch {
 	if (typeof navigator === "undefined") {
 		return "unknown";
 	}
@@ -329,5 +329,25 @@ function DownloadRow({ asset }: { asset: ReleaseAsset }) {
 				<span className='shrink-0 text-xs text-fd-muted-foreground'>{formatBytes(asset.size)}</span>
 			</a>
 		</li>
+	);
+}
+
+/** Hero CTA: server renders the generic link, the client swaps in the visitor's platform build. */
+export function HeroDownloadButton({ release, fallbackUrl, className }: { release: LatestRelease | null; fallbackUrl: string; className?: string }) {
+	const [pick, setPick] = useState<{ url: string; label: string } | null>(null);
+
+	useEffect(() => {
+		if (!release) return;
+		const platform = detectPlatform();
+		const asset = pickPreferredDownload(groupDownloadsByPlatform(release.assets)[platform], platform === "macos" ? detectCpuArch() : null);
+		const label = DOWNLOAD_PLATFORMS.find((item) => item.id === platform)?.label;
+		if (asset && label) setPick({ url: asset.browser_download_url, label });
+	}, [release]);
+
+	return (
+		<a href={pick?.url ?? fallbackUrl} className={className}>
+			<DownloadIcon className='size-4' />
+			{pick ? `Download for ${pick.label}` : release ? `Download ${release.tag_name}` : "Download latest"}
+		</a>
 	);
 }
