@@ -410,8 +410,8 @@ settings:
     discardTitle: Discard changes?
     discardDescription: Unsaved settings will be lost.
   services:
-    displayTitle: AniList display
-    displayDescription: Scoring options from your AniList account. Change them on AniList.
+    displayTitle: Preferences
+    displayDescription: Default service and scoring. Score format is changed on AniList.
     scoreFormat: Score format
     scoreFormatPoint100: 100 point
     scoreFormatPoint10Decimal: 10 point decimal

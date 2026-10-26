@@ -5,10 +5,10 @@ import { Controller, FormProvider, useForm, useFormContext, useFormState } from 
 import { profileInitials } from "@/lib/profile-initials";
 import { type AnilistToken, type AnilistTokenInput, anilistTokenSchema } from "@/lib/schemas/anilist-token";
 import type { AppSettingsInput, DefaultService } from "@/lib/schemas/app-settings";
+import { AccountAvatar } from "@/mainview/components/app/shell/account-avatar";
 import { Button } from "@/mainview/components/ui/button";
 import { Card, CardContent } from "@/mainview/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/mainview/components/ui/field";
-import { Image } from "@/mainview/components/ui/image";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Textarea } from "@/mainview/components/ui/textarea";
 import { trpc } from "@/mainview/trpc";
@@ -37,11 +37,63 @@ function ServiceOption({ label, detail }: { label: string; detail?: string }) {
 	);
 }
 
-export function AniListAccountCard() {
+export function DefaultServiceField({ connected, username }: { connected: boolean; username: string }) {
 	const { t } = useTranslation();
 	const serviceId = useId();
-	const tokenId = useId();
 	const settingsForm = useFormContext<AppSettingsInput>();
+	const labels = serviceLabels();
+	return (
+		<Controller
+			control={settingsForm.control}
+			name='defaultService'
+			render={({ field, fieldState }) => (
+				<Field data-invalid={fieldState.invalid || undefined}>
+					<FieldLabel htmlFor={serviceId}>{t("onboarding.defaultService")}</FieldLabel>
+					<Select
+						value={serviceValue(field.value)}
+						items={labels}
+						onValueChange={(next) => {
+							if (next === "anilist" || next === "myanimelist" || next === "kitsu") {
+								field.onChange(next);
+							}
+						}}>
+						<SelectTrigger
+							id={serviceId}
+							className='w-full whitespace-normal data-[size=default]:h-auto data-[size=default]:min-h-8 data-[size=default]:py-1.5 *:data-[slot=select-value]:items-start *:data-[slot=select-value]:line-clamp-none'
+							aria-invalid={fieldState.invalid}>
+							<SelectValue>
+								{(value: unknown) => {
+									const service = serviceValue(value);
+									const detail = service === "anilist" && connected && username ? username : undefined;
+									return <ServiceOption label={labels[service]} detail={detail} />;
+								}}
+							</SelectValue>
+						</SelectTrigger>
+						<SelectContent align='start'>
+							<SelectGroup>
+								<SelectItem value='anilist'>
+									<ServiceOption label={t("anime.anilist")} detail={connected && username ? username : undefined} />
+								</SelectItem>
+								<SelectItem value='myanimelist' disabled>
+									{t("anime.myAnimeList")}
+								</SelectItem>
+								<SelectItem value='kitsu' disabled>
+									{t("anime.kitsu")}
+								</SelectItem>
+							</SelectGroup>
+						</SelectContent>
+					</Select>
+					<FieldDescription>{connected ? t("onboarding.servicesUnavailableConnected") : t("onboarding.servicesUnavailable")}</FieldDescription>
+					<FieldError errors={[fieldState.error]} />
+				</Field>
+			)}
+		/>
+	);
+}
+
+export function AniListAccountCard() {
+	const { t } = useTranslation();
+	const tokenId = useId();
 	const [pasteOpen, setPasteOpen] = useState(false);
 	const tokenForm = useForm<AnilistTokenInput, unknown, AnilistToken>({
 		resolver: zodResolver(anilistTokenSchema),
@@ -65,16 +117,12 @@ export function AniListAccountCard() {
 	const username = statusQuery.data?.username?.trim() ?? "";
 	const avatarUrl = statusQuery.data?.avatarUrl?.trim() || null;
 	const errorMessage = statusQuery.data?.loginError ?? authorize.error?.message ?? connectWithToken.error?.message ?? disconnect.error?.message ?? null;
-	const labels = serviceLabels();
 
 	return (
 		<Card>
 			<CardContent className='flex flex-col gap-4'>
 				<div className='flex items-center gap-3'>
-					<span className='relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-sm font-medium'>
-						{connected && username ? profileInitials(username) : null}
-						{connected && avatarUrl ? <Image src={avatarUrl} alt='' className='absolute inset-0 size-full rounded-full' skeletonClassName='rounded-full' /> : null}
-					</span>
+					<AccountAvatar initials={connected && username ? profileInitials(username) : ""} avatarUrl={connected ? avatarUrl : null} className='size-9 shrink-0 text-sm' />
 					<div className='min-w-0 flex-1'>
 						<p className='truncate text-sm font-medium'>{connected ? username || t("anime.anilist") : t("onboarding.notConnected")}</p>
 						<p className='truncate text-xs text-muted-foreground'>{connected ? t("onboarding.connected") : t("onboarding.authorizeHint")}</p>
@@ -148,51 +196,7 @@ export function AniListAccountCard() {
 						) : null}
 					</div>
 				)}
-				<Controller
-					control={settingsForm.control}
-					name='defaultService'
-					render={({ field, fieldState }) => (
-						<Field data-invalid={fieldState.invalid || undefined}>
-							<FieldLabel htmlFor={serviceId}>{t("onboarding.defaultService")}</FieldLabel>
-							<Select
-								value={serviceValue(field.value)}
-								items={labels}
-								onValueChange={(next) => {
-									if (next === "anilist" || next === "myanimelist" || next === "kitsu") {
-										field.onChange(next);
-									}
-								}}>
-								<SelectTrigger
-									id={serviceId}
-									className='w-full whitespace-normal data-[size=default]:h-auto data-[size=default]:min-h-8 data-[size=default]:py-1.5 *:data-[slot=select-value]:items-start *:data-[slot=select-value]:line-clamp-none'
-									aria-invalid={fieldState.invalid}>
-									<SelectValue>
-										{(value: unknown) => {
-											const service = serviceValue(value);
-											const detail = service === "anilist" && connected && username ? username : undefined;
-											return <ServiceOption label={labels[service]} detail={detail} />;
-										}}
-									</SelectValue>
-								</SelectTrigger>
-								<SelectContent align='start'>
-									<SelectGroup>
-										<SelectItem value='anilist'>
-											<ServiceOption label={t("anime.anilist")} detail={connected && username ? username : undefined} />
-										</SelectItem>
-										<SelectItem value='myanimelist' disabled>
-											{t("anime.myAnimeList")}
-										</SelectItem>
-										<SelectItem value='kitsu' disabled>
-											{t("anime.kitsu")}
-										</SelectItem>
-									</SelectGroup>
-								</SelectContent>
-							</Select>
-							<FieldDescription>{connected ? t("onboarding.servicesUnavailableConnected") : t("onboarding.servicesUnavailable")}</FieldDescription>
-							<FieldError errors={[fieldState.error]} />
-						</Field>
-					)}
-				/>
+				<DefaultServiceField connected={connected} username={username} />
 				{errorMessage ? <p className='text-sm text-destructive'>{errorMessage}</p> : null}
 			</CardContent>
 		</Card>

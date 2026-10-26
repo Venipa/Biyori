@@ -4,17 +4,9 @@ import { ExternalLinkIcon, InfoIcon, LogOutIcon, RefreshCwIcon, SettingsIcon } f
 import { useState } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import { profileInitials } from "@/lib/profile-initials";
+import { AccountAvatar, openAnilistProfile } from "@/mainview/components/app/shell/account-avatar";
 import { Button } from "@/mainview/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/mainview/components/ui/dropdown-menu";
-import { Image } from "@/mainview/components/ui/image";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/mainview/components/ui/tooltip";
 import { toggleActivityPanel, useActivityPanelState } from "@/mainview/lib/activity-panel";
 import { useCheckForUpdates } from "@/mainview/lib/update-status";
@@ -127,7 +119,7 @@ function AccountButton() {
 		if (!username) {
 			return;
 		}
-		void desktopRpc.request.openExternal({ url: `https://anilist.co/user/${encodeURIComponent(username)}/` });
+		openAnilistProfile(username);
 	}
 
 	function logOut(): void {
@@ -145,37 +137,39 @@ function AccountButton() {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger render={<Button variant='ghost' aria-label={label} aria-haspopup='menu' className={titleButtonClass} disabled={signingOut} />}>
-				<span className='relative flex size-5 items-center justify-center overflow-hidden rounded-full bg-muted text-[11px] font-medium text-muted-foreground transition-transform duration-150 ease-out group-active/button:scale-90'>
-					{initials}
-					{avatarUrl ? <Image src={avatarUrl} alt='' className='absolute inset-0 size-full rounded-full' skeletonClassName='rounded-full' /> : null}
+				<span className='relative transition-transform duration-150 ease-out group-active/button:scale-90'>
+					<AccountAvatar
+						initials={initials}
+						avatarUrl={avatarUrl}
+						className='size-6 text-[11px] transition-shadow group-hover/button:ring-foreground/30 group-data-popup-open/button:ring-2 group-data-popup-open/button:ring-primary'
+					/>
+					{connected ? <span className='absolute -right-0.5 -bottom-0.5 size-2 rounded-full bg-emerald-500 ring-2 ring-background' /> : null}
 				</span>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align='end' className='min-w-52'>
+			<DropdownMenuContent align='end' className='min-w-60'>
 				<DropdownMenuGroup>
-					<DropdownMenuLabel className='font-normal'>
-						<p className='truncate text-sm font-medium text-foreground'>{connected && username ? username : t("shell.notSignedIn")}</p>
-						<p className='truncate text-xs'>{connected ? t("shell.anilist") : t("shell.connectToUseList")}</p>
-					</DropdownMenuLabel>
+					<DropdownMenuItem
+						className='gap-3 bg-muted/50 p-2'
+						onClick={() => {
+							if (connected) {
+								openProfile();
+							} else {
+								void authorize.mutateAsync();
+							}
+						}}>
+						<AccountAvatar initials={initials} avatarUrl={avatarUrl} className='size-10 shrink-0 text-sm' />
+						<span className='flex min-w-0 flex-1 flex-col'>
+							<span className='truncate text-sm font-medium'>{connected && username ? username : t("shell.notSignedIn")}</span>
+							<span className='flex items-center gap-1 truncate text-xs text-muted-foreground'>
+								{connected ? <span className='size-1.5 rounded-full bg-emerald-500' /> : null}
+								{connected ? t("shell.anilist") : t("shell.connectAnilist")}
+							</span>
+						</span>
+						<ExternalLinkIcon className='text-muted-foreground' />
+					</DropdownMenuItem>
 				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
-					{connected ? (
-						<DropdownMenuItem
-							onClick={() => {
-								openProfile();
-							}}>
-							<ExternalLinkIcon />
-							{t("shell.viewOnAnilist")}
-						</DropdownMenuItem>
-					) : (
-						<DropdownMenuItem
-							onClick={() => {
-								void authorize.mutateAsync();
-							}}>
-							<ExternalLinkIcon />
-							{t("shell.connectAnilist")}
-						</DropdownMenuItem>
-					)}
 					<DropdownMenuItem
 						onClick={() => {
 							void desktopRpc.request.openSettings({});
@@ -183,8 +177,11 @@ function AccountButton() {
 						<SettingsIcon />
 						{t("shell.accountSettings")}
 					</DropdownMenuItem>
+				</DropdownMenuGroup>
+				<DropdownMenuSeparator />
+				<DropdownMenuGroup>
 					<DropdownMenuItem disabled={checking} onClick={checkForUpdates}>
-						<RefreshCwIcon />
+						<RefreshCwIcon className={checking ? "animate-spin" : undefined} />
 						{t("shell.checkForUpdates")}
 					</DropdownMenuItem>
 					<DropdownMenuItem
