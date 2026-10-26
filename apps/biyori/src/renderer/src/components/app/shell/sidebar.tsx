@@ -7,6 +7,7 @@ import { desktopRpc } from "@/desktop-rpc";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { SidebarSearch } from "@/mainview/components/app/shell/sidebar-search";
 import { Button } from "@/mainview/components/ui/button";
+import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { clearListFilterText, useListFilterText } from "@/mainview/lib/list-filter";
 import { useUpdateStatus } from "@/mainview/lib/update-status";
 import { cn } from "@/mainview/lib/utils";
@@ -50,42 +51,6 @@ const chipTone: Record<(typeof otherListStatuses)[number], string> = {
 const navDestinations: string[] = ["/app/now-playing", "/app/anime-list", "/app/search", ...listItems.map((item) => item.to), ...toolItems.map((item) => item.to)];
 
 const navPillSpring = { type: "spring", stiffness: 500, damping: 40 } as const;
-
-function sidebarArt(snapshot: { media: unknown; match: { id: number; bannerUrl: string; coverUrl: string } | null }): { id: number; bannerUrl: string; coverUrl: string } | null {
-	const match = snapshot.match;
-	if (snapshot.media == null || match == null || match.id <= 0 || (!match.bannerUrl && !match.coverUrl)) {
-		return null;
-	}
-	return { id: match.id, bannerUrl: match.bannerUrl, coverUrl: match.coverUrl };
-}
-
-function SidebarAmbient() {
-	const playingQuery = trpc.media.nowPlaying.useQuery(undefined, { select: sidebarArt });
-	const playing = playingQuery.data;
-	const latest = trpc.history.latest.useQuery(undefined, { enabled: playingQuery.isSuccess && playing == null });
-	const art =
-		playing ??
-		(latest.data?.animeId != null && (latest.data.bannerUrl || latest.data.coverUrl)
-			? { id: latest.data.animeId, bannerUrl: latest.data.bannerUrl ?? "", coverUrl: latest.data.coverUrl ?? "" }
-			: null);
-	if (art == null) {
-		return null;
-	}
-	const banner = art.bannerUrl.length > 0;
-	return (
-		<div aria-hidden className='pointer-events-none absolute inset-x-0 top-0 z-0 h-72 overflow-hidden'>
-			<AnimeCover
-				id={art.id}
-				kind={banner ? "banner" : "cover"}
-				sourceUrl={banner ? art.bannerUrl : art.coverUrl}
-				coverUrl={art.coverUrl || undefined}
-				alt=''
-				className='absolute top-0 left-1/2 h-32 w-lg max-w-none -translate-x-1/2 scale-150 opacity-35 blur-2xl'
-			/>
-			<div className='absolute inset-0 bg-[radial-gradient(ellipse_at_top,transparent_0%,var(--sidebar)_72%)]' />
-		</div>
-	);
-}
 
 function navItemClass(active: boolean): string {
 	return cn("relative flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm hover:bg-muted", active ? "text-foreground" : "text-foreground/80");
@@ -140,7 +105,6 @@ export function AppSidebar() {
 
 	return (
 		<nav aria-label={t("nav.main")} className='relative z-30 flex h-full min-h-0 w-56 shrink-0 flex-col gap-2 overflow-visible border-r bg-sidebar p-2'>
-			<SidebarAmbient />
 			<div className='relative z-10'>
 				<SidebarSearch />
 			</div>
@@ -210,65 +174,56 @@ function nowPlayingSubLines(
 
 function NowPlayingNavLink({ active, isEnter }: { active: boolean; isEnter: boolean }) {
 	const { t } = useTranslation();
+	const animeInfo = useAnimeInfoNav();
 	const snapshot = trpc.media.nowPlaying.useQuery().data;
 	const playing = Boolean(snapshot?.media);
 	const latest = trpc.history.latest.useQuery(undefined, { enabled: !playing });
-	const subLines =
+	const [title, episodeLabel] =
 		playing && snapshot
 			? nowPlayingSubLines(snapshot, {
 					movie: t("nowPlaying.movie"),
 					episode: (episode) => t("nowPlaying.episodeNumber", { episode }),
 				})
-			: latest.data?.title
-				? [latest.data.title]
-				: [];
+			: [latest.data?.title];
 	const coverId = playing ? snapshot?.match?.id : latest.data?.animeId;
 	const coverUrl = playing ? snapshot?.match?.coverUrl : latest.data?.coverUrl;
-	const hasSubtitle = subLines.length > 0;
-	const showCover = hasSubtitle && coverId != null && Boolean(coverUrl);
+	const rowClass = "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted";
+	const media = title ? (
+		<>
+			<AnimeCover id={coverId ?? null} coverUrl={coverUrl || undefined} alt='' className='aspect-2/3 w-10 shrink-0 overflow-hidden rounded-sm bg-muted' />
+			<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
+				<span className='line-clamp-2 text-xs text-foreground/90'>{title}</span>
+				<span className='flex items-center gap-1 text-xs text-muted-foreground'>
+					{playing ? <PlayIcon aria-hidden className='size-3 shrink-0 fill-list-playing-foreground text-list-playing-foreground' /> : null}
+					<span className='truncate'>{playing ? [t("nowPlaying.kicker"), episodeLabel].filter(Boolean).join(" · ") : t("nav.lastPlayed")}</span>
+				</span>
+			</span>
+		</>
+	) : null;
 
 	return (
-		<Button
-			variant='ghost'
-			render={<Link to='/app/now-playing' aria-current={active ? "page" : undefined} />}
-			nativeButton={false}
-			className={cn(
-				"relative h-auto w-full flex-col items-stretch gap-0 overflow-hidden rounded-lg border border-border p-0 hover:bg-transparent",
-				hasSubtitle && "whitespace-normal",
-				active ? "text-foreground" : "text-foreground/80",
-			)}>
-			{showCover ? (
-				<span aria-hidden className='pointer-events-none absolute inset-0'>
-					<AnimeCover
-						id={coverId}
-						coverUrl={coverUrl || undefined}
-						alt=''
-						className={cn("size-full scale-125 opacity-50 blur-xs [mask-image:radial-gradient(8rem_6rem_at_22%_62%,#000,transparent)]", !playing && "grayscale")}
-					/>
-					<span className='absolute inset-0 bg-sidebar/40' />
-				</span>
-			) : null}
-			<span className={cn("relative z-10 flex min-h-8 items-center gap-2 px-3 py-1.5", playing && "bg-list-playing/80 text-list-playing-foreground")}>
+		<div className='flex flex-col gap-0.5'>
+			<Link to='/app/now-playing' aria-current={active ? "page" : undefined} className={navItemClass(active)}>
 				<NavIconSlot active={active} isEnter={isEnter}>
-					{playing ? <PlayIcon className='size-4 shrink-0 fill-current' /> : <HomeIcon className='size-4 shrink-0' />}
+					<HomeIcon className='size-4 shrink-0 text-current' />
 				</NavIconSlot>
-				<span className='truncate'>{playing ? t("nowPlaying.kicker") : t("nav.home")}</span>
-			</span>
-			{hasSubtitle ? (
-				<>
-					<span className='relative z-10 h-px bg-border' />
-					<span className='relative z-10 flex items-center gap-2 px-3 py-1.5'>
-						{showCover ? (
-							<AnimeCover id={coverId} coverUrl={coverUrl || undefined} alt='' className={cn("aspect-2/3 w-7 shrink-0 overflow-hidden rounded-sm", !playing && "grayscale")} />
-						) : null}
-						<span className='flex min-w-0 flex-1 flex-col items-start gap-0.5'>
-							{playing ? null : <span className='text-xs text-muted-foreground'>{t("nav.lastPlayed")}</span>}
-							<span className='line-clamp-2 text-left text-xs font-normal text-foreground/80'>{subLines.join(" ")}</span>
-						</span>
-					</span>
-				</>
+				<span className='flex-1 truncate'>{t("nav.home")}</span>
+			</Link>
+			{media && playing ? (
+				<Link to='/app/now-playing' className={rowClass}>
+					{media}
+				</Link>
+			) : media && coverId != null ? (
+				<button
+					type='button'
+					className={rowClass}
+					onClick={() => {
+						animeInfo.open({ id: coverId, infoTab: "main", title, coverUrl: coverUrl || undefined });
+					}}>
+					{media}
+				</button>
 			) : null}
-		</Button>
+		</div>
 	);
 }
 
