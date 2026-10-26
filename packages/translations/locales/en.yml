@@ -810,11 +810,28 @@ library:
   noFolders: No library folders
   addFolderHint: Add a folder to scan and monitor for episodes.
 statistics:
-  overview: Overview
-  mix: Mix
-  genres: Genres
-  library: Library
-  animeList: Anime list
+  yourList: Your list
+  app: App
+  tileAnime: Anime
+  tileEpisodes: Episodes
+  tileWatched: Time watched
+  tileMeanScore: Mean score
+  remaining: "{{value}} remaining"
+  deviation: "± {{value}} deviation"
+  shortDuration: "{{days}}d {{hours}}h"
+  total: Total
+  ofAired: "{{have}} of {{aired}} aired episodes on disk"
+  tileThisWeek: Last 7 days
+  episodes_one: "{{count}} episode"
+  episodes_other: "{{count}} episodes"
+  completion: "{{completed}}% completed · {{dropped}}% dropped"
+  watchActivity: Watch activity
+  activityWeek: "Week of {{date}}: {{count}}"
+  weeksAgo: "{{count}} weeks ago"
+  now: Now
+  topRated: Top rated
+  showAll: "Show all ({{count}})"
+  showLess: Show less
   animeCount: "Anime:"
   episodeCount: "Episodes:"
   timeSpent: "Watched:"

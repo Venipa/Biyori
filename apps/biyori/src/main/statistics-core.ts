@@ -215,3 +215,60 @@ export function summarizeList(entries: StatisticsEntry[]): StatisticsSummary {
 		},
 	};
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
+export const ACTIVITY_WEEKS = 26;
+
+export type WatchActivity = {
+	/** oldest first; `start` is the ISO date the 7-day window begins */
+	weeks: Array<{ start: string; count: number; ratio: number }>;
+	lastSevenDays: { episodes: number; minutes: number };
+};
+
+/** History stamps are UTC written as "YYYY-MM-DD HH:mm" (see track/queue.ts). */
+function parseHistoryStamp(stamp: string): number {
+	return Date.parse(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(stamp) ? `${stamp.replace(" ", "T")}:00Z` : stamp);
+}
+
+/** Rolling 7-day windows ending now, so the last column is always "this week". */
+export function summarizeActivity(
+	rows: ReadonlyArray<{ lastModified: string; episode: number; durationMinutes: number }>,
+	now = Date.now(),
+	weeks = ACTIVITY_WEEKS,
+): WatchActivity {
+	const counts = Array.from({ length: weeks }, () => 0);
+	let recentMinutes = 0;
+	for (const row of rows) {
+		const time = parseHistoryStamp(row.lastModified);
+		if (row.episode <= 0 || Number.isNaN(time) || time > now) {
+			continue;
+		}
+		const weeksAgo = Math.floor((now - time) / WEEK_MS);
+		if (weeksAgo >= weeks) {
+			continue;
+		}
+		counts[weeks - 1 - weeksAgo] += 1;
+		if (weeksAgo === 0) {
+			recentMinutes += row.durationMinutes;
+		}
+	}
+	const largest = Math.max(1, ...counts);
+	return {
+		weeks: counts.map((count, index) => ({
+			start: new Date(now - (weeks - index) * WEEK_MS).toISOString().slice(0, 10),
+			count,
+			ratio: count / largest,
+		})),
+		lastSevenDays: { episodes: counts[weeks - 1] ?? 0, minutes: recentMinutes },
+	};
+}
+
+export type TopRatedTitle = { id: number; title: string; score: number; coverUrl: string };
+
+export function topRatedTitles(rows: ReadonlyArray<Omit<TopRatedTitle, "score"> & { score: number | null }>, limit = 5): TopRatedTitle[] {
+	return rows
+		.filter((row): row is TopRatedTitle => row.score != null && row.score > 0)
+		.toSorted((left, right) => right.score - left.score || left.title.localeCompare(right.title))
+		.slice(0, limit);
+}

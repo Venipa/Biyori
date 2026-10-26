@@ -1,13 +1,20 @@
 import { t, useTranslation } from "@biyori/translations/react";
-import { type ReactElement, useState } from "react";
+import type { inferRouterOutputs } from "@trpc/server";
+import { type ReactElement, type ReactNode, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
-import { Separator } from "@/mainview/components/ui/separator";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { airingStatusLabel } from "@/mainview/lib/anime-airing-notice";
+import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
 import { animeTypeLabel, genreLabel } from "@/mainview/lib/anime-list-filter";
 import { trpc } from "@/mainview/trpc";
+import type { AppRouter } from "@/shared/app-router";
+
+type StatisticsData = inferRouterOutputs<AppRouter>["statistics"]["summary"];
+type StatisticsActivity = StatisticsData["activity"];
+type StatisticsTopRated = StatisticsData["topRated"][number];
 
 function displayStatLabel(label: string): string {
 	switch (label) {
@@ -37,8 +44,9 @@ function displayStatLabel(label: string): string {
 const tabTriggerClass =
 	"rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 py-2 text-sm data-active:border-primary data-active:bg-transparent data-active:shadow-none";
 
-type StatsTab = "overview" | "mix" | "genres" | "library";
+type StatsTab = "list" | "app";
 
+// only the status donut is categorical; bar lists use one tone so the page stays quiet
 const CHART_VARS = ["--chart-1", "--chart-2", "--chart-3", "--chart-4", "--chart-5"] as const;
 const CHART_BG = ["bg-chart-1", "bg-chart-2", "bg-chart-3", "bg-chart-4", "bg-chart-5"] as const;
 
@@ -49,15 +57,6 @@ type StatBar = {
 	total?: number;
 };
 
-function StatRow({ label, value }: { label: string; value: string | number }): ReactElement {
-	return (
-		<div className='flex items-baseline gap-6 py-1 text-sm'>
-			<span className='w-48 shrink-0 text-muted-foreground'>{label}</span>
-			<span className='font-medium tabular-nums'>{value}</span>
-		</div>
-	);
-}
-
 function formatDuration(minutes: number): string {
 	if (minutes <= 0) {
 		return t("common.none");
@@ -66,6 +65,22 @@ function formatDuration(minutes: number): string {
 	const hours = Math.floor((minutes % 1440) / 60);
 	const remainingMinutes = Math.floor(minutes % 60);
 	return t("statistics.duration", { days, hours, minutes: remainingMinutes });
+}
+
+function completionHint(statuses: StatBar[]): string | undefined {
+	const total = statuses.reduce((sum, item) => sum + item.count, 0);
+	if (total <= 0) {
+		return undefined;
+	}
+	const share = (label: string) => Math.round(((statuses.find((item) => item.label === label)?.count ?? 0) / total) * 100);
+	return t("statistics.completion", { completed: share("Completed"), dropped: share("Dropped") });
+}
+
+function formatShortDuration(minutes: number): string {
+	if (minutes <= 0) {
+		return t("common.none");
+	}
+	return t("statistics.shortDuration", { days: Math.floor(minutes / 1440), hours: Math.floor((minutes % 1440) / 60) });
 }
 
 function formatUptime(seconds: number): string {
@@ -103,57 +118,178 @@ function pieBackground(items: StatBar[]): string {
 	return `conic-gradient(${stops.join(", ")})`;
 }
 
-function BarList({ items, value }: { items?: StatBar[] | null; value?: (item: StatBar) => string }): ReactElement {
-	const { t } = useTranslation();
-	if (!items || items.length === 0) {
-		return <p className='text-sm text-muted-foreground'>{t("common.none")}</p>;
-	}
+function Panel({ title, className, children }: { title: string; className?: string; children: ReactNode }): ReactElement {
 	return (
-		<div className='flex max-w-xl flex-col gap-1'>
-			{items.map((item, index) => {
-				const label = displayStatLabel(item.label);
-				const shown = value?.(item) ?? String(item.count);
-				return (
-					<div key={item.label} className='grid grid-cols-[7rem_1fr_4.5rem] items-center gap-2 text-sm'>
-						<span className='truncate text-right' title={label}>
-							{label}
-						</span>
-						<div className='h-4 overflow-hidden rounded-sm bg-muted'>
-							<div
-								role='img'
-								aria-label={t("statistics.barValue", { label, value: shown })}
-								className={`h-full ${CHART_BG[index % CHART_BG.length]}`}
-								style={{ width: `${item.ratio * 100}%` }}
-							/>
-						</div>
-						<span className='tabular-nums text-muted-foreground'>{shown}</span>
-					</div>
-				);
-			})}
+		<section className={`flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-4 ${className ?? ""}`}>
+			<h2 className='text-xs font-medium text-muted-foreground'>{title}</h2>
+			{children}
+		</section>
+	);
+}
+
+function StatTile({ label, value, hint, title }: { label: string; value: string | number; hint?: string; title?: string }): ReactElement {
+	return (
+		<div className='flex min-w-0 flex-col gap-1 rounded-lg border bg-card px-4 py-3' title={title}>
+			<span className='text-xs text-muted-foreground'>{label}</span>
+			<span className='truncate text-2xl font-semibold tabular-nums tracking-tight'>{value}</span>
+			<span className='truncate text-xs text-muted-foreground tabular-nums'>{hint ?? " "}</span>
 		</div>
 	);
 }
 
-function StatusPie({ items }: { items?: StatBar[] | null }): ReactElement {
+function DetailRow({ label, value }: { label: string; value: ReactNode }): ReactElement {
+	return (
+		<div className='flex items-baseline justify-between gap-4 py-1.5 text-sm'>
+			<dt className='text-muted-foreground'>{label.replace(/:$/, "")}</dt>
+			<dd className='text-right font-medium tabular-nums'>{value}</dd>
+		</div>
+	);
+}
+
+const COLLAPSED_ROWS = 5;
+
+function BarList({ items, value }: { items?: StatBar[] | null; value?: (item: StatBar) => string }): ReactElement {
+	const { t } = useTranslation();
+	const [expanded, setExpanded] = useState(false);
+	if (!items || items.length === 0) {
+		return <p className='text-sm text-muted-foreground'>{t("common.none")}</p>;
+	}
+	const collapsible = items.length > COLLAPSED_ROWS;
+	const shownItems = collapsible && !expanded ? items.slice(0, COLLAPSED_ROWS) : items;
+	return (
+		<div className='flex flex-col gap-1.5'>
+			{shownItems.map((item) => {
+				const label = displayStatLabel(item.label);
+				const shown = value?.(item) ?? String(item.count);
+				return (
+					<div key={item.label} className='grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-3 text-sm'>
+						<span className='truncate' title={label}>
+							{label}
+						</span>
+						<div className='h-1.5 overflow-hidden rounded-full bg-muted'>
+							<div
+								role='img'
+								aria-label={t("statistics.barValue", { label, value: shown })}
+								className='h-full rounded-full bg-primary/70'
+								style={{ width: `${item.ratio * 100}%` }}
+							/>
+						</div>
+						<span className='min-w-10 text-right tabular-nums text-muted-foreground'>{shown}</span>
+					</div>
+				);
+			})}
+			{collapsible ? (
+				<button
+					type='button'
+					className='mt-1 self-start text-xs text-muted-foreground hover:text-foreground focus-visible:text-foreground'
+					aria-expanded={expanded}
+					onClick={() => {
+						setExpanded((current) => !current);
+					}}>
+					{expanded ? t("statistics.showLess") : t("statistics.showAll", { count: items.length })}
+				</button>
+			) : null}
+		</div>
+	);
+}
+
+function ActivityStrip({ activity }: { activity: StatisticsActivity }): ReactElement {
+	const { t } = useTranslation();
+	return (
+		<div className='flex flex-col gap-1.5'>
+			<div className='flex h-20 items-end gap-1'>
+				{activity.weeks.map((week) => {
+					const label = t("statistics.activityWeek", { date: new Date(week.start).toLocaleDateString(), count: week.count });
+					return (
+						<div
+							key={week.start}
+							role='img'
+							aria-label={label}
+							title={label}
+							className={`min-w-0 flex-1 rounded-sm ${week.count > 0 ? "bg-primary/70" : "bg-muted"}`}
+							style={{ height: `${Math.max(week.ratio * 100, 4)}%` }}
+						/>
+					);
+				})}
+			</div>
+			<div className='flex justify-between text-xs text-muted-foreground'>
+				<span>{t("statistics.weeksAgo", { count: activity.weeks.length })}</span>
+				<span>{t("statistics.now")}</span>
+			</div>
+		</div>
+	);
+}
+
+function TopRatedList({ items }: { items: StatisticsTopRated[] }): ReactElement {
+	const { t } = useTranslation();
+	const animeInfo = useAnimeInfoNav();
+	if (items.length === 0) {
+		return <p className='text-sm text-muted-foreground'>{t("common.none")}</p>;
+	}
+	return (
+		<ol className='flex flex-col gap-1'>
+			{items.map((item) => (
+				<li key={item.id}>
+					<button
+						type='button'
+						className='flex w-full items-center gap-3 rounded-md p-1 text-left text-sm hover:bg-muted focus-visible:bg-muted'
+						onClick={() => {
+							animeInfo.open({ id: item.id, infoTab: "main", title: item.title, coverUrl: item.coverUrl || undefined });
+						}}>
+						<AnimeCover id={item.id} coverUrl={item.coverUrl || undefined} alt='' className='aspect-2/3 w-8 shrink-0 overflow-hidden rounded-sm bg-muted' lazy />
+						<span className='min-w-0 flex-1 truncate'>{item.title}</span>
+						<span className='font-medium tabular-nums'>{item.score}</span>
+					</button>
+				</li>
+			))}
+		</ol>
+	);
+}
+
+function ScoreColumns({ buckets }: { buckets: { score: number; count: number; ratio: number }[] }): ReactElement {
+	const { t } = useTranslation();
+	return (
+		<div className='flex h-36 items-end gap-1.5'>
+			{buckets.map((bucket) => (
+				<div key={bucket.score} className='flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1'>
+					<span className='text-[10px] tabular-nums text-muted-foreground'>{bucket.count > 0 ? bucket.count : ""}</span>
+					<div
+						role='img'
+						aria-label={t("statistics.scoreBucket", { score: bucket.score, count: bucket.count })}
+						className={`w-full rounded-sm ${bucket.count > 0 ? "bg-primary/70" : "bg-muted"}`}
+						style={{ height: `${Math.max(bucket.ratio * 100, 3)}%` }}
+					/>
+					<span className='text-xs tabular-nums text-muted-foreground'>{bucket.score}</span>
+				</div>
+			))}
+		</div>
+	);
+}
+
+function StatusDonut({ items }: { items?: StatBar[] | null }): ReactElement {
 	const { t } = useTranslation();
 	const slices = items ?? [];
 	const total = slices.reduce((sum, item) => sum + item.count, 0);
 	return (
-		<div className='flex flex-wrap items-center gap-8'>
+		<div className='flex flex-wrap items-center gap-6'>
 			<div
 				role='img'
 				aria-label={slices.map((item) => t("statistics.pieSlice", { label: displayStatLabel(item.label), count: item.count })).join(", ") || t("statistics.noListStatuses")}
-				className='size-40 shrink-0 rounded-full'
-				style={{ background: pieBackground(slices) }}
-			/>
-			<ul className='flex min-w-48 flex-col gap-1.5 text-sm'>
+				className='relative grid size-32 shrink-0 place-items-center rounded-full'
+				style={{ background: pieBackground(slices) }}>
+				<div className='flex size-[72%] flex-col items-center justify-center rounded-full bg-card'>
+					<span className='text-lg font-semibold tabular-nums'>{total}</span>
+					<span className='text-[10px] text-muted-foreground'>{t("statistics.total")}</span>
+				</div>
+			</div>
+			<ul className='flex min-w-40 flex-1 flex-col gap-1.5 text-sm'>
 				{slices.map((item, index) => (
 					<li key={item.label} className='flex items-center gap-2'>
-						<span className={`size-2.5 shrink-0 rounded-sm ${CHART_BG[index % CHART_BG.length]}`} />
-						<span className='flex-1'>{displayStatLabel(item.label)}</span>
+						<span className={`size-2 shrink-0 rounded-full ${CHART_BG[index % CHART_BG.length]}`} />
+						<span className='flex-1 truncate'>{displayStatLabel(item.label)}</span>
 						<span className='tabular-nums text-muted-foreground'>
 							{item.count}
-							{total > 0 ? ` (${Math.round((item.count / total) * 100)}%)` : ""}
+							{total > 0 ? <span className='ml-1.5 text-xs'>{Math.round((item.count / total) * 100)}%</span> : null}
 						</span>
 					</li>
 				))}
@@ -164,30 +300,16 @@ function StatusPie({ items }: { items?: StatBar[] | null }): ReactElement {
 
 function StatisticsSkeleton(): ReactElement {
 	return (
-		<div className='flex flex-col gap-5'>
-			<section>
-				<Skeleton className='h-5 w-28' />
-				<Separator className='my-2' />
-				{["r0", "r1", "r2", "r3", "r4", "r5"].map((id) => (
-					<div key={id} className='flex items-baseline gap-6 py-1'>
-						<Skeleton className='h-4 w-48 shrink-0' />
-						<Skeleton className='h-4 w-24' />
-					</div>
+		<div className='flex flex-col gap-4'>
+			<div className='grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5'>
+				{["t0", "t1", "t2", "t3", "t4"].map((id) => (
+					<Skeleton key={id} className='h-[5.25rem] rounded-lg' />
 				))}
-			</section>
-			<section>
-				<Skeleton className='h-4 w-40' />
-				<Separator className='my-2' />
-				<div className='flex max-w-xl flex-col gap-1'>
-					{["b0", "b1", "b2", "b3"].map((id) => (
-						<div key={id} className='grid grid-cols-[2rem_1fr_3rem] items-center gap-2'>
-							<Skeleton className='h-4 w-6 justify-self-end' />
-							<Skeleton className='h-4 w-full rounded-sm' />
-							<Skeleton className='h-4 w-8' />
-						</div>
-					))}
-				</div>
-			</section>
+			</div>
+			<div className='grid gap-4 lg:grid-cols-2'>
+				<Skeleton className='h-52 rounded-lg' />
+				<Skeleton className='h-52 rounded-lg' />
+			</div>
 		</div>
 	);
 }
@@ -197,7 +319,7 @@ export function StatisticsView(): ReactElement {
 	const query = trpc.statistics.summary.useQuery();
 	const data = query.data;
 	const coverage = data?.libraryCoverage ?? { have: 0, aired: 0, ratio: 0, byStatus: [] };
-	const [tab, setTab] = useState<StatsTab>("overview");
+	const [tab, setTab] = useState<StatsTab>("list");
 
 	return (
 		<div className='flex h-full min-h-0 flex-col'>
@@ -209,112 +331,98 @@ export function StatisticsView(): ReactElement {
 				className='flex h-full min-h-0 flex-col gap-0'>
 				<div className='shrink-0 border-b bg-card px-2 pt-2'>
 					<TabsList className='h-auto bg-transparent p-0'>
-						<TabsTrigger value='overview' className={tabTriggerClass}>
-							{t("statistics.overview")}
+						<TabsTrigger value='list' className={tabTriggerClass}>
+							{t("statistics.yourList")}
 						</TabsTrigger>
-						<TabsTrigger value='mix' className={tabTriggerClass}>
-							{t("statistics.mix")}
-						</TabsTrigger>
-						<TabsTrigger value='genres' className={tabTriggerClass}>
-							{t("statistics.genres")}
-						</TabsTrigger>
-						<TabsTrigger value='library' className={tabTriggerClass}>
-							{t("statistics.library")}
+						<TabsTrigger value='app' className={tabTriggerClass}>
+							{t("statistics.app")}
 						</TabsTrigger>
 					</TabsList>
 				</div>
 				<TabsContent value={tab} keepMounted={false} className='m-0 min-h-0 flex-1'>
-					<ScrollArea className='h-full min-h-0' viewportClassName='flex min-h-0 flex-col gap-5 px-6 py-5'>
-						{query.isPending && !data ? (
-							<StatisticsSkeleton />
-						) : data && tab === "overview" ? (
-							<>
-								<section>
-									<h1 className='text-base font-semibold'>{t("statistics.animeList")}</h1>
-									<Separator className='my-2' />
-									<StatRow label={t("statistics.animeCount")} value={data.animeCount} />
-									<StatRow label={t("statistics.episodeCount")} value={data.episodeCount} />
-									<StatRow label={t("statistics.timeSpent")} value={formatDuration(data.spentMinutes)} />
-									<StatRow label={t("statistics.timeRemaining")} value={formatDuration(data.remainingMinutes)} />
-									<StatRow label={t("statistics.meanScore")} value={data.meanScore.toFixed(2)} />
-									<StatRow label={t("statistics.scoreDeviation")} value={data.scoreDeviation.toFixed(2)} />
-								</section>
-								<section>
-									<h2 className='text-sm font-semibold'>{t("statistics.scoreDistribution")}</h2>
-									<Separator className='my-2' />
-									<div className='flex max-w-xl flex-col gap-1'>
-										{data.scoreDistribution.map((bucket) => (
-											<div key={bucket.score} className='grid grid-cols-[2rem_1fr_3rem] items-center gap-2 text-sm'>
-												<span className='text-right tabular-nums'>{bucket.score}</span>
-												<div className='h-4 overflow-hidden rounded-sm bg-muted'>
-													<div
-														role='img'
-														aria-label={t("statistics.scoreBucket", { score: bucket.score, count: bucket.count })}
-														className='h-full bg-primary'
-														style={{ width: `${bucket.ratio * 100}%` }}
-													/>
-												</div>
-												<span className='tabular-nums text-muted-foreground'>{bucket.count}</span>
+					<ScrollArea className='h-full min-h-0' viewportClassName='px-6 py-5'>
+						<div className='flex w-full max-w-5xl flex-col gap-4'>
+							{query.isPending && !data ? (
+								<StatisticsSkeleton />
+							) : data && tab === "list" ? (
+								<>
+									<div className='grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5'>
+										<StatTile label={t("statistics.tileAnime")} value={data.animeCount} hint={completionHint(data.statusDistribution)} />
+										<StatTile label={t("statistics.tileEpisodes")} value={data.episodeCount} />
+										<StatTile
+											label={t("statistics.tileWatched")}
+											value={formatShortDuration(data.spentMinutes)}
+											hint={data.remainingMinutes > 0 ? t("statistics.remaining", { value: formatShortDuration(data.remainingMinutes) }) : undefined}
+											title={formatDuration(data.spentMinutes)}
+										/>
+										<StatTile label={t("statistics.tileMeanScore")} value={data.meanScore.toFixed(2)} hint={t("statistics.deviation", { value: data.scoreDeviation.toFixed(2) })} />
+										<StatTile
+											label={t("statistics.tileThisWeek")}
+											value={t("statistics.episodes", { count: data.activity.lastSevenDays.episodes })}
+											hint={data.activity.lastSevenDays.minutes > 0 ? formatShortDuration(data.activity.lastSevenDays.minutes) : undefined}
+										/>
+									</div>
+									<div className='grid gap-4 lg:grid-cols-2'>
+										<Panel title={t("statistics.watchActivity")} className='lg:col-span-2'>
+											<ActivityStrip activity={data.activity} />
+										</Panel>
+										<Panel title={t("statistics.scoreDistribution")}>
+											<ScoreColumns buckets={data.scoreDistribution} />
+										</Panel>
+										<Panel title={t("statistics.listStatus")}>
+											<StatusDonut items={data.statusDistribution} />
+										</Panel>
+										<Panel title={t("statistics.topRated")}>
+											<TopRatedList items={data.topRated} />
+										</Panel>
+										<Panel title={t("statistics.format")}>
+											<BarList items={data.typeDistribution} />
+										</Panel>
+										<Panel title={t("statistics.rewatches")}>
+											<BarList items={data.rewatchDistribution} />
+										</Panel>
+										<Panel title={t("statistics.topGenres")}>
+											<BarList items={data.genreDistribution} />
+										</Panel>
+										<Panel title={t("statistics.libraryCoverage")}>
+											<div className='flex items-baseline justify-between gap-4'>
+												<span className='text-2xl font-semibold tabular-nums tracking-tight'>{Math.round(coverage.ratio * 100)}%</span>
+												<span className='text-xs text-muted-foreground tabular-nums'>{t("statistics.ofAired", { have: coverage.have, aired: coverage.aired })}</span>
 											</div>
-										))}
+											<div className='h-1.5 overflow-hidden rounded-full bg-muted'>
+												<div className='h-full rounded-full bg-primary/70' style={{ width: `${coverage.ratio * 100}%` }} />
+											</div>
+											<BarList items={coverage.byStatus} value={(item) => `${item.count}/${item.total ?? 0}`} />
+										</Panel>
 									</div>
-								</section>
-								<section>
-									<h2 className='text-sm font-semibold'>{t("statistics.localDatabase")}</h2>
-									<Separator className='my-2' />
-									<StatRow label={t("statistics.animeCount")} value={t("statistics.fileSize", { count: data.localAnimeCount, size: formatBytes(data.databaseSizeBytes) })} />
-									<StatRow label={t("statistics.episodeFiles")} value={t("statistics.fileSize", { count: data.episodeFileCount, size: formatBytes(data.episodeFileSizeBytes) })} />
-									<StatRow label={t("statistics.imageFiles")} value={t("statistics.fileSize", { count: data.imageCount, size: formatBytes(data.imageSizeBytes) })} />
-									<StatRow label={t("statistics.torrentFiles")} value={t("statistics.fileSize", { count: data.torrentCount, size: formatBytes(data.torrentSizeBytes) })} />
-								</section>
-								<section>
-									<h2 className='text-sm font-semibold'>{t("statistics.biyori")}</h2>
-									<Separator className='my-2' />
-									<StatRow
-										label={t("statistics.connections")}
-										value={data.connectionsFailed > 0 ? t("statistics.connectionsFailed", { count: data.connectionCount, failed: data.connectionsFailed }) : data.connectionCount}
-									/>
-									<StatRow label={t("statistics.uptime")} value={formatUptime(data.uptimeSeconds)} />
-								</section>
-							</>
-						) : data && tab === "mix" ? (
-							<>
-								<section>
-									<h2 className='text-sm font-semibold'>{t("statistics.listStatus")}</h2>
-									<Separator className='my-2' />
-									<StatusPie items={data.statusDistribution} />
-								</section>
-								<section>
-									<h2 className='text-sm font-semibold'>{t("statistics.format")}</h2>
-									<Separator className='my-2' />
-									<BarList items={data.typeDistribution} />
-								</section>
-							</>
-						) : data && tab === "genres" ? (
-							<section>
-								<h2 className='text-sm font-semibold'>{t("statistics.topGenres")}</h2>
-								<Separator className='my-2' />
-								<BarList items={data.genreDistribution} />
-							</section>
-						) : data && tab === "library" ? (
-							<>
-								<section>
-									<h2 className='text-sm font-semibold'>{t("statistics.libraryCoverage")}</h2>
-									<Separator className='my-2' />
-									<StatRow label={t("statistics.episodeFiles")} value={coverage.have} />
-									<StatRow label={t("statistics.airedEpisodes")} value={coverage.aired} />
-									<StatRow label={t("statistics.coverage")} value={`${Math.round(coverage.ratio * 100)}%`} />
-									<div className='mt-3'>
-										<BarList items={coverage.byStatus} value={(item) => `${item.count}/${item.total ?? 0}`} />
-									</div>
-								</section>
-								<section>
-									<h2 className='text-sm font-semibold'>{t("statistics.rewatches")}</h2>
-									<Separator className='my-2' />
-									<BarList items={data.rewatchDistribution} />
-								</section>
-							</>
-						) : null}
+								</>
+							) : data && tab === "app" ? (
+								<div className='grid gap-4 lg:grid-cols-2'>
+									<Panel title={t("statistics.localDatabase")}>
+										<dl className='divide-y'>
+											<DetailRow label={t("statistics.animeCount")} value={t("statistics.fileSize", { count: data.localAnimeCount, size: formatBytes(data.databaseSizeBytes) })} />
+											<DetailRow
+												label={t("statistics.episodeFiles")}
+												value={t("statistics.fileSize", { count: data.episodeFileCount, size: formatBytes(data.episodeFileSizeBytes) })}
+											/>
+											<DetailRow label={t("statistics.imageFiles")} value={t("statistics.fileSize", { count: data.imageCount, size: formatBytes(data.imageSizeBytes) })} />
+											<DetailRow label={t("statistics.torrentFiles")} value={t("statistics.fileSize", { count: data.torrentCount, size: formatBytes(data.torrentSizeBytes) })} />
+										</dl>
+									</Panel>
+									<Panel title={t("statistics.biyori")}>
+										<dl className='divide-y'>
+											<DetailRow
+												label={t("statistics.connections")}
+												value={
+													data.connectionsFailed > 0 ? t("statistics.connectionsFailed", { count: data.connectionCount, failed: data.connectionsFailed }) : data.connectionCount
+												}
+											/>
+											<DetailRow label={t("statistics.uptime")} value={formatUptime(data.uptimeSeconds)} />
+										</dl>
+									</Panel>
+								</div>
+							) : null}
+						</div>
 					</ScrollArea>
 				</TabsContent>
 			</Tabs>
