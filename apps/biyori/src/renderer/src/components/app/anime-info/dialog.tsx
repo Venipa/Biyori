@@ -25,6 +25,7 @@ import { AnimeInfoSheetPeek } from "@/mainview/components/app/anime-info/sheet-p
 import { AnimeStatusNotice } from "@/mainview/components/app/anime-info/status-notice";
 import { CategoryNav } from "@/mainview/components/app/shared/category-nav";
 import { SaveBar } from "@/mainview/components/app/shared/save-bar";
+import { type AccountService, serviceAnimeUrl, useActiveService } from "@/mainview/components/app/shell/account-avatar";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Checkbox } from "@/mainview/components/ui/checkbox";
@@ -47,14 +48,20 @@ import { trpc } from "@/mainview/trpc";
 import type { AppRouter } from "@/shared/app-router";
 import { type ListStatus, listStatusSchema } from "@/shared/list";
 
-function posterExternalLinks(id: number, title: string): Array<{ label: string; short: string; url: string; icon?: React.ReactNode }> {
+/** ids belong to the active service; other sites get a title search */
+function posterExternalLinks(id: number, title: string, service: AccountService): Array<{ label: string; short: string; url: string; icon?: React.ReactNode }> {
 	const q = encodeURIComponent(title);
 	return [
-		{ label: t("anime.anilist"), short: t("anime.shortAl"), url: `https://anilist.co/anime/${id}`, icon: <AnilistIcon className='size-4' /> },
+		{
+			label: t("anime.anilist"),
+			short: t("anime.shortAl"),
+			url: service === "anilist" ? serviceAnimeUrl(service, id) : `https://anilist.co/search/anime?search=${q}`,
+			icon: <AnilistIcon className='size-4' />,
+		},
 		{
 			label: t("anime.myAnimeList"),
 			short: t("anime.shortMal"),
-			url: `https://myanimelist.net/anime.php?q=${q}`,
+			url: service === "myanimelist" ? serviceAnimeUrl(service, id) : `https://myanimelist.net/anime.php?q=${q}`,
 			icon: <MyAnimeListIcon className='size-4' />,
 		},
 		{
@@ -278,6 +285,7 @@ function AnimeInfoBody({
 	onInfoTabChange?: (tab: "main" | "list") => void;
 	history: AnimeInfoFrame[];
 }) {
+	const service = useActiveService();
 	const progressId = useId();
 	const rewatchesId = useId();
 	const scoreId = useId();
@@ -330,7 +338,7 @@ function AnimeInfoBody({
 					<div className='flex w-56 shrink-0 flex-col gap-2 self-start'>
 						<AnimeInfoPoster id={anime.id} title={anime.title} coverUrl={anime.coverUrl} />
 						<div className='grid grid-cols-2 md:grid-cols-3 gap-1'>
-							{posterExternalLinks(anime.id, anime.title).map((link) => (
+							{posterExternalLinks(anime.id, anime.title, service).map((link) => (
 								<Button
 									key={link.label}
 									type='button'

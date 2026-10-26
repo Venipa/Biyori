@@ -3,13 +3,13 @@ import { eq } from "drizzle-orm";
 import { ANIME_STALE_MS, isAnimeStale } from "../lib/anime-stale";
 import { clearActivity, completeActivity, upsertActivity } from "./activity";
 import { getAnilistTransferBytes, resetAnilistTransferBytes } from "./anilist/client";
-import { readAnilistAuth, writeAnilistAuth } from "./anilist/store";
-import { fetchViewer, syncAniListList, syncAniListLive } from "./anilist/sync";
 import type { DatabaseClient } from "./db";
 import { appSetting } from "./db/schema";
 import { formatElapsedSeconds } from "./format-duration";
 import { shouldBumpListRevision } from "./list-revision";
 import { setAppNotice } from "./notice";
+import { activeProvider, type ListProvider } from "./providers";
+import { credentialsStore } from "./stores";
 
 export type SyncPhase = "idle" | "running" | "error";
 
@@ -33,11 +33,12 @@ type ListSyncStamp = {
 	size?: string;
 };
 
-function listSyncedAtKey(userId: number): string {
+/** AniList keeps its bare-id key from before multi-service support. */
+function listSyncedAtKey(userId: number | string): string {
 	return `${LIST_SYNCED_AT_KEY}.${userId}`;
 }
 
-function readListSyncStamp(database: DatabaseClient, userId: number): ListSyncStamp | null {
+function readListSyncStamp(database: DatabaseClient, userId: number | string): ListSyncStamp | null {
 	const row = database
 		.select({ value: appSetting.value })
 		.from(appSetting)
@@ -60,7 +61,7 @@ function readListSyncStamp(database: DatabaseClient, userId: number): ListSyncSt
 	return { at: row.value, count: 0 };
 }
 
-function writeListSyncStamp(database: DatabaseClient, userId: number, stamp: ListSyncStamp): void {
+function writeListSyncStamp(database: DatabaseClient, userId: number | string, stamp: ListSyncStamp): void {
 	const value = JSON.stringify(stamp);
 	database
 		.insert(appSetting)
@@ -180,11 +181,11 @@ export async function startAniListSyncIfAuthed(): Promise<void> {
 	if (!db) {
 		return;
 	}
-	const auth = readAnilistAuth();
-	if (!auth || auth.expiresAt <= Date.now()) {
+	const stampId = activeStampId();
+	if (stampId == null) {
 		return;
 	}
-	const stamp = readListSyncStamp(db, auth.userId);
+	const stamp = readListSyncStamp(db, stampId);
 	if (stamp && !isAnimeStale(stamp.at)) {
 		const at = Date.parse(stamp.at);
 		emit({
@@ -200,18 +201,20 @@ export async function startAniListSyncIfAuthed(): Promise<void> {
 	requestAniListSync();
 }
 
-function requestAniListLiveSync(): void {
-	if (running || !db) {
-		return;
-	}
-	const auth = readAnilistAuth();
-	if (!auth || auth.expiresAt <= Date.now()) {
-		return;
-	}
-	void runLiveSync(auth.accessToken);
+/** Sync stamps live in the service's own DB, so the account id is enough. */
+function activeStampId(): number | null {
+	return activeProvider().isConnected() ? (credentialsStore.get("activeAccount")?.id ?? null) : null;
 }
 
-async function runLiveSync(token: string): Promise<void> {
+function requestAniListLiveSync(): void {
+	const provider = activeProvider();
+	if (running || !db || !provider.refreshAiring || !provider.isConnected()) {
+		return;
+	}
+	void runLiveSync(provider.refreshAiring);
+}
+
+async function runLiveSync(refreshAiring: NonNullable<ListProvider["refreshAiring"]>): Promise<void> {
 	if (!db || running) {
 		return;
 	}
@@ -220,7 +223,7 @@ async function runLiveSync(token: string): Promise<void> {
 	abortController = controller;
 	const { signal } = controller;
 	try {
-		const wrote = await syncAniListLive(db, { token, signal });
+		const wrote = await refreshAiring(db, signal);
 		if (signal.aborted || wrote <= 0) {
 			return;
 		}
@@ -272,8 +275,9 @@ async function runSync(): Promise<void> {
 	const { signal } = controller;
 
 	try {
-		const auth = readAnilistAuth();
-		if (!auth || auth.expiresAt <= Date.now()) {
+		const provider = activeProvider();
+		const stampId = activeStampId();
+		if (stampId == null) {
 			const title = t("main.sync.notConnected");
 			emit({
 				...IDLE,
@@ -289,35 +293,25 @@ async function runSync(): Promise<void> {
 
 		emitRunning(synchronizingMessage(), null, null);
 
-		const viewer = await fetchViewer(auth.accessToken, signal);
-		writeAnilistAuth({
-			...auth,
-			username: viewer.name,
-			avatarUrl: viewer.avatarUrl ?? undefined,
-			scoreFormat: viewer.scoreFormat,
-		});
-
 		let lastListBumpAt = 0;
-		const synced = await syncAniListList(db, {
-			token: auth.accessToken,
-			userId: auth.userId,
-			signal,
-			onProgress: (processed, wrote) => {
-				const now = Date.now();
-				const bumpList = wrote > 0 && shouldBumpListRevision(lastListBumpAt, now);
-				if (bumpList) {
-					lastListBumpAt = now;
-				}
-				emitRunning(synchronizingMessage(processed), processed, null, bumpList);
-			},
-		});
+		const onProgress = (processed: number, wrote: number) => {
+			const now = Date.now();
+			const bumpList = wrote > 0 && shouldBumpListRevision(lastListBumpAt, now);
+			if (bumpList) {
+				lastListBumpAt = now;
+			}
+			emitRunning(synchronizingMessage(processed), processed, null, bumpList);
+		};
+
+		await provider.refreshProfile(signal);
+		const synced = await provider.importList(db, { signal, onProgress });
 
 		if (signal.aborted) {
 			return;
 		}
 
 		const stats = syncStats();
-		writeListSyncStamp(db, auth.userId, { at: new Date().toISOString(), count: synced, ...stats });
+		writeListSyncStamp(db, stampId, { at: new Date().toISOString(), count: synced, ...stats });
 		const done = t("main.sync.finished", { count: synced, ...stats });
 		emit({
 			phase: "idle",

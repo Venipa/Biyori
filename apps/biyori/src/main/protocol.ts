@@ -4,6 +4,7 @@ import { app } from "electron";
 import { isProduction } from "@/utils";
 import { handleBiyoriDeepLink } from "./anilist/connect";
 import { setTrayState } from "./handlers/tray-state";
+import { handleMalDeepLink } from "./mal/connect";
 
 const PROTOCOL = "biyori";
 
@@ -73,6 +74,10 @@ function receiveDeepLink(raw: string): void {
 		pending = raw;
 		return;
 	}
-	void handleBiyoriDeepLink(raw);
+	void handleMalDeepLink(raw).then((handled) => {
+		if (!handled) {
+			void handleBiyoriDeepLink(raw);
+		}
+	});
 	setTrayState("visible");
 }

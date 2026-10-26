@@ -6,7 +6,8 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { app } from "electron";
-import { appDatabasePath } from "../lib/app-paths";
+import { appDatabasePath, serviceDatabasePath } from "../lib/app-paths";
+import type { AccountService } from "../stores";
 import * as schema from "./schema";
 
 const hasMigrationJournal = (folder: string): boolean => {
@@ -73,10 +74,25 @@ export async function initDatabase() {
 }
 
 export type DatabaseClient = ReturnType<typeof createDatabase>;
+
+const readonlyDatabases = new Map<AccountService, DatabaseClient>();
+
+/** Another service's DB for read-only views (statistics); null when that service was never used. */
+export function openServiceDatabaseReadonly(service: AccountService): DatabaseClient | null {
+	const cached = readonlyDatabases.get(service);
+	if (cached) {
+		return cached;
+	}
+	const path = serviceDatabasePath(service);
+	if (!existsSync(path)) {
+		return null;
+	}
+	const db = drizzle(new Database(path, { readonly: true, fileMustExist: true }), { schema });
+	readonlyDatabases.set(service, db);
+	return db;
+}
 export type SelectDatabase = Pick<DatabaseClient, "select">;
 export type {
-	Account,
-	AccountInsert,
 	Activity,
 	ActivityInsert,
 	Anime,

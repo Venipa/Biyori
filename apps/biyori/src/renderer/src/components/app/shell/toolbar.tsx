@@ -4,7 +4,7 @@ import { ExternalLinkIcon, InfoIcon, LogOutIcon, RefreshCwIcon, SettingsIcon } f
 import { useState } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import { profileInitials } from "@/lib/profile-initials";
-import { AccountAvatar, openAnilistProfile } from "@/mainview/components/app/shell/account-avatar";
+import { AccountAvatar, openServiceProfile, serviceLabel } from "@/mainview/components/app/shell/account-avatar";
 import { Button } from "@/mainview/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/mainview/components/ui/tooltip";
@@ -99,14 +99,15 @@ function AccountButton() {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
-	const statusQuery = trpc.anilist.status.useQuery();
-	const disconnect = trpc.anilist.disconnect.useMutation();
+	const statusQuery = trpc.account.status.useQuery();
+	const disconnect = trpc.account.disconnect.useMutation();
 	const authorize = trpc.anilist.authorize.useMutation();
 	const setSettings = trpc.settings.set.useMutation({
 		onSuccess: (settings) => {
 			utils.settings.get.setData(undefined, settings);
 		},
 	});
+	const service = statusQuery.data?.service ?? "anilist";
 	const connected = Boolean(statusQuery.data?.connected);
 	const username = statusQuery.data?.username?.trim() ?? "";
 	const avatarUrl = statusQuery.data?.avatarUrl?.trim() || null;
@@ -119,7 +120,7 @@ function AccountButton() {
 		if (!username) {
 			return;
 		}
-		openAnilistProfile(username);
+		openServiceProfile(service, username);
 	}
 
 	function logOut(): void {
@@ -127,6 +128,7 @@ function AccountButton() {
 			void (async () => {
 				await disconnect.mutateAsync();
 				await setSettings.mutateAsync({ onboardingComplete: false });
+				await utils.account.status.invalidate();
 				await utils.anilist.status.invalidate();
 				void desktopRpc.request.closeSettings({});
 				void navigate({ to: "/onboarding" });
@@ -162,7 +164,7 @@ function AccountButton() {
 							<span className='truncate text-sm font-medium'>{connected && username ? username : t("shell.notSignedIn")}</span>
 							<span className='flex items-center gap-1 truncate text-xs text-muted-foreground'>
 								{connected ? <span className='size-1.5 rounded-full bg-emerald-500' /> : null}
-								{connected ? t("shell.anilist") : t("shell.connectAnilist")}
+								{connected ? serviceLabel(service) : t("shell.connectAnilist")}
 							</span>
 						</span>
 						<ExternalLinkIcon className='text-muted-foreground' />

@@ -2,10 +2,10 @@ import { eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { DEFAULT_SCORE_FORMAT, parseScoreFormat, rawToDisplay } from "../../lib/anilist-score";
 import { isAnimeStale } from "../../lib/anime-stale";
 import { stringifyMediaTitles } from "../../lib/anime-titles";
+import type { AnilistMediaCardCached } from "../../lib/schemas/anilist-media-card";
 import type { TitleLanguage } from "../../lib/schemas/app-settings";
 import type { RelatedMedia } from "../../lib/schemas/related-media";
 import type { AnilistSeasonName, SeasonItem } from "../../lib/schemas/seasons";
-import { isSeasonCacheFresh } from "../../lib/season-cache-fresh";
 import type { DatabaseClient } from "../db";
 import { anime, listEntry } from "../db/schema";
 import type { Anime, AnimeInsert, ListEntryInsert } from "../db/types";
@@ -26,10 +26,8 @@ import {
 	toMediaCardCached,
 	toRelatedMedia,
 	viewerSchema,
-	withMediaCardTitle,
 } from "./map";
 import { GET_ALL_ANIMES_FROM_UID, GET_CURRENT_USER, GET_MEDIA_BY_ID, GET_MEDIA_LIVE, SAVE_MEDIA_LIST_ENTRY, SEARCH_MEDIA, SEASON_MEDIA } from "./queries";
-import { readSeasonCache, writeSeasonCache } from "./season-cache";
 import { readAnilistAuth } from "./store";
 
 const INSERT_CHUNK = 40;
@@ -120,32 +118,9 @@ export async function searchAniListMedia(options: {
 	};
 }
 
-export async function fetchSeasonMedia(options: {
-	token?: string;
-	season: AnilistSeasonName;
-	seasonYear: number;
-	titleLanguage: "Romaji" | "English" | "Native";
-	forceRefresh?: boolean;
-	signal?: AbortSignal;
-}): Promise<{
-	items: SeasonItem[];
-	fromCache: boolean;
-	fetchedAt: string | null;
-}> {
-	const resolve = (items: Parameters<typeof withMediaCardTitle>[0][]) => items.map((item) => withMediaCardTitle(item, options.titleLanguage));
-
-	if (!options.forceRefresh) {
-		const cached = await readSeasonCache(options.season, options.seasonYear);
-		if (cached && isSeasonCacheFresh(cached)) {
-			return {
-				items: resolve(cached.items),
-				fromCache: true,
-				fetchedAt: cached.fetchedAt,
-			};
-		}
-	}
-
-	const items: ReturnType<typeof toMediaCardCached>[] = [];
+/** One season's AniList cards (uncached; see providers/season.ts). */
+export async function fetchAniListSeasonItems(options: { token?: string; season: AnilistSeasonName; seasonYear: number; signal?: AbortSignal }): Promise<AnilistMediaCardCached[]> {
+	const items: AnilistMediaCardCached[] = [];
 	let page = 1;
 	for (;;) {
 		if (options.signal?.aborted) {
@@ -163,27 +138,15 @@ export async function fetchSeasonMedia(options: {
 		});
 		const parsed = searchPageSchema.parse(data.Page);
 		for (const media of parsed.media ?? []) {
-			if (!media) {
-				continue;
+			if (media) {
+				items.push(toMediaCardCached(media));
 			}
-			items.push(toMediaCardCached(media));
 		}
 		if (!parsed.pageInfo?.hasNextPage) {
-			break;
+			return items;
 		}
 		page += 1;
 	}
-
-	const written = await writeSeasonCache({
-		season: options.season,
-		seasonYear: options.seasonYear,
-		items,
-	});
-	return {
-		items: resolve(written.items),
-		fromCache: false,
-		fetchedAt: written.fetchedAt,
-	};
 }
 
 export async function saveMediaListEntry(options: {
@@ -239,6 +202,7 @@ export async function upsertAnimeFromMedia(
 			.update(anime)
 			.set({
 				title: animeRow.title,
+				startDate: animeRow.startDate,
 				titles: animeRow.titles,
 				type: animeRow.type,
 				episodes: animeRow.episodes,
@@ -398,6 +362,7 @@ function writeListChunk(db: DatabaseClient, entries: AnilistMediaList[], titleLa
 					target: anime.id,
 					set: {
 						title: sql`excluded.title`,
+						startDate: sql`excluded.start_date`,
 						titles: sql`excluded.titles`,
 						type: sql`excluded.type`,
 						episodes: sql`excluded.episodes`,
@@ -438,7 +403,7 @@ function writeListChunk(db: DatabaseClient, entries: AnilistMediaList[], titleLa
 						notes: sql`excluded.notes`,
 						dateStarted: sql`excluded.date_started`,
 						dateCompleted: sql`excluded.date_completed`,
-						anilistListId: sql`excluded.anilist_list_id`,
+						remoteEntryId: sql`excluded.remote_entry_id`,
 					},
 				})
 				.run();
@@ -447,7 +412,7 @@ function writeListChunk(db: DatabaseClient, entries: AnilistMediaList[], titleLa
 	return { ids };
 }
 
-function deleteStaleListEntries(db: DatabaseClient, keepIds: number[]): void {
+export function deleteStaleListEntries(db: DatabaseClient, keepIds: number[]): void {
 	db.transaction((tx) => {
 		if (keepIds.length === 0) {
 			tx.delete(listEntry).run();

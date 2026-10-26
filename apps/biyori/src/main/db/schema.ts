@@ -1,7 +1,10 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 type AnimeType = string;
-/** Catalog row. PK is AniList media id. */
+/**
+ * Catalog row, filled by the active list provider. Each service has its own DB file,
+ * so PK is that service's media id. Fields a provider lacks stay null / empty.
+ */
 export const anime = sqliteTable("anime", {
 	id: integer("id").primaryKey(),
 	title: text("title").notNull(),
@@ -10,6 +13,7 @@ export const anime = sqliteTable("anime", {
 	type: text("type").notNull().$type<AnimeType>(),
 	episodes: integer("episodes").notNull(),
 	durationMinutes: integer("duration_minutes").notNull().default(0),
+	/** 0-100 regardless of provider */
 	averageScore: integer("average_score").notNull(),
 	popularity: integer("popularity").notNull().default(0),
 	ratedRank: integer("rated_rank"),
@@ -24,6 +28,9 @@ export const anime = sqliteTable("anime", {
 	fansub: text("fansub").notNull().default(""),
 	lastAiredEpisode: integer("last_aired_episode").notNull().default(0),
 	nextAiringAt: text("next_airing_at"),
+	/** weekly slot text when the provider has no exact airing time (MAL) */
+	broadcast: text("broadcast"),
+	startDate: text("start_date"),
 	endDate: text("end_date"),
 	coverUrl: text("cover_url").notNull().default(""),
 	bannerUrl: text("banner_url").notNull().default(""),
@@ -46,7 +53,8 @@ export const listEntry = sqliteTable("list_entry", {
 	notes: text("notes").notNull().default(""),
 	dateStarted: text("date_started"),
 	dateCompleted: text("date_completed"),
-	anilistListId: integer("anilist_list_id"),
+	/** provider-side list entry id when it has one (AniList) */
+	remoteEntryId: integer("remote_entry_id"),
 });
 
 export const history = sqliteTable("history", {
@@ -118,12 +126,4 @@ export const activity = sqliteTable("activity", {
 	body: text("body").notNull().default(""),
 	status: text("status").notNull(),
 	createdAt: text("created_at").notNull(),
-});
-
-/** Signed-in list provider. PK is the remote user id (AniList Viewer.id). */
-export const account = sqliteTable("account", {
-	id: integer("id").primaryKey(),
-	username: text("username").notNull(),
-	avatarUrl: text("avatar_url").notNull().default(""),
-	scoreFormat: text("score_format").notNull().default("POINT_100"),
 });

@@ -1,7 +1,8 @@
 import type { MediaImageKind } from "../../lib/schemas/media-image";
 
 const HOST_PATH = {
-	cover: /^s\d\.anilist\.co\/file\/anilistcdn\/media\/(anime|manga)\/(cover|poster)/,
+	// AniList cover CDN, or MyAnimeList's (main_picture urls; MAL has no banners)
+	cover: /^(s\d\.anilist\.co\/file\/anilistcdn\/media\/(anime|manga)\/(cover|poster)|cdn\.myanimelist\.net\/images\/(anime|manga)\/)/,
 	banner: /^s\d\.anilist\.co\/file\/anilistcdn\/media\/anime\/banner/,
 } as const;
 

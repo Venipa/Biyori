@@ -5,9 +5,11 @@ import type { SeasonCacheFile, SeasonItemCached } from "../../lib/schemas/season
 import { type AnilistSeasonName, seasonCacheFileSchema } from "../../lib/schemas/seasons";
 import { appCacheDir } from "../lib/app-paths";
 import { decryptWithSafeStorage, encryptWithSafeStorage } from "../lib/safe-storage";
+import { credentialsStore } from "../stores";
 
+/** per service: seasons/<service>/ — catalogs (and ids) differ between providers */
 function seasonsDir(): string {
-	const dir = join(appCacheDir(), "seasons");
+	const dir = join(appCacheDir(), "seasons", credentialsStore.get("activeAccount")?.service ?? "anilist");
 	mkdirSync(dir, { recursive: true });
 	return dir;
 }

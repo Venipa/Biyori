@@ -1,5 +1,5 @@
 import { createRootRouteWithContext, Outlet, useMatches } from "@tanstack/react-router";
-import { AnilistAuthSplash } from "@/mainview/components/app/onboarding/anilist-auth-splash";
+import { AccountAuthSplash } from "@/mainview/components/app/onboarding/account-auth-splash";
 import { ParentWindowScrim } from "@/mainview/components/app/shell/parent-window-scrim";
 import { AppTitleBar } from "@/mainview/components/app/shell/titlebar";
 import { useSettingsSync } from "@/mainview/lib/hooks/use-settings-sync";
@@ -22,7 +22,7 @@ function RootLayout() {
 			</div>
 			{chrome ? null : (
 				<>
-					<AnilistAuthSplash />
+					<AccountAuthSplash />
 					<ParentWindowScrim />
 				</>
 			)}

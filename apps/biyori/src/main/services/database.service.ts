@@ -1,5 +1,5 @@
+import { applyPendingAccountSwitch } from "../accounts/switch";
 import { initActivityCenter } from "../activity";
-import { initAnilistAuth } from "../anilist/store";
 import type { DatabaseClient } from "../db";
 import { initDatabase } from "../db";
 import { Service } from "./service";
@@ -18,8 +18,8 @@ export default class DatabaseService extends Service {
 	readonly order = 0;
 
 	async beforeLoad(): Promise<void> {
+		applyPendingAccountSwitch();
 		db = await initDatabase();
-		initAnilistAuth(db);
 		await initActivityCenter(db);
 	}
 }

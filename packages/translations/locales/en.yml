@@ -93,7 +93,6 @@ shell:
   closeActivity: Close activity
   closeActivityCenter: Close activity center
   connectAnilist: Connect AniList
-  connectToUseList: Connect to use your list
   dark: Dark
   dismiss: Dismiss
   earlier: Earlier
@@ -144,7 +143,6 @@ shell:
   updateToEpisode: Update to episode {{episode}}
   yesterday: Yesterday
   view: View
-  viewOnAnilist: View on AniList
 nav:
   completed: Completed
   currentlyWatching: Currently watching
@@ -411,7 +409,14 @@ settings:
     discardDescription: Unsaved settings will be lost.
   services:
     displayTitle: Preferences
-    displayDescription: Default service and scoring. Score format is changed on AniList.
+    displayDescription: Scoring from your list service. Change it on the service's website.
+    listService: List service
+    connectService: Connect {{service}}
+    switchTitle: Switch to {{service}}?
+    switchDescription: "After you sign in to {{service}}, Biyori restarts and shows your {{service}} list instead. Library links, watch history and downloads are kept per service, so your {{current}} data stays as it is and returns when you switch back. Updates not yet sent to {{current}} are sent then."
+    switchConfirm: Continue to sign in
+    viewProfile: View on {{service}}
+    waitingForLogin: Finish signing in to {{service}} in your browser.
     scoreFormat: Score format
     scoreFormatPoint100: 100 point
     scoreFormatPoint10Decimal: 10 point decimal
@@ -844,6 +849,8 @@ library:
   noFolders: No library folders
   addFolderHint: Add a folder to scan and monitor for episodes.
 statistics:
+  allAccounts: All accounts
+  account: Account
   yourList: Your list
   app: App
   tileAnime: Anime
@@ -1075,10 +1082,13 @@ onboarding:
   next: Next
   openBiyori: Open Biyori
   connectedAs: Connected as {{name}}
+  signingIn: Signing in to {{service}}…
+  connectFailed: Couldn't connect to {{service}}
   signIn: Sign in to sync your anime list
-  disconnectAnilist: Disconnect AniList
   continueAnilist: Continue with AniList
+  continueService: Continue with {{service}}
   soon: Soon
+  beta: Beta
   pasteToken: Paste a token instead
   accessToken: Access token
   tokenPlaceholder: Paste the access token or the full redirect URL
@@ -1105,8 +1115,8 @@ onboarding:
   authorize: Authorize
   pasteTokenLink: or paste access token/redirect url
   defaultService: Default service
-  servicesUnavailableConnected: MyAnimeList and Kitsu are not available yet. Disconnect applies immediately and is not included when you Save other settings.
-  servicesUnavailable: MyAnimeList and Kitsu are not available yet.
+  servicesUnavailableConnected: Kitsu is not available yet. Disconnect applies immediately and is not included when you Save other settings.
+  servicesUnavailable: Kitsu is not available yet.
 confirm:
   confirm: Confirm
   updateList: Update list?
@@ -1185,6 +1195,7 @@ anime:
   season: Season
   genres: Genres
   tags: Tags
+  broadcast: Broadcast
   producers: Producers
   yourScore: Your score
   synopsis: Synopsis

@@ -17,6 +17,8 @@ export type AnimeSeriesInfoData = {
 	season: string;
 	genres: string[];
 	tags?: string[];
+	/** weekly slot from providers without exact airing times */
+	broadcast?: string | null;
 	producers: string[];
 	averageScore: number;
 	synopsis?: string;
@@ -110,8 +112,18 @@ export function AnimeSeriesInfo({ anime, className }: AnimeSeriesInfoProps) {
 					<dd className='text-primary'>{anime.season || "-"}</dd>
 					<dt className='text-muted-foreground'>{t("anime.genres")}</dt>
 					<dd>{genres.map((genre) => genreLabel(genre)).join(", ") || "-"}</dd>
-					<dt className='text-muted-foreground'>{t("anime.tags")}</dt>
-					<dd>{tags.join(", ") || "-"}</dd>
+					{tags.length > 0 ? (
+						<>
+							<dt className='text-muted-foreground'>{t("anime.tags")}</dt>
+							<dd>{tags.join(", ")}</dd>
+						</>
+					) : null}
+					{anime.broadcast ? (
+						<>
+							<dt className='text-muted-foreground'>{t("anime.broadcast")}</dt>
+							<dd>{anime.broadcast}</dd>
+						</>
+					) : null}
 					<dt className='text-muted-foreground'>{t("anime.producers")}</dt>
 					<dd>{producers.join(", ") || "-"}</dd>
 					<dt className='text-muted-foreground'>{t("anime.score")}</dt>

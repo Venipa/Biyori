@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import type { ComponentType, ReactNode } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
+import { type AccountService, serviceAnimeUrl, useActiveService } from "@/mainview/components/app/shell/account-avatar";
 import { invalidateAnimeQueries } from "@/mainview/lib/invalidate-anime";
 import type { SelectedAnime } from "@/mainview/lib/selected-anime";
 import { trpc } from "@/mainview/trpc";
@@ -60,13 +61,14 @@ function externalUrl(
 	kind: "anilist" | "anidb" | "ann" | "mal" | "reddit" | "wikipedia" | "youtube" | "google",
 	title: string,
 	id: number | null,
+	service: AccountService,
 	trailerId?: string | null,
 ): string | null {
 	const q = encodeURIComponent(title);
 	switch (kind) {
 		case "anilist":
-			if (id != null) {
-				return `https://anilist.co/anime/${id}`;
+			if (id != null && service === "anilist") {
+				return serviceAnimeUrl(service, id);
 			}
 			return `https://anilist.co/search/anime?search=${q}`;
 		case "anidb":
@@ -74,6 +76,9 @@ function externalUrl(
 		case "ann":
 			return `https://www.animenewsnetwork.com/search?q=${q}`;
 		case "mal":
+			if (id != null && service === "myanimelist") {
+				return serviceAnimeUrl(service, id);
+			}
 			return `https://myanimelist.net/anime.php?q=${q}`;
 		case "reddit":
 			return `https://www.reddit.com/search?q=${encodeURIComponent(`subreddit:anime title:${title} episode discussion`)}&sort=new`;
@@ -150,6 +155,7 @@ export function AnimeItemCommands({
 }) {
 	const { Item, Sub, SubTrigger, SubContent, Separator, Shortcut } = parts;
 	const { t } = useTranslation();
+	const service = useActiveService();
 	const navigate = useNavigate();
 	const utils = trpc.useUtils();
 	const isList = mode === "list";
@@ -202,7 +208,7 @@ export function AnimeItemCommands({
 	}
 
 	function openExternal(kind: (typeof externalItems)[number]["kind"]): void {
-		const url = externalUrl(kind, title, id, trailerId);
+		const url = externalUrl(kind, title, id, service, trailerId);
 		if (!url) {
 			return;
 		}
@@ -540,7 +546,7 @@ export function AnimeItemCommands({
 							if (id == null) {
 								return;
 							}
-							void copyText(`https://anilist.co/anime/${id}`);
+							void copyText(serviceAnimeUrl(service, id));
 						}}>
 						{t("anime.link")}
 					</Item>

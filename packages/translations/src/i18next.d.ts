@@ -101,7 +101,6 @@ declare module "i18next" {
 					closeActivity: string;
 					closeActivityCenter: string;
 					connectAnilist: string;
-					connectToUseList: string;
 					dark: string;
 					dismiss: string;
 					earlier: string;
@@ -152,7 +151,6 @@ declare module "i18next" {
 					updateToEpisode: string;
 					yesterday: string;
 					view: string;
-					viewOnAnilist: string;
 				};
 				nav: {
 					completed: string;
@@ -456,6 +454,13 @@ declare module "i18next" {
 					services: {
 						displayTitle: string;
 						displayDescription: string;
+						listService: string;
+						connectService: string;
+						switchTitle: string;
+						switchDescription: string;
+						switchConfirm: string;
+						viewProfile: string;
+						waitingForLogin: string;
 						scoreFormat: string;
 						scoreFormatPoint100: string;
 						scoreFormatPoint10Decimal: string;
@@ -913,6 +918,8 @@ declare module "i18next" {
 					addFolderHint: string;
 				};
 				statistics: {
+					allAccounts: string;
+					account: string;
 					yourList: string;
 					app: string;
 					tileAnime: string;
@@ -1149,10 +1156,13 @@ declare module "i18next" {
 					next: string;
 					openBiyori: string;
 					connectedAs: string;
+					signingIn: string;
+					connectFailed: string;
 					signIn: string;
-					disconnectAnilist: string;
 					continueAnilist: string;
+					continueService: string;
 					soon: string;
+					beta: string;
 					pasteToken: string;
 					accessToken: string;
 					tokenPlaceholder: string;
@@ -1261,6 +1271,7 @@ declare module "i18next" {
 					season: string;
 					genres: string;
 					tags: string;
+					broadcast: string;
 					producers: string;
 					yourScore: string;
 					synopsis: string;

@@ -24,13 +24,13 @@ function parseRange(value: string): { start: number; end: number | null } {
 	return { start, end: Number.isFinite(end) ? end : null };
 }
 
-function parseIds(value: string): number | null {
-	const parts = value.split("|");
-	const anilist = Number(parts[2]);
-	return Number.isFinite(anilist) && anilist > 0 ? anilist : null;
+/** ids are `mal|kitsu|anilist`; `column` picks the active service's */
+function parseIds(value: string, column: number): number | null {
+	const id = Number(value.split("|")[column]);
+	return Number.isFinite(id) && id > 0 ? id : null;
 }
 
-export function parseRelations(body: string): RelationRule[] {
+export function parseRelations(body: string, column = 2): RelationRule[] {
 	const next: RelationRule[] = [];
 	for (const line of body.split(/\r?\n/)) {
 		const trimmed = line.trim();
@@ -46,8 +46,8 @@ export function parseRelations(body: string): RelationRule[] {
 		const [toIds, toEpsRaw] = toRaw.split(":");
 		const bang = toEpsRaw?.endsWith("!") ?? false;
 		const toEps = bang ? toEpsRaw.slice(0, -1) : toEpsRaw;
-		const fromId = parseIds(fromIds);
-		const toId = parseIds(toIds);
+		const fromId = parseIds(fromIds, column);
+		const toId = parseIds(toIds, column);
 		if (fromId == null || toId == null || !fromEps || !toEps) {
 			continue;
 		}
@@ -100,14 +100,15 @@ export function replaceRelationRules(next: RelationRule[]): void {
 	loadedAt = Date.now();
 }
 
-export async function refreshRelations(db: DatabaseClient): Promise<void> {
+/** `column`: the active provider's `relationsColumn`. */
+export async function refreshRelations(db: DatabaseClient, column: number): Promise<void> {
 	if (rules.length > 0 && Date.now() - loadedAt < REFRESH_MS) {
 		return;
 	}
 	const cached = await db.select().from(relationsCache).where(eq(relationsCache.id, CACHE_ID)).limit(1);
 	const cachedAt = cached[0] ? new Date(cached[0].fetchedAt).getTime() : 0;
 	if (cached[0] && Date.now() - cachedAt < REFRESH_MS) {
-		rules = parseRelations(cached[0].body);
+		rules = parseRelations(cached[0].body, column);
 		loadedAt = Date.now();
 		return;
 	}
@@ -115,13 +116,13 @@ export async function refreshRelations(db: DatabaseClient): Promise<void> {
 		const response = await trackedFetch(RELATIONS_URL);
 		if (!response.ok) {
 			if (cached[0]) {
-				rules = parseRelations(cached[0].body);
+				rules = parseRelations(cached[0].body, column);
 				loadedAt = Date.now();
 			}
 			return;
 		}
 		const body = await response.text();
-		rules = parseRelations(body);
+		rules = parseRelations(body, column);
 		loadedAt = Date.now();
 		await db
 			.insert(relationsCache)
@@ -139,7 +140,7 @@ export async function refreshRelations(db: DatabaseClient): Promise<void> {
 			});
 	} catch {
 		if (cached[0]) {
-			rules = parseRelations(cached[0].body);
+			rules = parseRelations(cached[0].body, column);
 			loadedAt = Date.now();
 		}
 	}

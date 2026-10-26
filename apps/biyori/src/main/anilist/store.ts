@@ -1,10 +1,7 @@
 import * as Sentry from "@sentry/electron/main";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { type AnilistScoreFormat, DEFAULT_SCORE_FORMAT, parseScoreFormat } from "../../lib/anilist-score";
-import type { DatabaseClient } from "../db";
-import { account } from "../db/schema";
-import { credentialsStore } from "../stores";
+import { accountKey, credentialsStore } from "../stores";
 
 export const anilistAuthSchema = z.object({
 	accessToken: z.string(),
@@ -27,64 +24,13 @@ export type AnilistPublicStatus = {
 	scoreFormat: AnilistScoreFormat;
 };
 
-let db: DatabaseClient | null = null;
-
 function tokenKey(accountId: number): string {
-	return String(accountId);
-}
-
-export function initAnilistAuth(database: DatabaseClient): void {
-	db = database;
+	return accountKey({ service: "anilist", id: accountId });
 }
 
 function activeAccountId(): number | null {
-	const id = credentialsStore.get("activeAccountId");
-	return typeof id === "number" && Number.isFinite(id) ? id : null;
-}
-
-function readToken(accountId: number): { accessToken: string; expiresAt: number } | null {
-	const token = credentialsStore.get("tokens")?.[tokenKey(accountId)];
-	if (!token || typeof token.accessToken !== "string" || typeof token.expiresAt !== "number") {
-		return null;
-	}
-	return token;
-}
-
-function readAccountRow(accountId: number): { username: string; avatarUrl: string; scoreFormat: AnilistScoreFormat } | null {
-	if (!db) {
-		return null;
-	}
-	const row = db.select({ username: account.username, avatarUrl: account.avatarUrl, scoreFormat: account.scoreFormat }).from(account).where(eq(account.id, accountId)).get();
-	if (!row) {
-		return null;
-	}
-	return {
-		username: row.username,
-		avatarUrl: row.avatarUrl,
-		scoreFormat: parseScoreFormat(row.scoreFormat),
-	};
-}
-
-function upsertAccountRow(auth: AnilistAuth): void {
-	if (!db) {
-		return;
-	}
-	db.insert(account)
-		.values({
-			id: auth.userId,
-			username: auth.username,
-			avatarUrl: auth.avatarUrl?.trim() ?? "",
-			scoreFormat: auth.scoreFormat,
-		})
-		.onConflictDoUpdate({
-			target: account.id,
-			set: {
-				username: auth.username,
-				avatarUrl: auth.avatarUrl?.trim() ?? "",
-				scoreFormat: auth.scoreFormat,
-			},
-		})
-		.run();
+	const active = credentialsStore.get("activeAccount");
+	return active?.service === "anilist" ? active.id : null;
 }
 
 export function readAnilistAuth(): AnilistAuth | null {
@@ -92,30 +38,32 @@ export function readAnilistAuth(): AnilistAuth | null {
 	if (userId == null) {
 		return null;
 	}
-	const token = readToken(userId);
-	if (!token) {
+	const token = credentialsStore.get("tokens")?.[tokenKey(userId)];
+	if (!token || typeof token.accessToken !== "string" || typeof token.expiresAt !== "number") {
 		return null;
 	}
-	const row = readAccountRow(userId);
 	return {
 		accessToken: token.accessToken,
 		expiresAt: token.expiresAt,
 		userId,
-		username: row?.username ?? "",
-		avatarUrl: row?.avatarUrl || undefined,
-		scoreFormat: row?.scoreFormat ?? DEFAULT_SCORE_FORMAT,
+		username: token.username ?? "",
+		avatarUrl: token.avatarUrl || undefined,
+		scoreFormat: parseScoreFormat(token.scoreFormat ?? DEFAULT_SCORE_FORMAT),
 	};
 }
 
 export function writeAnilistAuth(auth: AnilistAuth): void {
-	upsertAccountRow(auth);
-	const tokens = { ...credentialsStore.get("tokens") };
-	tokens[tokenKey(auth.userId)] = {
-		accessToken: auth.accessToken,
-		expiresAt: auth.expiresAt,
-	};
-	credentialsStore.set("tokens", tokens);
-	credentialsStore.set("activeAccountId", auth.userId);
+	credentialsStore.set("tokens", {
+		...credentialsStore.get("tokens"),
+		[tokenKey(auth.userId)]: {
+			accessToken: auth.accessToken,
+			expiresAt: auth.expiresAt,
+			username: auth.username,
+			avatarUrl: auth.avatarUrl?.trim() ?? "",
+			scoreFormat: auth.scoreFormat,
+		},
+	});
+	credentialsStore.set("activeAccount", { service: "anilist", id: auth.userId });
 	Sentry.setUser({ id: String(auth.userId) });
 }
 
@@ -126,7 +74,7 @@ export function clearAnilistAuth(): void {
 		delete tokens[tokenKey(userId)];
 		credentialsStore.set("tokens", tokens);
 	}
-	credentialsStore.set("activeAccountId", null);
+	credentialsStore.set("activeAccount", null);
 	Sentry.setUser(null);
 }
 

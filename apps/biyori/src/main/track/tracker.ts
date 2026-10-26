@@ -4,13 +4,14 @@ import { observable } from "@trpc/server/observable";
 import { eq } from "drizzle-orm";
 import { parseStoredTitles, titleStrings } from "../../lib/anime-titles";
 import { isPathInsideFolder } from "../../lib/folder-path";
-import type { AppSettings, DefaultService } from "../../lib/schemas/app-settings";
 import { joinTitleList, splitTitleList } from "../../lib/split-title-list";
 import { pushNotice } from "../activity";
 import { readAnilistAuth } from "../anilist/store";
 import type { DatabaseClient } from "../db";
 import { anime } from "../db/schema";
+import { readMalAuth } from "../mal/store";
 import { setAppNotice } from "../notice";
+import { activeProvider } from "../providers";
 import { loadAppSettings, subscribeSettings } from "../settings";
 import { syncDiscordPresence } from "../share/discord";
 import { setNowPlayingForHttp } from "../share/http";
@@ -52,13 +53,12 @@ function applyRedirect(match: MatchedAnime, episode: number, candidates: Candida
 	return { match: matchById(redirected.id, candidates) ?? match, episode: redirected.episode };
 }
 
-async function resolveNowPlayingUser(settings: AppSettings): Promise<NowPlayingUser> {
-	const provider: DefaultService = settings.defaultService;
-	if (provider === "anilist") {
-		const auth = readAnilistAuth();
-		return { name: auth?.username ?? "", provider };
+async function resolveNowPlayingUser(): Promise<NowPlayingUser> {
+	const mal = readMalAuth();
+	if (mal) {
+		return { name: mal.username, provider: "myanimelist" };
 	}
-	return { name: "", provider };
+	return { name: readAnilistAuth()?.username ?? "", provider: "anilist" };
 }
 
 let db: DatabaseClient | null = null;
@@ -193,7 +193,7 @@ async function runTick(): Promise<void> {
 		return;
 	}
 	const settings = loadAppSettings();
-	const user = await resolveNowPlayingUser(settings);
+	const user = await resolveNowPlayingUser();
 	if (!settings.enableRecognition) {
 		delayElapsedSeconds = 0;
 		delayLastTickAt = 0;
@@ -550,13 +550,13 @@ export async function restartTracker(): Promise<void> {
 	startTimer = setTimeout(() => {
 		startTimer = null;
 		void (async () => {
-			await refreshRelations(database);
+			await refreshRelations(database, activeProvider().relationsColumn);
 			await tick();
 			pollTimer = setInterval(() => {
 				void tick();
 			}, interval);
 			flushTimer = setInterval(() => {
-				void refreshRelations(database);
+				void refreshRelations(database, activeProvider().relationsColumn);
 			}, 60_000);
 		})();
 	}, TRACKER_START_DELAY_MS);

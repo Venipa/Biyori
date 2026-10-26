@@ -8,4 +8,10 @@ describe("isAllowedMediaUrl", () => {
 		expect(isAllowedCoverUrl("https://s4.anilist.co/file/anilistcdn/media/character/images/x.jpg")).toBe(false);
 		expect(isAllowedMediaUrl("banner", "https://s4.anilist.co/file/anilistcdn/media/anime/banner/x.jpg")).toBe(true);
 	});
+
+	test("allows myanimelist covers only", () => {
+		expect(isAllowedCoverUrl("https://cdn.myanimelist.net/images/anime/1008/98996l.jpg")).toBe(true);
+		expect(isAllowedCoverUrl("https://cdn.myanimelist.net/images/userimages/1.jpg")).toBe(false);
+		expect(isAllowedCoverUrl("http://cdn.myanimelist.net/images/anime/1008/98996l.jpg")).toBe(false);
+	});
 });

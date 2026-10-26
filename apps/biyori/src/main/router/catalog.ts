@@ -8,12 +8,12 @@ import { anilistTokenSchema } from "../../lib/schemas/anilist-token";
 import { animeListEntrySchema } from "../../lib/schemas/anime-list-entry";
 import { listStatusSchema } from "../../shared/list";
 import { AnilistApiError } from "../anilist/client";
-import { connectAnilistAccessToken, subscribeAnilistAuthError, subscribeAnilistAuthSuccess } from "../anilist/connect";
-import { toAnilistStatus } from "../anilist/map";
+import { connectAnilistAccessToken } from "../anilist/connect";
 import { clearAnilistLoginError, getAnilistClientId, getAnilistLoginError, openAnilistLogin, setAnilistLoginError } from "../anilist/oauth";
 import { clearAnilistAuth, readAnilistAuth, toPublicStatus } from "../anilist/store";
-import { fetchSeasonMedia, saveMediaListEntry, searchAniListMedia, upsertMediaList } from "../anilist/sync";
 import { anime, listEntry } from "../db/schema";
+import { activeProvider } from "../providers";
+import { loadSeason } from "../providers/season";
 import { loadAppSettings } from "../settings";
 import { abortAniListSync, getSyncSnapshot, requestAniListSync, subscribeSyncStatus } from "../sync";
 import { enqueueUpdate } from "../track/queue";
@@ -42,18 +42,8 @@ function mapAnilistError(error: unknown): never {
 	});
 }
 
-function requireAuth() {
-	const auth = readAnilistAuth();
-	if (!auth || auth.expiresAt <= Date.now()) {
-		throw new TRPCError({
-			code: "UNAUTHORIZED",
-			message: t("main.anilist.notConnected"),
-		});
-	}
-	return auth;
-}
-
-export const anilistRouter = trpc.router({
+/** Catalog + list routes for the active provider; mounted as `anilist` so renderer calls stay stable. */
+export const catalogRouter = trpc.router({
 	status: trpc.procedure.query(() => {
 		const auth = readAnilistAuth();
 		return {
@@ -115,20 +105,6 @@ export const anilistRouter = trpc.router({
 			});
 		});
 	}),
-	onAuthSuccess: trpc.procedure.subscription(() => {
-		return observable<{ username: string }>((emit) => {
-			return subscribeAnilistAuthSuccess((username) => {
-				emit.next({ username });
-			});
-		});
-	}),
-	onAuthError: trpc.procedure.subscription(() => {
-		return observable<{ message: string }>((emit) => {
-			return subscribeAnilistAuthError((message) => {
-				emit.next({ message });
-			});
-		});
-	}),
 	season: trpc.procedure
 		.input(
 			z.object({
@@ -139,10 +115,8 @@ export const anilistRouter = trpc.router({
 		)
 		.query(async ({ input, signal }) => {
 			try {
-				const auth = readAnilistAuth();
 				const settings = loadAppSettings();
-				return await fetchSeasonMedia({
-					token: auth?.accessToken,
+				return await loadSeason(activeProvider(), {
 					season: input.season,
 					seasonYear: input.seasonYear,
 					titleLanguage: settings.titleLanguage,
@@ -155,14 +129,7 @@ export const anilistRouter = trpc.router({
 		}),
 	search: trpc.procedure.input(anilistSearchSchema).query(async ({ input }) => {
 		try {
-			const auth = readAnilistAuth();
-			const settings = loadAppSettings();
-			return await searchAniListMedia({
-				token: auth?.accessToken,
-				query: input.q,
-				page: input.page,
-				titleLanguage: settings.titleLanguage,
-			});
+			return await activeProvider().search(input.q, input.page);
 		} catch (error) {
 			mapAnilistError(error);
 		}
@@ -176,23 +143,10 @@ export const anilistRouter = trpc.router({
 		)
 		.mutation(async ({ ctx, input }) => {
 			try {
-				const auth = requireAuth();
-				const settings = loadAppSettings();
-				const status = input.status ?? settings.defaultAddToListStatus;
-				const saved = await saveMediaListEntry({
-					token: auth.accessToken,
-					mediaId: input.mediaId,
-					status: toAnilistStatus(status, false),
-				});
-				const upserted = await upsertMediaList(ctx.db, saved, settings.titleLanguage);
-				if (!upserted) {
-					throw new TRPCError({
-						code: "INTERNAL_SERVER_ERROR",
-						message: t("main.anilist.couldNotSaveLocal"),
-					});
-				}
+				const status = input.status ?? loadAppSettings().defaultAddToListStatus;
+				await activeProvider().addEntry(ctx.db, input.mediaId, status);
 				await rematchIfUnrecognized();
-				return { id: upserted.id };
+				return { id: input.mediaId };
 			} catch (error) {
 				mapAnilistError(error);
 			}

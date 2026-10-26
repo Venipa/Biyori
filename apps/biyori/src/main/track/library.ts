@@ -12,6 +12,7 @@ import { completeActivity, pushNotice, upsertActivity } from "../activity";
 import type { DatabaseClient } from "../db";
 import { anime, episodeFile, listEntry } from "../db/schema";
 import { setAppNotice } from "../notice";
+import { activeProvider } from "../providers";
 import { loadAppSettings } from "../settings";
 import { updateStep } from "../startup-status";
 import { continueReadyEpisodes } from "./continue-ready";
@@ -369,7 +370,7 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 	}
 	const settings = loadAppSettings();
 	const candidates = await loadCandidates(database);
-	await refreshRelations(database);
+	await refreshRelations(database, activeProvider().relationsColumn);
 	if (kind !== "watch") {
 		const title = kind === "quick" ? t("main.library.checkingKnownFolders") : t("main.library.scanningLibraryDots");
 		setAppNotice(title, { toast: false, busy: true });

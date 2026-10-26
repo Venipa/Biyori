@@ -426,6 +426,7 @@ export function toAnimeRow(media: AnilistMedia, titleLanguage: TitleLanguage = "
 		fansub: "",
 		lastAiredEpisode: lastAiredEpisode(media),
 		nextAiringAt: nextAiringAtIso(media.nextAiringEpisode?.airingAt),
+		startDate: formatFuzzyDate(media.startDate),
 		endDate: formatFuzzyDate(media.endDate),
 		coverUrl: pickCoverUrl(media),
 		bannerUrl: pickBannerUrl(media),
@@ -473,7 +474,7 @@ export function toListEntryRow(animeId: number, entry: AnilistMediaList): ListEn
 		notes: entry.notes ?? "",
 		dateStarted: started,
 		dateCompleted: completed,
-		anilistListId: entry.id,
+		remoteEntryId: entry.id,
 	};
 }
 

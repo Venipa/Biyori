@@ -15,16 +15,18 @@ import { parseRelatedMedia, type RelatedMedia } from "../../lib/schemas/related-
 import { listStatusSchema } from "../../shared/list";
 import { dismissActivity, getActivitySnapshot, subscribeActivity } from "../activity";
 import { displayTitleFromRow } from "../anilist/map";
-import { readAnilistAuth } from "../anilist/store";
-import { ensureAnimeCached } from "../anilist/sync";
 import { clearCacheKinds, loadCacheSummary } from "../cache";
 import type { SelectDatabase } from "../db";
+import { openServiceDatabaseReadonly } from "../db";
 import { anime, episodeFile, history, listEntry, syncQueue } from "../db/schema";
 import type { Anime } from "../db/types";
+import { activeService, serviceDatabasePath } from "../lib/app-paths";
 import { getAppNotice, subscribeAppNotice } from "../notice";
+import { activeProvider } from "../providers";
 import { loadAppSettings, loadSettingsFormValues, patchAppSettings, patchSettingsForm, subscribeFilters, subscribeSettings } from "../settings";
 import { startupSnapshot, subscribeStartup } from "../startup-status";
 import { loadStatistics } from "../statistics";
+import type { AccountService } from "../stores";
 import { requestAniListSync } from "../sync";
 import {
 	applyTorrentView,
@@ -47,7 +49,8 @@ import { loadCandidates, suggestTitles } from "../track/match";
 import { countQueued, subscribeHistoryFlush } from "../track/queue";
 import { chooseNowPlayingMatch, confirmPendingUpdate, getNowPlayingSnapshot, nowPlayingObservable, skipPendingUpdate } from "../track/tracker";
 import { t as trpc } from "../trpc";
-import { anilistRouter } from "./anilist";
+import { accountRouter } from "./account";
+import { catalogRouter } from "./catalog";
 import { coversRouter } from "./covers";
 import { desktopRouter } from "./desktop";
 import { updaterRouter } from "./updater";
@@ -96,6 +99,8 @@ async function loadAnimeDetail(db: SelectDatabase, id: number): Promise<AnimeDet
 			fansub: anime.fansub,
 			lastAiredEpisode: anime.lastAiredEpisode,
 			nextAiringAt: anime.nextAiringAt,
+			broadcast: anime.broadcast,
+			startDate: anime.startDate,
 			endDate: anime.endDate,
 			coverUrl: anime.coverUrl,
 			bannerUrl: anime.bannerUrl,
@@ -318,15 +323,7 @@ export const appRouter = trpc.router({
 		}),
 		ensure: trpc.procedure.input(z.object({ id: z.number().int() })).mutation(async ({ ctx, input, signal }) => {
 			try {
-				const auth = readAnilistAuth();
-				const settings = loadAppSettings();
-				const { id } = await ensureAnimeCached({
-					db: ctx.db,
-					id: input.id,
-					token: auth?.accessToken,
-					titleLanguage: settings.titleLanguage,
-					signal,
-				});
+				const { id } = await activeProvider().ensureAnime(ctx.db, input.id, signal);
 				const detail = await loadAnimeDetail(ctx.db, id);
 				if (!detail) {
 					throw new TRPCError({
@@ -518,7 +515,16 @@ export const appRouter = trpc.router({
 		}),
 	}),
 	statistics: trpc.router({
-		summary: trpc.procedure.query(async ({ ctx }) => loadStatistics(ctx.db)),
+		summary: trpc.procedure.input(z.object({ scope: z.enum(["all", "anilist", "myanimelist"]).optional() }).optional()).query(async ({ ctx, input }) => {
+			const active = activeService();
+			const scope = input?.scope ?? active;
+			const services: AccountService[] = scope === "all" ? ["anilist", "myanimelist"] : [scope];
+			const sources = services.flatMap((service) => {
+				const db = service === active ? ctx.db : openServiceDatabaseReadonly(service);
+				return db ? [{ db, path: serviceDatabasePath(service) }] : [];
+			});
+			return loadStatistics(sources);
+		}),
 	}),
 	settings: trpc.router({
 		get: trpc.procedure.query(() => {
@@ -718,7 +724,8 @@ export const appRouter = trpc.router({
 			});
 		}),
 	}),
-	anilist: anilistRouter,
+	account: accountRouter,
+	anilist: catalogRouter,
 	covers: coversRouter,
 	updater: updaterRouter,
 	desktop: desktopRouter,

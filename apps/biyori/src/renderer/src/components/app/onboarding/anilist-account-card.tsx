@@ -6,6 +6,7 @@ import { profileInitials } from "@/lib/profile-initials";
 import { type AnilistToken, type AnilistTokenInput, anilistTokenSchema } from "@/lib/schemas/anilist-token";
 import type { AppSettingsInput, DefaultService } from "@/lib/schemas/app-settings";
 import { AccountAvatar } from "@/mainview/components/app/shell/account-avatar";
+import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Card, CardContent } from "@/mainview/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/mainview/components/ui/field";
@@ -37,7 +38,7 @@ function ServiceOption({ label, detail }: { label: string; detail?: string }) {
 	);
 }
 
-export function DefaultServiceField({ connected, username }: { connected: boolean; username: string }) {
+function DefaultServiceField({ connected, username }: { connected: boolean; username: string }) {
 	const { t } = useTranslation();
 	const serviceId = useId();
 	const settingsForm = useFormContext<AppSettingsInput>();
@@ -74,8 +75,11 @@ export function DefaultServiceField({ connected, username }: { connected: boolea
 								<SelectItem value='anilist'>
 									<ServiceOption label={t("anime.anilist")} detail={connected && username ? username : undefined} />
 								</SelectItem>
-								<SelectItem value='myanimelist' disabled>
+								<SelectItem value='myanimelist'>
 									{t("anime.myAnimeList")}
+									<Badge variant='outline' size='sm' className='ml-auto'>
+										{t("onboarding.beta")}
+									</Badge>
 								</SelectItem>
 								<SelectItem value='kitsu' disabled>
 									{t("anime.kitsu")}

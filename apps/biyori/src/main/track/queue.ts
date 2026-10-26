@@ -5,12 +5,10 @@ import { z } from "zod";
 import { parseHistoryChanges } from "../../lib/schemas/history-changes";
 import { type ListStatus, listStatusSchema } from "../../shared/list";
 import { clearActivity, completeActivity, upsertActivity } from "../activity";
-import { toAnilistStatus, toFuzzyDateInput, toListEntryRow } from "../anilist/map";
-import { readAnilistAuth } from "../anilist/store";
-import { saveMediaListEntry } from "../anilist/sync";
 import type { DatabaseClient } from "../db";
 import { anime, history, listEntry, syncQueue } from "../db/schema";
 import { setAppNotice } from "../notice";
+import { activeProvider } from "../providers";
 import { historyChanges, marksEpisodeAdvanced } from "./tracker-progress";
 
 export const queuePayloadSchema = z.object({
@@ -219,8 +217,8 @@ export async function flushQueue(db: DatabaseClient): Promise<void> {
 }
 
 async function flushNext(db: DatabaseClient): Promise<boolean> {
-	const auth = readAnilistAuth();
-	if (!auth || auth.expiresAt <= Date.now()) {
+	const provider = activeProvider();
+	if (!provider.isConnected()) {
 		return false;
 	}
 
@@ -266,19 +264,22 @@ async function flushNext(db: DatabaseClient): Promise<boolean> {
 	});
 
 	try {
-		const saved = await saveMediaListEntry({
-			token: auth.accessToken,
-			mediaId: row.id,
-			status: toAnilistStatus((payload.status ?? row.status) as ListStatus, payload.rewatching ?? row.rewatching === 1),
-			progress: payload.progress ?? row.episodesWatched,
-			score: payload.score === undefined ? row.score : payload.score,
-			repeat: payload.timesRewatched ?? row.timesRewatched,
+		const status = (payload.status ?? row.status) as ListStatus;
+		const rewatching = payload.rewatching ?? row.rewatching === 1;
+		const score = payload.score === undefined ? row.score : payload.score;
+		const dateStarted = payload.dateStarted ?? row.dateStarted;
+		const dateCompleted = payload.dateCompleted ?? row.dateCompleted;
+		const listRow = await provider.saveEntry(item.animeId, {
+			status,
+			rewatching,
+			progress,
+			score,
+			timesRewatched: payload.timesRewatched ?? row.timesRewatched,
 			notes: payload.notes ?? row.notes,
-			startedAt: toFuzzyDateInput(payload.dateStarted ?? row.dateStarted),
-			completedAt: toFuzzyDateInput(payload.dateCompleted ?? row.dateCompleted),
+			dateStarted,
+			dateCompleted,
 		});
 
-		const listRow = toListEntryRow(item.animeId, saved);
 		await db
 			.update(listEntry)
 			.set({
@@ -293,7 +294,7 @@ async function flushNext(db: DatabaseClient): Promise<boolean> {
 				started: listRow.started ?? row.dateStarted,
 				completed: listRow.completed ?? row.dateCompleted,
 				lastUpdated: listRow.lastUpdated,
-				anilistListId: listRow.anilistListId,
+				remoteEntryId: listRow.remoteEntryId,
 			})
 			.where(eq(listEntry.animeId, item.animeId));
 

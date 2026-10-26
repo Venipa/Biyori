@@ -65,3 +65,9 @@ describe("parseRelations", () => {
 		).toEqual({ id: 185874, episode: 7 });
 	});
 });
+
+describe("parseRelations column", () => {
+	test("MAL column reads the first id", () => {
+		expect(parseRelations(TYBW, 0)[0]).toMatchObject({ fromId: 41467, toId: 60636 });
+	});
+});

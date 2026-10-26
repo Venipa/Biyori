@@ -5,6 +5,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
 import { Panel } from "@/mainview/components/app/shared/panel";
+import { type AccountService, serviceLabel } from "@/mainview/components/app/shell/account-avatar";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/mainview/components/ui/select";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/mainview/components/ui/tabs";
 import { airingStatusLabel } from "@/mainview/lib/anime-airing-notice";
@@ -305,7 +307,12 @@ function StatisticsSkeleton(): ReactElement {
 
 export function StatisticsView(): ReactElement {
 	const { t } = useTranslation();
-	const query = trpc.statistics.summary.useQuery();
+	const accountsQuery = trpc.account.list.useQuery();
+	const accounts = accountsQuery.data ?? [];
+	// null = follow the active account
+	const [scope, setScope] = useState<"all" | AccountService | null>(null);
+	const activeScope = scope ?? accounts.find((account) => account.active)?.service ?? "anilist";
+	const query = trpc.statistics.summary.useQuery({ scope: activeScope });
 	const data = query.data;
 	const coverage = data?.libraryCoverage ?? { have: 0, aired: 0, ratio: 0, byStatus: [] };
 	const [tab, setTab] = useState<StatsTab>("list");
@@ -331,6 +338,33 @@ export function StatisticsView(): ReactElement {
 							{t("statistics.app")}
 						</TabsTrigger>
 					</TabsList>
+					{accounts.length > 1 ? (
+						<Select
+							value={activeScope}
+							items={{
+								all: t("statistics.allAccounts"),
+								...Object.fromEntries(accounts.map((account) => [account.service, `${account.username || serviceLabel(account.service)} · ${serviceLabel(account.service)}`])),
+							}}
+							onValueChange={(next) => {
+								if (next === "all" || next === "anilist" || next === "myanimelist") {
+									setScope(next);
+								}
+							}}>
+							<SelectTrigger size='sm' className='ml-auto w-56' aria-label={t("statistics.account")}>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent align='end'>
+								<SelectGroup>
+									<SelectItem value='all'>{t("statistics.allAccounts")}</SelectItem>
+									{accounts.map((account) => (
+										<SelectItem key={account.service} value={account.service}>
+											{account.username || serviceLabel(account.service)} · {serviceLabel(account.service)}
+										</SelectItem>
+									))}
+								</SelectGroup>
+							</SelectContent>
+						</Select>
+					) : null}
 				</div>
 				<TabsContent value={tab} keepMounted={false} className='m-0 min-h-0 flex-1'>
 					<ScrollArea className='h-full min-h-0' viewportClassName='px-6 py-5'>

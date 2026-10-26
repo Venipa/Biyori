@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
 	readonly VITE_ANILIST_CLIENT_ID: string;
+	readonly VITE_MAL_CLIENT_ID?: string;
 	readonly VITE_DISCORD_CLIENT_ID: string;
 	readonly VITE_APP_UPDATE_CHANNEL?: string;
 	readonly VITE_APP_GIT_HASH?: string;

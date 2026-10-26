@@ -7,6 +7,7 @@ import { AnimeScoreControl } from "@/mainview/components/app/anime-info/score-co
 import { AnimeSeriesInfo } from "@/mainview/components/app/anime-info/series-info";
 import { AnimeStatusNotice } from "@/mainview/components/app/anime-info/status-notice";
 import { formatNowPlayingLine, type NowPlayingSnapshot } from "@/mainview/components/app/now-playing/utils";
+import { serviceAnimeUrl, serviceLabel, useActiveService } from "@/mainview/components/app/shell/account-avatar";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Progress, ProgressLabel, ProgressValue } from "@/mainview/components/ui/progress";
@@ -17,6 +18,7 @@ import { trpc } from "@/mainview/trpc";
 
 export function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) {
 	const { t } = useTranslation();
+	const service = useActiveService();
 	const animeInfo = useAnimeInfoNav();
 	const playNext = trpc.library.playNext.useMutation();
 	const match = snapshot.match;
@@ -153,10 +155,10 @@ export function MatchedPlayback({ snapshot }: { snapshot: NowPlayingSnapshot }) 
 							size='sm'
 							onClick={() => {
 								void desktopRpc.request.openExternal({
-									url: `https://anilist.co/anime/${match.id}`,
+									url: serviceAnimeUrl(service, match.id),
 								});
 							}}>
-							AniList
+							{serviceLabel(service)}
 							<ExternalLinkIcon data-icon='inline-end' />
 						</Button>
 					</div>

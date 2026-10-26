@@ -10,6 +10,7 @@ import { folderDisplayName } from "@/lib/folder-path";
 import { type AnilistToken, type AnilistTokenInput, anilistTokenSchema } from "@/lib/schemas/anilist-token";
 import { titleLanguageSchema } from "@/lib/schemas/app-settings";
 import { SettingsToggleGroup } from "@/mainview/components/app/settings/settings-toggle-group";
+import { serviceLabel } from "@/mainview/components/app/shell/account-avatar";
 import Logo from "@/mainview/components/app/shell/logo";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
@@ -53,7 +54,7 @@ export function OnboardingWizard() {
 	const navigate = useNavigate();
 	const [step, setStep] = useState(0);
 	const settingsQuery = trpc.settings.get.useQuery();
-	const statusQuery = trpc.anilist.status.useQuery();
+	const statusQuery = trpc.account.status.useQuery();
 	const utils = trpc.useUtils();
 	const setSettings = trpc.settings.set.useMutation({
 		onSuccess: (settings) => {
@@ -199,22 +200,34 @@ export function OnboardingWizard() {
 
 function OnboardingConnectStep() {
 	const { t } = useTranslation();
-	const statusQuery = trpc.anilist.status.useQuery();
+	const utils = trpc.useUtils();
+	const [waitingForMal, setWaitingForMal] = useState(false);
+	// MAL login finishes in the browser via deep link; poll until it lands
+	const statusQuery = trpc.account.status.useQuery(undefined, { refetchInterval: waitingForMal ? 2000 : false });
 	const authorize = trpc.anilist.authorize.useMutation();
-	const disconnect = trpc.anilist.disconnect.useMutation({
-		onSuccess: async () => {
-			await statusQuery.refetch();
+	const connectMal = trpc.account.connectMal.useMutation({
+		onSuccess: () => {
+			setWaitingForMal(true);
 		},
 	});
+	const disconnect = trpc.account.disconnect.useMutation({
+		onSuccess: async () => {
+			await Promise.all([statusQuery.refetch(), utils.anilist.status.invalidate()]);
+		},
+	});
+	const service = statusQuery.data?.service ?? "anilist";
 	const connected = Boolean(statusQuery.data?.connected);
 	const username = statusQuery.data?.username ?? "";
-	const errorMessage = statusQuery.data?.loginError ?? authorize.error?.message ?? disconnect.error?.message ?? null;
+	const errorMessage = statusQuery.data?.loginError ?? authorize.error?.message ?? connectMal.error?.message ?? disconnect.error?.message ?? null;
+	if (connected && waitingForMal) {
+		setWaitingForMal(false);
+	}
 
 	return (
 		<div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-5 px-8 py-6'>
 			<Logo className='size-14' />
 			{connected ? (
-				<p className='text-center text-sm'>{t("onboarding.connectedAs", { name: username || t("anime.anilist") })}</p>
+				<p className='text-center text-sm'>{t("onboarding.connectedAs", { name: username || serviceLabel(service) })}</p>
 			) : (
 				<p className='text-center text-sm text-muted-foreground'>{t("onboarding.signIn")}</p>
 			)}
@@ -229,29 +242,39 @@ function OnboardingConnectStep() {
 						onClick={() => {
 							void disconnect.mutateAsync();
 						}}>
-						<AnilistIcon data-icon='inline-start' />
-						{t("onboarding.disconnectAnilist")}
+						{service === "myanimelist" ? <MyAnimeListIcon data-icon='inline-start' /> : <AnilistIcon data-icon='inline-start' />}
+						{t("onboarding.disconnect")} {serviceLabel(service)}
 					</Button>
 				) : (
-					<Button
-						type='button'
-						size='lg'
-						className='w-full justify-start'
-						disabled={authorize.isPending}
-						onClick={() => {
-							void authorize.mutateAsync();
-						}}>
-						<AnilistIcon data-icon='inline-start' />
-						{t("onboarding.continueAnilist")}
-					</Button>
+					<>
+						<Button
+							type='button'
+							size='lg'
+							className='w-full justify-start'
+							disabled={authorize.isPending}
+							onClick={() => {
+								void authorize.mutateAsync();
+							}}>
+							<AnilistIcon data-icon='inline-start' />
+							{t("onboarding.continueAnilist")}
+						</Button>
+						<Button
+							type='button'
+							variant='outline'
+							size='lg'
+							className='w-full justify-start'
+							disabled={!statusQuery.data?.malAvailable || connectMal.isPending}
+							onClick={() => {
+								void connectMal.mutateAsync();
+							}}>
+							<MyAnimeListIcon data-icon='inline-start' />
+							{t("onboarding.continueService", { service: serviceLabel("myanimelist") })}
+							<Badge variant='outline' size='sm' className='ml-auto'>
+								{t("onboarding.beta")}
+							</Badge>
+						</Button>
+					</>
 				)}
-				<Button type='button' variant='outline' size='lg' className='w-full justify-start' disabled>
-					<MyAnimeListIcon data-icon='inline-start' />
-					{t("anime.myAnimeList")}
-					<Badge variant='secondary' size='sm' className='ml-auto'>
-						{t("onboarding.soon")}
-					</Badge>
-				</Button>
 				<Button type='button' variant='outline' size='lg' className='w-full justify-start' disabled>
 					{t("anime.kitsu")}
 					<Badge variant='secondary' size='sm' className='ml-auto'>
@@ -259,6 +282,9 @@ function OnboardingConnectStep() {
 					</Badge>
 				</Button>
 			</div>
+			{waitingForMal && !connected ? (
+				<p className='max-w-xs text-center text-sm text-muted-foreground'>{t("settings.services.waitingForLogin", { service: serviceLabel("myanimelist") })}</p>
+			) : null}
 			{errorMessage ? <p className='max-w-xs text-center text-sm text-destructive'>{errorMessage}</p> : null}
 			{connected ? null : <OnboardingPasteToken />}
 		</div>

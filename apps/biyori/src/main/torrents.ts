@@ -13,6 +13,7 @@ import { trackedFetch } from "./http-stats";
 import { appFeedDir } from "./lib/app-paths";
 import { safeFileStem } from "./lib/file";
 import { setAppNotice } from "./notice";
+import { activeProvider } from "./providers";
 import { loadAppSettings, loadTorrentFiltersFile, patchTorrentFiltersFile, subscribeFilters, subscribeSettings } from "./settings";
 import {
 	addDiscardAnimeFilter,
@@ -332,7 +333,7 @@ async function ingestFeed(database: DatabaseClient, feedUrl: string, force: bool
 	const xml = await response.text();
 	const candidates = await loadCandidates(database);
 	const available = await loadAvailableEpisodes(database);
-	await refreshRelations(database);
+	await refreshRelations(database, activeProvider().relationsColumn);
 	const feed = parseRssItems(xml);
 	const hits = await hana.recognize({
 		titles: feed.map((entry) => entry.title),

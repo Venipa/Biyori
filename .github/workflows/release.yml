@@ -74,6 +74,7 @@ jobs:
         run: bun run release:compile
         env:
           VITE_ANILIST_CLIENT_ID: ${{ secrets.VITE_ANILIST_CLIENT_ID }}
+          VITE_MAL_CLIENT_ID: ${{ secrets.VITE_MAL_CLIENT_ID }}
           VITE_DISCORD_CLIENT_ID: ${{ secrets.VITE_DISCORD_CLIENT_ID }}
           VITE_APP_UPDATE_CHANNEL: ${{ steps.getVersion.outputs.releaseType }}
           VITE_APP_GIT_HASH: ${{ github.sha }}
