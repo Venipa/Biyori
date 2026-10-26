@@ -87,6 +87,7 @@ appImage:
   artifactName: ${name}-${version}-linux-x64.${ext}
 # no node-gyp modules (better-sqlite3 uses Node-API prebuilds, hana uses napi-rs); re-enable if one is added
 npmRebuild: false
+afterPack: build/after-pack.cjs
 # Chromium UI strings for the app's UI locales
 electronLanguages: [en-US, de, ja, ko, zh-CN, zh-TW, pt-BR, pt-PT, es, es-419, pl, ru]
 protocols:
