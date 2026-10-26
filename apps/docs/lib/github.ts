@@ -134,7 +134,11 @@ export async function listReleases(options?: { maxPages?: number; includePrerele
 			const { data: batch, error } = await githubRepoFetch<GitHubReleaseResponse[]>("/releases", {
 				query: { per_page: 30, page },
 			});
-			if (error || !batch?.length) {
+			if (error) {
+				console.warn(`[docs] GitHub releases fetch failed (${error.status} ${error.statusText}). Set GITHUB_TOKEN in .env.docs.local to lift the rate limit.`);
+				break;
+			}
+			if (!batch?.length) {
 				break;
 			}
 
