@@ -46,9 +46,10 @@ describe("animeMatchesListFilter", () => {
 		expect(animeMatchesListFilter(row, "type:TV|Movie")).toBe(true);
 	});
 
-	test("unknown prefix stays literal title search", () => {
-		expect(animeMatchesListFilter({ title: "foo bar" }, "foo:bar")).toBe(false);
-		expect(animeMatchesListFilter({ title: "foo:bar" }, "foo:bar")).toBe(true);
+	test("unknown prefix stays title search, punctuation ignored", () => {
+		expect(animeMatchesListFilter({ title: "Re:Zero" }, "re:zero")).toBe(true);
+		expect(animeMatchesListFilter({ title: "Re:Zero" }, "rezero")).toBe(true);
+		expect(animeMatchesListFilter({ title: "foo baz" }, "foo:bar")).toBe(false);
 	});
 });
 

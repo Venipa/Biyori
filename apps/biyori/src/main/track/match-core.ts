@@ -1,7 +1,8 @@
 import type { TitleParts } from "@biyori/recognition";
-import { normalizeTitle, rankParsed, rankTitles } from "@biyori/recognition";
+import { normalizeTitle, rankParsed } from "@biyori/recognition";
 import type { StoredAnimeTitles } from "../../lib/anime-titles";
 import { splitTitleList } from "../../lib/split-title-list";
+import { searchTitles } from "../../lib/title-search";
 import type { MatchedAnime, SimilarTitle } from "./types";
 
 export type Candidate = {
@@ -104,7 +105,7 @@ export type TitleSuggestion = {
 };
 
 export function suggestTitles(query: string, candidates: Candidate[]): TitleSuggestion[] {
-	return rankTitles(query, candidates).map((hit) => ({
+	return searchTitles(query, candidates).map((hit) => ({
 		id: hit.candidate.id,
 		title: hit.candidate.title,
 		type: hit.candidate.type,

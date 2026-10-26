@@ -2,6 +2,7 @@ import { t } from "@biyori/translations/react";
 import { type StoredAnimeTitles, titleStrings } from "../../../lib/anime-titles";
 import { parseJsonArray } from "../../../lib/parse-json-array";
 import { splitTitleList } from "../../../lib/split-title-list";
+import { textIncludes } from "../../../lib/title-search";
 
 export type ListFilterRow = {
 	title: string;
@@ -244,10 +245,6 @@ function checkNumber(op: SearchOperator, left: number, right: number): boolean {
 	}
 }
 
-function includesInsensitive(haystack: string, needle: string): boolean {
-	return haystack.toLowerCase().includes(needle.toLowerCase());
-}
-
 function parseJsonStrings(value: string | undefined): string[] {
 	if (!value) {
 		return [];
@@ -275,7 +272,7 @@ function matchLabeledList(items: string[], expr: string): boolean {
 	if (groups.length === 0) {
 		return false;
 	}
-	return groups.some((needles) => needles.every((needle) => items.some((item) => includesInsensitive(item, needle))));
+	return groups.some((needles) => needles.every((needle) => items.some((item) => textIncludes(item, needle))));
 }
 
 function titleBag(row: ListFilterRow): string[] {
@@ -312,15 +309,16 @@ export function animeMatchesListFilter(row: ListFilterRow, rawFilter: string | n
 		switch (term.field) {
 			case "none":
 				if (
-					!titles.some((title) => includesInsensitive(title, term.value)) &&
-					!genres.some((genre) => includesInsensitive(genre, term.value)) &&
-					!includesInsensitive(notes, term.value)
+					!titles.some((title) => textIncludes(title, term.value)) &&
+					!genres.some((genre) => textIncludes(genre, term.value)) &&
+					!tags.some((tag) => textIncludes(tag, term.value)) &&
+					!textIncludes(notes, term.value)
 				) {
 					return false;
 				}
 				break;
 			case "title":
-				if (!titles.some((title) => includesInsensitive(title, term.value))) {
+				if (!titles.some((title) => textIncludes(title, term.value))) {
 					return false;
 				}
 				break;
@@ -335,7 +333,7 @@ export function animeMatchesListFilter(row: ListFilterRow, rawFilter: string | n
 				}
 				break;
 			case "note":
-				if (!includesInsensitive(notes, term.value)) {
+				if (!textIncludes(notes, term.value)) {
 					return false;
 				}
 				break;
@@ -345,7 +343,7 @@ export function animeMatchesListFilter(row: ListFilterRow, rawFilter: string | n
 				}
 				break;
 			case "season":
-				if (!includesInsensitive(row.season ?? "", term.value)) {
+				if (!textIncludes(row.season ?? "", term.value)) {
 					return false;
 				}
 				break;
