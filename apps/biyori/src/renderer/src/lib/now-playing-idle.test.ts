@@ -57,6 +57,12 @@ describe("buildContinueWatching", () => {
 		expect(items.earlier[0]?.animeId).toBe(listed.id);
 	});
 
+	test("hides Plan to watch titles unless enabled", () => {
+		const planned = { ...listed, status: "Plan to watch" };
+		expect(buildContinueWatching([], [planned], now, CONTINUE_STALE_MS, false).earlier).toEqual([]);
+		expect(buildContinueWatching([], [planned], now, CONTINUE_STALE_MS, true).earlier.map((item) => item.animeId)).toEqual([listed.id]);
+	});
+
 	test("keeps a recent episode update in continue watching", () => {
 		const recent = new Date(now - 1000).toISOString();
 		const indexedLongAgo = { ...listed, id: 8, episodeSeenAt: { "4": new Date(now - CONTINUE_STALE_MS - 1000).toISOString() } };

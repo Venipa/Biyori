@@ -1,5 +1,5 @@
 import { useTranslation } from "@biyori/translations/react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { ContinueWatchingCard, ContinueWatchingEmpty } from "@/mainview/components/app/now-playing/continue-card";
@@ -7,8 +7,9 @@ import { MatchedPlayback } from "@/mainview/components/app/now-playing/matched";
 import { NowPlayingSkeleton } from "@/mainview/components/app/now-playing/skeleton";
 import { UnrecognizedPlayback } from "@/mainview/components/app/now-playing/unrecognized";
 import { airingCaption, episodeLine } from "@/mainview/components/app/now-playing/utils";
+import { Button } from "@/mainview/components/ui/button";
 import { useAnimeInfoNav } from "@/mainview/lib/anime-info-nav";
-import { buildAiringSoon, buildContinueWatching, buildUpcoming, type ContinueWatchingItem } from "@/mainview/lib/now-playing-idle";
+import { buildAiringSoon, buildContinueWatching, buildUpcoming, CONTINUE_WATCHING_LIMIT, type ContinueWatchingItem } from "@/mainview/lib/now-playing-idle";
 import { trpc } from "@/mainview/trpc";
 
 export function NowPlayingPage() {
@@ -43,6 +44,8 @@ function IdleNowPlaying() {
 	const playNext = trpc.library.playNext.useMutation();
 	const animeInfo = useAnimeInfoNav();
 	const { t } = useTranslation();
+	const [activeShown, setActiveShown] = useSessionCount("nowPlaying.continueShown");
+	const [olderShown, setOlderShown] = useSessionCount("nowPlaying.olderShown");
 	function playContinue(item: ContinueWatchingItem): void {
 		void playNext.mutateAsync({
 			animeId: item.animeId,
@@ -56,7 +59,13 @@ function IdleNowPlaying() {
 	const skipStatus = new Set(listed.filter((row) => row.status === "Completed" || row.status === "Dropped").map((row) => row.id));
 	const staleDays = settingsQuery.data?.continueWatchingStaleDays ?? 30;
 	const continueLabel = t("nowPlaying.continueWatching");
-	const continueWatching = buildContinueWatching(playsQuery.data?.plays ?? [], listed, Date.now(), staleDays * 24 * 60 * 60 * 1000);
+	const continueWatching = buildContinueWatching(
+		playsQuery.data?.plays ?? [],
+		listed,
+		Date.now(),
+		staleDays * 24 * 60 * 60 * 1000,
+		settingsQuery.data?.continueWatchingPlanned ?? false,
+	);
 	const activeContinue = [...continueWatching.recent, ...continueWatching.earlier];
 	const continueItems = [...activeContinue, ...continueWatching.older];
 	const airingSkip = new Set([...skipStatus, ...continueItems.map((item) => item.animeId)]);
@@ -92,21 +101,23 @@ function IdleNowPlaying() {
 						{activeContinue.length > 0 ? (
 							<IdleSection title={continueLabel}>
 								<ul aria-label={continueLabel} className='grid grid-cols-[repeat(auto-fill,11rem)] gap-3'>
-									{activeContinue.map((item) => (
+									{activeContinue.slice(0, activeShown).map((item) => (
 										<li key={item.animeId}>
 											<ContinueWatchingCard item={item} disabled={playNext.isPending} playNextEnabled onActivate={() => playContinue(item)} />
 										</li>
 									))}
 								</ul>
+								<LoadMore remaining={activeContinue.length - activeShown} onClick={() => setActiveShown((n) => n + CONTINUE_WATCHING_LIMIT)} />
 							</IdleSection>
 						) : null}
 						{continueWatching.older.length > 0 ? (
 							<IdleSection title={t("nowPlaying.olderThan", { days: staleDays, count: staleDays })}>
 								<ul className='flex flex-col'>
-									{continueWatching.older.map((item) => (
+									{continueWatching.older.slice(0, olderShown).map((item) => (
 										<IdleRow key={item.animeId} id={item.animeId} title={item.title} coverUrl={item.coverUrl} detail={episodeLine(item)} onClick={() => openItem(item)} />
 									))}
 								</ul>
+								<LoadMore remaining={continueWatching.older.length - olderShown} onClick={() => setOlderShown((n) => n + CONTINUE_WATCHING_LIMIT)} />
 							</IdleSection>
 						) : null}
 					</div>
@@ -147,6 +158,31 @@ function IdleNowPlaying() {
 				</div>
 			</div>
 		</ScrollArea>
+	);
+}
+
+/** Shown-count that survives view switches; sessionStorage clears on app restart. */
+function useSessionCount(key: string): [number, (update: (count: number) => number) => void] {
+	const [count, setCount] = useState(() => Number(sessionStorage.getItem(key)) || CONTINUE_WATCHING_LIMIT);
+	return [
+		count,
+		(update) => {
+			const next = update(count);
+			sessionStorage.setItem(key, String(next));
+			setCount(next);
+		},
+	];
+}
+
+function LoadMore({ remaining, onClick }: { remaining: number; onClick: () => void }) {
+	const { t } = useTranslation();
+	if (remaining <= 0) {
+		return null;
+	}
+	return (
+		<Button variant='outline' size='sm' className='self-start' onClick={onClick}>
+			{t("nowPlaying.loadMore")}
+		</Button>
 	);
 }
 

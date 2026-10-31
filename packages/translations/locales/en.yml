@@ -48,6 +48,7 @@ nowPlaying:
   idleTitle: Nothing is playing
   keyArt: Key art for {{title}}
   kicker: Now playing
+  loadMore: Load more
   movie: Movie
   nextEpisode: Next episode {{episode}}
   nextEpisodeOf: Next episode {{episode}} of {{total}}
@@ -446,6 +447,7 @@ settings:
     days: days
     staleDays_one: "{{count}} day"
     staleDays_other: "{{count}} days"
+    showPlanned: Show Plan to watch titles
   application:
     titlesTitle: Titles
     titlesDescription: How anime titles appear in lists and details.

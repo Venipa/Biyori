@@ -55,6 +55,7 @@ declare module "i18next" {
 					idleTitle: string;
 					keyArt: string;
 					kicker: string;
+					loadMore: string;
 					movie: string;
 					nextEpisode: string;
 					nextEpisodeOf: string;
@@ -491,6 +492,7 @@ declare module "i18next" {
 						days: string;
 						staleDays_one: string;
 						staleDays_other: string;
+						showPlanned: string;
 					};
 					application: {
 						titlesTitle: string;

@@ -173,6 +173,7 @@ export function LibraryPanel() {
 	const scanId = useId();
 	const intervalId = useId();
 	const staleDaysId = useId();
+	const plannedId = useId();
 	const form = useFormContext<AppSettingsInput>();
 	const episodeScanEnabled = useWatch({ control: form.control, name: "episodeScanEnabled" });
 
@@ -260,6 +261,7 @@ export function LibraryPanel() {
 						</Field>
 					)}
 				/>
+				<FormCheckbox control={form.control} name='continueWatchingPlanned' id={plannedId} label={t("settings.library.showPlanned")} />
 			</SettingsSectionCard>
 		</>
 	);

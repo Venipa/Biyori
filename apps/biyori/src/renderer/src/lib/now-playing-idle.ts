@@ -1,6 +1,7 @@
 import { episodeInAirWindow, nextListEpisode } from "../../../shared/episode-window";
 import { formatAiringDayLabel } from "./format-date";
 
+/** Page size for the continue-watching lists; the UI loads more on demand. */
 export const CONTINUE_WATCHING_LIMIT = 20;
 export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 export const CONTINUE_STALE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -93,7 +94,13 @@ function isUpcoming(row: IdleListedRow, now: number): boolean {
 	return nextAt != null && nextAt > now && row.lastAiredEpisode < nextListEpisode(row.episodesWatched);
 }
 
-export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], listed: readonly IdleListedRow[], now: number, staleMs = CONTINUE_STALE_MS): ContinueWatchingGroups {
+export function buildContinueWatching(
+	historyRows: readonly IdleHistoryRow[],
+	listed: readonly IdleListedRow[],
+	now: number,
+	staleMs = CONTINUE_STALE_MS,
+	includePlanned = true,
+): ContinueWatchingGroups {
 	const historyRank = new Map<number, number>();
 	const playedAt = new Map<number, number>();
 	for (const row of historyRows) {
@@ -108,7 +115,7 @@ export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], li
 	}
 	const ranked: Array<ContinueWatchingItem & { historyRank: number; upcoming: boolean; airMs: number | null; nextAt: number | null; updated: number; fileStale: boolean }> = [];
 	for (const row of listed) {
-		if (!row.status || !CONTINUE_STATUSES.has(row.status)) {
+		if (!row.status || !CONTINUE_STATUSES.has(row.status) || (!includePlanned && row.status === "Plan to watch")) {
 			continue;
 		}
 		const nextEpisode = nextListEpisode(row.episodesWatched);
@@ -157,19 +164,15 @@ export function buildContinueWatching(historyRows: readonly IdleHistoryRow[], li
 	for (const { historyRank: _historyRank, upcoming: _upcoming, airMs: _airMs, nextAt: _nextAt, updated, fileStale, ...item } of ranked) {
 		const played = updated > 0;
 		if (!fileStale && played) {
-			if (recent.length < CONTINUE_WATCHING_LIMIT) {
-				recent.push({ ...item, playedAt: updated });
-			}
+			recent.push({ ...item, playedAt: updated });
 			continue;
 		}
 		if (!fileStale) {
-			if (earlier.length < CONTINUE_WATCHING_LIMIT) {
-				earlier.push(item);
-			}
+			earlier.push(item);
 			continue;
 		}
 		const stale = fileStale || !played || now - updated >= staleMs;
-		if (stale && older.length < CONTINUE_WATCHING_LIMIT) {
+		if (stale) {
 			older.push(item);
 		}
 	}

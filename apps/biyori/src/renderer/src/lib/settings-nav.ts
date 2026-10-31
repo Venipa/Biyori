@@ -104,6 +104,7 @@ export const settingsFieldNav: Record<string, { section: SettingsSectionId; chil
 	episodeScanEnabled: { section: "library" },
 	episodeScanIntervalMinutes: { section: "library" },
 	continueWatchingStaleDays: { section: "library" },
+	continueWatchingPlanned: { section: "library" },
 	ignoreOutsideLibrary: { section: "recognition", child: "general" },
 	ignoreOutOfRangeEpisode: { section: "recognition", child: "general" },
 	recognitionDelaySeconds: { section: "recognition", child: "general" },
