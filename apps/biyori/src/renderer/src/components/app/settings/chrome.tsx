@@ -163,7 +163,7 @@ export function SettingsChrome({ children, overlay }: { children: ReactNode; ove
 			return;
 		}
 		const onScroll = () => {
-			const next = settingsCardFromViewport(ids, root, 52);
+			const next = settingsCardFromViewport(ids, root);
 			setSpyCard((prev) => (prev === next ? prev : next));
 		};
 		onScroll();

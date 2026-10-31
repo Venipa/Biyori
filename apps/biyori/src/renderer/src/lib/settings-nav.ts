@@ -39,18 +39,19 @@ export function settingsCardElementId(cardId: string): string {
 	return `settings-card-${cardId}`;
 }
 
-export function settingsCardFromViewport(cardIds: readonly string[], root: HTMLElement, headerPx: number): string {
+export function settingsCardFromViewport(cardIds: readonly string[], root: HTMLElement): string {
 	if (cardIds.length === 0) {
 		return "";
 	}
 	if (root.scrollTop + root.clientHeight >= root.scrollHeight - 2) {
 		return cardIds[cardIds.length - 1] ?? "";
 	}
-	const line = root.getBoundingClientRect().top + headerPx;
+	const top = root.getBoundingClientRect().top;
 	let current = cardIds[0] ?? "";
 	for (const id of cardIds) {
 		const el = document.getElementById(settingsCardElementId(id));
-		if (el && el.getBoundingClientRect().top <= line + 1) {
+		// Same line scrollIntoView lands the card on (its scroll-margin-top), so a clicked card is active.
+		if (el && el.getBoundingClientRect().top <= top + (Number.parseFloat(getComputedStyle(el).scrollMarginTop) || 0) + 1) {
 			current = id;
 		}
 	}
