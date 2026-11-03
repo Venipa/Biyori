@@ -35,7 +35,13 @@ export function useAppLiveSync(): void {
 	});
 	trpc.library.onIndex.useSubscription(undefined, {
 		onData: () => {
-			void Promise.all([utils.anime.listed.invalidate(), utils.anime.list.invalidate(), utils.library.summary.invalidate(), utils.library.episodes.invalidate()]);
+			void Promise.all([
+				utils.anime.listed.invalidate(),
+				utils.anime.list.invalidate(),
+				utils.library.summary.invalidate(),
+				utils.library.episodes.invalidate(),
+				utils.library.folders.invalidate(),
+			]);
 		},
 	});
 	trpc.history.onFlush.useSubscription(undefined, {

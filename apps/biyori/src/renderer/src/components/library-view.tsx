@@ -1,4 +1,5 @@
 import { t, useTranslation } from "@biyori/translations/react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { FolderIcon, FolderPlusIcon, FolderSearchIcon, HardDriveIcon } from "lucide-react";
 import { desktopRpc } from "@/desktop-rpc";
@@ -57,8 +58,9 @@ function LibraryFolderActions({ row }: { row: LibraryFolderRow }) {
 							aria-label={scanLabel}
 							loading={busy}
 							disabled={missing}
-							onClick={() => {
-								void scanFolder.mutateAsync({ path: row.path });
+							onClick={(event) => {
+								event.stopPropagation();
+								scanFolder.mutate({ path: row.path });
 							}}
 						/>
 					}>
@@ -75,7 +77,8 @@ function LibraryFolderActions({ row }: { row: LibraryFolderRow }) {
 							size='icon-xs'
 							aria-label={openLabel}
 							disabled={missing}
-							onClick={() => {
+							onClick={(event) => {
+								event.stopPropagation();
 								void desktopRpc.request.openPath({ path: row.path });
 							}}
 						/>
@@ -95,7 +98,9 @@ const columns: ColumnDef<LibraryFolderRow>[] = [
 		cell: ({ row }) => (
 			<span className='flex min-w-0 items-center gap-2'>
 				<FolderIcon className='size-4 shrink-0 text-muted-foreground' />
-				<span className='truncate font-medium'>{row.original.name}</span>
+				<Link to='/app/library/$root' params={{ root: row.original.path }} className='truncate font-medium'>
+					{row.original.name}
+				</Link>
 			</span>
 		),
 	},
@@ -167,6 +172,7 @@ function lastScanBody(items: Array<{ source: string; body?: string }>): string |
 
 export function LibraryView() {
 	const { t } = useTranslation();
+	const navigate = useNavigate();
 	const addLibraryFolder = useAddLibraryFolder();
 	const summaryQuery = trpc.library.summary.useQuery();
 	const activityQuery = trpc.activity.snapshot.useQuery();
@@ -275,7 +281,12 @@ export function LibraryView() {
 					</TableHeader>
 					<TableBody>
 						{table.getRowModel().rows.map((row) => (
-							<TableRow key={row.id}>
+							<TableRow
+								key={row.id}
+								className='cursor-pointer'
+								onClick={() => {
+									void navigate({ to: "/app/library/$root", params: { root: row.original.path } });
+								}}>
 								{row.getVisibleCells().map((cell) => (
 									<TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
 										{flexRender(cell.column.columnDef.cell, cell.getContext())}

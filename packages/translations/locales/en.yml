@@ -850,6 +850,30 @@ library:
   outsideFiles_other: "{{count}} scanned files sit outside these folders ({{size}})."
   noFolders: No library folders
   addFolderHint: Add a folder to scan and monitor for episodes.
+  folder: Folder
+  anime: Anime
+  back: Back to library
+  notMatched: Not matched
+  ignored: Ignored
+  notOnList: Not on list
+  multipleAnime_one: "{{count}} anime"
+  multipleAnime_other: "{{count}} anime"
+  assign: Assign
+  change: Change
+  rematch: Rematch
+  ignoreFolder: Ignore folder
+  unignore: Unignore
+  openRoot: Open folder
+  folderCount_one: "{{count}} folder"
+  folderCount_other: "{{count}} folders"
+  unmatchedCount_one: "{{count}} unmatched"
+  unmatchedCount_other: "{{count}} unmatched"
+  assignHint: Only anime on your list can be assigned. Add it from Search first.
+  searchLink: Search
+  filterList: Filter your list
+  noListMatch: No anime on your list matches.
+  noSeriesFolders: No series folders
+  noSeriesFoldersHint: Scan this folder to find series inside it.
 statistics:
   allAccounts: All accounts
   account: Account
