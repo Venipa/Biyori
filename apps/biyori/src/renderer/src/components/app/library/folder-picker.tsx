@@ -7,6 +7,7 @@ import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { Button } from "@/mainview/components/ui/button";
 import { Input } from "@/mainview/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/mainview/components/ui/popover";
+import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { trpc } from "@/mainview/trpc";
 
@@ -28,7 +29,7 @@ export function FolderPicker({ path, children }: { path: string; children: React
 	const items = (listed.data ?? []).filter((item) => item.title.toLowerCase().includes(needle));
 	const virtualizer = useVirtualizer({
 		count: items.length,
-		getScrollElement: () => listRef.current,
+		getScrollElement: () => listRef.current?.closest("[data-slot=scroll-area-viewport]") ?? null,
 		estimateSize: () => ITEM_HEIGHT,
 		overscan: 6,
 	});
@@ -44,7 +45,7 @@ export function FolderPicker({ path, children }: { path: string; children: React
 			<PopoverContent align='start' className='flex w-80 flex-col gap-2 p-2'>
 				<Input autoFocus value={filter} placeholder={t("library.filterList")} onChange={(event) => setFilter(event.target.value)} />
 				{assign.error ? <p className='text-sm text-destructive'>{assign.error.message}</p> : null}
-				<div ref={listRef} className='max-h-72 overflow-y-auto'>
+				<ScrollArea viewportClassName='max-h-72'>
 					{listed.isPending ? (
 						<Skeleton className='h-24 w-full' />
 					) : items.length === 0 ? (
@@ -55,7 +56,7 @@ export function FolderPicker({ path, children }: { path: string; children: React
 							</Link>
 						</p>
 					) : (
-						<div className='relative' style={{ height: virtualizer.getTotalSize() }}>
+						<div ref={listRef} className='relative' style={{ height: virtualizer.getTotalSize() }}>
 							{virtualizer.getVirtualItems().map((virtualItem) => {
 								const item = items[virtualItem.index];
 								if (!item) {
@@ -82,7 +83,7 @@ export function FolderPicker({ path, children }: { path: string; children: React
 							})}
 						</div>
 					)}
-				</div>
+				</ScrollArea>
 			</PopoverContent>
 		</Popover>
 	);
