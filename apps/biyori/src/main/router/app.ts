@@ -44,7 +44,22 @@ import {
 	subscribeTorrentPollStatus,
 } from "../torrents";
 import { hanaVersion } from "../track/hana-client";
-import { listEpisodes, loadLibrarySummary, playEpisode, playNext, playRandom, scanAvailableEpisodes, scanLibrary, scanLibraryPaths, subscribeLibraryIndex } from "../track/library";
+import {
+	assignFolder,
+	changeAnimeFolder,
+	clearFolder,
+	listEpisodes,
+	listRootFolders,
+	loadLibrarySummary,
+	playEpisode,
+	playNext,
+	playRandom,
+	scanAvailableEpisodes,
+	scanLibrary,
+	scanLibraryPaths,
+	subscribeLibraryIndex,
+	unignoreFolder,
+} from "../track/library";
 import { loadCandidates, suggestTitles } from "../track/match";
 import { countQueued, subscribeHistoryFlush } from "../track/queue";
 import { chooseNowPlayingMatch, confirmPendingUpdate, getNowPlayingSnapshot, nowPlayingObservable, skipPendingUpdate } from "../track/tracker";
@@ -295,6 +310,7 @@ export const appRouter = trpc.router({
 					episodesWatched: listEntry.episodesWatched,
 					season: anime.season,
 					coverUrl: anime.coverUrl,
+					folder: anime.folder,
 					bannerUrl: anime.bannerUrl,
 					lastAiredEpisode: anime.lastAiredEpisode,
 					nextAiringAt: anime.nextAiringAt,
@@ -363,10 +379,15 @@ export const appRouter = trpc.router({
 				}),
 			)
 			.mutation(async ({ ctx, input }) => {
+				const folder = input.folder.trim();
+				const stored = (await ctx.db.select({ folder: anime.folder }).from(anime).where(eq(anime.id, input.id)).limit(1))[0]?.folder ?? "";
+				if (folder !== stored) {
+					changeAnimeFolder(ctx.db, input.id, stored, folder);
+				}
 				await ctx.db
 					.update(anime)
 					.set({
-						folder: input.folder.trim(),
+						folder,
 						fansub: input.fansub.trim(),
 						userSynonyms: (input.userSynonyms ?? "").trim(),
 					})
@@ -607,6 +628,20 @@ export const appRouter = trpc.router({
 		}),
 		scanFolder: trpc.procedure.input(z.object({ path: z.string().min(1) })).mutation(async ({ ctx, input }) => {
 			return scanLibraryPaths(ctx.db, [input.path]);
+		}),
+		folders: trpc.procedure.input(z.object({ root: z.string().min(1) })).query(async ({ ctx, input }) => {
+			return listRootFolders(ctx.db, input.root);
+		}),
+		assignFolder: trpc.procedure.input(z.object({ path: z.string().min(1), animeId: z.number().int() })).mutation(async ({ ctx, input }) => {
+			return assignFolder(ctx.db, input);
+		}),
+		clearFolder: trpc.procedure.input(z.object({ path: z.string().min(1), ignore: z.boolean() })).mutation(async ({ ctx, input }) => {
+			await clearFolder(ctx.db, input);
+			return { ok: true as const };
+		}),
+		unignoreFolder: trpc.procedure.input(z.object({ path: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+			await unignoreFolder(ctx.db, input);
+			return { ok: true as const };
 		}),
 		episodes: trpc.procedure.input(z.object({ animeId: z.number().int() })).query(async ({ ctx, input }) => {
 			return listEpisodes(ctx.db, input.animeId);

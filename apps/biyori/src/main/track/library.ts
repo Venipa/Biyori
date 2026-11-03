@@ -1,19 +1,23 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, statSync } from "node:fs";
-import { dirname } from "node:path";
+import { readdir } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { logger as log } from "@biyori/logger";
 import { pathUnderRoot, VIDEO_EXT } from "@biyori/recognition";
 import { t } from "@biyori/translations/i18n";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import { shell } from "electron";
-import { type LibrarySummary, summarizeLibraryFolders } from "../../lib/library-summary";
+import { folderDisplayName, normalizeFolderPath } from "../../lib/folder-path";
+import { classifyRootFolders, dropIgnoredHits, type LibrarySummary, type RootFolderAnimeInfo, type RootFolders, summarizeLibraryFolders } from "../../lib/library-summary";
 import { EPISODE_SCAN_STATUSES, episodeInAirWindow, isMissingAiredEpisode, nextListEpisode } from "../../shared/episode-window";
 import { completeActivity, pushNotice, upsertActivity } from "../activity";
+import { displayTitleFromRow } from "../anilist/map";
 import type { DatabaseClient } from "../db";
 import { anime, episodeFile, listEntry } from "../db/schema";
 import { setAppNotice } from "../notice";
 import { activeProvider } from "../providers";
-import { loadAppSettings } from "../settings";
+import { loadAppSettings, patchAppSettings } from "../settings";
 import { updateStep } from "../startup-status";
 import { continueReadyEpisodes } from "./continue-ready";
 import { hana, type LibraryWatchHandle, type ScanHit, type ScanProgress } from "./hana-client";
@@ -58,8 +62,13 @@ const INSERT_CHUNK = 80;
 const KEEP_CHUNK = 400;
 
 function filesUnderRootSql(root: string) {
-	const folder = root.replaceAll("\\", "/").toLowerCase().replace(/\/+$/, "");
-	return sql`(lower(replace(${episodeFile.path}, char(92), '/')) = ${folder} or lower(replace(${episodeFile.path}, char(92), '/')) like ${`${folder}/%`})`;
+	// sqlite lower() folds ASCII only, so fold the same way here; escape LIKE wildcards in the folder name
+	const folder = root
+		.replaceAll("\\", "/")
+		.replace(/[A-Z]/g, (c) => c.toLowerCase())
+		.replace(/\/+$/, "");
+	const like = `${folder.replace(/[\\%_]/g, "\\$&")}/%`;
+	return sql`(lower(replace(${episodeFile.path}, char(92), '/')) = ${folder} or lower(replace(${episodeFile.path}, char(92), '/')) like ${like} escape '\\')`;
 }
 
 function filesUnderAnyRootSql(roots: string[]) {
@@ -256,6 +265,148 @@ export async function loadLibrarySummary(database: DatabaseClient): Promise<Libr
 	return summarizeLibraryFolders(folders, files, seriesFolders);
 }
 
+function ignoredFolderPaths(): string[] {
+	return loadAppSettings().ignoredFolders.map((folder) => folder.path);
+}
+
+function setIgnoredFolders(paths: string[]): void {
+	patchAppSettings({ ignoredFolders: paths.map((path) => ({ path })) });
+}
+
+/** Series folders are direct children of a library root; anything else is rejected before touching the db. */
+function isSeriesFolder(folder: string): boolean {
+	return libraryRoots().some((root) => samePath(dirname(folder), root) && !samePath(folder, root));
+}
+
+function requireSeriesFolder(path: string): string {
+	const folder = normalizeFolderPath(resolve(path));
+	if (!isSeriesFolder(folder)) {
+		throw new TRPCError({ code: "BAD_REQUEST", message: "Not a series folder of a library root" });
+	}
+	return folder;
+}
+
+/** Other anime lose `path` as their folder and every file row under it is dropped. */
+function releaseFolder(database: DatabaseClient, path: string, keepAnimeId?: number): void {
+	database.transaction((tx) => {
+		for (const row of tx.select({ id: anime.id, folder: anime.folder }).from(anime).where(ne(anime.folder, "")).all()) {
+			if (row.id !== keepAnimeId && samePath(row.folder, path)) {
+				tx.update(anime).set({ folder: "" }).where(eq(anime.id, row.id)).run();
+			}
+		}
+		tx.delete(episodeFile).where(filesUnderRootSql(path)).run();
+	});
+	invalidateCandidateCache();
+}
+
+/** Makes `animeId` the only owner of `path`. The caller rescans; hana pins files to the single candidate that holds the folder. */
+function moveFolderToAnime(database: DatabaseClient, animeId: number, path: string): void {
+	database.transaction((tx) => {
+		for (const row of tx.select({ id: anime.id, folder: anime.folder }).from(anime).where(ne(anime.folder, "")).all()) {
+			if (row.id !== animeId && samePath(row.folder, path)) {
+				tx.update(anime).set({ folder: "" }).where(eq(anime.id, row.id)).run();
+			}
+		}
+		tx.delete(episodeFile).where(filesUnderRootSql(path)).run();
+		tx.delete(episodeFile)
+			.where(and(eq(episodeFile.animeId, animeId), sql`not (${filesUnderRootSql(path)})`))
+			.run();
+		tx.update(anime).set({ folder: path }).where(eq(anime.id, animeId)).run();
+	});
+	invalidateCandidateCache();
+}
+
+function unignorePath(path: string): void {
+	const current = ignoredFolderPaths();
+	if (current.some((entry) => samePath(entry, path))) {
+		setIgnoredFolders(current.filter((entry) => !samePath(entry, path)));
+	}
+}
+
+/** The Folder field of an anime changed: the old folder is released, a new one is assigned and rescanned in the background. */
+export function changeAnimeFolder(database: DatabaseClient, animeId: number, current: string, next: string): void {
+	if (current && !samePath(current, next) && isSeriesFolder(current)) {
+		releaseFolder(database, current, animeId);
+	}
+	// a root, parent or outside path is only stored on the anime; deleting rows under it would wipe other series
+	if (next && isSeriesFolder(next)) {
+		moveFolderToAnime(database, animeId, next);
+		unignorePath(next);
+		void scanLibraryPaths(database, [next])
+			.then(notifyLibraryIndex)
+			.catch(() => undefined);
+	}
+	notifyLibraryIndex();
+}
+
+export async function assignFolder(database: DatabaseClient, input: { path: string; animeId: number }): Promise<{ files: number; matched: number }> {
+	const path = requireSeriesFolder(input.path);
+	const listed = database.select({ id: listEntry.animeId }).from(listEntry).where(eq(listEntry.animeId, input.animeId)).get();
+	if (!listed) {
+		throw new TRPCError({ code: "BAD_REQUEST", message: "Anime is not on the list" });
+	}
+	moveFolderToAnime(database, input.animeId, path);
+	unignorePath(path);
+	const result = await scanLibraryPaths(database, [path]);
+	notifyLibraryIndex();
+	return result;
+}
+
+export async function clearFolder(database: DatabaseClient, input: { path: string; ignore: boolean }): Promise<void> {
+	const path = requireSeriesFolder(input.path);
+	releaseFolder(database, path);
+	if (input.ignore) {
+		const current = ignoredFolderPaths();
+		if (!current.some((entry) => samePath(entry, path))) {
+			setIgnoredFolders([...current, path]);
+		}
+	} else {
+		await scanLibraryPaths(database, [path]);
+	}
+	notifyLibraryIndex();
+}
+
+export async function unignoreFolder(database: DatabaseClient, input: { path: string }): Promise<void> {
+	const path = requireSeriesFolder(input.path);
+	unignorePath(path);
+	await scanLibraryPaths(database, [path]);
+	notifyLibraryIndex();
+}
+
+export async function listRootFolders(database: DatabaseClient, rootInput: string): Promise<RootFolders> {
+	const root = libraryRoots().find((entry) => samePath(entry, rootInput));
+	if (!root) {
+		throw new TRPCError({ code: "BAD_REQUEST", message: "Not a library root" });
+	}
+	const base = { root, name: folderDisplayName(root) };
+	if (!existsSync(root)) {
+		return { ...base, missing: true, folders: [] };
+	}
+	const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
+	const subdirs = entries.filter((entry) => entry.isDirectory()).map((entry) => join(root, entry.name));
+	const [files, animeFolders] = await Promise.all([
+		database
+			.select({ path: episodeFile.path, animeId: episodeFile.animeId, episode: episodeFile.episode, size: episodeFile.size })
+			.from(episodeFile)
+			.where(filesUnderRootSql(root)),
+		database.select({ id: anime.id, folder: anime.folder }).from(anime).where(ne(anime.folder, "")),
+	]);
+	const ids = [...new Set([...files.map((file) => file.animeId), ...animeFolders.map((row) => row.id)])];
+	const language = loadAppSettings().titleLanguage;
+	const rows =
+		ids.length === 0
+			? []
+			: await database
+					.select({ id: anime.id, title: anime.title, titles: anime.titles, coverUrl: anime.coverUrl, episodes: anime.episodes, listed: listEntry.animeId })
+					.from(anime)
+					.leftJoin(listEntry, eq(listEntry.animeId, anime.id))
+					.where(inArray(anime.id, ids));
+	const info = new Map<number, RootFolderAnimeInfo>(
+		rows.map((row) => [row.id, { title: displayTitleFromRow(row.title, row.titles, language), coverUrl: row.coverUrl, episodes: row.episodes, onList: row.listed != null }]),
+	);
+	return { ...base, missing: false, folders: classifyRootFolders(subdirs, files, animeFolders, ignoredFolderPaths(), info) };
+}
+
 export async function scanAvailableEpisodes(database: DatabaseClient = requiredDb()): Promise<{ files: number; matched: number }> {
 	const folders = knownAnimeFolders(database);
 	if (folders.length > 0) {
@@ -390,12 +541,14 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 			},
 			kind === "watch" ? undefined : (progress) => onScanProgress(kind, progress),
 		);
+		// dropped before apply so the scan_keep cleanup also clears stale rows under ignored folders
+		const hits = dropIgnoredHits(result.hits, ignoredFolderPaths());
 		if (kind === "watch") {
-			announceContinueEpisodes(database, result.hits);
+			announceContinueEpisodes(database, hits);
 		}
-		applyScanHits(database, result.scannedRoots, result.hits);
+		applyScanHits(database, result.scannedRoots, hits);
 		if (kind !== "watch") {
-			const detail = t("main.library.scanBody", { count: result.files, hits: result.hits.length });
+			const detail = t("main.library.scanBody", { count: result.files, hits: hits.length });
 			const title = t("main.library.scanSummary", { detail });
 			setAppNotice(title, { toast: false, busy: false });
 			completeActivity({
@@ -405,7 +558,7 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 				status: "ok",
 			});
 		}
-		return { files: result.files, matched: result.hits.length };
+		return { files: result.files, matched: hits.length };
 	} catch (error) {
 		if (kind !== "watch") {
 			const title = t("main.library.scanFailed");
