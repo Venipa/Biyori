@@ -1,6 +1,7 @@
 import { useTranslation } from "@biyori/translations/react";
 import { Link } from "@tanstack/react-router";
-import { type ReactElement, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { type ReactElement, useRef, useState } from "react";
 import { folderDisplayName } from "@/lib/folder-path";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { Button } from "@/mainview/components/ui/button";
@@ -9,11 +10,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/mainview/components/u
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { trpc } from "@/mainview/trpc";
 
+const ITEM_HEIGHT = 52;
+
 /** Local-list picker: only anime already on the user's list can be assigned. */
 export function FolderPicker({ path, children }: { path: string; children: ReactElement }) {
 	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const [filter, setFilter] = useState("");
+	const listRef = useRef<HTMLDivElement>(null);
 	const listed = trpc.anime.listed.useQuery(undefined, { enabled: open });
 	const assign = trpc.library.assignFolder.useMutation({
 		onSuccess: () => {
@@ -22,6 +26,12 @@ export function FolderPicker({ path, children }: { path: string; children: React
 	});
 	const needle = filter.trim().toLowerCase();
 	const items = (listed.data ?? []).filter((item) => item.title.toLowerCase().includes(needle));
+	const virtualizer = useVirtualizer({
+		count: items.length,
+		getScrollElement: () => listRef.current,
+		estimateSize: () => ITEM_HEIGHT,
+		overscan: 6,
+	});
 
 	return (
 		<Popover
@@ -31,10 +41,10 @@ export function FolderPicker({ path, children }: { path: string; children: React
 				setFilter("");
 			}}>
 			<PopoverTrigger render={children} />
-			<PopoverContent align='end' className='flex w-80 flex-col gap-2 p-2'>
-				<Input value={filter} placeholder={t("library.filterList")} onChange={(event) => setFilter(event.target.value)} />
+			<PopoverContent align='start' className='flex w-80 flex-col gap-2 p-2'>
+				<Input autoFocus value={filter} placeholder={t("library.filterList")} onChange={(event) => setFilter(event.target.value)} />
 				{assign.error ? <p className='text-sm text-destructive'>{assign.error.message}</p> : null}
-				<div className='flex max-h-72 flex-col overflow-y-auto'>
+				<div ref={listRef} className='max-h-72 overflow-y-auto'>
 					{listed.isPending ? (
 						<Skeleton className='h-24 w-full' />
 					) : items.length === 0 ? (
@@ -45,26 +55,32 @@ export function FolderPicker({ path, children }: { path: string; children: React
 							</Link>
 						</p>
 					) : (
-						items.map((item) => {
-							const folder = "folder" in item && typeof item.folder === "string" && item.folder ? folderDisplayName(item.folder) : "";
-							return (
-								<Button
-									variant='ghost'
-									key={item.id}
-									type='button'
-									disabled={assign.isPending}
-									className='h-auto justify-start gap-2 px-2 py-1.5 text-left font-normal'
-									onClick={() => {
-										assign.mutate({ path, animeId: item.id });
-									}}>
-									<AnimeCover id={item.id} coverUrl={item.coverUrl} alt='' lazy className='h-10 w-7 shrink-0 overflow-hidden rounded-sm' />
-									<span className='min-w-0 flex-1'>
-										<span className='block truncate'>{item.title}</span>
-										{folder ? <span className='block truncate text-xs text-muted-foreground'>{folder}</span> : null}
-									</span>
-								</Button>
-							);
-						})
+						<div className='relative' style={{ height: virtualizer.getTotalSize() }}>
+							{virtualizer.getVirtualItems().map((virtualItem) => {
+								const item = items[virtualItem.index];
+								if (!item) {
+									return null;
+								}
+								return (
+									<Button
+										variant='ghost'
+										key={item.id}
+										type='button'
+										disabled={assign.isPending}
+										className='absolute top-0 left-0 w-full justify-start gap-2 px-2 text-left font-normal'
+										style={{ height: ITEM_HEIGHT, transform: `translateY(${virtualItem.start}px)` }}
+										onClick={() => {
+											assign.mutate({ path, animeId: item.id });
+										}}>
+										<AnimeCover id={item.id} coverUrl={item.coverUrl} alt='' lazy className='h-10 w-7 shrink-0 overflow-hidden rounded-sm' />
+										<span className='min-w-0 flex-1'>
+											<span className='block truncate'>{item.title}</span>
+											{item.folder ? <span className='block truncate text-xs text-muted-foreground'>{folderDisplayName(item.folder)}</span> : null}
+										</span>
+									</Button>
+								);
+							})}
+						</div>
 					)}
 				</div>
 			</PopoverContent>

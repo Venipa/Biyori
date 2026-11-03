@@ -858,8 +858,6 @@ library:
   notOnList: Not on list
   multipleAnime_one: "{{count}} anime"
   multipleAnime_other: "{{count}} anime"
-  assign: Assign
-  change: Change
   rematch: Rematch
   ignoreFolder: Ignore folder
   unignore: Unignore

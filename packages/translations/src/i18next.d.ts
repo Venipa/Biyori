@@ -926,8 +926,6 @@ declare module "i18next" {
 					notOnList: string;
 					multipleAnime_one: string;
 					multipleAnime_other: string;
-					assign: string;
-					change: string;
 					rematch: string;
 					ignoreFolder: string;
 					unignore: string;
