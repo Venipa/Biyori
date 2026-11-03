@@ -32,6 +32,8 @@ export function FolderPicker({ path, children }: { path: string; children: React
 		getScrollElement: () => listRef.current?.querySelector("[data-slot=scroll-area-viewport]") ?? null,
 		estimateSize: () => ITEM_HEIGHT,
 		overscan: 6,
+		// the portaled popup reports a zero rect on first open; size the window until the observer catches up
+		initialRect: { width: 320, height: 288 },
 	});
 
 	return (
