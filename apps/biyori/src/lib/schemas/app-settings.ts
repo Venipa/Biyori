@@ -18,7 +18,8 @@ export const torrentSortBySchema = z.enum(["episode_number", "release_date"]);
 export const torrentSortOrderSchema = z.enum(["ascending", "descending"]);
 export const defaultServiceSchema = z.enum(["anilist", "myanimelist", "kitsu"]);
 export const nowPlayingViewSchema = z.enum(["cards", "table"]);
-export const animeListViewAsSchema = z.enum(["compact", "rich"]);
+// "rich" was replaced by "posters"; stored legacy or unknown values fall back to posters
+export const animeListViewAsSchema = z.preprocess((value) => (value === undefined || value === "compact" ? value : "posters"), z.enum(["compact", "posters"]));
 export type DefaultService = z.infer<typeof defaultServiceSchema>;
 export type NowPlayingView = z.infer<typeof nowPlayingViewSchema>;
 export type AnimeListViewAs = z.infer<typeof animeListViewAsSchema>;
