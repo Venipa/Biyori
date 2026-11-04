@@ -11,7 +11,7 @@
 		"typecheck:web": "bun run generate:routes && tsc --noEmit -p tsconfig.web.json --composite false",
 		"typecheck": "bun run typecheck:node && bun run typecheck:web",
 		"start": "electron-vite preview",
-		"dev": "bun run --bun --cwd ../../packages/hana build && electron-vite dev",
+		"dev": "bun run --bun --cwd ../../packages/hana build && electron-vite dev --remoteDebuggingPort=9333",
 		"build": "bun run typecheck && electron-vite build",
 		"build:hana": "bun run --bun --cwd ../../packages/hana build",
 		"build:hana:release": "bun run --bun --cwd ../../packages/hana build:release",
