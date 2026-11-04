@@ -922,9 +922,14 @@ declare module "i18next" {
 					notMatched: string;
 					multipleAnime_one: string;
 					multipleAnime_other: string;
-					needMatch_one: string;
-					needMatch_other: string;
 					filterFolders: string;
+					sortBy: string;
+					tab: {
+						all: string;
+						unmatched: string;
+						matched: string;
+						ignored: string;
+					};
 					folderStats: string;
 					matchedAnime: string;
 					noneYet: string;
@@ -938,8 +943,6 @@ declare module "i18next" {
 					ignoreFolder: string;
 					unignore: string;
 					openRoot: string;
-					folderCount_one: string;
-					folderCount_other: string;
 					searchLink: string;
 					filterList: string;
 					noListMatch: string;

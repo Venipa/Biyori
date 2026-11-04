@@ -854,9 +854,13 @@ library:
   notMatched: Not matched
   multipleAnime_one: "{{count}} anime"
   multipleAnime_other: "{{count}} anime"
-  needMatch_one: "{{count}} needs a match"
-  needMatch_other: "{{count}} need a match"
   filterFolders: Filter folders
+  sortBy: Sort by
+  tab:
+    all: All
+    unmatched: Needs a match
+    matched: Matched
+    ignored: Ignored
   folderStats: "{{files}} files · {{episodes}} episodes"
   matchedAnime: Matched anime
   noneYet: None yet
@@ -870,8 +874,6 @@ library:
   ignoreFolder: Ignore folder
   unignore: Unignore
   openRoot: Open folder
-  folderCount_one: "{{count}} folder"
-  folderCount_other: "{{count}} folders"
   searchLink: Search
   filterList: Filter your list
   noListMatch: No anime on your list matches.

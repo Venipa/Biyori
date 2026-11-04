@@ -1,15 +1,17 @@
 import { useTranslation } from "@biyori/translations/react";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronLeftIcon, FolderIcon, FolderSearchIcon, PlusIcon } from "lucide-react";
+import { ArrowUpDownIcon, ChevronLeftIcon, FolderIcon, FolderSearchIcon, PlusIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import type { RootFolderRow } from "@/lib/library-summary";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { ListPicker } from "@/mainview/components/app/library/list-picker";
+import { CategoryNav } from "@/mainview/components/app/shared/category-nav";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/mainview/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/mainview/components/ui/empty";
 import { Input } from "@/mainview/components/ui/input";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
@@ -18,6 +20,13 @@ import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 
 const route = getRouteApi("/app/library_/$root");
+type StatusTab = "all" | "unmatched" | "matched" | "ignored";
+type SortKey = "name" | "files";
+const STATUS_TABS: StatusTab[] = ["all", "unmatched", "matched", "ignored"];
+
+function tabMatches(tab: StatusTab, row: RootFolderRow): boolean {
+	return tab === "all" || (tab === "matched" ? row.status === "matched" || row.status === "multiple" : row.status === tab);
+}
 const EMPTY_ROWS: RootFolderRow[] = [];
 const TILE_WIDTH = 112;
 const TILE_GAP = 12;
@@ -229,19 +238,24 @@ export function LibraryRootPage() {
 	const query = trpc.library.folders.useQuery({ root });
 	const scanFolder = trpc.library.scanFolder.useMutation();
 	const [filter, setFilter] = useState("");
+	const [tab, setTab] = useState<StatusTab>("all");
+	const [sort, setSort] = useState<SortKey>("name");
 	const [selected, setSelected] = useState<string | null>(null);
 	const [open, setOpen] = useState(false);
 	const data = query.data;
 	const rows = data?.folders ?? EMPTY_ROWS;
 	const needle = filter.trim().toLowerCase();
-	const visible = needle ? rows.filter((row) => row.name.toLowerCase().includes(needle)) : rows;
-	const unmatched = rows.filter((row) => row.status === "unmatched").length;
+	const visible = rows.filter((row) => tabMatches(tab, row) && (!needle || row.name.toLowerCase().includes(needle)));
+	if (sort === "files") {
+		visible.sort((a, b) => b.files - a.files);
+	}
+	const tabs = STATUS_TABS.map((id) => ({ id, label: `${t(`library.tab.${id}`)} ${rows.filter((row) => tabMatches(id, row)).length}` }));
 	const missing = data?.missing ?? false;
 	// keep the last row while the drawer animates out
 	const selectedRow = rows.find((row) => row.path === selected) ?? null;
 
 	return (
-		<div className='flex h-full min-h-0 flex-col gap-4 pt-4'>
+		<div className='flex h-full min-h-0 flex-col gap-3 pt-4'>
 			<div className='flex flex-wrap items-start justify-between gap-3 px-4'>
 				<div className='flex min-w-0 items-start gap-2'>
 					<Button type='button' variant='ghost' size='icon-xs' className='mt-1' aria-label={t("library.back")} render={<Link to='/app/library' />}>
@@ -249,13 +263,27 @@ export function LibraryRootPage() {
 					</Button>
 					<div className='min-w-0'>
 						<h1 className='truncate text-lg font-semibold'>{data?.name ?? root}</h1>
-						<p className='truncate text-sm text-muted-foreground'>
-							{[root, t("library.folderCount", { count: rows.length }), unmatched > 0 ? t("library.needMatch", { count: unmatched }) : null].filter(Boolean).join(" · ")}
-						</p>
+						<p className='truncate text-sm text-muted-foreground'>{root}</p>
 					</div>
 				</div>
+			</div>
+			<div className='flex flex-wrap items-center gap-2 border-b px-4 pb-3'>
+				<CategoryNav items={tabs} value={tab} onValueChange={(id) => setTab(id as StatusTab)} aria-label={t("library.status")} layoutId='library-folder-tabs' />
+				<span className='flex-1' />
+				<Input className='w-52' value={filter} placeholder={t("library.filterFolders")} onChange={(event) => setFilter(event.target.value)} />
+				<DropdownMenu>
+					<DropdownMenuTrigger render={<Button type='button' variant='ghost' aria-label={t("library.sortBy")} />}>
+						<ArrowUpDownIcon data-icon='inline-start' />
+						{t(sort === "name" ? "library.name" : "library.files")}
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align='end'>
+						<DropdownMenuRadioGroup value={sort} onValueChange={(value) => setSort(value as SortKey)}>
+							<DropdownMenuRadioItem value='name'>{t("library.name")}</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value='files'>{t("library.files")}</DropdownMenuRadioItem>
+						</DropdownMenuRadioGroup>
+					</DropdownMenuContent>
+				</DropdownMenu>
 				<div className='flex flex-wrap gap-2'>
-					<Input className='w-52' value={filter} placeholder={t("library.filterFolders")} onChange={(event) => setFilter(event.target.value)} />
 					<Button
 						type='button'
 						variant='outline'
