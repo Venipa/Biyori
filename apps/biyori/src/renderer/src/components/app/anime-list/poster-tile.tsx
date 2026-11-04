@@ -1,7 +1,7 @@
 import { useTranslation } from "@biyori/translations/react";
 import { PlayIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { type KeyboardEvent, memo, useState } from "react";
+import { type KeyboardEvent, memo, useRef, useState } from "react";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { Button } from "@/mainview/components/ui/button";
 import { formatTimeAgo } from "@/mainview/lib/format-date";
@@ -11,9 +11,9 @@ import { cn } from "@/mainview/lib/utils";
 
 export const TILE_WIDTH = 136;
 // cover 2:3 + airing strip (8) + text (52) + row gap (12)
-// py 12 + two 16px title lines + 2 gap + 15 meta
-const TEXT_HEIGHT = 61;
-export const TILE_ROW_HEIGHT = TILE_WIDTH * 1.5 + 8 + TEXT_HEIGHT + 12;
+// airing strip 8 + py 12 + two 16px title lines + 2 gap + 15 meta
+const TEXT_HEIGHT = 69;
+export const TILE_ROW_HEIGHT = TILE_WIDTH * 1.5 + TEXT_HEIGHT + 12;
 
 export type PosterTileRow = {
 	id: number;
@@ -45,7 +45,13 @@ function PosterTileImpl<T extends PosterTileRow>({ row, selected, playing, onOpe
 	// the clamp comes off before growing and goes back on only after the shrink lands, so both directions animate real content
 	const [clamped, setClamped] = useState(true);
 	const reduceMotion = useReducedMotion();
+	const titleRef = useRef<HTMLSpanElement>(null);
 	function expand(): void {
+		const title = titleRef.current;
+		// only titles the clamp actually cut grow; others would twitch by the measurement rounding
+		if (!title || title.scrollHeight <= title.clientHeight) {
+			return;
+		}
 		setClamped(false);
 		setExpanded(true);
 	}
@@ -102,17 +108,8 @@ function PosterTileImpl<T extends PosterTileRow>({ row, selected, playing, onOpe
 						<PlayIcon />
 					</Button>
 				) : null}
-				{row.episodes > 0 ? <div aria-hidden className='pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-black/45 to-transparent' /> : null}
-				{row.episodes > 0 ? (
-					<div aria-hidden className='absolute inset-x-0 bottom-0 h-[3px] bg-black/40'>
-						<div className='h-full bg-primary' style={{ width: `${Math.round(ratio * 100)}%` }} />
-					</div>
-				) : null}
 			</div>
-			<div className='flex h-2 shrink-0 items-center justify-center bg-card'>
-				<span aria-hidden className={cn("h-[3px] w-6 rounded-full", airingLineClass(row.airingStatus ?? ""))} />
-			</div>
-			{/* anchored to the bottom so a clipped title grows upward over the cover; height "auto" is measured by motion */}
+			{/* anchored to the bottom so a clipped title grows upward over the cover; the airing strip rides on top of it */}
 			<motion.div
 				initial={false}
 				animate={{ height: expanded ? "auto" : TEXT_HEIGHT }}
@@ -122,12 +119,28 @@ function PosterTileImpl<T extends PosterTileRow>({ row, selected, playing, onOpe
 						setClamped(true);
 					}
 				}}
-				className='absolute inset-x-0 bottom-0 overflow-hidden bg-card'>
-				<div className='flex min-w-0 flex-col gap-0.5 px-2 py-1.5'>
-					<span title={row.title} className={cn("min-h-8 text-xs leading-4 font-medium", clamped && "line-clamp-2", nextAvailable && "text-primary")}>
-						{row.title}
-					</span>
-					<span className='truncate text-[11px] text-muted-foreground tabular-nums'>{ready > 0 ? `${progress} · ${t("list.tileReady", { episode: ready })}` : progress}</span>
+				className='absolute inset-x-0 bottom-0 bg-card'>
+				{/* progress bar and its fade hang off the block's top edge so they ride along when it grows */}
+				{row.episodes > 0 ? (
+					<>
+						<div aria-hidden className='pointer-events-none absolute inset-x-0 bottom-full h-10 bg-linear-to-t from-black/45 to-transparent' />
+						<div aria-hidden className='absolute inset-x-0 bottom-full h-[3px] bg-black/40'>
+							<div className='h-full bg-primary' style={{ width: `${Math.round(ratio * 100)}%` }} />
+						</div>
+					</>
+				) : null}
+				<div className='h-full overflow-hidden'>
+					<div className='flex h-2 shrink-0 items-center justify-center'>
+						<span aria-hidden className={cn("h-[3px] w-6 rounded-full", airingLineClass(row.airingStatus ?? ""))} />
+					</div>
+					<div className='flex min-w-0 flex-col gap-0.5 px-2 py-1.5'>
+						<span ref={titleRef} title={row.title} className={cn("min-h-8 text-xs leading-4 font-medium", clamped && "line-clamp-2", nextAvailable && "text-primary")}>
+							{row.title}
+						</span>
+						<span className='truncate text-[11px] leading-[15px] text-muted-foreground tabular-nums'>
+							{ready > 0 ? `${progress} · ${t("list.tileReady", { episode: ready })}` : progress}
+						</span>
+					</div>
 				</div>
 			</motion.div>
 		</div>
