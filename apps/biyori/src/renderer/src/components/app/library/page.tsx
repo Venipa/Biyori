@@ -268,7 +268,9 @@ export function LibraryRootPage() {
 				</div>
 			</div>
 			<div className='flex flex-wrap items-center gap-2 border-b px-4 pb-3'>
-				<CategoryNav items={tabs} value={tab} onValueChange={(id) => setTab(id as StatusTab)} aria-label={t("library.status")} layoutId='library-folder-tabs' arrows={false} />
+				<div className='rounded-lg border border-border/60 p-0.5'>
+					<CategoryNav items={tabs} value={tab} onValueChange={(id) => setTab(id as StatusTab)} aria-label={t("library.status")} layoutId='library-folder-tabs' arrows={false} />
+				</div>
 				<span className='flex-1' />
 				<Input className='w-52' value={filter} placeholder={t("library.filterFolders")} onChange={(event) => setFilter(event.target.value)} />
 				<DropdownMenu>
