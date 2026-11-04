@@ -398,6 +398,11 @@ export type AnimeMappedRow = AnimeInsert & {
 	endDate: string | null;
 };
 
+/** AniList flags adult media, but some hentai entries only carry the genre. */
+export function isAdultMedia(flag: boolean | null | undefined, genres: readonly string[] | null | undefined): boolean {
+	return flag === true || (genres ?? []).some((genre) => genre.toLowerCase() === "hentai");
+}
+
 export function toAnimeRow(media: AnilistMedia, titleLanguage: TitleLanguage = "Romaji"): AnimeMappedRow {
 	const preferred = pickTitle(media.title, titleLanguage);
 	const studios = (media.studios?.nodes ?? [])
@@ -414,6 +419,7 @@ export function toAnimeRow(media: AnilistMedia, titleLanguage: TitleLanguage = "
 		durationMinutes: media.duration ?? 0,
 		averageScore: media.averageScore ?? media.meanScore ?? 0,
 		popularity: media.popularity ?? 0,
+		isAdult: isAdultMedia(media.isAdult, media.genres) ? 1 : 0,
 		ratedRank: allTimeRank(media, "RATED"),
 		popularRank: allTimeRank(media, "POPULAR"),
 		season: formatSeason(media.season, media.seasonYear),
@@ -512,7 +518,7 @@ export function toMediaCardCached(media: AnilistMedia): AnilistMediaCardCached {
 		startDate: formatFuzzyDate(media.startDate),
 		endDate: formatFuzzyDate(media.endDate),
 		trailerId: pickTrailerId(media),
-		isAdult: media.isAdult === true,
+		isAdult: isAdultMedia(media.isAdult, media.genres),
 	};
 }
 

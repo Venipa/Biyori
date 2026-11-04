@@ -4,7 +4,7 @@ import type { AnilistMediaCardCached } from "../../lib/schemas/anilist-media-car
 import type { TitleLanguage } from "../../lib/schemas/app-settings";
 import type { RelatedMedia } from "../../lib/schemas/related-media";
 import type { ListStatus } from "../../shared/list";
-import { pickTitle } from "../anilist/map";
+import { isAdultMedia, pickTitle } from "../anilist/map";
 import type { AnimeInsert, ListEntryInsert } from "../db/types";
 
 export const malListStatusSchema = z.object({
@@ -192,6 +192,12 @@ export function toMalAnimeRow(node: MalAnimeNode, titleLanguage: TitleLanguage):
 		durationMinutes: Math.round((node.average_episode_duration ?? 0) / 60),
 		averageScore: Math.round((node.mean ?? 0) * 10),
 		popularity: node.num_list_users ?? 0,
+		isAdult: isAdultMedia(
+			node.nsfw === "black",
+			(node.genres ?? []).map((genre) => genre.name),
+		)
+			? 1
+			: 0,
 		ratedRank: node.rank ?? null,
 		popularRank: node.popularity ?? null,
 		season: malSeason(node),
@@ -231,7 +237,10 @@ export function toMalCard(node: MalAnimeNode): AnilistMediaCardCached {
 		startDate: node.start_date ?? null,
 		endDate: node.end_date ?? null,
 		trailerId: null,
-		isAdult: node.nsfw === "black",
+		isAdult: isAdultMedia(
+			node.nsfw === "black",
+			(node.genres ?? []).map((genre) => genre.name),
+		),
 	};
 }
 

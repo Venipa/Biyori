@@ -103,6 +103,7 @@ async function loadAnimeDetail(db: SelectDatabase, id: number): Promise<AnimeDet
 			episodes: anime.episodes,
 			averageScore: anime.averageScore,
 			popularity: anime.popularity,
+			isAdult: anime.isAdult,
 			ratedRank: anime.ratedRank,
 			popularRank: anime.popularRank,
 			season: anime.season,
@@ -232,6 +233,7 @@ export const appRouter = trpc.router({
 					episodes: anime.episodes,
 					averageScore: anime.averageScore,
 					popularity: anime.popularity,
+					isAdult: anime.isAdult,
 					popularRank: anime.popularRank,
 					season: anime.season,
 					airingStatus: anime.airingStatus,
@@ -263,6 +265,7 @@ export const appRouter = trpc.router({
 				const { titles, ...rest } = row;
 				return {
 					...rest,
+					isAdult: rest.isAdult === 1,
 					title: displayTitleFromRow(rest.title, titles, language),
 					titles: parseStoredTitles(titles) ?? titlesFromFallback(rest.title),
 					libraryEpisodes,

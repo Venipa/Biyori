@@ -1,0 +1,1 @@
+ALTER TABLE `anime` ADD `is_adult` integer DEFAULT 0 NOT NULL;

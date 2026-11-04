@@ -16,6 +16,7 @@ export const anime = sqliteTable("anime", {
 	/** 0-100 regardless of provider */
 	averageScore: integer("average_score").notNull(),
 	popularity: integer("popularity").notNull().default(0),
+	isAdult: integer("is_adult").notNull().default(0),
 	ratedRank: integer("rated_rank"),
 	popularRank: integer("popular_rank"),
 	season: text("season").notNull(),
