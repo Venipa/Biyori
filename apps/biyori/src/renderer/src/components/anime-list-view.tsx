@@ -561,6 +561,7 @@ export function AnimeListView({
 						aria-label={t("list.facet.label")}
 						layoutId='anime-list-facets'
 						arrows={false}
+						compact
 					/>
 				</div>
 				<span className='flex-1' />

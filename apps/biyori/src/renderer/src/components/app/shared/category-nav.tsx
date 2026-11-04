@@ -20,6 +20,8 @@ type CategoryNavProps = {
 	layoutId?: string;
 	/** Hide the scroll chevrons when the nav is known to fit its row. */
 	arrows?: boolean;
+	/** Tight padding for a bordered segmented control. */
+	compact?: boolean;
 };
 
 function measureOverflow(el: HTMLElement): { left: boolean; right: boolean } {
@@ -27,7 +29,7 @@ function measureOverflow(el: HTMLElement): { left: boolean; right: boolean } {
 	return { left: el.scrollLeft > 1, right: el.scrollLeft < max - 1 };
 }
 
-export function CategoryNav({ items, value, onValueChange, "aria-label": ariaLabel, layoutId = "category-nav", arrows = true }: CategoryNavProps) {
+export function CategoryNav({ items, value, onValueChange, "aria-label": ariaLabel, layoutId = "category-nav", arrows = true, compact = false }: CategoryNavProps) {
 	const scrollerRef = useRef<HTMLDivElement>(null);
 	const [overflow, setOverflow] = useState({ left: false, right: false });
 
@@ -92,12 +94,18 @@ export function CategoryNav({ items, value, onValueChange, "aria-label": ariaLab
 									key={item.id}
 									type='button'
 									aria-current={isActive ? "true" : undefined}
-									className={cn("relative shrink-0 px-3 py-2 text-sm font-medium transition-colors", isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground")}
+									className={cn(
+										"relative shrink-0 text-sm font-medium transition-colors",
+										compact ? "px-2.5 py-1" : "px-3 py-2",
+										isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+									)}
 									data-card={item.id}
 									onClick={() => {
 										onValueChange(item.id);
 									}}>
-									{isActive ? <motion.span layoutId='pill' aria-hidden className='absolute inset-x-1 inset-y-1 rounded-md bg-muted' transition={pillSpring} /> : null}
+									{isActive ? (
+										<motion.span layoutId='pill' aria-hidden className={cn("absolute rounded-md bg-muted", compact ? "inset-0" : "inset-x-1 inset-y-1")} transition={pillSpring} />
+									) : null}
 									<span className='relative z-10 truncate'>{item.label}</span>
 								</button>
 							);
