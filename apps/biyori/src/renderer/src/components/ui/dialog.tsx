@@ -42,19 +42,23 @@ function DialogContent({
 	...props
 }: DialogPrimitive.Popup.Props & {
 	showCloseButton?: boolean;
-	from?: "center" | "bottom";
+	from?: "center" | "bottom" | "right";
 	underlay?: React.ReactNode;
 }) {
 	const { t } = useTranslation();
 	return (
 		<DialogPortal>
-			<DialogOverlay className={from === "bottom" ? "duration-200" : undefined} />
+			<DialogOverlay className={from === "center" ? undefined : "duration-200"} />
 			{underlay}
 			<DialogPrimitive.Popup
 				data-slot='dialog-content'
 				className={cn(
 					"fixed z-50 grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-sm",
-					from === "bottom" ? "dialog-from-bottom top-8 right-0 bottom-0 left-0 mx-auto h-auto max-h-none" : `top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${dialogMotion}`,
+					from === "bottom"
+						? "dialog-from-bottom top-8 right-0 bottom-0 left-0 mx-auto h-auto max-h-none"
+						: from === "right"
+							? "dialog-from-right top-8 right-0 bottom-0 h-auto max-h-none max-w-md rounded-r-none sm:max-w-md"
+							: `top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${dialogMotion}`,
 					className,
 				)}
 				{...props}>

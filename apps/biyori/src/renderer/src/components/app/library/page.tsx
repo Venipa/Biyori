@@ -1,178 +1,244 @@
-import { t, useTranslation } from "@biyori/translations/react";
+import { useTranslation } from "@biyori/translations/react";
 import { getRouteApi, Link } from "@tanstack/react-router";
-import { type ColumnDef, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { ChevronLeftIcon, FolderIcon, FolderSearchIcon, HardDriveIcon, MoreHorizontalIcon, PlusIcon, XIcon } from "lucide-react";
-import { useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { ChevronLeftIcon, FolderIcon, FolderSearchIcon, PlusIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { desktopRpc } from "@/desktop-rpc";
-import type { RootFolderOwner, RootFolderRow } from "@/lib/library-summary";
+import type { RootFolderRow } from "@/lib/library-summary";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
-import { FolderPicker } from "@/mainview/components/app/library/folder-picker";
-import { DataTable } from "@/mainview/components/app/shared/data-table";
+import { ListPicker } from "@/mainview/components/app/library/list-picker";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogTitle } from "@/mainview/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/mainview/components/ui/empty";
-import { Popover, PopoverContent, PopoverTrigger } from "@/mainview/components/ui/popover";
+import { Input } from "@/mainview/components/ui/input";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
+import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
 
 const route = getRouteApi("/app/library_/$root");
 const EMPTY_ROWS: RootFolderRow[] = [];
-const rowModel = getCoreRowModel<RootFolderRow>();
+const TILE_WIDTH = 112;
+const TILE_GAP = 12;
+// cover 2:3 + name (2 lines) + status line + row gap
+const ROW_HEIGHT = 168 + 6 + 32 + 16 + 14;
 
-function OwnerChip({ owner, path }: { owner: RootFolderOwner; path: string }) {
+function gridColumns(width: number): number {
+	return Math.max(1, Math.floor((width + TILE_GAP) / (TILE_WIDTH + TILE_GAP)));
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+	const rows: T[][] = [];
+	for (let index = 0; index < items.length; index += size) {
+		rows.push(items.slice(index, index + size));
+	}
+	return rows;
+}
+
+function FolderTile({ row, onOpen }: { row: RootFolderRow; onOpen: () => void }) {
 	const { t } = useTranslation();
-	const [open, setOpen] = useState(false);
-	const remove = trpc.library.removeFolderOwner.useMutation({
-		onSuccess: () => {
-			setOpen(false);
-		},
-	});
+	const first = row.owners[0];
+	const subtitle =
+		row.status === "unmatched"
+			? t("library.notMatched")
+			: row.status === "ignored"
+				? t("library.ignored")
+				: row.status === "multiple"
+					? t("library.multipleAnime", { count: row.owners.length })
+					: (first?.title ?? "");
 	return (
-		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger render={<Button type='button' variant='ghost' className='h-auto max-w-full min-w-0 justify-start gap-2 px-1.5 py-1 font-normal' />}>
-				<AnimeCover id={owner.animeId} coverUrl={owner.coverUrl} alt='' lazy className='h-9 w-6 shrink-0 overflow-hidden rounded-sm' />
-				<span className='truncate'>{owner.title}</span>
-				{owner.onList ? null : <Badge variant='secondary'>{t("library.notOnList")}</Badge>}
-			</PopoverTrigger>
-			<PopoverContent className='p-1'>
-				<Button
-					type='button'
-					variant='ghost'
-					size='sm'
-					loading={remove.isPending}
-					onClick={() => {
-						remove.mutate({ path, animeId: owner.animeId });
-					}}>
-					<XIcon data-icon='inline-start' />
-					{t("library.removeFromFolder")}
-				</Button>
-			</PopoverContent>
-		</Popover>
+		<button type='button' onClick={onOpen} className='group flex w-28 flex-col rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50' title={row.path}>
+			<div
+				className={cn(
+					"relative aspect-2/3 w-full overflow-hidden rounded-md ring-1 ring-foreground/10 transition-shadow duration-150 group-hover:ring-foreground/25",
+					first ? "bg-muted" : "flex items-center justify-center border border-dashed text-muted-foreground",
+					row.status === "ignored" && "opacity-50",
+				)}>
+				{first ? <AnimeCover id={first.animeId} coverUrl={first.coverUrl} alt='' lazy className='size-full' /> : row.status === "ignored" ? null : <PlusIcon className='size-6' />}
+				<span className='absolute right-1.5 bottom-1.5 rounded-full bg-black/60 px-1.5 text-[11px] text-white tabular-nums'>{row.files}</span>
+			</div>
+			<span className='mt-1.5 line-clamp-2 text-xs leading-snug'>{row.name}</span>
+			<span className={cn("w-full truncate text-[11px]", row.status === "unmatched" ? "text-amber-400" : "text-muted-foreground")}>{subtitle}</span>
+		</button>
 	);
 }
 
-/** Matched anime are chips with a remove popover; the plus on the right opens the list picker. */
-function AnimeCell({ row }: { row: RootFolderRow }) {
-	const { t } = useTranslation();
-	if (row.status === "ignored") {
-		return <span className='px-2 text-muted-foreground'>{t("library.ignored")}</span>;
-	}
+function FolderWall({ rows, onOpen }: { rows: RootFolderRow[]; onOpen: (path: string) => void }) {
+	const rootRef = useRef<HTMLDivElement>(null);
+	const [width, setWidth] = useState(0);
+	useEffect(() => {
+		const node = rootRef.current;
+		if (!node) {
+			return;
+		}
+		// only re-render when the column count changes, not on every resized pixel
+		const update = (next: number) => {
+			setWidth((prev) => (prev && gridColumns(prev) === gridColumns(next) ? prev : next));
+		};
+		const observer = new ResizeObserver((entries) => {
+			update(entries[0]?.contentRect.width ?? 0);
+		});
+		observer.observe(node);
+		update(node.clientWidth);
+		return () => {
+			observer.disconnect();
+		};
+	}, []);
+	const columns = gridColumns(width || 640);
+	const lines = chunk(rows, columns);
+	const virtualizer = useVirtualizer({
+		count: lines.length,
+		getScrollElement: () => rootRef.current?.closest("[data-slot=scroll-area-viewport]") ?? null,
+		estimateSize: () => ROW_HEIGHT,
+		overscan: 2,
+	});
 	return (
-		<div className='flex min-w-0 items-center gap-1'>
-			<div className='flex min-w-0 flex-1 flex-wrap items-center gap-1'>
-				{row.owners.length === 0 ? (
-					<span className='px-1.5 text-muted-foreground'>{t("library.notMatched")}</span>
-				) : (
-					row.owners.map((owner) => <OwnerChip key={owner.animeId} owner={owner} path={row.path} />)
-				)}
-			</div>
-			<FolderPicker path={row.path}>
-				<Button type='button' variant='ghost' size='icon-xs' aria-label={t("library.addAnime")}>
-					<PlusIcon />
-				</Button>
-			</FolderPicker>
+		<div ref={rootRef} className='relative w-full' style={{ height: virtualizer.getTotalSize() }}>
+			{virtualizer.getVirtualItems().map((virtualRow) => {
+				const line = lines[virtualRow.index];
+				if (!line) {
+					return null;
+				}
+				return (
+					<ul
+						key={virtualRow.index}
+						className='absolute top-0 left-0 grid w-full'
+						style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)`, gridTemplateColumns: `repeat(${columns}, ${TILE_WIDTH}px)`, gap: TILE_GAP }}>
+						{line.map((row) => (
+							<li key={row.path}>
+								<FolderTile row={row} onOpen={() => onOpen(row.path)} />
+							</li>
+						))}
+					</ul>
+				);
+			})}
 		</div>
 	);
 }
 
-function FolderActions({ row }: { row: RootFolderRow }) {
+function FolderDrawer({ row }: { row: RootFolderRow }) {
 	const { t } = useTranslation();
+	const remove = trpc.library.removeFolderOwner.useMutation();
 	const clear = trpc.library.clearFolder.useMutation();
 	const unignore = trpc.library.unignoreFolder.useMutation();
-
-	if (row.status === "ignored") {
-		return (
-			<Button
-				type='button'
-				variant='ghost'
-				size='xs'
-				loading={unignore.isPending}
-				onClick={() => {
-					unignore.mutate({ path: row.path });
-				}}>
-				{t("library.unignore")}
-			</Button>
-		);
-	}
+	const ownerIds = new Set(row.owners.map((owner) => owner.animeId));
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger render={<Button type='button' variant='ghost' size='icon-xs' aria-label={t("library.actions")} loading={clear.isPending} />}>
-				<MoreHorizontalIcon />
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align='end'>
-				{row.status === "unmatched" ? null : (
-					<DropdownMenuItem
-						onClick={() => {
-							clear.mutate({ path: row.path, ignore: false });
-						}}>
-						{t("library.rematch")}
-					</DropdownMenuItem>
-				)}
-				<DropdownMenuItem
+		<>
+			<DialogTitle className='truncate pr-8'>{row.name}</DialogTitle>
+			<p className='text-muted-foreground'>
+				{t("library.folderStats", { files: row.files, episodes: row.episodes })}
+				{" · "}
+				<button
+					type='button'
+					className='underline underline-offset-2'
 					onClick={() => {
-						clear.mutate({ path: row.path, ignore: true });
+						void desktopRpc.request.openPath({ path: row.path });
 					}}>
-					{t("library.ignoreFolder")}
-				</DropdownMenuItem>
-			</DropdownMenuContent>
-		</DropdownMenu>
+					{t("library.openRoot")}
+				</button>
+			</p>
+			<div>
+				<p className='mb-1.5 text-xs text-muted-foreground'>{t("library.matchedAnime")}</p>
+				{row.owners.length === 0 ? (
+					<p className='text-muted-foreground'>{t("library.noneYet")}</p>
+				) : (
+					<ul className='flex flex-col gap-2'>
+						{row.owners.map((owner) => (
+							<li key={owner.animeId} className='flex items-center gap-3'>
+								<AnimeCover id={owner.animeId} coverUrl={owner.coverUrl} alt='' lazy className='h-16 w-11 shrink-0 overflow-hidden rounded-sm' />
+								<span className='min-w-0 flex-1'>
+									<span className='block truncate'>{owner.title}</span>
+									{owner.onList ? null : <Badge variant='secondary'>{t("library.notOnList")}</Badge>}
+								</span>
+								<Button
+									type='button'
+									variant='ghost'
+									size='xs'
+									loading={remove.isPending}
+									onClick={() => {
+										remove.mutate({ path: row.path, animeId: owner.animeId });
+									}}>
+									{t("library.remove")}
+								</Button>
+							</li>
+						))}
+					</ul>
+				)}
+			</div>
+			{row.status === "ignored" ? null : (
+				<>
+					<p className='text-xs text-muted-foreground'>{t("library.addFromList")}</p>
+					<ListPicker path={row.path} excludeIds={ownerIds} />
+				</>
+			)}
+			<div className='flex items-center justify-between gap-2'>
+				<span className='text-xs text-muted-foreground'>
+					{t("library.notOnListHint")}{" "}
+					<Link to='/app/search' className='underline underline-offset-2'>
+						{t("library.searchLink")}
+					</Link>
+				</span>
+				<span className='flex shrink-0 gap-1'>
+					{row.status === "ignored" ? (
+						<Button
+							type='button'
+							variant='ghost'
+							size='xs'
+							loading={unignore.isPending}
+							onClick={() => {
+								unignore.mutate({ path: row.path });
+							}}>
+							{t("library.unignore")}
+						</Button>
+					) : (
+						<>
+							{row.owners.length > 0 ? (
+								<Button
+									type='button'
+									variant='ghost'
+									size='xs'
+									loading={clear.isPending}
+									onClick={() => {
+										clear.mutate({ path: row.path, ignore: false });
+									}}>
+									{t("library.rematch")}
+								</Button>
+							) : null}
+							<Button
+								type='button'
+								variant='ghost'
+								size='xs'
+								loading={clear.isPending}
+								onClick={() => {
+									clear.mutate({ path: row.path, ignore: true });
+								}}>
+								{t("library.ignoreFolder")}
+							</Button>
+						</>
+					)}
+				</span>
+			</div>
+		</>
 	);
 }
-
-const columns: ColumnDef<RootFolderRow>[] = [
-	{
-		accessorKey: "name",
-		header: () => t("library.folder"),
-		size: 320,
-		cell: ({ row }) => (
-			<span className='flex min-w-0 items-center gap-2' title={row.original.path}>
-				<FolderIcon className='size-4 shrink-0 text-muted-foreground' />
-				<span className='truncate font-medium'>{row.original.name}</span>
-			</span>
-		),
-	},
-	{
-		accessorKey: "files",
-		header: () => t("library.files"),
-		size: 72,
-		meta: { className: "text-right" },
-		cell: ({ getValue }) => <span className='tabular-nums'>{Number(getValue())}</span>,
-	},
-	{
-		accessorKey: "episodes",
-		header: () => t("library.episodes"),
-		size: 90,
-		meta: { className: "text-right" },
-		cell: ({ getValue }) => <span className='tabular-nums'>{Number(getValue())}</span>,
-	},
-	{
-		id: "anime",
-		header: () => t("library.anime"),
-		size: 380,
-		meta: { className: "p-1" },
-		cell: ({ row }) => <AnimeCell row={row.original} />,
-	},
-	{
-		id: "actions",
-		header: () => <span className='sr-only'>{t("library.actions")}</span>,
-		size: 72,
-		meta: { className: "text-right" },
-		cell: ({ row }) => <FolderActions row={row.original} />,
-	},
-];
 
 export function LibraryRootPage() {
 	const { t } = useTranslation();
 	const { root } = route.useParams();
 	const query = trpc.library.folders.useQuery({ root });
 	const scanFolder = trpc.library.scanFolder.useMutation();
+	const [filter, setFilter] = useState("");
+	const [selected, setSelected] = useState<string | null>(null);
+	const [open, setOpen] = useState(false);
 	const data = query.data;
 	const rows = data?.folders ?? EMPTY_ROWS;
+	const needle = filter.trim().toLowerCase();
+	const visible = needle ? rows.filter((row) => row.name.toLowerCase().includes(needle)) : rows;
 	const unmatched = rows.filter((row) => row.status === "unmatched").length;
 	const missing = data?.missing ?? false;
-	const table = useReactTable({ data: rows, columns, getCoreRowModel: rowModel, getRowId: (row) => row.path, enableSorting: false });
+	// keep the last row while the drawer animates out
+	const selectedRow = rows.find((row) => row.path === selected) ?? null;
 
 	return (
 		<div className='flex h-full min-h-0 flex-col gap-4 p-4'>
@@ -184,11 +250,12 @@ export function LibraryRootPage() {
 					<div className='min-w-0'>
 						<h1 className='truncate text-lg font-semibold'>{data?.name ?? root}</h1>
 						<p className='truncate text-sm text-muted-foreground'>
-							{[root, t("library.folderCount", { count: rows.length }), t("library.unmatchedCount", { count: unmatched })].join(" · ")}
+							{[root, t("library.folderCount", { count: rows.length }), unmatched > 0 ? t("library.needMatch", { count: unmatched }) : null].filter(Boolean).join(" · ")}
 						</p>
 					</div>
 				</div>
 				<div className='flex flex-wrap gap-2'>
+					<Input className='w-52' value={filter} placeholder={t("library.filterFolders")} onChange={(event) => setFilter(event.target.value)} />
 					<Button
 						type='button'
 						variant='outline'
@@ -200,27 +267,8 @@ export function LibraryRootPage() {
 						<FolderSearchIcon data-icon='inline-start' />
 						{t("library.scanFolders")}
 					</Button>
-					<Button
-						type='button'
-						variant='outline'
-						disabled={missing}
-						onClick={() => {
-							void desktopRpc.request.openPath({ path: root });
-						}}>
-						<HardDriveIcon data-icon='inline-start' />
-						{t("library.openRoot")}
-					</Button>
 				</div>
 			</div>
-
-			{unmatched > 0 ? (
-				<p className='text-sm text-muted-foreground'>
-					{t("library.assignHint")}{" "}
-					<Link to='/app/search' className='underline underline-offset-2'>
-						{t("library.searchLink")}
-					</Link>
-				</p>
-			) : null}
 
 			{query.isPending ? (
 				<Skeleton className='h-40 w-full rounded-xl' />
@@ -235,12 +283,22 @@ export function LibraryRootPage() {
 					</EmptyHeader>
 				</Empty>
 			) : (
-				<div className='min-h-0 flex-1 overflow-hidden rounded-xl border bg-card'>
-					<ScrollArea className='h-full'>
-						<DataTable table={table} />
-					</ScrollArea>
-				</div>
+				<ScrollArea className='min-h-0 flex-1' viewportClassName='pr-3'>
+					<FolderWall
+						rows={visible}
+						onOpen={(path) => {
+							setSelected(path);
+							setOpen(true);
+						}}
+					/>
+				</ScrollArea>
 			)}
+
+			<Dialog open={open && selectedRow != null} onOpenChange={setOpen}>
+				<DialogContent from='right' className='flex flex-col gap-3'>
+					{selectedRow ? <FolderDrawer row={selectedRow} /> : null}
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
