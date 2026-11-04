@@ -1,7 +1,7 @@
 import { useTranslation } from "@biyori/translations/react";
 import { XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
 import { FilterPillButton } from "@/mainview/components/ui/filter-pill-button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/mainview/components/ui/popover";
@@ -15,6 +15,7 @@ export function ListFilterChip({
 	children,
 	size = "xs",
 	popover = false,
+	openOnMount = false,
 }: {
 	label: string;
 	value: string;
@@ -23,10 +24,21 @@ export function ListFilterChip({
 	size?: "xs" | "sm";
 	/** Editors with their own inputs/lists use a popover: menus steal typeahead and arrow keys. */
 	popover?: boolean;
+	/** A chip just added from the menu opens its editor so the value can be set right away. */
+	openOnMount?: boolean;
 }) {
 	const [hovered, setHovered] = useState(false);
 	const { t } = useTranslation();
 	const [menuOpen, setMenuOpen] = useState(false);
+	// next tick: the add menu is still closing and returning focus, which would close a popover opened synchronously
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mount only, the prop is a one-shot signal
+	useEffect(() => {
+		if (!openOnMount) {
+			return;
+		}
+		const id = window.setTimeout(() => setMenuOpen(true), 0);
+		return () => window.clearTimeout(id);
+	}, []);
 	const showRemove = hovered || menuOpen;
 	const iconSize = size === "sm" ? "icon-sm" : "icon-xs";
 	const slotPx = size === "sm" ? 30 : 26;
@@ -35,6 +47,7 @@ export function ListFilterChip({
 
 	return (
 		<Root
+			open={menuOpen}
 			onOpenChange={(open) => {
 				setMenuOpen(open);
 			}}>

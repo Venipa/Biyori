@@ -1,6 +1,6 @@
 import { t, useTranslation } from "@biyori/translations/react";
 import { CheckIcon } from "lucide-react";
-import { type KeyboardEvent, type ReactElement, useId, useState } from "react";
+import { type KeyboardEvent, type ReactElement, useEffect, useId, useState } from "react";
 import { ListFilterChip } from "@/mainview/components/app/anime-list/filter-chip";
 import {
 	DropdownMenu,
@@ -418,7 +418,16 @@ function withClauseKeys(clauses: FilterClause[]): Array<{ clause: FilterClause; 
 
 type ListFilterProps = { clauses: FilterClause[]; tagNames: string[]; onClausesChange: (next: FilterClause[]) => void };
 
+// the add menu and the chip strip are separate components, so the field just added travels through the module
+let addedField: FilterClause["field"] | null = null;
+
 export function ListFilterChips({ clauses, tagNames, onClausesChange }: ListFilterProps) {
+	const chips = withClauseKeys(clauses);
+	// the chip just added from the menu opens its editor once; cleared after render so a later remount of the strip stays closed
+	const openIndex = addedField ? chips.map((chip) => chip.clause.field).lastIndexOf(addedField) : -1;
+	useEffect(() => {
+		addedField = null;
+	});
 	function patch(index: number, next: FilterClause): void {
 		onClausesChange(clauses.map((clause, i) => (i === index ? next : clause)));
 	}
@@ -429,11 +438,12 @@ export function ListFilterChips({ clauses, tagNames, onClausesChange }: ListFilt
 
 	return (
 		<>
-			{withClauseKeys(clauses).map((chip) => (
+			{chips.map((chip) => (
 				<ListFilterChip
 					key={chip.key}
 					label={clauseLabel(chip.clause.field)}
 					popover={chip.clause.field === "genre" || chip.clause.field === "tags"}
+					openOnMount={chip.index === openIndex}
 					value={clauseValue(chip.clause)}
 					onRemove={() => {
 						remove(chip.index);
@@ -471,6 +481,7 @@ export function ListFilterMenu({ clauses, tagNames, onClausesChange, children }:
 								if (item.field === "tags" && tagNames[0]) {
 									next.value = tagNames[0];
 								}
+								addedField = item.field;
 								onClausesChange(appendFilterClauses(clauses, [next]));
 							}}>
 							{item.label()}
