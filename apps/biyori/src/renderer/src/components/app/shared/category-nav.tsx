@@ -18,6 +18,8 @@ type CategoryNavProps = {
 	onValueChange: (id: string) => void;
 	"aria-label": string;
 	layoutId?: string;
+	/** Hide the scroll chevrons when the nav is known to fit its row. */
+	arrows?: boolean;
 };
 
 function measureOverflow(el: HTMLElement): { left: boolean; right: boolean } {
@@ -25,7 +27,7 @@ function measureOverflow(el: HTMLElement): { left: boolean; right: boolean } {
 	return { left: el.scrollLeft > 1, right: el.scrollLeft < max - 1 };
 }
 
-export function CategoryNav({ items, value, onValueChange, "aria-label": ariaLabel, layoutId = "category-nav" }: CategoryNavProps) {
+export function CategoryNav({ items, value, onValueChange, "aria-label": ariaLabel, layoutId = "category-nav", arrows = true }: CategoryNavProps) {
 	const scrollerRef = useRef<HTMLDivElement>(null);
 	const [overflow, setOverflow] = useState({ left: false, right: false });
 
@@ -66,18 +68,20 @@ export function CategoryNav({ items, value, onValueChange, "aria-label": ariaLab
 
 	return (
 		<div className='flex min-w-0 items-stretch gap-1'>
-			<Button
-				type='button'
-				variant='ghost'
-				size='icon-xs'
-				className='my-auto shrink-0'
-				disabled={!overflow.left}
-				aria-label={t("settings.nav.scrollLeft")}
-				onClick={() => {
-					scrollerRef.current?.scrollBy({ left: -160, behavior: "smooth" });
-				}}>
-				<ChevronLeftIcon />
-			</Button>
+			{arrows ? (
+				<Button
+					type='button'
+					variant='ghost'
+					size='icon-xs'
+					className='my-auto shrink-0'
+					disabled={!overflow.left}
+					aria-label={t("settings.nav.scrollLeft")}
+					onClick={() => {
+						scrollerRef.current?.scrollBy({ left: -160, behavior: "smooth" });
+					}}>
+					<ChevronLeftIcon />
+				</Button>
+			) : null}
 			<LayoutGroup id={layoutId}>
 				<nav aria-label={ariaLabel} className='relative min-w-0 flex-1'>
 					<div ref={scrollerRef} className='flex min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
@@ -101,18 +105,20 @@ export function CategoryNav({ items, value, onValueChange, "aria-label": ariaLab
 					</div>
 				</nav>
 			</LayoutGroup>
-			<Button
-				type='button'
-				variant='ghost'
-				size='icon-xs'
-				className='my-auto shrink-0'
-				disabled={!overflow.right}
-				aria-label={t("settings.nav.scrollRight")}
-				onClick={() => {
-					scrollerRef.current?.scrollBy({ left: 160, behavior: "smooth" });
-				}}>
-				<ChevronRightIcon />
-			</Button>
+			{arrows ? (
+				<Button
+					type='button'
+					variant='ghost'
+					size='icon-xs'
+					className='my-auto shrink-0'
+					disabled={!overflow.right}
+					aria-label={t("settings.nav.scrollRight")}
+					onClick={() => {
+						scrollerRef.current?.scrollBy({ left: 160, behavior: "smooth" });
+					}}>
+					<ChevronRightIcon />
+				</Button>
+			) : null}
 		</div>
 	);
 }
