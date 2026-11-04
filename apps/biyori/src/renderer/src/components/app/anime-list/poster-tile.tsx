@@ -10,7 +10,8 @@ import { cn } from "@/mainview/lib/utils";
 
 export const TILE_WIDTH = 136;
 // cover 2:3 + airing strip (8) + text (52) + row gap (12)
-export const TILE_ROW_HEIGHT = TILE_WIDTH * 1.5 + 8 + 52 + 12;
+// cover + airing strip + text block (py 12 + two 16px title lines + 2 gap + 15 meta) + row gap
+export const TILE_ROW_HEIGHT = TILE_WIDTH * 1.5 + 8 + 61 + 12;
 
 export type PosterTileRow = {
 	id: number;
@@ -94,7 +95,7 @@ function PosterTileImpl<T extends PosterTileRow>({ row, selected, playing, onOpe
 			<div className='flex h-2 shrink-0 items-center justify-center bg-card'>
 				<span aria-hidden className={cn("h-[3px] w-6 rounded-full", airingLineClass(row.airingStatus ?? ""))} />
 			</div>
-			<div className='flex h-[52px] min-w-0 flex-col gap-0.5 px-2 py-1.5'>
+			<div className='flex h-[61px] min-w-0 flex-col gap-0.5 px-2 py-1.5'>
 				<span title={row.title} className={cn("line-clamp-2 min-h-8 text-xs leading-4 font-medium", nextAvailable && "text-primary")}>
 					{row.title}
 				</span>
