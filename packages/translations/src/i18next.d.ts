@@ -771,8 +771,6 @@ declare module "i18next" {
 					};
 				};
 				list: {
-					quickAiring: string;
-					quickNext: string;
 					selectedCount: string;
 					clearSelection: string;
 					airedEstimated: string;
@@ -790,7 +788,6 @@ declare module "i18next" {
 					planned: string;
 					nowPlaying: string;
 					airingStatus: string;
-					cover: string;
 					animeTitle: string;
 					progress: string;
 					airingDate: string;
@@ -803,7 +800,20 @@ declare module "i18next" {
 					lastUpdated: string;
 					view: string;
 					compact: string;
-					rich: string;
+					posters: string;
+					filter: string;
+					sort: string;
+					facet: {
+						label: string;
+						all: string;
+						airing: string;
+						next: string;
+						behind: string;
+					};
+					tileProgress: string;
+					tileReady: string;
+					tileNext: string;
+					playNext: string;
 					couldNotLoad: string;
 					noAnime: string;
 					nothingInList: string;

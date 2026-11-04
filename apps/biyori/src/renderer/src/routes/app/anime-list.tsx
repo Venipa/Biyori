@@ -7,8 +7,8 @@ import { animeListTabSchema } from "@/shared/list";
 
 const searchSchema = animeInfoSearchSchema.extend({
 	tab: animeListTabSchema.optional(),
-	// quick filters, comma-separated ("airing,next"); plain string like the other search params
-	quick: z.string().optional(),
+	// tolerant like the old `quick` string: a stale bookmark must not hit the route error screen
+	facet: z.enum(["airing", "next", "behind"]).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/app/anime-list")({

@@ -705,8 +705,6 @@ settings:
     clearDescription: "Delete {{items}}? This cannot be undone."
     clear: Clear
 list:
-  quickAiring: Airing now
-  quickNext: Next ep available
   selectedCount: "{{count}} selected"
   clearSelection: Clear
   airedEstimated: "Aired: #{{episode}} (estimated)"
@@ -724,7 +722,6 @@ list:
   planned: Planned
   nowPlaying: Now playing
   airingStatus: Airing status
-  cover: Cover
   animeTitle: Anime title
   progress: Progress
   airingDate: Airing date
@@ -737,7 +734,19 @@ list:
   lastUpdated: Last updated
   view: View
   compact: Compact
-  rich: Rich
+  posters: Posters
+  filter: Filter
+  sort: Sort
+  facet:
+    label: Status
+    all: All
+    airing: Airing
+    next: Next episode
+    behind: Behind
+  tileProgress: "{{watched}} / {{total}}"
+  tileReady: "ep {{episode}} ready"
+  tileNext: "Ep {{episode}} · {{when}}"
+  playNext: Play next episode
   couldNotLoad: Could not load list
   noAnime: No anime
   nothingInList: Nothing in this list yet.

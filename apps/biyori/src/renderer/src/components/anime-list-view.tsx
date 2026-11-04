@@ -3,19 +3,23 @@ import { t, useTranslation } from "@biyori/translations/react";
 import { getRouteApi } from "@tanstack/react-router";
 import { type ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import type { inferRouterOutputs } from "@trpc/server";
-import { CircleAlertIcon, FilterIcon, ListIcon, PlayIcon } from "lucide-react";
+import { ArrowUpDownIcon, CircleAlertIcon, FilterIcon, LayoutGridIcon, ListIcon, PlayIcon, Rows3Icon } from "lucide-react";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { AiringStatusMark } from "@/components/app/anime/airing-status";
 import { desktopRpc } from "@/desktop-rpc";
 import { formatScore } from "@/lib/anilist-score";
 import type { AnimeListViewAs } from "@/lib/schemas/app-settings";
-import { AnimeCover } from "@/mainview/components/app/anime/cover";
-import { listStatusLabel, listStatusShortText } from "@/mainview/components/app/anime/list-action";
+import { listStatusLabel } from "@/mainview/components/app/anime/list-action";
 import { AnimeListProgress } from "@/mainview/components/app/anime/list-progress";
 import { AnimeItemCommands } from "@/mainview/components/app/anime-info/item-commands";
-import { ListClauseFilter } from "@/mainview/components/app/anime-list/clause-filter";
+import { ListClauseChips, useListClauses } from "@/mainview/components/app/anime-list/clause-filter";
+import { ListFilterMenu } from "@/mainview/components/app/anime-list/filter-bar";
+import { AnimeListPosterTile, TILE_ROW_HEIGHT, TILE_WIDTH } from "@/mainview/components/app/anime-list/poster-tile";
+import { CategoryNav } from "@/mainview/components/app/shared/category-nav";
 import { DataTable, resizableTableOptions } from "@/mainview/components/app/shared/data-table";
 import { PlaceholderView } from "@/mainview/components/app/shared/placeholder-view";
+import { PosterWall } from "@/mainview/components/app/shared/poster-wall";
+import { Button } from "@/mainview/components/ui/button";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -27,10 +31,10 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/mainview/components/ui/context-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { TableRow } from "@/mainview/components/ui/table";
 import { TableRowsSkeleton } from "@/mainview/components/ui/table-rows-skeleton";
-import { Toggle } from "@/mainview/components/ui/toggle";
 import { ToggleRadio, ToggleRadioItem } from "@/mainview/components/ui/toggle-radio";
 import { useAnilistScoreFormat } from "@/mainview/lib/anilist-score-format";
 import { animeMatchesListFilter, animeTypeLabel } from "@/mainview/lib/anime-list-filter";
@@ -47,15 +51,33 @@ import { ANIME_LIST_SEARCH_TAB, type AnimeListTab, type ListStatus, listStatusSc
 const tabs = listStatusSchema.options;
 const route = getRouteApi("/app/anime-list");
 
-const QUICK_FILTERS = ["airing", "next"] as const;
-type QuickFilter = (typeof QUICK_FILTERS)[number];
-type ListGlobalFilter = { text: string; quick: QuickFilter[] };
+const FACETS = ["all", "airing", "next", "behind"] as const;
+type Facet = (typeof FACETS)[number];
+type ListGlobalFilter = { text: string; facet: Facet };
+
+const SORT_OPTIONS = [
+	{ id: "lastUpdated", desc: true, label: () => t("list.lastUpdated") },
+	{ id: "title", desc: false, label: () => t("list.animeTitle") },
+	{ id: "progress", desc: true, label: () => t("list.progress") },
+	{ id: "score", desc: true, label: () => t("list.score") },
+	{ id: "airingDate", desc: false, label: () => t("list.airingDate") },
+] as const;
+const SORT_KEY = "anime-list-sort";
+const DEFAULT_SORT: SortingState = [{ id: "lastUpdated", desc: true }];
+
+function readStoredSort(): SortingState {
+	try {
+		const stored = JSON.parse(sessionStorage.getItem(SORT_KEY) ?? "null");
+		const known = SORT_OPTIONS.some((option) => option.id === stored?.[0]?.id && option.desc === stored[0].desc);
+		return known ? stored : DEFAULT_SORT;
+	} catch {
+		return DEFAULT_SORT;
+	}
+}
 
 type AnimeRow = inferRouterOutputs<AppRouter>["anime"]["list"][number];
 export type AnimeInfoTab = "main" | "list";
 const EMPTY_ROWS: AnimeRow[] = [];
-const COVER_HIDDEN = { cover: false };
-const COVER_VISIBLE = { cover: true };
 
 function toSelected(row: AnimeRow, status: ListStatus): SelectedAnime {
 	return {
@@ -82,8 +104,17 @@ function hasNextEpisode(row: AnimeRow): boolean {
 	return !!row.libraryEpisodes?.includes(row.episodesWatched + 1);
 }
 
-function matchesQuick(row: AnimeRow, quick: readonly QuickFilter[]): boolean {
-	return quick.every((filter) => (filter === "airing" ? row.airingStatus === "Currently airing" : hasNextEpisode(row)));
+function matchesFacet(row: AnimeRow, facet: Facet): boolean {
+	switch (facet) {
+		case "airing":
+			return row.airingStatus === "Currently airing";
+		case "next":
+			return hasNextEpisode(row);
+		case "behind":
+			return (row.lastAiredEpisode ?? 0) > row.episodesWatched;
+		default:
+			return true;
+	}
 }
 
 function isAiringFinished(status: string | null | undefined): boolean {
@@ -124,28 +155,6 @@ const columns: ColumnDef<AnimeRow>[] = [
 		maxSize: 32,
 		meta: { className: "px-2" },
 		cell: ({ row, table }) => <PlayingOrAiringCell playing={table.options.meta?.playingId === row.original.id} status={row.original.airingStatus} />,
-	},
-	{
-		id: "cover",
-		accessorKey: "coverUrl",
-		header: () => <span className='sr-only'>{t("list.cover")}</span>,
-		enableSorting: false,
-		enableResizing: false,
-		size: 48,
-		minSize: 48,
-		maxSize: 48,
-		meta: { className: "px-1.5" },
-		cell: ({ row }) => (
-			<AnimeCover
-				id={row.original.id}
-				coverUrl={row.original.coverUrl || undefined}
-				alt=''
-				lazy
-				width={40}
-				height={56}
-				className='aspect-2/3 h-14 w-10 overflow-hidden rounded-md bg-muted'
-			/>
-		),
 	},
 	{
 		accessorKey: "title",
@@ -202,7 +211,8 @@ const columns: ColumnDef<AnimeRow>[] = [
 	},
 	{
 		id: "airingDate",
-		accessorFn: (row) => row.nextAiringAt ?? (isAiringFinished(row.airingStatus) ? row.endDate : null) ?? "",
+		accessorFn: (row) => row.nextAiringAt ?? (isAiringFinished(row.airingStatus) ? row.endDate : null) ?? undefined,
+		sortUndefined: "last",
 		header: () => t("list.airingDate"),
 		size: 140,
 		minSize: 96,
@@ -283,12 +293,16 @@ function AnimeListViewToggle({ value, onValueChange }: { value: AnimeListViewAs;
 			aria-label={t("list.view")}
 			value={value}
 			onValueChange={(next) => {
-				if (next === "compact" || next === "rich") {
+				if (next === "compact" || next === "posters") {
 					onValueChange(next);
 				}
 			}}>
-			<ToggleRadioItem value='compact'>{t("list.compact")}</ToggleRadioItem>
-			<ToggleRadioItem value='rich'>{t("list.rich")}</ToggleRadioItem>
+			<ToggleRadioItem value='posters' aria-label={t("list.posters")}>
+				<LayoutGridIcon />
+			</ToggleRadioItem>
+			<ToggleRadioItem value='compact' aria-label={t("list.compact")}>
+				<Rows3Icon />
+			</ToggleRadioItem>
 		</ToggleRadio>
 	);
 }
@@ -306,11 +320,11 @@ export function AnimeListView({
 }) {
 	const listFilter = useListFilterText();
 	const { t } = useTranslation();
-	const quickRaw = route.useSearch({ select: (search) => search.quick });
+	const facet: Facet = route.useSearch({ select: (search) => search.facet }) ?? "all";
 	const navigate = route.useNavigate();
-	const quick = useMemo(() => QUICK_FILTERS.filter((filter) => (quickRaw ?? "").split(",").includes(filter)), [quickRaw]);
+	const clauseProps = useListClauses();
 	// must be referentially stable: a new object each render re-runs filtering, whose auto page reset re-renders again (freeze)
-	const globalFilter = useMemo<ListGlobalFilter | undefined>(() => (listFilter.trim() || quick.length > 0 ? { text: listFilter, quick } : undefined), [listFilter, quick]);
+	const globalFilter = useMemo<ListGlobalFilter | undefined>(() => (listFilter.trim() || facet !== "all" ? { text: listFilter, facet } : undefined), [listFilter, facet]);
 	const searching = listFilter.trim().length > 0;
 	const onSearchTab = tab === ANIME_LIST_SEARCH_TAB;
 	const groupedSearch = searching && onSearchTab;
@@ -342,13 +356,12 @@ export function AnimeListView({
 	const playNext = trpc.library.playNext.useMutation();
 	const playRandom = trpc.library.playRandom.useMutation();
 	const selected = useSelectedAnime();
-	const [sorting, setSorting] = useState<SortingState>([{ id: "lastUpdated", desc: true }]);
+	const [sorting, setSorting] = useState<SortingState>(readStoredSort);
 	const [menuRow, setMenuRow] = useState<AnimeRow | null>(null);
 	const compactSizing = usePersistedColumnSizing("anime-list");
-	const richSizing = usePersistedColumnSizing("anime-list-rich");
 	const viewAs: AnimeListViewAs = settingsQuery.data?.animeListViewAs ?? "compact";
-	const rich = viewAs === "rich";
-	const { columnSizing, onColumnSizingChange } = rich ? richSizing : compactSizing;
+	const posters = viewAs === "posters";
+	const { columnSizing, onColumnSizingChange } = compactSizing;
 	const setSettings = trpc.settings.set.useMutation({
 		onSuccess: (settings) => {
 			utils.settings.get.setData(undefined, settings);
@@ -362,10 +375,14 @@ export function AnimeListView({
 		getFilteredRowModel: getFilteredRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getRowId: (row) => String(row.id),
-		globalFilterFn: (row, _columnId, filterValue: ListGlobalFilter) => matchesQuick(row.original, filterValue.quick) && animeMatchesListFilter(row.original, filterValue.text),
-		onSortingChange: setSorting,
+		globalFilterFn: (row, _columnId, filterValue: ListGlobalFilter) => matchesFacet(row.original, filterValue.facet) && animeMatchesListFilter(row.original, filterValue.text),
+		onSortingChange: (updater) => {
+			const next = typeof updater === "function" ? updater(sorting) : updater;
+			sessionStorage.setItem(SORT_KEY, JSON.stringify(next));
+			setSorting(next);
+		},
 		onColumnSizingChange,
-		state: { sorting, globalFilter, columnSizing, columnVisibility: rich ? COVER_VISIBLE : COVER_HIDDEN },
+		state: { sorting, globalFilter, columnSizing },
 		meta: { playingId },
 	});
 	const tableRef = useRef(table);
@@ -374,26 +391,56 @@ export function AnimeListView({
 	selectedRef.current = selected;
 
 	const filteredRows = table.getFilteredRowModel().rows;
+	const sortedRows = table.getRowModel().rows;
 	const visualIdsKey = useMemo(() => {
 		if (!groupedSearch) {
-			return filteredRows.map((row) => row.original.id).join("\0");
+			return sortedRows.map((row) => row.original.id).join("\0");
 		}
 		const byStatus = new Map<string, number[]>();
-		for (const row of filteredRows) {
+		for (const row of sortedRows) {
 			const key = row.original.status ?? "";
 			const ids = byStatus.get(key) ?? [];
 			ids.push(row.original.id);
 			byStatus.set(key, ids);
 		}
 		return tabs.flatMap((status) => byStatus.get(status) ?? []).join("\0");
-	}, [filteredRows, groupedSearch]);
+	}, [sortedRows, groupedSearch]);
 
 	function selectRow(row: AnimeRow) {
 		setSelectedAnime(toSelected(row, rowListStatus(row, statusFallback)));
 	}
 	// memoized rows keep their first handlers; route them through a ref so they never go stale
-	const rowHandlers = useRef({ selectRow, onOpenAnime });
-	rowHandlers.current = { selectRow, onOpenAnime };
+	const handlers = {
+		selectRow,
+		onOpenAnime,
+		setMenuRow,
+		prefetch: (id: number) => {
+			void utils.anime.byId.prefetch({ id }, { staleTime: 30_000 });
+		},
+		playNext: playNext.mutate,
+	};
+	const rowHandlers = useRef(handlers);
+	rowHandlers.current = handlers;
+
+	const tileHandlers = useMemo(
+		() => ({
+			open: (row: AnimeRow) => {
+				rowHandlers.current.selectRow(row);
+				rowHandlers.current.onOpenAnime(row.id, "main");
+			},
+			menu: (row: AnimeRow) => {
+				rowHandlers.current.selectRow(row);
+				rowHandlers.current.setMenuRow(row);
+			},
+			hover: (row: AnimeRow) => {
+				rowHandlers.current.prefetch(row.id);
+			},
+			play: (row: AnimeRow) => {
+				rowHandlers.current.playNext({ animeId: row.id, episodesWatched: row.episodesWatched });
+			},
+		}),
+		[],
+	);
 
 	useEffect(() => {
 		const started = searching && !wasSearching.current;
@@ -483,8 +530,15 @@ export function AnimeListView({
 	}, [statusFallback, scan, playNext, playRandom]);
 
 	const menuAnime = menuRow ? toSelected(menuRow, rowListStatus(menuRow, statusFallback)) : null;
-	const headerLabel = onSearchTab || searching ? t("common.search") : listStatusShortText(listStatus);
 	const skeletonHeaders = table.getFlatHeaders().map((header) => flexRender(header.column.columnDef.header, header.getContext()));
+
+	const statusRows = listQuery.data ?? EMPTY_ROWS;
+	const facetTabs = useMemo(() => FACETS.map((id) => ({ id, label: `${t(`list.facet.${id}`)} ${statusRows.filter((row) => matchesFacet(row, id)).length}` })), [statusRows, t]);
+	const sortOption = SORT_OPTIONS.find((option) => option.id === sorting[0]?.id && option.desc === sorting[0]?.desc);
+
+	function setFacet(next: Facet): void {
+		void navigate({ search: (prev) => ({ ...prev, facet: next === "all" ? undefined : next }), replace: true });
+	}
 
 	function setViewAs(next: AnimeListViewAs): void {
 		startTransition(() => {
@@ -498,26 +552,50 @@ export function AnimeListView({
 
 	return (
 		<div className='flex h-full min-h-0 flex-col'>
-			<div className='flex shrink-0 items-center justify-between gap-2 border-b bg-card px-3 py-1.5'>
-				<h1 className='shrink-0 truncate text-sm font-medium'>{headerLabel}</h1>
-				<div className='min-w-0 flex-1'>
-					<ListClauseFilter />
+			<div className='flex shrink-0 items-center gap-2 border-b bg-card px-3 py-1.5'>
+				<div className='rounded-lg border border-border/60 p-0.5'>
+					<CategoryNav
+						items={facetTabs}
+						value={facet}
+						onValueChange={(id) => setFacet(id as Facet)}
+						aria-label={t("list.facet.label")}
+						layoutId='anime-list-facets'
+						arrows={false}
+					/>
 				</div>
-				{QUICK_FILTERS.map((filter) => (
-					<Toggle
-						key={filter}
-						size='sm'
-						variant='outline'
-						pressed={quick.includes(filter)}
-						onPressedChange={(pressed) => {
-							const next = QUICK_FILTERS.filter((item) => (item === filter ? pressed : quick.includes(item)));
-							void navigate({ search: (prev) => ({ ...prev, quick: next.length > 0 ? next.join(",") : undefined }), replace: true });
-						}}>
-						{filter === "airing" ? t("list.quickAiring") : t("list.quickNext")}
-					</Toggle>
-				))}
+				<span className='flex-1' />
+				<ListFilterMenu {...clauseProps}>
+					<Button type='button' variant='ghost' aria-label={t("list.filter")}>
+						<FilterIcon data-icon='inline-start' />
+						{t("list.filter")}
+						{clauseProps.clauses.length > 0 ? <span className='tabular-nums text-muted-foreground'>{clauseProps.clauses.length}</span> : null}
+					</Button>
+				</ListFilterMenu>
+				<DropdownMenu>
+					<DropdownMenuTrigger render={<Button type='button' variant='ghost' aria-label={t("list.sort")} />}>
+						<ArrowUpDownIcon data-icon='inline-start' />
+						{sortOption ? sortOption.label() : t("list.sort")}
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align='end'>
+						<DropdownMenuRadioGroup
+							value={sortOption?.id ?? ""}
+							onValueChange={(value) => {
+								const next = SORT_OPTIONS.find((option) => option.id === value);
+								if (next) {
+									table.setSorting([{ id: next.id, desc: next.desc }]);
+								}
+							}}>
+							{SORT_OPTIONS.map((option) => (
+								<DropdownMenuRadioItem key={option.id} value={option.id}>
+									{option.label()}
+								</DropdownMenuRadioItem>
+							))}
+						</DropdownMenuRadioGroup>
+					</DropdownMenuContent>
+				</DropdownMenu>
 				<AnimeListViewToggle value={viewAs} onValueChange={setViewAs} />
 			</div>
+			<ListClauseChips />
 			<div className='min-h-0 flex-1'>
 				<ContextMenu>
 					<ContextMenuTrigger className='block h-full min-h-0'>
@@ -528,11 +606,32 @@ export function AnimeListView({
 							{listQuery.data && listQuery.data.length > 0 && filteredRows.length === 0 ? (
 								<PlaceholderView icon={FilterIcon} title={t("list.noMatches")} description={t("list.nothingMatched")} />
 							) : null}
-							{filteredRows.length > 0 ? (
+							{filteredRows.length > 0 && posters ? (
+								<div className='p-3'>
+									<PosterWall
+										items={sortedRows.map((row) => row.original)}
+										getKey={(row) => String(row.id)}
+										tileWidth={TILE_WIDTH}
+										rowHeight={TILE_ROW_HEIGHT}
+										renderTile={(row) => (
+											<AnimeListPosterTile
+												row={row}
+												selected={selected?.id === row.id}
+												playing={playingId === row.id}
+												onOpen={tileHandlers.open}
+												onMenu={tileHandlers.menu}
+												onHover={tileHandlers.hover}
+												onPlay={tileHandlers.play}
+											/>
+										)}
+									/>
+								</div>
+							) : null}
+							{filteredRows.length > 0 && !posters ? (
 								<DataTable
 									table={table}
-									compact={!rich}
-									rowSize={rich ? 56 : 32}
+									compact
+									rowSize={32}
 									rowVersion={(row) => `${row.original.id === selected?.id ? 1 : 0}${row.original.id === playingId ? 1 : 0}`}
 									groupBy={groupedSearch ? (row) => rowListStatus(row.original, statusFallback) : undefined}
 									groupOrder={tabs}

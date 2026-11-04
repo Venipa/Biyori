@@ -1,8 +1,7 @@
 import { t, useTranslation } from "@biyori/translations/react";
-import { CheckIcon, PlusIcon } from "lucide-react";
-import { type KeyboardEvent, useId, useState } from "react";
+import { CheckIcon } from "lucide-react";
+import { type KeyboardEvent, type ReactElement, useId, useState } from "react";
 import { ListFilterChip } from "@/mainview/components/app/anime-list/filter-chip";
-import { ButtonToggle } from "@/mainview/components/ui/button-toggle";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -417,8 +416,9 @@ function withClauseKeys(clauses: FilterClause[]): Array<{ clause: FilterClause; 
 	});
 }
 
-export function ListFilterBar({ clauses, tagNames, onClausesChange }: { clauses: FilterClause[]; tagNames: string[]; onClausesChange: (next: FilterClause[]) => void }) {
-	const { t } = useTranslation();
+type ListFilterProps = { clauses: FilterClause[]; tagNames: string[]; onClausesChange: (next: FilterClause[]) => void };
+
+export function ListFilterChips({ clauses, tagNames, onClausesChange }: ListFilterProps) {
 	function patch(index: number, next: FilterClause): void {
 		onClausesChange(clauses.map((clause, i) => (i === index ? next : clause)));
 	}
@@ -427,12 +427,9 @@ export function ListFilterBar({ clauses, tagNames, onClausesChange }: { clauses:
 		onClausesChange(clauses.filter((_, i) => i !== index));
 	}
 
-	const chips = withClauseKeys(clauses);
-	const usedFields = new Set(clauses.map((clause) => clause.field));
-
 	return (
-		<div className='flex min-w-0 flex-wrap items-center gap-1'>
-			{chips.map((chip) => (
+		<>
+			{withClauseKeys(clauses).map((chip) => (
 				<ListFilterChip
 					key={chip.key}
 					label={clauseLabel(chip.clause.field)}
@@ -450,45 +447,51 @@ export function ListFilterBar({ clauses, tagNames, onClausesChange }: { clauses:
 					/>
 				</ListFilterChip>
 			))}
-			<DropdownMenu>
-				<DropdownMenuTrigger render={<ButtonToggle pressed={false} onPressedChange={() => undefined} size='xs' />}>
-					<PlusIcon />
-					{t("list.addFilter")}
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align='start'>
-					<DropdownMenuGroup>
-						<DropdownMenuLabel>{t("list.addFilter")}</DropdownMenuLabel>
-						{ADDABLE_FIELDS.map((item) => (
-							<DropdownMenuItem
-								key={item.field}
-								disabled={usedFields.has(item.field)}
-								onClick={() => {
-									const next = defaultClause(item.field);
-									if (item.field === "tags" && tagNames[0]) {
-										next.value = tagNames[0];
-									}
-									onClausesChange(appendFilterClauses(clauses, [next]));
-								}}>
-								{item.label()}
-							</DropdownMenuItem>
-						))}
-					</DropdownMenuGroup>
-					{clauses.length > 0 ? (
-						<>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								variant='destructive'
-								onClick={() => {
-									window.setTimeout(() => {
-										onClausesChange([]);
-									}, 0);
-								}}>
-								{t("list.clearFilters")}
-							</DropdownMenuItem>
-						</>
-					) : null}
-				</DropdownMenuContent>
-			</DropdownMenu>
-		</div>
+		</>
+	);
+}
+
+/** Add-filter menu; `children` is the trigger element. */
+export function ListFilterMenu({ clauses, tagNames, onClausesChange, children }: ListFilterProps & { children: ReactElement }) {
+	const { t } = useTranslation();
+	const usedFields = new Set(clauses.map((clause) => clause.field));
+
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger render={children} />
+			<DropdownMenuContent align='end'>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel>{t("list.addFilter")}</DropdownMenuLabel>
+					{ADDABLE_FIELDS.map((item) => (
+						<DropdownMenuItem
+							key={item.field}
+							disabled={usedFields.has(item.field)}
+							onClick={() => {
+								const next = defaultClause(item.field);
+								if (item.field === "tags" && tagNames[0]) {
+									next.value = tagNames[0];
+								}
+								onClausesChange(appendFilterClauses(clauses, [next]));
+							}}>
+							{item.label()}
+						</DropdownMenuItem>
+					))}
+				</DropdownMenuGroup>
+				{clauses.length > 0 ? (
+					<>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem
+							variant='destructive'
+							onClick={() => {
+								window.setTimeout(() => {
+									onClausesChange([]);
+								}, 0);
+							}}>
+							{t("list.clearFilters")}
+						</DropdownMenuItem>
+					</>
+				) : null}
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
