@@ -1,13 +1,13 @@
 import { useTranslation } from "@biyori/translations/react";
 import { getRouteApi, Link } from "@tanstack/react-router";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowUpDownIcon, ChevronLeftIcon, FolderIcon, FolderSearchIcon, PlusIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import type { RootFolderRow } from "@/lib/library-summary";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { ListPicker } from "@/mainview/components/app/library/list-picker";
 import { CategoryNav } from "@/mainview/components/app/shared/category-nav";
+import { PosterWall } from "@/mainview/components/app/shared/poster-wall";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/mainview/components/ui/dialog";
@@ -29,21 +29,8 @@ function tabMatches(tab: StatusTab, row: RootFolderRow): boolean {
 }
 const EMPTY_ROWS: RootFolderRow[] = [];
 const TILE_WIDTH = 112;
-const TILE_GAP = 12;
 // cover 2:3 + name (2 lines) + status line + row gap
 const ROW_HEIGHT = 168 + 6 + 32 + 16 + 14;
-
-function gridColumns(width: number): number {
-	return Math.max(1, Math.floor((width + TILE_GAP) / (TILE_WIDTH + TILE_GAP)));
-}
-
-function chunk<T>(items: T[], size: number): T[][] {
-	const rows: T[][] = [];
-	for (let index = 0; index < items.length; index += size) {
-		rows.push(items.slice(index, index + size));
-	}
-	return rows;
-}
 
 function FolderTile({ row, onOpen }: { row: RootFolderRow; onOpen: () => void }) {
 	const { t } = useTranslation();
@@ -70,59 +57,6 @@ function FolderTile({ row, onOpen }: { row: RootFolderRow; onOpen: () => void })
 			<span className='mt-1.5 line-clamp-2 text-xs leading-snug'>{row.name}</span>
 			<span className={cn("w-full truncate text-[11px]", row.status === "unmatched" ? "text-amber-400" : "text-muted-foreground")}>{subtitle}</span>
 		</button>
-	);
-}
-
-function FolderWall({ rows, onOpen }: { rows: RootFolderRow[]; onOpen: (path: string) => void }) {
-	const rootRef = useRef<HTMLDivElement>(null);
-	const [width, setWidth] = useState(0);
-	useEffect(() => {
-		const node = rootRef.current;
-		if (!node) {
-			return;
-		}
-		// only re-render when the column count changes, not on every resized pixel
-		const update = (next: number) => {
-			setWidth((prev) => (prev && gridColumns(prev) === gridColumns(next) ? prev : next));
-		};
-		const observer = new ResizeObserver((entries) => {
-			update(entries[0]?.contentRect.width ?? 0);
-		});
-		observer.observe(node);
-		update(node.clientWidth);
-		return () => {
-			observer.disconnect();
-		};
-	}, []);
-	const columns = gridColumns(width || 640);
-	const lines = chunk(rows, columns);
-	const virtualizer = useVirtualizer({
-		count: lines.length,
-		getScrollElement: () => rootRef.current?.closest("[data-slot=scroll-area-viewport]") ?? null,
-		estimateSize: () => ROW_HEIGHT,
-		overscan: 2,
-	});
-	return (
-		<div ref={rootRef} className='relative w-full' style={{ height: virtualizer.getTotalSize() }}>
-			{virtualizer.getVirtualItems().map((virtualRow) => {
-				const line = lines[virtualRow.index];
-				if (!line) {
-					return null;
-				}
-				return (
-					<ul
-						key={virtualRow.index}
-						className='absolute top-0 left-0 grid w-full'
-						style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)`, gridTemplateColumns: `repeat(${columns}, ${TILE_WIDTH}px)`, gap: TILE_GAP }}>
-						{line.map((row) => (
-							<li key={row.path}>
-								<FolderTile row={row} onOpen={() => onOpen(row.path)} />
-							</li>
-						))}
-					</ul>
-				);
-			})}
-		</div>
 	);
 }
 
@@ -313,12 +247,20 @@ export function LibraryRootPage() {
 				</Empty>
 			) : (
 				<ScrollArea className='min-h-0 flex-1' viewportClassName='px-4 pt-1 pb-4'>
-					<FolderWall
-						rows={visible}
-						onOpen={(path) => {
-							setSelected(path);
-							setOpen(true);
-						}}
+					<PosterWall
+						items={visible}
+						getKey={(row) => row.path}
+						tileWidth={TILE_WIDTH}
+						rowHeight={ROW_HEIGHT}
+						renderTile={(row) => (
+							<FolderTile
+								row={row}
+								onOpen={() => {
+									setSelected(row.path);
+									setOpen(true);
+								}}
+							/>
+						)}
 					/>
 				</ScrollArea>
 			)}
@@ -327,7 +269,6 @@ export function LibraryRootPage() {
 					{selectedRow ? <FolderDrawer row={selectedRow} /> : null}
 				</DialogContent>
 			</Dialog>
-			;
 		</div>
 	);
 }
