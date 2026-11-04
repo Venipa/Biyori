@@ -241,8 +241,8 @@ export function LibraryRootPage() {
 	const selectedRow = rows.find((row) => row.path === selected) ?? null;
 
 	return (
-		<div className='flex h-full min-h-0 flex-col gap-4 p-4'>
-			<div className='flex flex-wrap items-start justify-between gap-3'>
+		<div className='flex h-full min-h-0 flex-col gap-4 pt-4'>
+			<div className='flex flex-wrap items-start justify-between gap-3 px-4'>
 				<div className='flex min-w-0 items-start gap-2'>
 					<Button type='button' variant='ghost' size='icon-xs' className='mt-1' aria-label={t("library.back")} render={<Link to='/app/library' />}>
 						<ChevronLeftIcon />
@@ -269,11 +269,10 @@ export function LibraryRootPage() {
 					</Button>
 				</div>
 			</div>
-
 			{query.isPending ? (
-				<Skeleton className='h-40 w-full rounded-xl' />
+				<Skeleton className='mx-4 h-40 rounded-xl' />
 			) : missing || rows.length === 0 ? (
-				<Empty className='min-h-40 border border-dashed'>
+				<Empty className='mx-4 min-h-40 border border-dashed'>
 					<EmptyHeader>
 						<EmptyMedia variant='icon'>
 							<FolderIcon />
@@ -283,7 +282,7 @@ export function LibraryRootPage() {
 					</EmptyHeader>
 				</Empty>
 			) : (
-				<ScrollArea className='min-h-0 flex-1' viewportClassName='pr-3'>
+				<ScrollArea className='min-h-0 flex-1' viewportClassName='px-4 pt-1 pb-4'>
 					<FolderWall
 						rows={visible}
 						onOpen={(path) => {
@@ -293,12 +292,12 @@ export function LibraryRootPage() {
 					/>
 				</ScrollArea>
 			)}
-
 			<Dialog open={open && selectedRow != null} onOpenChange={setOpen}>
 				<DialogContent from='right' className='flex flex-col gap-3'>
 					{selectedRow ? <FolderDrawer row={selectedRow} /> : null}
 				</DialogContent>
 			</Dialog>
+			;
 		</div>
 	);
 }
