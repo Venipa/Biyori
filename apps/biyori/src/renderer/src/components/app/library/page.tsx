@@ -1,7 +1,8 @@
 import { t, useTranslation } from "@biyori/translations/react";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { type ColumnDef, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { ChevronLeftIcon, FolderIcon, FolderSearchIcon, HardDriveIcon, MoreHorizontalIcon } from "lucide-react";
+import { ChevronLeftIcon, FolderIcon, FolderSearchIcon, HardDriveIcon, MoreHorizontalIcon, PlusIcon, XIcon } from "lucide-react";
+import { useState } from "react";
 import { desktopRpc } from "@/desktop-rpc";
 import type { RootFolderOwner, RootFolderRow } from "@/lib/library-summary";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
@@ -11,6 +12,7 @@ import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/mainview/components/ui/empty";
+import { Popover, PopoverContent, PopoverTrigger } from "@/mainview/components/ui/popover";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
 import { trpc } from "@/mainview/trpc";
@@ -19,46 +21,59 @@ const route = getRouteApi("/app/library_/$root");
 const EMPTY_ROWS: RootFolderRow[] = [];
 const rowModel = getCoreRowModel<RootFolderRow>();
 
-function OwnerCover({ owner }: { owner: RootFolderOwner }) {
-	return <AnimeCover id={owner.animeId} coverUrl={owner.coverUrl} alt='' lazy className='h-9 w-6 shrink-0 overflow-hidden rounded-sm' />;
-}
-
-function AnimeMatch({ row }: { row: RootFolderRow }) {
+function OwnerChip({ owner, path }: { owner: RootFolderOwner; path: string }) {
 	const { t } = useTranslation();
-	const [first, second] = row.owners;
-	if (row.status === "unmatched" || !first) {
-		return <span className='text-muted-foreground'>{t("library.notMatched")}</span>;
-	}
-	if (row.status === "multiple") {
-		return (
-			<>
-				{[first, second].map((owner) => (owner ? <OwnerCover key={owner.animeId} owner={owner} /> : null))}
-				{row.owners.length > 2 ? <span className='text-xs text-muted-foreground'>+{row.owners.length - 2}</span> : null}
-				<span className='truncate text-muted-foreground'>{t("library.multipleAnime", { count: row.owners.length })}</span>
-			</>
-		);
-	}
+	const [open, setOpen] = useState(false);
+	const remove = trpc.library.removeFolderOwner.useMutation({
+		onSuccess: () => {
+			setOpen(false);
+		},
+	});
 	return (
-		<>
-			<OwnerCover owner={first} />
-			<span className='truncate'>{first.title}</span>
-			{first.onList ? null : <Badge variant='secondary'>{t("library.notOnList")}</Badge>}
-		</>
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger render={<Button type='button' variant='ghost' className='h-auto max-w-full min-w-0 justify-start gap-2 px-1.5 py-1 font-normal' />}>
+				<AnimeCover id={owner.animeId} coverUrl={owner.coverUrl} alt='' lazy className='h-9 w-6 shrink-0 overflow-hidden rounded-sm' />
+				<span className='truncate'>{owner.title}</span>
+				{owner.onList ? null : <Badge variant='secondary'>{t("library.notOnList")}</Badge>}
+			</PopoverTrigger>
+			<PopoverContent className='p-1'>
+				<Button
+					type='button'
+					variant='ghost'
+					size='sm'
+					loading={remove.isPending}
+					onClick={() => {
+						remove.mutate({ path, animeId: owner.animeId });
+					}}>
+					<XIcon data-icon='inline-start' />
+					{t("library.removeFromFolder")}
+				</Button>
+			</PopoverContent>
+		</Popover>
 	);
 }
 
-/** The cell is the editor: clicking it opens the list picker for that folder. */
+/** Matched anime are chips with a remove popover; the plus on the right opens the list picker. */
 function AnimeCell({ row }: { row: RootFolderRow }) {
 	const { t } = useTranslation();
 	if (row.status === "ignored") {
 		return <span className='px-2 text-muted-foreground'>{t("library.ignored")}</span>;
 	}
 	return (
-		<FolderPicker path={row.path}>
-			<Button type='button' variant='ghost' className='h-auto w-full min-w-0 justify-start gap-2 px-2 py-1 font-normal'>
-				<AnimeMatch row={row} />
-			</Button>
-		</FolderPicker>
+		<div className='flex min-w-0 items-center gap-1'>
+			<div className='flex min-w-0 flex-1 flex-wrap items-center gap-1'>
+				{row.owners.length === 0 ? (
+					<span className='px-1.5 text-muted-foreground'>{t("library.notMatched")}</span>
+				) : (
+					row.owners.map((owner) => <OwnerChip key={owner.animeId} owner={owner} path={row.path} />)
+				)}
+			</div>
+			<FolderPicker path={row.path}>
+				<Button type='button' variant='ghost' size='icon-xs' aria-label={t("library.addAnime")}>
+					<PlusIcon />
+				</Button>
+			</FolderPicker>
+		</div>
 	);
 }
 

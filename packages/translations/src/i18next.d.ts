@@ -922,10 +922,10 @@ declare module "i18next" {
 					anime: string;
 					back: string;
 					notMatched: string;
+					addAnime: string;
+					removeFromFolder: string;
 					ignored: string;
 					notOnList: string;
-					multipleAnime_one: string;
-					multipleAnime_other: string;
 					rematch: string;
 					ignoreFolder: string;
 					unignore: string;

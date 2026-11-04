@@ -18,6 +18,8 @@ export function FolderPicker({ path, children }: { path: string; children: React
 	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const [filter, setFilter] = useState("");
+	// the popup is portaled and animated; hand the viewport to the virtualizer only once it has finished opening
+	const [ready, setReady] = useState(false);
 	const listRef = useRef<HTMLDivElement>(null);
 	const listed = trpc.anime.listed.useQuery(undefined, { enabled: open });
 	const assign = trpc.library.assignFolder.useMutation({
@@ -29,7 +31,7 @@ export function FolderPicker({ path, children }: { path: string; children: React
 	const items = (listed.data ?? []).filter((item) => item.title.toLowerCase().includes(needle));
 	const virtualizer = useVirtualizer({
 		count: items.length,
-		getScrollElement: () => listRef.current?.querySelector("[data-slot=scroll-area-viewport]") ?? null,
+		getScrollElement: () => (ready ? (listRef.current?.querySelector("[data-slot=scroll-area-viewport]") ?? null) : null),
 		estimateSize: () => ITEM_HEIGHT,
 		overscan: 6,
 		// the portaled popup reports a zero rect on first open; size the window until the observer catches up
@@ -44,7 +46,8 @@ export function FolderPicker({ path, children }: { path: string; children: React
 				if (next) {
 					setFilter("");
 				}
-			}}>
+			}}
+			onOpenChangeComplete={setReady}>
 			<PopoverTrigger render={children} />
 			<PopoverContent align='start' className='flex w-80 flex-col gap-2 p-2'>
 				<Input autoFocus value={filter} placeholder={t("library.filterList")} onChange={(event) => setFilter(event.target.value)} />

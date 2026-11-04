@@ -373,6 +373,22 @@ export async function unignoreFolder(database: DatabaseClient, input: { path: st
 	notifyLibraryIndex();
 }
 
+/** Drops one owner from a folder without rescanning, so the chip stays gone until the user rematches. */
+export function removeFolderOwner(database: DatabaseClient, input: { path: string; animeId: number }): void {
+	const path = requireSeriesFolder(input.path);
+	database.transaction((tx) => {
+		const row = tx.select({ folder: anime.folder }).from(anime).where(eq(anime.id, input.animeId)).get();
+		if (row && samePath(row.folder, path)) {
+			tx.update(anime).set({ folder: "" }).where(eq(anime.id, input.animeId)).run();
+		}
+		tx.delete(episodeFile)
+			.where(and(eq(episodeFile.animeId, input.animeId), filesUnderRootSql(path)))
+			.run();
+	});
+	invalidateCandidateCache();
+	notifyLibraryIndex();
+}
+
 export async function listRootFolders(database: DatabaseClient, rootInput: string): Promise<RootFolders> {
 	const root = libraryRoots().find((entry) => samePath(entry, rootInput));
 	if (!root) {

@@ -54,6 +54,7 @@ import {
 	playEpisode,
 	playNext,
 	playRandom,
+	removeFolderOwner,
 	scanAvailableEpisodes,
 	scanLibrary,
 	scanLibraryPaths,
@@ -637,6 +638,10 @@ export const appRouter = trpc.router({
 		}),
 		clearFolder: trpc.procedure.input(z.object({ path: z.string().min(1), ignore: z.boolean() })).mutation(async ({ ctx, input }) => {
 			await clearFolder(ctx.db, input);
+			return { ok: true as const };
+		}),
+		removeFolderOwner: trpc.procedure.input(z.object({ path: z.string().min(1), animeId: z.number().int() })).mutation(({ ctx, input }) => {
+			removeFolderOwner(ctx.db, input);
 			return { ok: true as const };
 		}),
 		unignoreFolder: trpc.procedure.input(z.object({ path: z.string().min(1) })).mutation(async ({ ctx, input }) => {

@@ -854,10 +854,10 @@ library:
   anime: Anime
   back: Back to library
   notMatched: Not matched
+  addAnime: Add anime
+  removeFromFolder: Remove from folder
   ignored: Ignored
   notOnList: Not on list
-  multipleAnime_one: "{{count}} anime"
-  multipleAnime_other: "{{count}} anime"
   rematch: Rematch
   ignoreFolder: Ignore folder
   unignore: Unignore
