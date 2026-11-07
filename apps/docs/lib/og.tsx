@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import type { ReactNode } from "react";
-import { appName } from "@/lib/shared";
+import { appName, appTagline } from "@/lib/shared";
 
 const PILLS = [
 	{ label: "List", icon: "list" },
@@ -182,7 +182,7 @@ function HomeOg({ logoSrc, screenshotSrc }: { logoSrc: string; screenshotSrc: st
 				{/* biome-ignore lint: ImageResponse has no next/image */}
 				<img src={logoSrc} alt='' width={168} height={168} style={{ borderRadius: 36 }} />
 				<div style={{ marginTop: 32, fontSize: 168, fontWeight: 800, letterSpacing: -3, lineHeight: 1 }}>{appName}</div>
-				<div style={{ marginTop: 16, fontSize: 36, fontWeight: 500, color: "#d4d4d8" }}>Desktop anime tracker</div>
+				<div style={{ marginTop: 16, fontSize: 36, fontWeight: 500, color: charcoal.mute }}>{appTagline}</div>
 				<div style={{ display: "flex", marginTop: 40, gap: 16 }}>
 					{PILLS.map((pill) => (
 						<Pill key={pill.label} label={pill.label} icon={pill.icon} fontSize={28} padY={14} padX={32} />
