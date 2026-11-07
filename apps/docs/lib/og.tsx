@@ -268,14 +268,12 @@ export async function createBannerImage(k: 1 | 2) {
 				alt=''
 				style={{
 					position: "absolute",
+					// pre-blurred in public/banner/: satori's blur darkens the canvas edges
 					top: 0,
 					left: 0,
 					width: 400 * k,
 					height: 68 * k,
 					objectFit: "cover",
-					// scale past the edges so the blur never samples transparent pixels
-					transform: "scale(1.15)",
-					filter: `blur(${2 * k}px)`,
 				}}
 			/>
 			{/* scrim: darkest behind the text columns, maple tint in the middle */}
