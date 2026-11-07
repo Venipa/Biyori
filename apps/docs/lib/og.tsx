@@ -182,7 +182,7 @@ function HomeOg({ logoSrc, screenshotSrc }: { logoSrc: string; screenshotSrc: st
 				{/* biome-ignore lint: ImageResponse has no next/image */}
 				<img src={logoSrc} alt='' width={168} height={168} style={{ borderRadius: 36 }} />
 				<div style={{ marginTop: 32, fontSize: 168, fontWeight: 800, letterSpacing: -3, lineHeight: 1 }}>{appName}</div>
-				<div style={{ marginTop: 16, fontSize: 36, fontWeight: 500, color: charcoal.mute }}>{appTagline}</div>
+				<div style={{ marginTop: 16, fontSize: 36, fontWeight: 500, color: "#d4d4d8" }}>Desktop anime tracker</div>
 				<div style={{ display: "flex", marginTop: 40, gap: 16 }}>
 					{PILLS.map((pill) => (
 						<Pill key={pill.label} label={pill.label} icon={pill.icon} fontSize={28} padY={14} padX={32} />
@@ -237,4 +237,70 @@ export async function createHomeOgImage() {
 		width: homeOgSize.width,
 		height: homeOgSize.height,
 	});
+}
+
+const BANNER_BACKGROUNDS = ["bento-2_1-2.jpg", "bento-2_1-1.jpg", "bento-1_2-2.jpg"] as const;
+
+/** 400x68 promo banner (layout: venipa.net docs/banners.md); k scales every base px. */
+export async function createBannerImage(k: 1 | 2) {
+	const [logoSrc, bg] = await Promise.all([
+		getLogoDataUrl(),
+		// rotates per build week; static export bakes one in, so it stays stable until the next deploy
+		readFile(join(process.cwd(), "public/banner", BANNER_BACKGROUNDS[Math.floor(Date.now() / 604_800_000) % BANNER_BACKGROUNDS.length])),
+	]);
+	return new ImageResponse(
+		<div
+			style={{
+				display: "flex",
+				position: "relative",
+				overflow: "hidden",
+				alignItems: "center",
+				width: "100%",
+				height: "100%",
+				padding: `0 ${6 * k}px`,
+				background: charcoal.field,
+				color: charcoal.ink,
+				fontFamily: "sans-serif",
+			}}>
+			{/* biome-ignore lint/performance/noImgElement: satori renders plain img only */}
+			<img
+				src={`data:image/jpeg;base64,${bg.toString("base64")}`}
+				alt=''
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: 400 * k,
+					height: 68 * k,
+					objectFit: "cover",
+					// scale past the edges so the blur never samples transparent pixels
+					transform: "scale(1.15)",
+					filter: `blur(${2 * k}px)`,
+				}}
+			/>
+			{/* scrim: darkest behind the text columns, maple tint in the middle */}
+			<div
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: "100%",
+					height: "100%",
+					background: "linear-gradient(90deg, rgba(10,10,10,0.88) 0%, rgba(10,10,10,0.72) 45%, rgba(56,13,13,0.6) 65%, rgba(10,10,10,0.85) 100%)",
+				}}
+			/>
+			{/* biome-ignore lint/performance/noImgElement: satori renders plain img only */}
+			<img src={logoSrc} alt='' width={56 * k} height={56 * k} style={{ borderRadius: 4 * k }} />
+			<div style={{ display: "flex", flexDirection: "column", flex: 1, marginLeft: 8 * k }}>
+				<span style={{ fontSize: 22 * k, fontWeight: 700 }}>{appName}</span>
+				<span style={{ fontSize: 13 * k, color: "#d4d4d8" }}>Desktop anime tracker</span>
+			</div>
+			<div style={{ display: "flex", flexDirection: "column", paddingRight: 8 * k, fontSize: 14 * k }}>
+				<span>AniList sync</span>
+				<span>Library scan</span>
+				<span>Discord presence</span>
+			</div>
+		</div>,
+		{ width: 400 * k, height: 68 * k },
+	);
 }
