@@ -1,4 +1,4 @@
 {
 	"title": "Documentation",
-	"pages": ["index", "install", "anilist", "library", "now-playing", "torrents", "sharing", "build"]
+	"pages": ["index", "install", "anilist", "library", "library-rules", "now-playing", "torrents", "sharing", "build"]
 }

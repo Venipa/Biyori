@@ -1,0 +1,95 @@
+---
+title: Episode rules
+description: Send a range of episodes in a library folder to another anime, for split cours, absolute numbering and S00 specials.
+---
+
+Biyori matches every file in a series folder to one anime. Sometimes a release doesn't line up with AniList:
+
+- one folder holds both cours of a show that AniList splits into two entries,
+- a later season is numbered on from the first (episodes 13–24 instead of 1–12),
+- specials (`S00E01`) sit next to the main episodes.
+
+An **episode rule** fixes this for one folder. It takes the episodes in a range and files them under another anime, shifting the episode number if needed.
+
+## Add a rule
+
+1. Open **Library**, pick a library folder, then click the series folder.
+2. Under **Episode rules**, click **Add rule**.
+3. Fill in the fields (see below).
+4. Pick the anime the episodes belong to. Your list comes first. Type at least two letters to also search AniList; results marked **Not on list** can be used too. Click a result to see its details before you pick it.
+
+Biyori rescans the folder right away. Remove a rule with **Remove**; the folder is rescanned again.
+
+## Fields
+
+| Field | Meaning |
+| --- | --- |
+| **Season** | Only files from this season. Leave blank for any season. Use `0` for specials (`S00E01`). Files without a season in the name count as season 1. |
+| **From episode** | First episode number the rule covers. |
+| **To episode** | Last episode number it covers. Leave blank for "to the end". |
+| **Shift by** | Added to the episode number. `-24` turns episode 25 into episode 1. |
+
+The episode number is the one in the file name, before Biyori's own sequel detection. A rule covers every file inside the folder, including subfolders.
+
+If several rules cover the same file, the first one you added wins. Add narrow rules (one episode, one season) before broad ones; to change the order, remove a rule and add it again.
+
+## Examples
+
+### Two cours in one release
+
+The release has 49 episodes. AniList lists *Part 1* (24 episodes) and *Part 2* (25 episodes).
+
+| Season | From | To | Shift by | Anime |
+| --- | --- | --- | --- | --- |
+| | 25 | | -24 | Part 2 |
+
+Episodes 1–24 stay on the folder's anime (Part 1). Episode 25 becomes Part 2 episode 1, episode 49 becomes Part 2 episode 25.
+
+### Season 2 with absolute numbering
+
+The folder `Show Season 2` has episodes 13–24, but the season 2 entry on AniList counts 1–12.
+
+| Season | From | To | Shift by | Anime |
+| --- | --- | --- | --- | --- |
+| | 13 | 24 | -12 | Show Season 2 |
+
+### Specials next to the main episodes
+
+Files `Show - S00E01.mkv` and `Show - S00E02.mkv` are an OVA with its own AniList entry.
+
+| Season | From | To | Shift by | Anime |
+| --- | --- | --- | --- | --- |
+| 0 | 1 | | 0 | Show OVA |
+
+### Specials that belong to different entries
+
+`S00E01` is an OVA, `S00E02` is a movie.
+
+| Season | From | To | Shift by | Anime |
+| --- | --- | --- | --- | --- |
+| 0 | 1 | 1 | 0 | Show OVA |
+| 0 | 2 | 2 | -1 | Show Movie |
+
+The movie gets episode 1, since it is the only episode of its entry.
+
+### One folder, several seasons
+
+`Show/S01E01.mkv` … `Show/S02E12.mkv`, where AniList has a separate entry for season 2.
+
+| Season | From | To | Shift by | Anime |
+| --- | --- | --- | --- | --- |
+| 2 | 1 | | 0 | Show Season 2 |
+
+## Anime not on your list
+
+A rule can point at an anime that isn't on your list. Its episodes show up in the library, but playing them is not tracked, so nothing is added to your list or synced. Add the anime to your list when you want progress tracked.
+
+## When you don't need a rule
+
+Biyori already moves episodes past the end of a season to the sequel when the [anime-relations](https://github.com/erengy/anime-relations) data knows the pair and the sequel is on your list. Check the folder first; add a rule only when the files still land on the wrong anime.
+
+## Troubleshooting
+
+- **The rule does nothing.** Check the season: a rule with season `0` only matches files named like `S00E01`. A rule with a season of `1` also matches files that have no season in the name.
+- **Episodes are off by some amount.** Adjust **Shift by**. The target episode is the file's number plus the shift; a result below 0 skips the rule.
+- **Playback still updates the wrong anime.** Playback uses the same rules. If the target isn't on your list, playback of those files is not tracked at all.
