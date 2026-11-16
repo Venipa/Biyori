@@ -1,10 +1,11 @@
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { parseStoredTitles, titleStrings, titlesFromFallback } from "../../lib/anime-titles";
 import { parseJsonArray } from "../../lib/parse-json-array";
 import { parseRelatedMedia } from "../../lib/schemas/related-media";
 import type { DatabaseClient } from "../db";
 import { anime, listEntry } from "../db/schema";
 import { type Candidate, namesFrom } from "./match-core";
+import { relationRules } from "./relations";
 import { tvPrequelSeasonIndex } from "./series-season";
 
 export type { Candidate } from "./match-core";
@@ -95,4 +96,33 @@ export async function loadCandidates(db: DatabaseClient): Promise<Candidate[]> {
 	}));
 	candidateCache = { at: Date.now(), rows: mapped };
 	return mapped;
+}
+
+/**
+ * Library scans also see off-list anime that own a folder or are a relation target of a listed one,
+ * so linked NAS folders and split cours index correctly. The tracker uses `loadCandidates` only, so playback never writes these to the list.
+ */
+export async function loadLibraryHanaCandidates(db: DatabaseClient): Promise<ReturnType<typeof toHanaCandidates>> {
+	const listed = await loadCandidates(db);
+	const listedIds = new Set(listed.map((candidate) => candidate.id));
+	const targets = new Set(
+		relationRules()
+			.filter((rule) => listedIds.has(rule.fromId))
+			.map((rule) => rule.toId),
+	);
+	const offList = await db
+		.select({ id: anime.id, title: anime.title, titles: anime.titles, userSynonyms: anime.userSynonyms, episodes: anime.episodes, folder: anime.folder })
+		.from(anime)
+		.leftJoin(listEntry, eq(listEntry.animeId, anime.id))
+		.where(isNull(listEntry.animeId));
+	const extra = offList
+		.filter((row) => row.folder !== "" || targets.has(row.id))
+		.map((row) => ({
+			id: row.id,
+			names: namesFrom(row.title, titleStrings(parseStoredTitles(row.titles) ?? titlesFromFallback(row.title)), row.userSynonyms),
+			episodes: row.episodes,
+			folder: row.folder,
+			seriesSeason: undefined,
+		}));
+	return [...toHanaCandidates(listed), ...extra];
 }

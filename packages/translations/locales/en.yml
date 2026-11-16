@@ -873,7 +873,7 @@ library:
   folderStats: "{{files}} files · {{episodes}} episodes"
   matchedAnime: Matched anime
   noneYet: None yet
-  addFromList: Add from your list
+  addFromList: Assign anime
   assign: Assign
   remove: Remove
   notOnListHint: Not on your list? Add it from
@@ -884,8 +884,8 @@ library:
   unignore: Unignore
   openRoot: Open folder
   searchLink: Search
-  filterList: Filter your list
-  noListMatch: No anime on your list matches.
+  filterList: Search your list or online
+  noListMatch: No anime matches.
   noSeriesFolders: No series folders
   noSeriesFoldersHint: Scan this folder to find series inside it.
 statistics:

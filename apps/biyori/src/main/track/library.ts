@@ -21,7 +21,7 @@ import { loadAppSettings, patchAppSettings } from "../settings";
 import { updateStep } from "../startup-status";
 import { continueReadyEpisodes } from "./continue-ready";
 import { hana, type LibraryWatchHandle, type ScanHit, type ScanProgress } from "./hana-client";
-import { invalidateCandidateCache, loadCandidates, toHanaCandidates } from "./match";
+import { invalidateCandidateCache, loadLibraryHanaCandidates } from "./match";
 import { refreshRelations, toHanaRelations } from "./relations";
 
 let db: DatabaseClient | null = null;
@@ -341,9 +341,9 @@ export function changeAnimeFolder(database: DatabaseClient, animeId: number, cur
 
 export async function assignFolder(database: DatabaseClient, input: { path: string; animeId: number }): Promise<{ files: number; matched: number }> {
 	const path = requireSeriesFolder(input.path);
-	const listed = database.select({ id: listEntry.animeId }).from(listEntry).where(eq(listEntry.animeId, input.animeId)).get();
-	if (!listed) {
-		throw new TRPCError({ code: "BAD_REQUEST", message: "Anime is not on the list" });
+	const known = database.select({ id: anime.id }).from(anime).where(eq(anime.id, input.animeId)).get();
+	if (!known) {
+		throw new TRPCError({ code: "BAD_REQUEST", message: "Anime is not cached" });
 	}
 	moveFolderToAnime(database, input.animeId, path);
 	unignorePath(path);
@@ -536,8 +536,8 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 		return { files: 0, matched: 0 };
 	}
 	const settings = loadAppSettings();
-	const candidates = await loadCandidates(database);
 	await refreshRelations(database, activeProvider().relationsColumn);
+	const candidates = await loadLibraryHanaCandidates(database);
 	if (kind !== "watch") {
 		const title = kind === "quick" ? t("main.library.checkingKnownFolders") : t("main.library.scanningLibraryDots");
 		setAppNotice(title, { toast: false, busy: true });
@@ -552,7 +552,7 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 			{
 				roots: existing,
 				threshold: settings.fileSizeThreshold,
-				candidates: toHanaCandidates(candidates),
+				candidates,
 				relations: toHanaRelations(),
 			},
 			kind === "watch" ? undefined : (progress) => onScanProgress(kind, progress),
@@ -617,14 +617,14 @@ async function findEpisodePath(database: DatabaseClient, animeId: number, episod
 	if (!folder || !existsSync(folder)) {
 		return null;
 	}
-	const candidates = await loadCandidates(database);
+	const candidates = await loadLibraryHanaCandidates(database);
 	try {
 		return await hana.findEpisode({
 			folder,
 			episode,
 			threshold: loadAppSettings().fileSizeThreshold,
 			animeId,
-			candidates: toHanaCandidates(candidates),
+			candidates,
 			relations: toHanaRelations(),
 		});
 	} catch {

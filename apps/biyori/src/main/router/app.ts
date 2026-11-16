@@ -637,6 +637,10 @@ export const appRouter = trpc.router({
 			return listRootFolders(ctx.db, input.root);
 		}),
 		assignFolder: trpc.procedure.input(z.object({ path: z.string().min(1), animeId: z.number().int() })).mutation(async ({ ctx, input }) => {
+			// off-list picks come from search and may not be cached yet; offline, assignFolder still accepts a cached row
+			await activeProvider()
+				.ensureAnime(ctx.db, input.animeId)
+				.catch(() => undefined);
 			return assignFolder(ctx.db, input);
 		}),
 		clearFolder: trpc.procedure.input(z.object({ path: z.string().min(1), ignore: z.boolean() })).mutation(async ({ ctx, input }) => {
