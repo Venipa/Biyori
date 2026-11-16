@@ -50,7 +50,9 @@ function applyRedirect(match: MatchedAnime, episode: number, candidates: Candida
 	if (redirected.id === match.id) {
 		return { match, episode: redirected.episode };
 	}
-	return { match: matchById(redirected.id, candidates) ?? match, episode: redirected.episode };
+	const target = matchById(redirected.id, candidates);
+	// target unknown: keep the file's own number rather than renumbering it onto `match`
+	return target ? { match: target, episode: redirected.episode } : { match, episode };
 }
 
 async function resolveNowPlayingUser(): Promise<NowPlayingUser> {

@@ -444,7 +444,8 @@ fn with_redirect(hit: &Candidate, episode: i32, all: &[Candidate], rules: &[Rela
 	if redirected.0 == hit.id || all.iter().any(|candidate| candidate.id == redirected.0) {
 		redirected
 	} else {
-		(hit.id, redirected.1)
+		// target unknown: keep the file's own number rather than renumbering it onto `hit`
+		(hit.id, episode)
 	}
 }
 
@@ -694,6 +695,23 @@ mod tests {
 			release_version: 1,
 			file_extension: String::new(),
 		}
+	}
+
+	#[test]
+	fn keeps_episode_number_when_redirect_target_is_not_a_candidate() {
+		let rules = [RelationRule {
+			from_id: 10,
+			from_start: 13,
+			from_end: None,
+			to_id: 11,
+			to_start: 1,
+		}];
+		let show = candidate(10, "magic knight rayearth", r"D:\Anime\Magic Knight Rayearth");
+		let path = r"D:\Anime\Magic Knight Rayearth\Magic Knight Rayearth - 15.mkv";
+		let parsed = parse_file_path(path).expect("parse");
+		assert_eq!(match_candidates(&parsed, &[show.clone()], Some(path), &rules), Some((10, 15)));
+		let sequel = candidate(11, "magic knight rayearth part 2", r"D:\Other");
+		assert_eq!(match_candidates(&parsed, &[show, sequel], Some(path), &rules), Some((11, 3)));
 	}
 
 	#[test]
