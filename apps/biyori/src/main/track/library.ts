@@ -8,8 +8,10 @@ import { t } from "@biyori/translations/i18n";
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import { shell } from "electron";
-import { folderDisplayName, normalizeFolderPath } from "../../lib/folder-path";
+import { folderDisplayName, isPathInsideFolder, normalizeFolderPath } from "../../lib/folder-path";
+import { applyFolderRules } from "../../lib/folder-rules";
 import { classifyRootFolders, dropIgnoredHits, type LibrarySummary, type RootFolderAnimeInfo, type RootFolders, summarizeLibraryFolders } from "../../lib/library-summary";
+import type { FolderRule, FolderRuleInput } from "../../lib/schemas/folder-rule";
 import { EPISODE_SCAN_STATUSES, episodeInAirWindow, isMissingAiredEpisode, nextListEpisode } from "../../shared/episode-window";
 import { completeActivity, pushNotice, upsertActivity } from "../activity";
 import { displayTitleFromRow } from "../anilist/map";
@@ -125,7 +127,8 @@ function applyScanHits(database: DatabaseClient, scannedRoots: string[], hits: S
 				.where(sql`(${filesUnderAnyRootSql(scannedRoots)}) and ${episodeFile.path} not in (select path from scan_keep)`)
 				.run();
 		}
-		const assignedFolder = new Set<number>();
+		// rule targets must not claim the folder, or hana would title-match the folder's other files to them
+		const assignedFolder = new Set<number>(loadAppSettings().folderRules.map((rule) => rule.animeId));
 		for (const hit of matched) {
 			if (assignedFolder.has(hit.animeId)) {
 				continue;
@@ -420,7 +423,66 @@ export async function listRootFolders(database: DatabaseClient, rootInput: strin
 	const info = new Map<number, RootFolderAnimeInfo>(
 		rows.map((row) => [row.id, { title: displayTitleFromRow(row.title, row.titles, language), coverUrl: row.coverUrl, episodes: row.episodes, onList: row.listed != null }]),
 	);
-	return { ...base, missing: false, folders: classifyRootFolders(subdirs, files, animeFolders, ignoredFolderPaths(), info) };
+	return { ...base, missing: false, folders: classifyRootFolders(subdirs, files, animeFolders, ignoredFolderPaths(), info, loadAppSettings().folderRules) };
+}
+
+export async function addFolderRule(database: DatabaseClient, input: FolderRuleInput): Promise<{ files: number; matched: number }> {
+	const path = requireSeriesFolder(input.path);
+	const row = database.select({ title: anime.title, titles: anime.titles }).from(anime).where(eq(anime.id, input.animeId)).get();
+	if (!row) {
+		throw new TRPCError({ code: "BAD_REQUEST", message: "Anime is not cached" });
+	}
+	const title = displayTitleFromRow(row.title, row.titles, loadAppSettings().titleLanguage);
+	patchAppSettings({ folderRules: [...loadAppSettings().folderRules, { ...input, path, id: randomUUID(), title }] });
+	const result = await scanLibraryPaths(database, [path]);
+	notifyLibraryIndex();
+	return result;
+}
+
+export async function removeFolderRule(database: DatabaseClient, input: { id: string }): Promise<void> {
+	const rules = loadAppSettings().folderRules;
+	const rule = rules.find((entry) => entry.id === input.id);
+	if (!rule) {
+		return;
+	}
+	patchAppSettings({ folderRules: rules.filter((entry) => entry.id !== input.id) });
+	await scanLibraryPaths(database, [rule.path]);
+	notifyLibraryIndex();
+}
+
+/** Rules whose anime is cached; a missing row would fail the episode_file foreign key and abort the whole scan. */
+function activeFolderRules(database: DatabaseClient): FolderRule[] {
+	const rules = loadAppSettings().folderRules;
+	if (rules.length === 0) {
+		return [];
+	}
+	const ids = [...new Set(rules.map((rule) => rule.animeId))];
+	const known = new Set(
+		database
+			.select({ id: anime.id })
+			.from(anime)
+			.where(inArray(anime.id, ids))
+			.all()
+			.map((row) => row.id),
+	);
+	return rules.filter((rule) => known.has(rule.animeId));
+}
+
+/** Re-routes hits under rule folders; the raw parse is used so relation redirects from the scan don't shift the rule's range. */
+async function applyFolderRulesToHits(rules: readonly FolderRule[], hits: ScanHit[]): Promise<ScanHit[]> {
+	if (rules.length === 0) {
+		return hits;
+	}
+	return Promise.all(
+		hits.map(async (hit) => {
+			if (!rules.some((rule) => isPathInsideFolder(hit.path, rule.path))) {
+				return hit;
+			}
+			const parsed = await hana.parse({ input: hit.path, path: true }).catch(() => null);
+			const routed = applyFolderRules(rules, { path: hit.path, season: parsed?.season ?? null, episode: parsed?.episode ?? hit.episode });
+			return routed ? { ...hit, ...routed } : hit;
+		}),
+	);
 }
 
 export async function scanAvailableEpisodes(database: DatabaseClient = requiredDb()): Promise<{ files: number; matched: number }> {
@@ -558,7 +620,8 @@ async function runScan(database: DatabaseClient, roots: string[], kind: "full" |
 			kind === "watch" ? undefined : (progress) => onScanProgress(kind, progress),
 		);
 		// dropped before apply so the scan_keep cleanup also clears stale rows under ignored folders
-		const hits = dropIgnoredHits(result.hits, ignoredFolderPaths());
+		const rules = activeFolderRules(database);
+		const hits = await applyFolderRulesToHits(rules, dropIgnoredHits(result.hits, ignoredFolderPaths()));
 		if (kind === "watch") {
 			announceContinueEpisodes(database, hits);
 		}

@@ -4,6 +4,7 @@ import { observable } from "@trpc/server/observable";
 import { eq } from "drizzle-orm";
 import { parseStoredTitles, titleStrings } from "../../lib/anime-titles";
 import { isPathInsideFolder } from "../../lib/folder-path";
+import { applyFolderRules } from "../../lib/folder-rules";
 import { joinTitleList, splitTitleList } from "../../lib/split-title-list";
 import { pushNotice } from "../activity";
 import { readAnilistAuth } from "../anilist/store";
@@ -306,9 +307,17 @@ async function runTick(): Promise<void> {
 			candidates: toHanaCandidates(candidates),
 			relations: toHanaRelations(),
 		});
-		match = hit ? matchById(hit.animeId, candidates) : null;
-		if (hit) {
-			parsed.episode = hit.episode;
+		const routed =
+			media.filePath && parsed.episode != null ? applyFolderRules(settings.folderRules, { path: media.filePath, season: parsed.season, episode: parsed.episode }) : null;
+		if (routed) {
+			// an off-list rule target stays unmatched so playback never writes it to the list
+			match = matchById(routed.animeId, candidates) ?? null;
+			parsed.episode = routed.episode;
+		} else {
+			match = hit ? matchById(hit.animeId, candidates) : null;
+			if (hit) {
+				parsed.episode = hit.episode;
+			}
 		}
 		similar = match ? [] : similarParsed(parts, candidates);
 	}

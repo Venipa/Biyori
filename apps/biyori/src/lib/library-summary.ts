@@ -1,4 +1,5 @@
 import { folderDisplayName, isPathInsideFolder, longestContainingFolder, normalizeFolderPath, sameFolderPath } from "./folder-path";
+import type { FolderRule } from "./schemas/folder-rule";
 
 export type LibraryFileStat = {
 	path: string;
@@ -152,6 +153,7 @@ export type RootFolderRow = {
 	episodes: number;
 	files: number;
 	owners: RootFolderOwner[];
+	rules: FolderRule[];
 };
 
 export type RootFolders = {
@@ -172,6 +174,7 @@ export function classifyRootFolders(
 	animeFolders: readonly LibrarySeriesFolder[],
 	ignored: readonly string[],
 	info: ReadonlyMap<number, RootFolderAnimeInfo>,
+	rules: readonly FolderRule[] = [],
 ): RootFolderRow[] {
 	const fold = (path: string) => normalizeFolderPath(path).replaceAll("\\", "/").toLowerCase();
 	const keys = new Set(subdirs.map(fold));
@@ -228,6 +231,7 @@ export function classifyRootFolders(
 			episodes: owners.reduce((sum, owner) => sum + owner.episodes, 0),
 			files: inside.length,
 			owners,
+			rules: rules.filter((rule) => sameFolderPath(rule.path, path)),
 		};
 	});
 	return rows.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name));

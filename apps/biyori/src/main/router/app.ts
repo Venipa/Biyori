@@ -10,6 +10,7 @@ import { HISTORY_CHANGE_TYPES, type HistoryChangeType } from "../../lib/history-
 import { parseJsonArray } from "../../lib/parse-json-array";
 import { settingsFormPatchSchema } from "../../lib/schemas/app-settings";
 import { cacheKindsSchema } from "../../lib/schemas/cache-kind";
+import { folderRuleInputSchema } from "../../lib/schemas/folder-rule";
 import { parseHistoryChanges } from "../../lib/schemas/history-changes";
 import { parseRelatedMedia, type RelatedMedia } from "../../lib/schemas/related-media";
 import { listStatusSchema } from "../../shared/list";
@@ -45,6 +46,7 @@ import {
 } from "../torrents";
 import { hanaVersion } from "../track/hana-client";
 import {
+	addFolderRule,
 	assignFolder,
 	changeAnimeFolder,
 	clearFolder,
@@ -55,6 +57,7 @@ import {
 	playNext,
 	playRandom,
 	removeFolderOwner,
+	removeFolderRule,
 	scanAvailableEpisodes,
 	scanLibrary,
 	scanLibraryPaths,
@@ -642,6 +645,16 @@ export const appRouter = trpc.router({
 				.ensureAnime(ctx.db, input.animeId)
 				.catch(() => undefined);
 			return assignFolder(ctx.db, input);
+		}),
+		addFolderRule: trpc.procedure.input(folderRuleInputSchema).mutation(async ({ ctx, input }) => {
+			await activeProvider()
+				.ensureAnime(ctx.db, input.animeId)
+				.catch(() => undefined);
+			return addFolderRule(ctx.db, input);
+		}),
+		removeFolderRule: trpc.procedure.input(z.object({ id: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+			await removeFolderRule(ctx.db, input);
+			return { ok: true as const };
 		}),
 		clearFolder: trpc.procedure.input(z.object({ path: z.string().min(1), ignore: z.boolean() })).mutation(async ({ ctx, input }) => {
 			await clearFolder(ctx.db, input);

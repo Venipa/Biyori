@@ -958,6 +958,21 @@ declare module "i18next" {
 					noListMatch: string;
 					noSeriesFolders: string;
 					noSeriesFoldersHint: string;
+					rule: {
+						title: string;
+						hint: string;
+						add: string;
+						cancel: string;
+						season: string;
+						seasonHint: string;
+						from: string;
+						to: string;
+						toHint: string;
+						offset: string;
+						pick: string;
+						range: string;
+						invalidRange: string;
+					};
 				};
 				statistics: {
 					allAccounts: string;

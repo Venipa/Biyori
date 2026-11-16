@@ -5,6 +5,7 @@ import { parseUpdateChannel } from "../../shared/updater";
 import { normalizeFolderPath } from "../folder-path";
 import { defaultMediaPlayerIds, defaultStreamingProviderIds } from "../recognition-catalog";
 import { isTorrentFeedUrl } from "../torrent-feeds";
+import { folderRuleSchema } from "./folder-rule";
 import { anilistSeasonNameSchema, seasonGroupBySchema, seasonSortBySchema, seasonViewAsSchema } from "./seasons";
 import { torrentFilterSchema, torrentFiltersFileDefaultValues } from "./torrent-filter";
 
@@ -46,6 +47,8 @@ export const appSettingsSchema = z.object({
 	),
 	/** series folders the scanner must not match; managed by the library folder editor */
 	ignoredFolders: z.array(z.object({ path: z.string().min(1) })),
+	/** per-folder episode routing (split cours, specials); managed by the library folder editor */
+	folderRules: z.array(folderRuleSchema),
 	realtimeMonitor: z.boolean(),
 	episodeScanEnabled: z.boolean(),
 	episodeScanIntervalMinutes: z.coerce.number().int().min(5).max(1440),
@@ -137,6 +140,7 @@ export const appSettingsDefaultValues: AppSettingsInput = {
 	externalLinks: "Hibari|https://hb.wopian.me\nAniChart|http://anichart.net/airing",
 	libraryFolders: [],
 	ignoredFolders: [],
+	folderRules: [],
 	realtimeMonitor: true,
 	episodeScanEnabled: true,
 	episodeScanIntervalMinutes: 15,
@@ -237,6 +241,7 @@ export function parseAppSettings(value: unknown): AppSettings {
 		...record,
 		libraryFolders: Array.isArray(record.libraryFolders) ? record.libraryFolders : appSettingsDefaultValues.libraryFolders,
 		ignoredFolders: Array.isArray(record.ignoredFolders) ? record.ignoredFolders : appSettingsDefaultValues.ignoredFolders,
+		folderRules: Array.isArray(record.folderRules) ? record.folderRules : appSettingsDefaultValues.folderRules,
 		enabledMediaPlayers: Array.isArray(record.enabledMediaPlayers) ? record.enabledMediaPlayers : appSettingsDefaultValues.enabledMediaPlayers,
 		enabledStreamingProviders: Array.isArray(record.enabledStreamingProviders) ? record.enabledStreamingProviders : appSettingsDefaultValues.enabledStreamingProviders,
 		onboardingComplete: resolveOnboardingComplete(record),

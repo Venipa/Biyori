@@ -13,6 +13,7 @@ import { Button } from "@/mainview/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/mainview/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/mainview/components/ui/dropdown-menu";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/mainview/components/ui/empty";
+import { Field, FieldLabel } from "@/mainview/components/ui/field";
 import { Input } from "@/mainview/components/ui/input";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
@@ -60,11 +61,109 @@ function FolderTile({ row, onOpen }: { row: RootFolderRow; onOpen: () => void })
 	);
 }
 
+const NO_IDS: ReadonlySet<number> = new Set();
+
+function optionalInt(value: string): number | null {
+	return value.trim() === "" ? null : Math.trunc(Number(value));
+}
+
+function ruleSummary(rule: RootFolderRow["rules"][number], range: string): string {
+	const season = rule.season == null ? "" : `S${String(rule.season).padStart(2, "0")} · `;
+	const offset = rule.offset === 0 ? "" : ` (${rule.offset > 0 ? "+" : ""}${rule.offset})`;
+	return `${season}${range}${offset}`;
+}
+
+function RuleForm({ path, onDone }: { path: string; onDone: () => void }) {
+	const { t } = useTranslation();
+	const add = trpc.library.addFolderRule.useMutation();
+	const [season, setSeason] = useState("");
+	const [from, setFrom] = useState("1");
+	const [to, setTo] = useState("");
+	const [offset, setOffset] = useState("0");
+	const fromValue = optionalInt(from) ?? 1;
+	const toValue = optionalInt(to);
+	const invalidRange = toValue != null && toValue < fromValue;
+	const fields = [
+		{ id: "season", label: t("library.rule.season"), placeholder: t("library.rule.seasonHint"), value: season, set: setSeason, min: 0 },
+		{ id: "from", label: t("library.rule.from"), placeholder: "1", value: from, set: setFrom, min: 0 },
+		{ id: "to", label: t("library.rule.to"), placeholder: t("library.rule.toHint"), value: to, set: setTo, min: 0 },
+		{ id: "offset", label: t("library.rule.offset"), placeholder: "0", value: offset, set: setOffset, min: undefined },
+	];
+	return (
+		<>
+			<div className='grid grid-cols-2 gap-2'>
+				{fields.map((field) => (
+					<Field key={field.id}>
+						<FieldLabel htmlFor={`rule-${field.id}`}>{field.label}</FieldLabel>
+						<Input
+							id={`rule-${field.id}`}
+							type='number'
+							inputMode='numeric'
+							min={field.min}
+							value={field.value}
+							placeholder={field.placeholder}
+							onChange={(event) => field.set(event.target.value)}
+						/>
+					</Field>
+				))}
+			</div>
+			{invalidRange ? <p className='text-sm text-destructive'>{t("library.rule.invalidRange")}</p> : null}
+			{add.error ? <p className='text-sm text-destructive'>{add.error.message}</p> : null}
+			<p className='text-xs text-muted-foreground'>{t("library.rule.pick")}</p>
+			<ListPicker
+				path={path}
+				excludeIds={NO_IDS}
+				pending={add.isPending || invalidRange}
+				onPick={(animeId) => {
+					add.mutate({ path, season: optionalInt(season), from: fromValue, to: toValue, offset: optionalInt(offset) ?? 0, animeId }, { onSuccess: onDone });
+				}}
+			/>
+		</>
+	);
+}
+
+function FolderRules({ row, adding, setAdding }: { row: RootFolderRow; adding: boolean; setAdding: (next: boolean) => void }) {
+	const { t } = useTranslation();
+	const remove = trpc.library.removeFolderRule.useMutation();
+	return (
+		<div className='flex flex-col gap-2'>
+			<div className='flex items-center justify-between gap-2'>
+				<p className='text-xs text-muted-foreground'>{t("library.rule.title")}</p>
+				<Button type='button' variant='ghost' size='xs' onClick={() => setAdding(!adding)}>
+					{adding ? t("library.rule.cancel") : t("library.rule.add")}
+				</Button>
+			</div>
+			{row.rules.length === 0 && !adding ? <p className='text-xs text-muted-foreground'>{t("library.rule.hint")}</p> : null}
+			{row.rules.length > 0 ? (
+				<ul className='flex flex-col gap-1'>
+					{row.rules.map((rule) => (
+						<li key={rule.id} className='flex items-center gap-2 text-sm'>
+							<span className='shrink-0 text-muted-foreground tabular-nums'>{ruleSummary(rule, t("library.rule.range", { from: rule.from, to: rule.to ?? "…" }))}</span>
+							<span className='min-w-0 flex-1 truncate'>→ {rule.title}</span>
+							<Button
+								type='button'
+								variant='ghost'
+								size='xs'
+								loading={remove.isPending}
+								onClick={() => {
+									remove.mutate({ id: rule.id });
+								}}>
+								{t("library.remove")}
+							</Button>
+						</li>
+					))}
+				</ul>
+			) : null}
+		</div>
+	);
+}
+
 function FolderDrawer({ row }: { row: RootFolderRow }) {
 	const { t } = useTranslation();
 	const remove = trpc.library.removeFolderOwner.useMutation();
 	const clear = trpc.library.clearFolder.useMutation();
 	const unignore = trpc.library.unignoreFolder.useMutation();
+	const [addingRule, setAddingRule] = useState(false);
 	const ownerIds = new Set(row.owners.map((owner) => owner.animeId));
 	return (
 		<>
@@ -111,8 +210,15 @@ function FolderDrawer({ row }: { row: RootFolderRow }) {
 			</div>
 			{row.status === "ignored" ? null : (
 				<>
-					<p className='text-xs text-muted-foreground'>{t("library.addFromList")}</p>
-					<ListPicker path={row.path} excludeIds={ownerIds} />
+					<FolderRules row={row} adding={addingRule} setAdding={setAddingRule} />
+					{addingRule ? (
+						<RuleForm path={row.path} onDone={() => setAddingRule(false)} />
+					) : (
+						<>
+							<p className='text-xs text-muted-foreground'>{t("library.addFromList")}</p>
+							<ListPicker path={row.path} excludeIds={ownerIds} />
+						</>
+					)}
 				</>
 			)}
 			<div className='flex items-center justify-between gap-2'>
@@ -274,7 +380,7 @@ export function LibraryRootPage() {
 			)}
 			<Dialog open={open && selectedRow != null} onOpenChange={setOpen}>
 				<DialogContent from='right' className='flex flex-col gap-3'>
-					{selectedRow ? <FolderDrawer row={selectedRow} /> : null}
+					{selectedRow ? <FolderDrawer key={selectedRow.path} row={selectedRow} /> : null}
 				</DialogContent>
 			</Dialog>
 		</div>

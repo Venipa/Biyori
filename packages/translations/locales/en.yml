@@ -888,6 +888,20 @@ library:
   noListMatch: No anime matches.
   noSeriesFolders: No series folders
   noSeriesFoldersHint: Scan this folder to find series inside it.
+  rule:
+    title: Episode rules
+    hint: Send a range of episodes to another anime, e.g. the second cour of a combined release or S00 specials.
+    add: Add rule
+    cancel: Cancel
+    season: Season
+    seasonHint: Blank = any, 0 = specials
+    from: From episode
+    to: To episode
+    toHint: Blank = last
+    offset: Shift by
+    pick: Pick the anime these episodes belong to
+    range: "Ep {{from}}–{{to}}"
+    invalidRange: The last episode must not be before the first.
 statistics:
   allAccounts: All accounts
   account: Account

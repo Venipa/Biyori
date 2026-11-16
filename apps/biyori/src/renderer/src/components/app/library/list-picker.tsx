@@ -13,7 +13,18 @@ import { trpc } from "@/mainview/trpc";
 const ITEM_HEIGHT = 52;
 
 /** Inline picker: list matches first, then provider search results so folders can be linked to anime not on the list. */
-export function ListPicker({ path, excludeIds }: { path: string; excludeIds: ReadonlySet<number> }) {
+export function ListPicker({
+	path,
+	excludeIds,
+	onPick,
+	pending = false,
+}: {
+	path: string;
+	excludeIds: ReadonlySet<number>;
+	/** replaces the default folder assignment */
+	onPick?: (animeId: number) => void;
+	pending?: boolean;
+}) {
 	const { t } = useTranslation();
 	const [filter, setFilter] = useState("");
 	const rootRef = useRef<HTMLDivElement>(null);
@@ -74,8 +85,12 @@ export function ListPicker({ path, excludeIds }: { path: string; excludeIds: Rea
 										type='button'
 										variant='outline'
 										size='xs'
-										disabled={assign.isPending}
+										disabled={assign.isPending || pending}
 										onClick={() => {
+											if (onPick) {
+												onPick(item.id);
+												return;
+											}
 											assign.mutate({ path, animeId: item.id });
 										}}>
 										{t("library.assign")}
