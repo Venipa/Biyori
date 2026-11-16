@@ -956,6 +956,8 @@ declare module "i18next" {
 					searchLink: string;
 					filterList: string;
 					noListMatch: string;
+					showDetails: string;
+					closeDetails: string;
 					noSeriesFolders: string;
 					noSeriesFoldersHint: string;
 					rule: {
@@ -972,6 +974,7 @@ declare module "i18next" {
 						pick: string;
 						range: string;
 						invalidRange: string;
+						guide: string;
 					};
 				};
 				statistics: {

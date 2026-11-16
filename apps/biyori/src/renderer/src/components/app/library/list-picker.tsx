@@ -1,14 +1,18 @@
 import { useTranslation } from "@biyori/translations/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { InfoIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { folderDisplayName } from "@/lib/folder-path";
+import type { AnilistMediaCard } from "@/lib/schemas/anilist-media-card";
 import { AnimeCover } from "@/mainview/components/app/anime/cover";
 import { Badge } from "@/mainview/components/ui/badge";
 import { Button } from "@/mainview/components/ui/button";
 import { Input } from "@/mainview/components/ui/input";
 import { ScrollArea } from "@/mainview/components/ui/scroll-area";
 import { Skeleton } from "@/mainview/components/ui/skeleton";
+import { cn } from "@/mainview/lib/utils";
 import { trpc } from "@/mainview/trpc";
+import { SearchPeek } from "./search-peek";
 
 const ITEM_HEIGHT = 52;
 
@@ -36,15 +40,25 @@ export function ListPicker({
 		const timer = setTimeout(() => setQuery(filter.trim()), 400);
 		return () => clearTimeout(timer);
 	}, [filter]);
+	// the clicked search result; kept even if a new filter drops it from the list
+	const [peek, setPeek] = useState<AnilistMediaCard | null>(null);
 	const search = trpc.anilist.search.useQuery({ q: query, page: 1 }, { enabled: query.length >= 2 });
 	const listItems = (listed.data ?? []).filter((item) => !excludeIds.has(item.id) && item.title.toLowerCase().includes(needle));
 	const listedIds = new Set((listed.data ?? []).map((item) => item.id));
 	const items = [
-		...listItems.map((item) => ({ id: item.id, title: item.title, coverUrl: item.coverUrl, folder: item.folder, onList: true })),
+		...listItems.map((item) => ({ id: item.id, title: item.title, coverUrl: item.coverUrl, folder: item.folder, card: null as AnilistMediaCard | null })),
 		...(query.length >= 2 ? (search.data?.items ?? []) : [])
 			.filter((item) => !excludeIds.has(item.id) && !listedIds.has(item.id))
-			.map((item) => ({ id: item.id, title: item.title, coverUrl: item.coverUrl, folder: "", onList: false })),
+			.map((item) => ({ id: item.id, title: item.title, coverUrl: item.coverUrl, folder: "", card: item as AnilistMediaCard | null })),
 	];
+	const choose = (animeId: number) => {
+		setPeek(null);
+		if (onPick) {
+			onPick(animeId);
+			return;
+		}
+		assign.mutate({ path, animeId });
+	};
 	const virtualizer = useVirtualizer({
 		count: items.length,
 		getScrollElement: () => rootRef.current?.querySelector("[data-slot=scroll-area-viewport]") ?? null,
@@ -70,29 +84,44 @@ export function ListPicker({
 							if (!item) {
 								return null;
 							}
+							const card = item.card;
+							const label = (
+								<>
+									<AnimeCover id={item.id} coverUrl={item.coverUrl} alt='' lazy className='h-10 w-7 shrink-0 overflow-hidden rounded-sm' />
+									<span className='min-w-0 flex-1'>
+										<span className='block truncate'>{item.title}</span>
+										{item.folder ? <span className='block truncate text-xs text-muted-foreground'>{folderDisplayName(item.folder)}</span> : null}
+										{card ? (
+											<span className='flex items-center gap-1'>
+												<Badge variant='secondary'>{t("library.notOnList")}</Badge>
+												<InfoIcon aria-hidden className='size-3.5 text-muted-foreground' />
+											</span>
+										) : null}
+									</span>
+								</>
+							);
 							return (
 								<div
 									key={item.id}
 									className='absolute top-0 left-0 flex w-full items-center gap-2 px-1'
 									style={{ height: ITEM_HEIGHT, transform: `translateY(${virtualItem.start}px)` }}>
-									<AnimeCover id={item.id} coverUrl={item.coverUrl} alt='' lazy className='h-10 w-7 shrink-0 overflow-hidden rounded-sm' />
-									<span className='min-w-0 flex-1'>
-										<span className='block truncate'>{item.title}</span>
-										{item.folder ? <span className='block truncate text-xs text-muted-foreground'>{folderDisplayName(item.folder)}</span> : null}
-										{item.onList ? null : <Badge variant='secondary'>{t("library.notOnList")}</Badge>}
-									</span>
-									<Button
-										type='button'
-										variant='outline'
-										size='xs'
-										disabled={assign.isPending || pending}
-										onClick={() => {
-											if (onPick) {
-												onPick(item.id);
-												return;
-											}
-											assign.mutate({ path, animeId: item.id });
-										}}>
+									{card ? (
+										<button
+											type='button'
+											aria-expanded={peek?.id === item.id}
+											aria-controls='library-search-peek'
+											title={t("library.showDetails")}
+											className={cn(
+												"-ml-1 flex min-w-0 flex-1 items-center gap-2 rounded-md py-0.5 pl-1 text-left outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50",
+												peek?.id === item.id && "bg-muted",
+											)}
+											onClick={() => setPeek(peek?.id === item.id ? null : card)}>
+											{label}
+										</button>
+									) : (
+										label
+									)}
+									<Button type='button' variant='outline' size='xs' disabled={assign.isPending || pending} onClick={() => choose(item.id)}>
 										{t("library.assign")}
 									</Button>
 								</div>
@@ -101,6 +130,7 @@ export function ListPicker({
 					</div>
 				)}
 			</ScrollArea>
+			{peek ? <SearchPeek key={peek.id} card={peek} disabled={assign.isPending || pending} onAssign={() => choose(peek.id)} onClose={() => setPeek(null)} /> : null}
 		</div>
 	);
 }

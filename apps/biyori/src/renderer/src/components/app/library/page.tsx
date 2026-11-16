@@ -62,6 +62,7 @@ function FolderTile({ row, onOpen }: { row: RootFolderRow; onOpen: () => void })
 }
 
 const NO_IDS: ReadonlySet<number> = new Set();
+const RULES_DOCS_URL = "https://biyori.moe/docs/library-rules";
 
 function optionalInt(value: string): number | null {
 	return value.trim() === "" ? null : Math.trunc(Number(value));
@@ -128,7 +129,18 @@ function FolderRules({ row, adding, setAdding }: { row: RootFolderRow; adding: b
 	return (
 		<div className='flex flex-col gap-2'>
 			<div className='flex items-center justify-between gap-2'>
-				<p className='text-xs text-muted-foreground'>{t("library.rule.title")}</p>
+				<p className='text-xs text-muted-foreground'>
+					{t("library.rule.title")}
+					{" · "}
+					<button
+						type='button'
+						className='underline underline-offset-2 hover:text-foreground'
+						onClick={() => {
+							void desktopRpc.request.openExternal({ url: RULES_DOCS_URL });
+						}}>
+						{t("library.rule.guide")}
+					</button>
+				</p>
 				<Button type='button' variant='ghost' size='xs' onClick={() => setAdding(!adding)}>
 					{adding ? t("library.rule.cancel") : t("library.rule.add")}
 				</Button>
@@ -379,7 +391,7 @@ export function LibraryRootPage() {
 				</ScrollArea>
 			)}
 			<Dialog open={open && selectedRow != null} onOpenChange={setOpen}>
-				<DialogContent from='right' className='flex flex-col gap-3'>
+				<DialogContent from='right' className='flex flex-col gap-3 has-data-[slot=folder-peek]:rounded-l-none'>
 					{selectedRow ? <FolderDrawer key={selectedRow.path} row={selectedRow} /> : null}
 				</DialogContent>
 			</Dialog>

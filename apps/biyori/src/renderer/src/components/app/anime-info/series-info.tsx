@@ -1,4 +1,5 @@
 import { t, useTranslation } from "@biyori/translations/react";
+import type * as React from "react";
 import { formatScore } from "@/lib/anilist-score";
 import type { StoredAnimeTitles } from "@/lib/anime-titles";
 import { Badge } from "@/mainview/components/ui/badge";
@@ -28,7 +29,19 @@ export type AnimeSeriesInfoData = {
 type AnimeSeriesInfoProps = {
 	anime: AnimeSeriesInfoData;
 	className?: string;
+	/** narrow label column; a value that does not fit beside its label drops to its own line */
+	compact?: boolean;
 };
+
+/** Grid mode keeps the pair as direct grid cells (`contents`); compact mode wraps the value under the label only when it overflows. */
+function DetailRow({ label, compact, className, children }: { label: string; compact?: boolean; className?: string; children: React.ReactNode }) {
+	return (
+		<div className={compact ? "flex flex-wrap gap-x-3" : "contents"}>
+			<dt className={cn("text-muted-foreground", compact && "w-18 shrink-0")}>{label}</dt>
+			<dd className={cn(compact && "min-w-0 flex-auto", className)}>{children}</dd>
+		</div>
+	);
+}
 
 const TITLE_FORMATS = [
 	{ language: "Romaji", key: "romaji" },
@@ -74,7 +87,7 @@ function formatTitleBadges(anime: AnimeSeriesInfoData): Array<{ language: string
 	return badges;
 }
 
-export function AnimeSeriesInfo({ anime, className }: AnimeSeriesInfoProps) {
+export function AnimeSeriesInfo({ anime, className, compact = false }: AnimeSeriesInfoProps) {
 	const { t } = useTranslation();
 	const scoreFormat = useAnilistScoreFormat();
 	const genres = anime.genres ?? [];
@@ -101,38 +114,42 @@ export function AnimeSeriesInfo({ anime, className }: AnimeSeriesInfoProps) {
 			<section>
 				<h3 className='mb-1 text-sm font-semibold'>{t("anime.details")}</h3>
 				<Separator className='mb-2' />
-				<dl className='grid grid-cols-[7rem_1fr] gap-x-3 gap-y-1.5 text-sm sm:grid-cols-[8.5rem_1fr]'>
-					<dt className='text-muted-foreground'>{t("list.type")}</dt>
-					<dd>{anime.type ? animeTypeLabel(anime.type) : "-"}</dd>
-					<dt className='text-muted-foreground'>{t("anime.episodes")}</dt>
-					<dd>{anime.episodes > 0 ? anime.episodes : t("seasons.unknownMark")}</dd>
-					<dt className='text-muted-foreground'>{t("anime.status")}</dt>
-					<dd className='text-primary'>{anime.airingStatus ? airingStatusLabel(anime.airingStatus) : "-"}</dd>
-					<dt className='text-muted-foreground'>{t("anime.season")}</dt>
-					<dd className='text-primary'>{anime.season || "-"}</dd>
-					<dt className='text-muted-foreground'>{t("anime.genres")}</dt>
-					<dd>{genres.map((genre) => genreLabel(genre)).join(", ") || "-"}</dd>
+				<dl className={compact ? "flex flex-col gap-y-1.5 text-sm" : "grid grid-cols-[7rem_1fr] gap-x-3 gap-y-1.5 text-sm sm:grid-cols-[8.5rem_1fr]"}>
+					<DetailRow compact={compact} label={t("list.type")}>
+						{anime.type ? animeTypeLabel(anime.type) : "-"}
+					</DetailRow>
+					<DetailRow compact={compact} label={t("anime.episodes")}>
+						{anime.episodes > 0 ? anime.episodes : t("seasons.unknownMark")}
+					</DetailRow>
+					<DetailRow compact={compact} label={t("anime.status")} className='text-primary'>
+						{anime.airingStatus ? airingStatusLabel(anime.airingStatus) : "-"}
+					</DetailRow>
+					<DetailRow compact={compact} label={t("anime.season")} className='text-primary'>
+						{anime.season || "-"}
+					</DetailRow>
+					<DetailRow compact={compact} label={t("anime.genres")}>
+						{genres.map((genre) => genreLabel(genre)).join(", ") || "-"}
+					</DetailRow>
 					{tags.length > 0 ? (
-						<>
-							<dt className='text-muted-foreground'>{t("anime.tags")}</dt>
-							<dd>{tags.join(", ")}</dd>
-						</>
+						<DetailRow compact={compact} label={t("anime.tags")}>
+							{tags.join(", ")}
+						</DetailRow>
 					) : null}
 					{anime.broadcast ? (
-						<>
-							<dt className='text-muted-foreground'>{t("anime.broadcast")}</dt>
-							<dd>{anime.broadcast}</dd>
-						</>
+						<DetailRow compact={compact} label={t("anime.broadcast")}>
+							{anime.broadcast}
+						</DetailRow>
 					) : null}
-					<dt className='text-muted-foreground'>{t("anime.producers")}</dt>
-					<dd>{producers.join(", ") || "-"}</dd>
-					<dt className='text-muted-foreground'>{t("anime.score")}</dt>
-					<dd>{anime.averageScore > 0 ? `${anime.averageScore}%` : "-"}</dd>
+					<DetailRow compact={compact} label={t("anime.producers")}>
+						{producers.join(", ") || "-"}
+					</DetailRow>
+					<DetailRow compact={compact} label={t("anime.score")}>
+						{anime.averageScore > 0 ? `${anime.averageScore}%` : "-"}
+					</DetailRow>
 					{anime.yourScore !== undefined ? (
-						<>
-							<dt className='text-muted-foreground'>{t("anime.yourScore")}</dt>
-							<dd>{formatScore(anime.yourScore, scoreFormat)}</dd>
-						</>
+						<DetailRow compact={compact} label={t("anime.yourScore")}>
+							{formatScore(anime.yourScore, scoreFormat)}
+						</DetailRow>
 					) : null}
 				</dl>
 			</section>

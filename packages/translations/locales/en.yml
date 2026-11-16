@@ -886,6 +886,8 @@ library:
   searchLink: Search
   filterList: Search your list or online
   noListMatch: No anime matches.
+  showDetails: Show details
+  closeDetails: Close details
   noSeriesFolders: No series folders
   noSeriesFoldersHint: Scan this folder to find series inside it.
   rule:
@@ -902,6 +904,7 @@ library:
     pick: Pick the anime these episodes belong to
     range: "Ep {{from}}–{{to}}"
     invalidRange: The last episode must not be before the first.
+    guide: How rules work
 statistics:
   allAccounts: All accounts
   account: Account
